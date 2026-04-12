@@ -402,10 +402,18 @@ export const appRouter = router({
         const effectivePosStart = Number(input.posStartAmount || 0) > 0
           ? input.posStartAmount
           : (prevPosEnd > 0 ? prevPosEnd.toString() : input.posStartAmount);
-        // 일요일이면 마감금 = 시작금 (변동 없음)
+        // posEndAmount: 서버에서 직접 재계산 (시작금 - 지출합계 + 현금입금)
+        // 클라이언트 전달값을 믿지 않고 서버가 항상 올바른 값을 계산
+        const effectivePosStartNum = Number(effectivePosStart || 0);
+        const expenseTotal = isSunday ? 0 : input.expenses
+          .filter(e => e.description || e.amount)
+          .reduce((sum, e) => sum + Number((e.amount || '0').replace(/,/g, '')), 0);
+        const cashDepositNum = Number(input.cashDeposit || 0);
+        const computedPosEnd = effectivePosStartNum - expenseTotal + cashDepositNum;
+        // 일요일이면 마감금 = 시작금 (변동 없음), 아니면 서버 계산값 사용
         const effectivePosEnd = isSunday
           ? effectivePosStart
-          : input.posEndAmount;
+          : (computedPosEnd >= 0 ? computedPosEnd.toString() : '0');
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
           posStartAmount: effectivePosStart, cash: effectiveCash, card: effectiveCard,
@@ -514,10 +522,18 @@ export const appRouter = router({
             .where(and(eq(branchManagers.userId, ctx.user.id), eq(branchManagers.branchId, input.branchId))).limit(1);
           if (managed.length === 0) throw new Error('접근 권한이 없습니다');
         }
+        // posEndAmount 서버 재계산: 시작금 - 지출합계 + 현금입금
+        const protectedPosStartNum = Number(input.posStartAmount || 0);
+        const protectedExpenseTotal = input.expenses
+          .filter(e => e.description || e.amount)
+          .reduce((sum, e) => sum + Number((e.amount || '0').replace(/,/g, '')), 0);
+        const protectedCashDeposit = Number(input.cashDeposit || 0);
+        const protectedComputedPosEnd = protectedPosStartNum - protectedExpenseTotal + protectedCashDeposit;
+        const protectedEffectivePosEnd = protectedComputedPosEnd >= 0 ? protectedComputedPosEnd.toString() : '0';
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
-          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
+          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: protectedEffectivePosEnd,
           expenses: input.expenses,
           submittedBy: ctx.user.id, submittedAt: new Date(),
         });
