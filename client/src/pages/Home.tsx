@@ -268,7 +268,7 @@ export default function Home() {
     }
   };
   
-  // 누적값 = 어제 누적 + 오늘 매출
+  // 누적값 = 어제 누적 + 오뉸 매출
   const previousCashTotal = getPreviousCumulativeTotal(currentDate, 'cash');
   const previousCardTotal = getPreviousCumulativeTotal(currentDate, 'card');
   const autoCalculatedCashTotal = previousCashTotal + todayCash;
@@ -278,6 +278,25 @@ export default function Home() {
   const cashTotalAmount = parseAmount(record.cashTotal) || autoCalculatedCashTotal;
   const cardTotalAmount = parseAmount(record.cardTotal) || autoCalculatedCardTotal;
   const grandTotal = cashTotalAmount + cardTotalAmount;
+  
+  // POS 시작금 = 어제 마감금
+  const getPreviousPosEndAmount = (dateStr: string): number => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const currentDate = new Date(y, m - 1, d);
+    const previousDate = new Date(currentDate);
+    previousDate.setDate(previousDate.getDate() - 1);
+    
+    const prevY = previousDate.getFullYear();
+    const prevM = String(previousDate.getMonth() + 1).padStart(2, '0');
+    const prevD = String(previousDate.getDate()).padStart(2, '0');
+    const prevDateStr = `${prevY}-${prevM}-${prevD}`;
+    
+    const prevRecord = findRecordByDate(records, prevDateStr);
+    if (!prevRecord) return 0;
+    return parseAmount(prevRecord.posEndAmount);
+  };
+  
+  const autoCalculatedPosStartAmount = getPreviousPosEndAmount(currentDate);
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -352,7 +371,7 @@ export default function Home() {
               <AmountInput
                 value={record.posStartAmount}
                 onChange={val => updateRecord({ posStartAmount: val })}
-                placeholder="0"
+                placeholder={autoCalculatedPosStartAmount > 0 ? autoCalculatedPosStartAmount.toString() : '0'}
                 className="w-36 text-right font-semibold text-base"
               />
             </div>
