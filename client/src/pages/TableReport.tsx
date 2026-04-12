@@ -114,7 +114,7 @@ export default function TableReport() {
   // 날짜를 localStorage에 저장/복원 (새로고침 후에도 유지)
   const [currentDate, setCurrentDateState] = useState(() => {
     try {
-      const saved = localStorage.getItem('tableReport_currentDate');
+      const saved = localStorage.getItem('selectedDate');
       if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) return saved;
     } catch {}
     return getTodayString();
@@ -123,7 +123,7 @@ export default function TableReport() {
   const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
     setCurrentDateState(prev => {
       const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
-      try { localStorage.setItem('tableReport_currentDate', next); } catch {}
+      try { localStorage.setItem('selectedDate', next); } catch {}
       return next;
     });
   };

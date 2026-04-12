@@ -183,7 +183,21 @@ function InputRow({
 export default function Home() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading, logout } = useStoreAuth();
-  const [currentDate, setCurrentDate] = useState(getTodayString);
+  const [currentDate, setCurrentDateState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('selectedDate');
+      if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) return saved;
+    } catch {}
+    return getTodayString();
+  });
+
+  const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
+    setCurrentDateState(prev => {
+      const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
+      try { localStorage.setItem('selectedDate', next); } catch {}
+      return next;
+    });
+  };
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [record, setRecord] = useState<LocalRecord>(createEmptyLocalRecord);
   const [saved, setSaved] = useState(false);

@@ -117,6 +117,12 @@
 - [x] 입력 중 글씨 사라지지 않도록 안정적 상태 관리
 - [x] 형광펜: 텍스트 선택 후 색상 클릭 시 mark 태그 삽입 및 표시
 
+## 테이블 기록 ↔ 매출 기록 날짜 동기화
+
+- [x] TableReport와 Home(DailySales)이 동일한 localStorage 키 'selectedDate' 사용
+- [x] 테이블 기록에서 날짜 변경 시 매출 기록에도 반영
+- [x] 매출 기록에서 날짜 변경 시 테이블 기록에도 반영
+
 ## 한글 입력 우선 설정
 
 - [x] MemoEditor contentEditable에 lang="ko" 및 inputMode="text" 설정
