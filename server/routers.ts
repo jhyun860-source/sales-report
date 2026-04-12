@@ -777,6 +777,153 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // 배치 저장 API - 한 번의 요청으로 report + 항목 + 인센티브 모두 저장
+    batchSave: publicProcedure
+      .input(z.object({
+        date: z.string(),
+        teamCount: z.number().default(0),
+        notes: z.string().optional(),
+        items: z.array(z.object({
+          id: z.number().optional(),
+          localId: z.string(),
+          tableNumber: z.string(),
+          guestType: z.enum(['walking', 'regular', 'named']).default('walking'),
+          guestName: z.string().optional().nullable(),
+          amount: z.string().default('0'),
+          paymentMethod: z.enum(['card', 'cash', 'mixed']).default('card'),
+          memo: z.string().optional(),
+          sortOrder: z.number().default(0),
+        })),
+        incentives: z.array(z.object({
+          id: z.number().optional(),
+          localId: z.string(),
+          staffName: z.string(),
+          glassCount: z.number().default(0),
+          bottleCount: z.number().default(0),
+          beerBottleCount: z.number().default(0),
+          salesIncentive: z.string().default('0'),
+          workStart: z.string().optional(),
+          workEnd: z.string().optional(),
+          sortOrder: z.number().default(0),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+        const account = await getStoreAccountById(payload.accountId);
+        if (!account?.branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
+
+        // 1. tableReport upsert
+        const [existing] = await db.select().from(tableReports)
+          .where(and(eq(tableReports.branchId, account.branchId), eq(tableReports.date, input.date)))
+          .limit(1);
+        let reportId: number;
+        if (existing) {
+          await db.update(tableReports).set({
+            teamCount: input.teamCount,
+            notes: input.notes || null,
+          }).where(eq(tableReports.id, existing.id));
+          reportId = existing.id;
+        } else {
+          const [result] = await db.insert(tableReports).values({
+            branchId: account.branchId,
+            date: input.date,
+            teamCount: input.teamCount,
+            notes: input.notes || null,
+          });
+          reportId = (result as any).insertId;
+        }
+
+        // 2. 테이블 항목 배치 처리 (Promise.all로 병렬)
+        const itemIdMap: Record<string, number> = {};
+        const validItems = input.items.filter(it => it.tableNumber || it.amount || it.memo);
+        await Promise.all(validItems.map(async (it, i) => {
+          if (it.id) {
+            await db.update(tableItems).set({
+              tableNumber: it.tableNumber,
+              guestType: it.guestType,
+              guestName: it.guestName ?? null,
+              amount: it.amount || '0',
+              paymentMethod: it.paymentMethod,
+              memo: it.memo || null,
+              sortOrder: it.sortOrder ?? i,
+            }).where(eq(tableItems.id, it.id));
+            itemIdMap[it.localId] = it.id;
+          } else {
+            const [result] = await db.insert(tableItems).values({
+              tableReportId: reportId,
+              tableNumber: it.tableNumber,
+              guestType: it.guestType,
+              guestName: it.guestName ?? null,
+              amount: it.amount || '0',
+              paymentMethod: it.paymentMethod,
+              memo: it.memo || null,
+              sortOrder: it.sortOrder ?? i,
+            });
+            itemIdMap[it.localId] = (result as any).insertId;
+          }
+        }));
+
+        // 3. 인센티브 배치 처리 (Promise.all로 병렬)
+        const incentiveIdMap: Record<string, number> = {};
+        const validIncentives = input.incentives.filter(inc => inc.staffName);
+        await Promise.all(validIncentives.map(async (inc, i) => {
+          if (inc.id) {
+            await db.update(staffIncentives).set({
+              staffName: inc.staffName,
+              glassCount: inc.glassCount,
+              bottleCount: inc.bottleCount,
+              beerBottleCount: inc.beerBottleCount,
+              salesIncentive: inc.salesIncentive || '0',
+              workStart: inc.workStart || null,
+              workEnd: inc.workEnd || null,
+            }).where(eq(staffIncentives.id, inc.id));
+            incentiveIdMap[inc.localId] = inc.id;
+          } else {
+            const [result] = await db.insert(staffIncentives).values({
+              tableReportId: reportId,
+              staffName: inc.staffName,
+              glassCount: inc.glassCount,
+              bottleCount: inc.bottleCount,
+              beerBottleCount: inc.beerBottleCount,
+              salesIncentive: inc.salesIncentive || '0',
+              workStart: inc.workStart || null,
+              workEnd: inc.workEnd || null,
+              sortOrder: inc.sortOrder ?? i,
+            });
+            incentiveIdMap[inc.localId] = (result as any).insertId;
+          }
+        }));
+
+        // 4. 현금/카드 합산 → dailySalesRecords 자동 반영
+        const allItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, reportId));
+        const cashSum = allItems.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
+        const cardSum = allItems.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
+
+        await db.update(tableReports).set({
+          cashAmount: String(cashSum),
+          cardAmount: String(cardSum),
+        }).where(eq(tableReports.id, reportId));
+
+        const existingSales = await getDailySalesRecord(account.branchId, input.date);
+        await upsertDailySalesRecord({
+          branchId: account.branchId,
+          date: input.date,
+          posStartAmount: existingSales?.posStartAmount ?? '0',
+          cash: String(cashSum),
+          card: String(cardSum),
+          cashTotal: existingSales?.cashTotal ?? '0',
+          cardTotal: existingSales?.cardTotal ?? '0',
+          posEndAmount: existingSales?.posEndAmount ?? '0',
+          expenses: (existingSales?.expenses as any) ?? [],
+          submittedAt: new Date(),
+        });
+
+        return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
+      }),
+
     // 직원별 월간 인센티브 집계
     staffIncentiveStats: publicProcedure
       .input(z.object({

@@ -223,3 +223,11 @@
 - [x] 매출 기록 저장 후 테이블 기록 이동 시 테이블 항목 중복 생성 문제 수정
 - [x] 테이블 기록 이동 시 금액/데이터 변경 문제 수정
 - [x] tableReport.upsert 호출 시 기존 테이블 항목 덮어쓰기 방지
+
+## 저장 속도 개선
+
+- [x] 서버: tableItems 배치 upsert API 구현 (항목별 순차 호출 → 한 번에 처리)
+- [x] 서버: staffIncentives 배치 upsert API 구현
+- [x] 클라이언트: 테이블 항목/인센티브 저장을 batchSave 단일 호출로 변경
+- [x] 서버: batchSave 내부 Promise.all로 항목/인센티브 병렬 처리
+- [x] 클라이언트: 저장 중 isSaving 상태 추가 (스피너 + 비활성화 + 중복 저장 방지)

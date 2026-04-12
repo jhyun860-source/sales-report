@@ -169,6 +169,7 @@ export default function TableReport() {
   const [incentives, setIncentives] = useState<IncentiveLocal[]>([emptyIncentive()]);
   const [reportId, setReportId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 이미 로드한 날짜 추적 (items 덮어쓰기 방지)
   const loadedDateRef = useRef<string | null>(null);
@@ -241,104 +242,56 @@ export default function TableReport() {
   }, [reportData]); // currentDate는 loadedDateRef로 체크하므로 의존성 제외
 
   // tRPC mutations
-  const upsertReport = trpc.tableReport.upsert.useMutation();
-  const addItem = trpc.tableReport.addItem.useMutation();
-  const updateItem = trpc.tableReport.updateItem.useMutation();
+  const batchSave = trpc.tableReport.batchSave.useMutation();
   const deleteItem = trpc.tableReport.deleteItem.useMutation();
-  const addIncentive = trpc.tableReport.addIncentive.useMutation();
-  const updateIncentive = trpc.tableReport.updateIncentive.useMutation();
   const deleteIncentive = trpc.tableReport.deleteIncentive.useMutation();
 
-  // 저장 함수
+  // 저장 함수 - batchSave 단일 호출로 모든 항목 한 번에 저장
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    if (isSaving) return; // 중복 저장 방지
+    setIsSaving(true);
     // 저장 중에는 loadedDateRef를 건드리지 않음 → useEffect가 중간에 상태를 덮어쓰지 않도록 방지
-    // 저장이 완전히 끝난 후에만 서버 데이터로 갱신
     try {
-      // 저장 중 새 항목들의 id를 추적하기 위한 로컬 맵
-      const newItemIds = new Map<string, number>(); // localId → serverId
-      const newIncentiveIds = new Map<string, number>();
+      const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap } = await batchSave.mutateAsync({
+        date: currentDate,
+        teamCount,
+        notes,
+        items: items.map((it, i) => ({
+          id: it.id,
+          localId: it.localId,
+          tableNumber: it.tableNumber,
+          guestType: it.guestType,
+          guestName: it.guestName || null,
+          amount: it.amount || '0',
+          paymentMethod: it.paymentMethod,
+          memo: it.memo,
+          sortOrder: i,
+        })),
+        incentives: incentives.map((inc, i) => ({
+          id: inc.id,
+          localId: inc.localId,
+          staffName: inc.staffName,
+          glassCount: inc.glassCount,
+          bottleCount: inc.bottleCount,
+          beerBottleCount: inc.beerBottleCount,
+          salesIncentive: inc.salesIncentive || '0',
+          workStart: inc.workStart || undefined,
+          workEnd: inc.workEnd || undefined,
+          sortOrder: i,
+        })),
+      });
 
-      // 1. report 생성 (없을 때만)
-      let rId = reportId;
-      if (!rId) {
-        const { id } = await upsertReport.mutateAsync({ date: currentDate, teamCount, notes });
-        rId = id;
-        setReportId(rId);
+      // 저장 완료 후 reportId 및 새 id 반영
+      setReportId(rId);
+      if (Object.keys(itemIdMap).length > 0) {
+        setItems(prev => prev.map(p => itemIdMap[p.localId] ? { ...p, id: itemIdMap[p.localId] } : p));
+      }
+      if (Object.keys(incentiveIdMap).length > 0) {
+        setIncentives(prev => prev.map(p => incentiveIdMap[p.localId] ? { ...p, id: incentiveIdMap[p.localId] } : p));
       }
 
-      // 2. 테이블 항목 저장
-      for (let i = 0; i < items.length; i++) {
-        const it = items[i];
-        if (!it.tableNumber && !it.amount && !it.memo) continue;
-        if (it.id) {
-          await updateItem.mutateAsync({
-            id: it.id,
-            tableNumber: it.tableNumber,
-            guestType: it.guestType,
-            guestName: it.guestName || null,
-            amount: it.amount || '0',
-            paymentMethod: it.paymentMethod,
-            memo: it.memo,
-          });
-        } else {
-          const { id: newId } = await addItem.mutateAsync({
-            tableReportId: rId,
-            tableNumber: it.tableNumber,
-            guestType: it.guestType,
-            guestName: it.guestName || undefined,
-            amount: it.amount || '0',
-            paymentMethod: it.paymentMethod,
-            memo: it.memo,
-            sortOrder: i,
-          });
-          newItemIds.set(it.localId, newId);
-        }
-      }
-
-      // 3. 인센티브 저장
-      for (let i = 0; i < incentives.length; i++) {
-        const inc = incentives[i];
-        if (!inc.staffName) continue;
-        if (inc.id) {
-          await updateIncentive.mutateAsync({
-            id: inc.id,
-            staffName: inc.staffName,
-            glassCount: inc.glassCount,
-            bottleCount: inc.bottleCount,
-            beerBottleCount: inc.beerBottleCount,
-            salesIncentive: inc.salesIncentive || '0',
-            workStart: inc.workStart || undefined,
-            workEnd: inc.workEnd || undefined,
-          });
-        } else {
-          const { id: newId } = await addIncentive.mutateAsync({
-            tableReportId: rId,
-            staffName: inc.staffName,
-            glassCount: inc.glassCount,
-            bottleCount: inc.bottleCount,
-            beerBottleCount: inc.beerBottleCount,
-            salesIncentive: inc.salesIncentive || '0',
-            workStart: inc.workStart || undefined,
-            workEnd: inc.workEnd || undefined,
-            sortOrder: i,
-          });
-          newIncentiveIds.set(inc.localId, newId);
-        }
-      }
-
-      // 4. 최종 upsert (현금/카드 합산 → dailySalesRecords 자동 반영)
-      const { cashSum, cardSum } = await upsertReport.mutateAsync({ date: currentDate, teamCount, notes });
-
-      // 5. 저장 완료 후 로컬 상태에 새 id 반영 (한 번에 처리)
-      if (newItemIds.size > 0) {
-        setItems(prev => prev.map(p => newItemIds.has(p.localId) ? { ...p, id: newItemIds.get(p.localId) } : p));
-      }
-      if (newIncentiveIds.size > 0) {
-        setIncentives(prev => prev.map(p => newIncentiveIds.has(p.localId) ? { ...p, id: newIncentiveIds.get(p.localId) } : p));
-      }
-
-      // 6. 저장 완료 후 loadedDateRef를 현재 날짜로 설정 → useEffect가 서버 데이터로 덮어쓰지 않도록
+      // 저장 완료 후 loadedDateRef를 현재 날짜로 설정 → useEffect가 서버 데이터로 덮어쓰지 않도록
       loadedDateRef.current = currentDate;
 
       setSaved(true);
@@ -347,8 +300,10 @@ export default function TableReport() {
       toast.success(`저장 완료 | 현금 ${cashFmt} / 카드 ${cardFmt}`, { duration: 2500 });
     } catch (e: any) {
       toast.error('저장 실패: ' + (e?.message ?? '알 수 없는 오류'));
+    } finally {
+      setIsSaving(false);
     }
-  }, [currentDate, teamCount, notes, items, incentives, reportId]);
+  }, [currentDate, teamCount, notes, items, incentives, isSaving]);
 
   // 자동 저장 트리거 - 메모 입력 중 덮어쓰기 방지를 위해 딜레이를 길게 설정
   const scheduleAutoSave = useCallback(() => {
@@ -444,10 +399,16 @@ export default function TableReport() {
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium text-white"
+              disabled={isSaving}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium text-white disabled:opacity-60"
               style={{ background: PRIMARY }}
             >
-              <Save size={13} />저장
+              {isSaving ? (
+                <svg className="animate-spin" width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+              ) : (
+                <Save size={13} />
+              )}
+              {isSaving ? '저장 중...' : '저장'}
             </button>
           </div>
         </div>
@@ -842,10 +803,16 @@ export default function TableReport() {
       >
         <button
           onClick={handleSave}
-          className="w-full py-3 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2"
+          disabled={isSaving}
+          className="w-full py-3 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
           style={{ background: PRIMARY }}
         >
-          <Save size={16} />저장하기 (현금/카드 매출 자동 반영)
+          {isSaving ? (
+            <svg className="animate-spin" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          ) : (
+            <Save size={16} />
+          )}
+          {isSaving ? '저장 중...' : '저장하기 (현금/카드 매출 자동 반영)'}
         </button>
       </div>
     </div>
