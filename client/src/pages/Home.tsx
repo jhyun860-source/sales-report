@@ -11,7 +11,7 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import {
   type ExpenseItem,
@@ -101,7 +101,8 @@ function DateNavigator({
         {!isToday && (
           <button
             onClick={onToday}
-            className="text-xs text-primary mt-0.5 underline underline-offset-2"
+            className="text-xs mt-0.5 underline underline-offset-2"
+            style={{ color: 'oklch(0.45 0.18 25)' }}
           >
             오늘로 이동
           </button>
@@ -135,6 +136,50 @@ function createEmptyLocalRecord() {
 
 type LocalRecord = ReturnType<typeof createEmptyLocalRecord>;
 
+// 입력 행 컴포넌트 (라벨 + 금액 입력)
+function InputRow({
+  label,
+  value,
+  onChange,
+  placeholder,
+  readOnly,
+  displayValue,
+}: {
+  label: string;
+  value?: string;
+  onChange?: (val: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  displayValue?: string;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-3 rounded-lg mb-2"
+      style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.82 0.012 85)' }}
+    >
+      <span className="text-sm font-semibold flex-shrink-0 mr-3" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.3 0.01 50)' }}>
+        {label}
+      </span>
+      <div className="flex items-center gap-1">
+        <span className="text-sm" style={{ color: 'oklch(0.6 0.01 50)' }}>₩</span>
+        {readOnly && displayValue !== undefined ? (
+          <span className="text-right font-bold text-base tabular-nums" style={{ color: 'oklch(0.12 0.01 50)', minWidth: '6rem' }}>
+            {displayValue}
+          </span>
+        ) : (
+          <AmountInput
+            value={value ?? ''}
+            onChange={onChange}
+            placeholder={placeholder ?? '0'}
+            className="text-right font-semibold text-base"
+            readOnly={readOnly}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading, logout } = useStoreAuth();
@@ -144,26 +189,21 @@ export default function Home() {
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 내 지점 목록 조회 (storeAccount 기반)
   const myBranches = user?.role === 'admin'
     ? (user.allBranches ?? [])
     : user?.branch ? [user.branch] : [];
-  const branchesLoading = false;
 
-  // 첫 번째 지점 자동 선택
   useEffect(() => {
     if (myBranches.length > 0 && selectedBranchId === null) {
       setSelectedBranchId(myBranches[0].id);
     }
   }, [myBranches, selectedBranchId]);
 
-  // 서버에서 해당 날짜 기록 조회 (storeSales API)
   const { data: serverRecord, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
     { branchId: selectedBranchId!, date: currentDate },
     { enabled: !!selectedBranchId && !!user }
   );
 
-  // 서버 데이터로 로컬 상태 동기화
   useEffect(() => {
     if (serverRecord) {
       setRecord({
@@ -184,7 +224,6 @@ export default function Home() {
     setSaved(false);
   }, [serverRecord, currentDate, selectedBranchId]);
 
-  // 이전 날짜 마감금 조회 (POS 시작금 자동 계산용)
   const prevDate = useMemo(() => {
     const d = new Date(currentDate);
     d.setDate(d.getDate() - 1);
@@ -196,12 +235,10 @@ export default function Home() {
     { enabled: !!selectedBranchId && !!user }
   );
 
-  // 이전 날짜 누적값 (현금/카드)
   const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
   const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
   const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
 
-  // 계산값
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
@@ -240,17 +277,12 @@ export default function Home() {
     });
   }, []);
 
-  // 저장 mutation (storeSales API)
   const saveMutation = trpc.storeSales.save.useMutation();
   const { isSubscribed, isLoading: pushLoading, isSupported, subscribe, unsubscribe } = usePushNotification();
 
   const handleSave = async () => {
     if (!selectedBranchId) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-
-    const cashTotalStr = autoCalculatedCashTotal.toString();
-    const cardTotalStr = autoCalculatedCardTotal.toString();
-    const posEndStr = autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0';
 
     try {
       const result = await saveMutation.mutateAsync({
@@ -259,9 +291,9 @@ export default function Home() {
         posStartAmount: (parseAmount(record.posStartAmount) || autoCalculatedPosStartAmount).toString(),
         cash: record.cash || '0',
         card: record.card || '0',
-        cashTotal: cashTotalStr,
-        cardTotal: cardTotalStr,
-        posEndAmount: posEndStr,
+        cashTotal: autoCalculatedCashTotal.toString(),
+        cardTotal: autoCalculatedCardTotal.toString(),
+        posEndAmount: autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0',
         cashDeposit: record.cashDeposit || '0',
         paymentChangeDate: record.paymentChangeDate,
         paymentChangeNote: record.paymentChangeNote,
@@ -289,8 +321,7 @@ export default function Home() {
 
   const selectedBranch = myBranches.find(b => b.id === selectedBranchId);
 
-  // 로딩 중
-  if (authLoading || branchesLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'oklch(0.985 0.008 85)' }}>
         <div className="text-sm" style={{ color: 'oklch(0.45 0.01 50)' }}>불러오는 중...</div>
@@ -298,7 +329,6 @@ export default function Home() {
     );
   }
 
-  // 로그인 필요 - /login으로 리다이렉트
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -306,9 +336,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
             매출 일일 보고
           </h1>
-          <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>
-            로그인 후 이용하실 수 있습니다
-          </p>
+          <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>로그인 후 이용하실 수 있습니다</p>
         </div>
         <button
           onClick={() => navigate('/login')}
@@ -322,7 +350,6 @@ export default function Home() {
     );
   }
 
-  // 배정된 지점 없음
   if (myBranches.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -330,15 +357,9 @@ export default function Home() {
           <h1 className="text-xl font-bold mb-2" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
             배정된 지점이 없습니다
           </h1>
-          <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>
-            관리자에게 지점 배정을 요청해 주세요
-          </p>
+          <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>관리자에게 지점 배정을 요청해 주세요</p>
         </div>
-        <button
-          onClick={logout}
-          className="text-sm underline"
-          style={{ color: 'oklch(0.45 0.18 25)' }}
-        >
+        <button onClick={logout} className="text-sm underline" style={{ color: 'oklch(0.45 0.18 25)' }}>
           로그아웃
         </button>
       </div>
@@ -347,120 +368,139 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
-      {/* 상단 헤더 */}
+      {/* ── 상단 헤더: 2줄 구조 ── */}
       <header
-        className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
+        className="sticky top-0 z-10 border-b"
         style={{
           background: 'oklch(0.98 0.01 85)',
-          borderColor: 'oklch(0.7 0.015 85)',
-          boxShadow: '0 1px 4px oklch(0 0 0 / 0.08)',
+          borderColor: 'oklch(0.78 0.012 85)',
+          boxShadow: '0 1px 4px oklch(0 0 0 / 0.07)',
         }}
       >
-        <div className="flex items-center gap-3">
-          <span
-            className="text-base font-bold"
-            style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}
-          >
-            매출 일일 보고
-          </span>
-          {myBranches.length > 1 ? (
-            <select
-              value={selectedBranchId ?? ''}
-              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
-              className="px-3 py-1.5 rounded text-sm font-medium border"
-              style={{
-                background: 'oklch(0.92 0.015 85)',
-                color: 'oklch(0.25 0.01 50)',
-                borderColor: 'oklch(0.75 0.015 85)',
-              }}
-            >
-              {myBranches.map(branch => (
-                <option key={branch.id} value={branch.id}>{branch.name}</option>
-              ))}
-            </select>
-          ) : (
+        {/* 1줄: 앱 타이틀 + 지점 선택 + 저장됨 표시 */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
+          <div className="flex items-center gap-2 min-w-0">
             <span
-              className="px-3 py-1.5 rounded text-sm font-semibold border"
-              style={{
-                background: 'oklch(0.92 0.015 85)',
-                color: 'oklch(0.25 0.01 50)',
-                borderColor: 'oklch(0.75 0.015 85)',
-              }}
+              className="text-base font-bold flex-shrink-0"
+              style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}
             >
-              {selectedBranch?.name ?? ''}
+              매출 보고
             </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
+            {myBranches.length > 1 ? (
+              <select
+                value={selectedBranchId ?? ''}
+                onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+                className="px-2 py-1 rounded text-sm font-medium border min-w-0 max-w-[130px]"
+                style={{
+                  background: 'oklch(0.92 0.015 85)',
+                  color: 'oklch(0.25 0.01 50)',
+                  borderColor: 'oklch(0.78 0.012 85)',
+                }}
+              >
+                {myBranches.map(branch => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>
+            ) : (
+              <span
+                className="px-2 py-1 rounded text-sm font-semibold border"
+                style={{
+                  background: 'oklch(0.92 0.015 85)',
+                  color: 'oklch(0.25 0.01 50)',
+                  borderColor: 'oklch(0.78 0.012 85)',
+                }}
+              >
+                {selectedBranch?.name ?? ''}
+              </span>
+            )}
+          </div>
           {saved && (
-            <span className="flex items-center gap-1 text-xs" style={{ color: 'oklch(0.45 0.15 150)' }}>
-              <CheckCircle2 size={14} />
+            <span className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: 'oklch(0.42 0.15 150)' }}>
+              <CheckCircle2 size={13} />
               저장됨
             </span>
           )}
+        </div>
+
+        {/* 2줄: 액션 버튼들 */}
+        <div className="flex items-center gap-1.5 px-4 pb-2.5">
+          {/* 알림 토글 */}
           {isSupported && (
             <button
               onClick={isSubscribed ? unsubscribe : subscribe}
               disabled={pushLoading}
-              title={isSubscribed ? '알림 끄기' : '저장 시 핸드폰 알림 받기'}
-              className="p-1.5 rounded transition-colors"
+              title={isSubscribed ? '알림 끄기' : '알림 켜기'}
+              className="flex items-center justify-center w-9 h-9 rounded-lg border transition-colors flex-shrink-0"
               style={{
                 background: isSubscribed ? 'oklch(0.45 0.18 25)' : 'oklch(0.92 0.015 85)',
                 color: isSubscribed ? 'white' : 'oklch(0.45 0.01 50)',
-                border: '1px solid oklch(0.75 0.015 85)',
+                borderColor: 'oklch(0.78 0.012 85)',
               }}
             >
               {isSubscribed ? <Bell size={15} /> : <BellOff size={15} />}
             </button>
           )}
+
+          {/* 관리자 버튼 */}
           {user.role === 'admin' && (
             <button
               onClick={() => navigate('/admin')}
-              className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+              className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
               style={{
                 background: 'oklch(0.92 0.015 85)',
                 color: 'oklch(0.25 0.01 50)',
-                border: '1px solid oklch(0.75 0.015 85)',
+                borderColor: 'oklch(0.78 0.012 85)',
               }}
             >
-              <LayoutDashboard size={15} />
+              <LayoutDashboard size={14} />
               관리
             </button>
           )}
+
+          {/* 기록 버튼 */}
           <button
             onClick={() => navigate('/history')}
-            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
             style={{
               background: 'oklch(0.92 0.015 85)',
               color: 'oklch(0.25 0.01 50)',
-              border: '1px solid oklch(0.75 0.015 85)',
+              borderColor: 'oklch(0.78 0.012 85)',
             }}
           >
-            <List size={15} />
+            <List size={14} />
             기록
           </button>
+
+          {/* 저장 버튼 */}
           <button
             onClick={handleSave}
             disabled={saveMutation.isPending}
-            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium text-white transition-colors active:scale-95 disabled:opacity-60"
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-60 flex-shrink-0"
             style={{ background: 'oklch(0.45 0.18 25)' }}
           >
-            <Save size={15} />
-            {saveMutation.isPending ? '저장 중...' : '저장'}
+            <Save size={14} />
+            {saveMutation.isPending ? '저장 중' : '저장'}
           </button>
+
+          {/* 로그아웃 아이콘 버튼 */}
           <button
             onClick={logout}
-            className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium transition-colors"
-            style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.45 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
             title="로그아웃"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border transition-colors flex-shrink-0 ml-auto"
+            style={{
+              background: 'oklch(0.92 0.015 85)',
+              color: 'oklch(0.5 0.01 50)',
+              borderColor: 'oklch(0.78 0.012 85)',
+            }}
           >
-            로그아웃
+            <LogOut size={15} />
           </button>
         </div>
       </header>
 
-      {/* 메인 콘텐츠 */}
-      <main className="max-w-lg mx-auto px-4 py-5 pb-24">
+      {/* ── 메인 콘텐츠 ── */}
+      <main className="max-w-lg mx-auto px-4 py-4 pb-28">
+
         {/* 날짜 네비게이터 */}
         <DateNavigator
           currentDate={currentDate}
@@ -470,222 +510,227 @@ export default function Home() {
         />
 
         {/* POS 시작금 */}
-        <div
-          className="mb-4 p-3 rounded"
-          style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-              POS 시작금
-            </span>
-            <div className="flex items-center gap-1 text-sm">
-              <span className="text-muted-foreground">₩</span>
-              <AmountInput
-                value={record.posStartAmount}
-                onChange={val => updateRecord({ posStartAmount: val })}
-                placeholder={autoCalculatedPosStartAmount > 0 ? autoCalculatedPosStartAmount.toLocaleString('ko-KR') : '0'}
-                className="w-36 text-right font-semibold text-base"
-              />
-            </div>
-          </div>
-        </div>
+        <InputRow
+          label="POS 시작금"
+          value={record.posStartAmount}
+          onChange={val => updateRecord({ posStartAmount: val })}
+          placeholder={autoCalculatedPosStartAmount > 0 ? autoCalculatedPosStartAmount.toLocaleString('ko-KR') : '0'}
+        />
 
-        {/* 매출 표 */}
-        <div className="mb-4">
+        {/* ── 매출 현황 ── */}
+        <div className="mb-3">
           <div className="section-title">■ 매출 현황</div>
-          <table className="ledger-table">
-            <tbody>
-              <tr>
-                <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>현금</td>
-                <td className="w-1/4">
-                  <AmountInput value={record.cash} onChange={val => updateRecord({ cash: val })} placeholder="0" />
-                </td>
-                <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>현금누적</td>
-                <td className="w-1/4">
-                  <div className="text-right font-semibold text-base px-2" style={{ color: 'oklch(0.12 0.01 50)' }}>
-                    {autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toLocaleString('ko-KR') : '0'}
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>카드</td>
-                <td>
-                  <AmountInput value={record.card} onChange={val => updateRecord({ card: val })} placeholder="0" />
-                </td>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>카드누적</td>
-                <td>
-                  <div className="text-right font-semibold text-base px-2" style={{ color: 'oklch(0.12 0.01 50)' }}>
-                    {autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toLocaleString('ko-KR') : '0'}
-                  </div>
-                </td>
-              </tr>
-              <tr className="total-row">
-                <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>오늘</td>
-                <td className="text-right"><span className="total-amount text-sm">{dailyTotal > 0 ? dailyTotal.toLocaleString('ko-KR') : '—'}</span></td>
-                <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>누적</td>
-                <td className="text-right"><span className="total-amount text-sm">{grandTotal > 0 ? grandTotal.toLocaleString('ko-KR') : '—'}</span></td>
-              </tr>
-              <tr>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>지출</td>
-                <td className="text-right">
-                  <span className="text-sm font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {expenseTotal > 0 ? expenseTotal.toLocaleString('ko-KR') : '—'}
-                  </span>
-                </td>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>지출합계</td>
-                <td className="text-right">
-                  <span className="text-sm font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {expenseTotal > 0 ? expenseTotal.toLocaleString('ko-KR') : '—'}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{ border: '1px solid oklch(0.78 0.012 85)' }}
+          >
+            {/* 현금 행 */}
+            <div className="flex items-center" style={{ borderBottom: '1px solid oklch(0.85 0.01 85)' }}>
+              <div
+                className="w-20 flex-shrink-0 text-center text-sm font-semibold py-3"
+                style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)', color: 'oklch(0.3 0.01 50)' }}
+              >
+                현금
+              </div>
+              <div className="flex-1 px-3 py-2">
+                <AmountInput value={record.cash} onChange={val => updateRecord({ cash: val })} placeholder="0" />
+              </div>
+              <div
+                className="w-20 flex-shrink-0 text-center text-sm font-semibold py-3"
+                style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)', color: 'oklch(0.3 0.01 50)', borderLeft: '1px solid oklch(0.85 0.01 85)' }}
+              >
+                현금누적
+              </div>
+              <div className="w-24 flex-shrink-0 text-right px-3 py-2 font-semibold text-sm tabular-nums" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                {autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toLocaleString('ko-KR') : '0'}
+              </div>
+            </div>
 
-        {/* POS 마감금 */}
-        <div className="mb-5 p-3 rounded" style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>POS 마감금</span>
-            <div className="flex items-center gap-1 text-sm">
-              <span className="text-muted-foreground">₩</span>
-              <div className="w-36 text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
-                {autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toLocaleString('ko-KR') : '0'}
+            {/* 카드 행 */}
+            <div className="flex items-center" style={{ borderBottom: '1px solid oklch(0.85 0.01 85)' }}>
+              <div
+                className="w-20 flex-shrink-0 text-center text-sm font-semibold py-3"
+                style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)', color: 'oklch(0.3 0.01 50)' }}
+              >
+                카드
+              </div>
+              <div className="flex-1 px-3 py-2">
+                <AmountInput value={record.card} onChange={val => updateRecord({ card: val })} placeholder="0" />
+              </div>
+              <div
+                className="w-20 flex-shrink-0 text-center text-sm font-semibold py-3"
+                style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)', color: 'oklch(0.3 0.01 50)', borderLeft: '1px solid oklch(0.85 0.01 85)' }}
+              >
+                카드누적
+              </div>
+              <div className="w-24 flex-shrink-0 text-right px-3 py-2 font-semibold text-sm tabular-nums" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                {autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toLocaleString('ko-KR') : '0'}
+              </div>
+            </div>
+
+            {/* 오늘 합계 행 */}
+            <div className="flex items-center" style={{ background: 'oklch(0.93 0.02 50)', borderBottom: '1px solid oklch(0.85 0.01 85)' }}>
+              <div className="w-20 flex-shrink-0 text-center text-sm font-bold py-2.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>오늘</div>
+              <div className="flex-1 text-right px-3 py-2.5">
+                <span className="total-amount text-sm">{dailyTotal > 0 ? dailyTotal.toLocaleString('ko-KR') : '—'}</span>
+              </div>
+              <div className="w-20 flex-shrink-0 text-center text-sm font-bold py-2.5" style={{ fontFamily: "'Noto Serif KR', serif", borderLeft: '1px solid oklch(0.85 0.01 85)' }}>누적</div>
+              <div className="w-24 flex-shrink-0 text-right px-3 py-2.5">
+                <span className="total-amount text-sm">{grandTotal > 0 ? grandTotal.toLocaleString('ko-KR') : '—'}</span>
+              </div>
+            </div>
+
+            {/* 지출 행 */}
+            <div className="flex items-center">
+              <div
+                className="w-20 flex-shrink-0 text-center text-sm font-semibold py-3"
+                style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)', color: 'oklch(0.3 0.01 50)' }}
+              >
+                지출
+              </div>
+              <div className="flex-1 text-right px-3 py-2 text-sm font-medium tabular-nums" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                {expenseTotal > 0 ? expenseTotal.toLocaleString('ko-KR') : '—'}
+              </div>
+              <div
+                className="w-20 flex-shrink-0 text-center text-sm font-semibold py-3"
+                style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)', color: 'oklch(0.3 0.01 50)', borderLeft: '1px solid oklch(0.85 0.01 85)' }}
+              >
+                지출합계
+              </div>
+              <div className="w-24 flex-shrink-0 text-right px-3 py-2 text-sm font-medium tabular-nums" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                {expenseTotal > 0 ? expenseTotal.toLocaleString('ko-KR') : '—'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* 시제 입금 */}
-        <div className="mb-5 p-3 rounded" style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>시제 입금</span>
-            <div className="flex items-center gap-1 text-sm">
-              <span className="text-muted-foreground">₩</span>
-              <AmountInput
-                value={record.cashDeposit}
-                onChange={val => updateRecord({ cashDeposit: val })}
-                placeholder="0"
-                className="w-36 text-right font-semibold text-base"
-              />
-            </div>
-          </div>
-        </div>
+        {/* POS 마감금 */}
+        <InputRow
+          label="POS 마감금"
+          readOnly
+          displayValue={autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toLocaleString('ko-KR') : '0'}
+        />
 
-        {/* 지출 내역 */}
-        <div className="mb-5">
+        {/* 시제 입금 */}
+        <InputRow
+          label="시제 입금"
+          value={record.cashDeposit}
+          onChange={val => updateRecord({ cashDeposit: val })}
+          placeholder="0"
+        />
+
+        {/* ── 지출 내역 (1열 리스트) ── */}
+        <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <div className="section-title mb-0">■ 지출 내역</div>
             <button
               onClick={addExpense}
-              className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors active:scale-95"
-              style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-95"
+              style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.78 0.012 85)' }}
             >
               <Plus size={13} />
               항목 추가
             </button>
           </div>
-          <table className="ledger-table">
-            <thead>
-              <tr>
-                <th className="w-[38%]">내용</th>
-                <th className="w-[28%]">금액</th>
-                <th className="w-[38%]">내용</th>
-                <th className="w-[28%]">금액</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: Math.ceil(record.expenses.length / 2) }, (_, rowIdx) => {
-                const left = record.expenses[rowIdx * 2];
-                const right = record.expenses[rowIdx * 2 + 1];
-                return (
-                  <tr key={rowIdx}>
-                    <td className="p-0">
-                      <div className="flex items-center">
-                        <input
-                          type="text"
-                          value={left?.description ?? ''}
-                          onChange={e => updateExpense(left.id, 'description', e.target.value)}
-                          placeholder="내용"
-                          className="w-full bg-transparent border-none outline-none text-sm px-2 py-1.5"
-                          style={{ color: 'oklch(0.12 0.01 50)' }}
-                        />
-                        {record.expenses.length > 1 && (
-                          <button onClick={() => removeExpense(left.id)} className="pr-1 opacity-30 hover:opacity-70 transition-opacity flex-shrink-0">
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-0">
-                      <AmountInput value={left?.amount ?? ''} onChange={val => updateExpense(left.id, 'amount', val)} placeholder="0" className="px-2 py-1.5 text-sm" />
-                    </td>
-                    <td className="p-0">
-                      {right ? (
-                        <div className="flex items-center">
-                          <input
-                            type="text"
-                            value={right.description}
-                            onChange={e => updateExpense(right.id, 'description', e.target.value)}
-                            placeholder="내용"
-                            className="w-full bg-transparent border-none outline-none text-sm px-2 py-1.5"
-                            style={{ color: 'oklch(0.12 0.01 50)' }}
-                          />
-                          <button onClick={() => removeExpense(right.id)} className="pr-1 opacity-30 hover:opacity-70 transition-opacity flex-shrink-0">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      ) : <div className="px-2 py-1.5 text-sm text-muted-foreground/30">—</div>}
-                    </td>
-                    <td className="p-0">
-                      {right
-                        ? <AmountInput value={right.amount} onChange={val => updateExpense(right.id, 'amount', val)} placeholder="0" className="px-2 py-1.5 text-sm" />
-                        : <div className="px-2 py-1.5 text-sm text-muted-foreground/30">—</div>
-                      }
-                    </td>
-                  </tr>
-                );
-              })}
-              {expenseTotal > 0 && (
-                <tr className="total-row">
-                  <td colSpan={2} className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>지출 합계</td>
-                  <td colSpan={2} className="text-right"><span className="total-amount text-sm">{expenseTotal.toLocaleString('ko-KR')}</span></td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{ border: '1px solid oklch(0.78 0.012 85)' }}
+          >
+            {/* 헤더 */}
+            <div
+              className="grid grid-cols-[1fr_auto] px-3 py-2 text-xs font-semibold"
+              style={{ background: 'oklch(0.9 0.015 85)', fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.35 0.01 50)', borderBottom: '1px solid oklch(0.82 0.012 85)' }}
+            >
+              <span>내용</span>
+              <span className="text-right w-28">금액</span>
+            </div>
+
+            {/* 지출 항목들 */}
+            {record.expenses.map((expense, idx) => (
+              <div
+                key={expense.id}
+                className="flex items-center"
+                style={{ borderBottom: idx < record.expenses.length - 1 ? '1px solid oklch(0.88 0.01 85)' : 'none' }}
+              >
+                <input
+                  type="text"
+                  value={expense.description}
+                  onChange={e => updateExpense(expense.id, 'description', e.target.value)}
+                  placeholder="내용 입력"
+                  className="flex-1 bg-transparent border-none outline-none text-sm px-3 py-2.5"
+                  style={{ color: 'oklch(0.12 0.01 50)' }}
+                />
+                <div className="w-28 flex-shrink-0 flex items-center gap-1 px-2" style={{ borderLeft: '1px solid oklch(0.88 0.01 85)' }}>
+                  <AmountInput
+                    value={expense.amount}
+                    onChange={val => updateExpense(expense.id, 'amount', val)}
+                    placeholder="0"
+                    className="text-sm py-2.5"
+                  />
+                  {record.expenses.length > 1 && (
+                    <button
+                      onClick={() => removeExpense(expense.id)}
+                      className="flex-shrink-0 opacity-30 hover:opacity-70 transition-opacity"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* 지출 합계 */}
+            {expenseTotal > 0 && (
+              <div
+                className="flex items-center justify-between px-3 py-2.5"
+                style={{ background: 'oklch(0.93 0.02 50)', borderTop: '1px solid oklch(0.82 0.012 85)' }}
+              >
+                <span className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif" }}>지출 합계</span>
+                <span className="total-amount text-sm">{expenseTotal.toLocaleString('ko-KR')}</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* 결제변경 사항 */}
-        <div className="mb-6 p-3 rounded" style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}>
-          <div className="section-title">■ 결제변경 사항</div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm w-20 flex-shrink-0">결제 날짜</span>
+        {/* ── 결제변경 사항 ── */}
+        <div
+          className="mb-5 rounded-lg overflow-hidden"
+          style={{ border: '1px solid oklch(0.78 0.012 85)' }}
+        >
+          <div
+            className="px-4 py-2.5 text-sm font-semibold"
+            style={{ background: 'oklch(0.9 0.015 85)', fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)', borderBottom: '1px solid oklch(0.82 0.012 85)' }}
+          >
+            ■ 결제변경 사항
+          </div>
+          <div className="px-4 py-3 space-y-3" style={{ background: 'oklch(0.995 0.005 85)' }}>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium w-16 flex-shrink-0" style={{ color: 'oklch(0.4 0.01 50)' }}>결제 날짜</span>
               <input
                 type="text"
                 value={record.paymentChangeDate}
                 onChange={e => updateRecord({ paymentChangeDate: e.target.value })}
                 placeholder="예) 4/10"
                 className="flex-1 bg-transparent border-b text-sm py-1 outline-none"
-                style={{ borderColor: 'oklch(0.7 0.015 85)', color: 'oklch(0.12 0.01 50)' }}
+                style={{ borderColor: 'oklch(0.78 0.012 85)', color: 'oklch(0.12 0.01 50)' }}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm w-20 flex-shrink-0">변경 내용</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium w-16 flex-shrink-0" style={{ color: 'oklch(0.4 0.01 50)' }}>변경 내용</span>
               <input
                 type="text"
                 value={record.paymentChangeNote}
                 onChange={e => updateRecord({ paymentChangeNote: e.target.value })}
                 placeholder="변경 내용 입력"
                 className="flex-1 bg-transparent border-b text-sm py-1 outline-none"
-                style={{ borderColor: 'oklch(0.7 0.015 85)', color: 'oklch(0.12 0.01 50)' }}
+                style={{ borderColor: 'oklch(0.78 0.012 85)', color: 'oklch(0.12 0.01 50)' }}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm w-20 flex-shrink-0">금액</span>
-              <div className="flex-1 flex items-center gap-1 border-b" style={{ borderColor: 'oklch(0.7 0.015 85)' }}>
-                <span className="text-muted-foreground text-sm">₩</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium w-16 flex-shrink-0" style={{ color: 'oklch(0.4 0.01 50)' }}>금액</span>
+              <div className="flex-1 flex items-center gap-1 border-b" style={{ borderColor: 'oklch(0.78 0.012 85)' }}>
+                <span className="text-sm" style={{ color: 'oklch(0.6 0.01 50)' }}>₩</span>
                 <AmountInput
                   value={record.paymentChangeAmount}
                   onChange={val => updateRecord({ paymentChangeAmount: val })}
@@ -697,47 +742,63 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 요약 카드 */}
-        <div className="rounded-lg p-4" style={{ background: 'oklch(0.45 0.18 25)', color: 'white' }}>
+        {/* ── 오늘의 요약 카드 ── */}
+        <div className="rounded-xl p-4" style={{ background: 'oklch(0.45 0.18 25)', color: 'white' }}>
           <div className="text-sm font-semibold mb-3 opacity-90" style={{ fontFamily: "'Noto Serif KR', serif" }}>오늘의 요약</div>
-          <div className="grid grid-cols-2 gap-y-2 text-sm">
-            <span className="opacity-80">오늘 현금</span>
-            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{todayCash > 0 ? `₩${todayCash.toLocaleString('ko-KR')}` : '—'}</span>
-            <span className="opacity-80">오늘 카드</span>
-            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{todayCard > 0 ? `₩${todayCard.toLocaleString('ko-KR')}` : '—'}</span>
-            <span className="opacity-80">지출</span>
-            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{expenseTotal > 0 ? `₩${expenseTotal.toLocaleString('ko-KR')}` : '—'}</span>
-            <div className="col-span-2 border-t border-white/30 my-1" />
-            <span className="opacity-80 text-xs">현금 누적</span>
-            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>{autoCalculatedCashTotal > 0 ? `₩${autoCalculatedCashTotal.toLocaleString('ko-KR')}` : '—'}</span>
-            <span className="opacity-80 text-xs">카드 누적</span>
-            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>{autoCalculatedCardTotal > 0 ? `₩${autoCalculatedCardTotal.toLocaleString('ko-KR')}` : '—'}</span>
-            <span className="font-bold">총 누적</span>
-            <span className="text-right font-bold text-base" style={{ fontVariantNumeric: 'tabular-nums' }}>{grandTotal > 0 ? `₩${grandTotal.toLocaleString('ko-KR')}` : '—'}</span>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <span className="opacity-75">오늘 현금</span>
+              <span className="font-semibold tabular-nums">{todayCash > 0 ? `₩${todayCash.toLocaleString('ko-KR')}` : '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="opacity-75">오늘 카드</span>
+              <span className="font-semibold tabular-nums">{todayCard > 0 ? `₩${todayCard.toLocaleString('ko-KR')}` : '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="opacity-75">지출</span>
+              <span className="font-semibold tabular-nums">{expenseTotal > 0 ? `₩${expenseTotal.toLocaleString('ko-KR')}` : '—'}</span>
+            </div>
+            <div className="border-t border-white/25 my-2" />
+            <div className="flex justify-between text-xs opacity-70">
+              <span>현금 누적</span>
+              <span className="tabular-nums">{autoCalculatedCashTotal > 0 ? `₩${autoCalculatedCashTotal.toLocaleString('ko-KR')}` : '—'}</span>
+            </div>
+            <div className="flex justify-between text-xs opacity-70">
+              <span>카드 누적</span>
+              <span className="tabular-nums">{autoCalculatedCardTotal > 0 ? `₩${autoCalculatedCardTotal.toLocaleString('ko-KR')}` : '—'}</span>
+            </div>
+            <div className="flex justify-between font-bold text-base mt-1">
+              <span>총 누적</span>
+              <span className="tabular-nums">{grandTotal > 0 ? `₩${grandTotal.toLocaleString('ko-KR')}` : '—'}</span>
+            </div>
           </div>
         </div>
       </main>
 
-      {/* 하단 저장 버튼 */}
+      {/* ── 하단 고정 버튼 ── */}
       <div
         className="fixed bottom-0 left-0 right-0 px-4 py-3 flex gap-3"
-        style={{ background: 'oklch(0.985 0.008 85)', borderTop: '1px solid oklch(0.75 0.015 85)', boxShadow: '0 -2px 8px oklch(0 0 0 / 0.06)' }}
+        style={{
+          background: 'oklch(0.985 0.008 85)',
+          borderTop: '1px solid oklch(0.78 0.012 85)',
+          boxShadow: '0 -2px 8px oklch(0 0 0 / 0.06)',
+        }}
       >
         <button
           onClick={() => navigate('/history')}
-          className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors active:scale-95"
-          style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
+          className="flex-1 py-3 rounded-xl text-sm font-semibold transition-colors active:scale-95"
+          style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.78 0.012 85)' }}
         >
           기록 보기
         </button>
         <button
           onClick={handleSave}
           disabled={saveMutation.isPending}
-          className="flex-[2] py-3 rounded-lg text-sm font-bold text-white transition-colors active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60"
+          className="flex-[2] py-3 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60"
           style={{ background: 'oklch(0.45 0.18 25)' }}
         >
           <Save size={16} />
-          {saveMutation.isPending ? '저장 중...' : '저장'}
+          {saveMutation.isPending ? '저장 중...' : '저장하기'}
         </button>
       </div>
     </div>
