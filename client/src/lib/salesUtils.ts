@@ -18,6 +18,8 @@ export interface DailySalesRecord {
   paymentChangeNote: string;
   paymentChangeDate: string;
   paymentChangeAmount: string;
+  // 시제 입금
+  cashDeposit: string;
   // 누적 합계 (직접 입력)
   cashTotal: string;
   cardTotal: string;
@@ -128,6 +130,7 @@ export function createEmptyRecord(date: string): DailySalesRecord {
     paymentChangeNote: '',
     paymentChangeDate: '',
     paymentChangeAmount: '',
+    cashDeposit: '',
     cashTotal: '',
     cardTotal: '',
   };

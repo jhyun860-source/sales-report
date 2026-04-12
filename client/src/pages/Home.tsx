@@ -320,9 +320,10 @@ export default function Home() {
   
   const autoCalculatedPosStartAmount = getPreviousPosEndAmount(currentDate);
   
-  // POS 마감금 = POS 시작금 - 지출합계
+  // POS 마감금 = POS 시작금 - 지출합계 + 시제 입금
   const posStartAmountValue = parseAmount(record.posStartAmount) || autoCalculatedPosStartAmount;
-  const autoCalculatedPosEndAmount = posStartAmountValue - expenseTotal;
+  const cashDepositValue = parseAmount(record.cashDeposit);
+  const autoCalculatedPosEndAmount = posStartAmountValue - expenseTotal + cashDepositValue;
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -507,6 +508,27 @@ export default function Home() {
               <div className="w-36 text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
                 {autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toLocaleString('ko-KR') : '0'}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 시제 입금 */}
+        <div
+          className="mb-5 p-3 rounded"
+          style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+              시제 입금
+            </span>
+            <div className="flex items-center gap-1 text-sm">
+              <span className="text-muted-foreground">₩</span>
+              <AmountInput
+                value={record.cashDeposit}
+                onChange={val => updateRecord({ cashDeposit: val })}
+                placeholder="0"
+                className="w-36 text-right font-semibold text-base"
+              />
             </div>
           </div>
         </div>
