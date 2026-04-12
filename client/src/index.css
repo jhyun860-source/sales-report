@@ -217,8 +217,7 @@
   }
 
   /* memo-editor 플레이스홀더 (contentEditable) */
-  .memo-editor:empty::before,
-  .memo-editor[data-placeholder]:not([data-placeholder=''])::before {
+  .memo-editor-content:empty::before {
     content: attr(data-placeholder);
     color: var(--placeholder-color, #99999970);
     pointer-events: none;
