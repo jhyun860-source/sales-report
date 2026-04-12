@@ -169,13 +169,23 @@ export default function Home() {
     const existing = findRecordByDate(records, currentDate);
     setRecord(existing ?? createEmptyRecord(currentDate));
     setSaved(false);
-  }, [currentDate, records]);
-
-  // 자동 저장 (입력 후 1.5초)
+  }, [currentDate, records])  // 자동 저장 (\uc785력 후 1.5초)
   const autoSave = useCallback((updatedRecord: DailySalesRecord) => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      const updated = upsertRecord(records, updatedRecord);
+      // 자동 계산된 누적값을 저장
+      const todayCash = parseAmount(updatedRecord.cash);
+      const todayCard = parseAmount(updatedRecord.card);
+      const prevCashTotal = getPreviousCumulativeTotal(updatedRecord.date, 'cash');
+      const prevCardTotal = getPreviousCumulativeTotal(updatedRecord.date, 'card');
+      
+      const recordToSave = {
+        ...updatedRecord,
+        cashTotal: (prevCashTotal + todayCash).toString(),
+        cardTotal: (prevCardTotal + todayCard).toString(),
+      };
+      
+      const updated = upsertRecord(records, recordToSave);
       setRecords(updated);
       saveRecords(updated);
       setSaved(true);
@@ -231,7 +241,13 @@ export default function Home() {
   // 수동 저장
   const handleSave = () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    const updated = upsertRecord(records, record);
+    // 자동 계산된 누적값을 저장
+    const recordToSave = {
+      ...record,
+      cashTotal: autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : '',
+      cardTotal: autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : '',
+    };
+    const updated = upsertRecord(records, recordToSave);
     setRecords(updated);
     saveRecords(updated);
     setSaved(true);
