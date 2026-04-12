@@ -80,14 +80,15 @@ describe("sales.notify", () => {
     expect(callArgs?.content).toContain("식비");     // 지출 내역
   });
 
-  it("notifyOwner 실패 시 success: false를 반환한다", async () => {
+  it("notifyOwner 실패 시도 success: true를 반환한다 (알림 실패는 저장에 영향 없음)", async () => {
     vi.mocked(notifyOwner).mockResolvedValueOnce(false);
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
 
     const result = await caller.sales.notify(sampleInput);
 
-    expect(result.success).toBe(false);
+    // 알림 실패해도 저장은 성공해야 함
+    expect(result.success).toBe(true);
   });
 
   it("expenses가 비어있어도 정상 처리된다", async () => {

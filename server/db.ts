@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, branches, branchManagers, dailySalesRecords, type Branch, type BranchManager, type DailySalesRecord, type InsertBranch, type InsertBranchManager, type InsertDailySalesRecord } from "../drizzle/schema";
+import { InsertUser, users, branches, branchManagers, dailySalesRecords, pushSubscriptions, type Branch, type BranchManager, type DailySalesRecord, type InsertBranch, type InsertBranchManager, type InsertDailySalesRecord, type InsertPushSubscription, type PushSubscription } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -265,4 +265,42 @@ export async function getTotalSalesByDateRange(branchIds: number[], startDate: s
     ...data,
     total: data.totalCash + data.totalCard,
   }));
+}
+
+/**
+ * 웹 푸시 구독 쿼리
+ */
+
+// 구독 저장 (이미 있으면 업데이트)
+export async function savePushSubscription(data: InsertPushSubscription): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  // 같은 userId + endpoint 조합이 있으면 삭제 후 재삽입
+  await db.delete(pushSubscriptions).where(
+    and(eq(pushSubscriptions.userId, data.userId), eq(pushSubscriptions.endpoint, data.endpoint))
+  );
+  await db.insert(pushSubscriptions).values(data);
+}
+
+// 특정 사용자의 모든 구독 조회
+export async function getPushSubscriptionsByUserId(userId: number): Promise<PushSubscription[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+}
+
+// 구독 삭제
+export async function deletePushSubscription(endpoint: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+}
+
+// 특정 openId를 가진 사용자의 모든 구독 조회
+export async function getPushSubscriptionsByOpenId(openId: string): Promise<PushSubscription[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const user = await getUserByOpenId(openId);
+  if (!user) return [];
+  return getPushSubscriptionsByUserId(user.id);
 }

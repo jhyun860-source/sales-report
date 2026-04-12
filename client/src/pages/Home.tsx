@@ -10,7 +10,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff } from 'lucide-react';
+import { usePushNotification } from '@/hooks/usePushNotification';
 import {
   type DailySalesRecord,
   type ExpenseItem,
@@ -276,6 +277,9 @@ export default function Home() {
   // 알림 전송
   const notifyMutation = trpc.sales.notify.useMutation();
 
+  // 푸시 알림 구독
+  const { isSubscribed, isLoading: pushLoading, isSupported, subscribe, unsubscribe } = usePushNotification();
+
   // 수동 저장
   const handleSave = async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -300,7 +304,7 @@ export default function Home() {
 
     // 사장님께 알림 전송
     try {
-      await notifyMutation.mutateAsync({
+      const result = await notifyMutation.mutateAsync({
         branch: selectedBranch,
         date: currentDate,
         cash: record.cash || '0',
@@ -316,6 +320,9 @@ export default function Home() {
         paymentChangeNote: record.paymentChangeNote || '',
         paymentChangeAmount: record.paymentChangeAmount || '0',
       });
+      if (result.pushSent) {
+        toast.success('핸드폰으로 알림이 발송되었습니다 🔔', { duration: 2000 });
+      }
     } catch (error) {
       console.error('알림 전송 실패:', error);
     }
@@ -408,6 +415,21 @@ export default function Home() {
               <CheckCircle2 size={14} />
               저장됨
             </span>
+          )}
+          {isSupported && (
+            <button
+              onClick={isSubscribed ? unsubscribe : subscribe}
+              disabled={pushLoading}
+              title={isSubscribed ? '알림 끄기' : '저장 시 핸드폰 알림 받기'}
+              className="p-1.5 rounded transition-colors"
+              style={{
+                background: isSubscribed ? 'oklch(0.45 0.18 25)' : 'oklch(0.92 0.015 85)',
+                color: isSubscribed ? 'white' : 'oklch(0.45 0.01 50)',
+                border: '1px solid oklch(0.75 0.015 85)',
+              }}
+            >
+              {isSubscribed ? <Bell size={15} /> : <BellOff size={15} />}
+            </button>
           )}
           <button
             onClick={() => navigate('/history')}

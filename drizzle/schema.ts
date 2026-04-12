@@ -114,6 +114,22 @@ export const branchManagersRelations = relations(branchManagers, ({ one }) => ({
   }),
 }));
 
+/**
+ * 웹 푸시 구독 테이블
+ * 사장님 핸드폰의 푸시 알림 구독 정보 저장
+ */
+export const pushSubscriptions = mysqlTable("pushSubscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
 export const dailySalesRecordsRelations = relations(dailySalesRecords, ({ one }) => ({
   branch: one(branches, {
     fields: [dailySalesRecords.branchId],

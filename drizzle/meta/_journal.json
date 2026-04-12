@@ -15,6 +15,13 @@
       "when": 1775965170684,
       "tag": "0001_chemical_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1775978248532,
+      "tag": "0002_deep_sasquatch",
+      "breakpoints": true
     }
   ]
 }
