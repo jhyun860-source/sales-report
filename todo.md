@@ -110,6 +110,13 @@
 - [x] App.tsx에 /staff-incentive 라우트 등록
 - [x] 헤더 또는 관리자 메뉴에 인센티브 통계 링크 추가
 
+## MemoEditor 재작성 (textarea 기반)
+
+- [x] contentEditable 제거, textarea 기반으로 전환
+- [x] 플레이스홀더 클릭 시 자동 제거 (표준 placeholder 속성 사용)
+- [x] 입력 중 글씨 사라지지 않도록 안정적 상태 관리
+- [x] 형광펜: 텍스트 선택 후 색상 클릭 시 mark 태그 삽입 및 표시
+
 ## MemoEditor 버그 수정
 
 - [x] 플레이스홀더 텍스트와 입력 글씨 겹침 문제 수정
