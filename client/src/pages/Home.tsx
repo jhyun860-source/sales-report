@@ -169,7 +169,31 @@ export default function Home() {
     const existing = findRecordByDate(records, currentDate);
     setRecord(existing ?? createEmptyRecord(currentDate));
     setSaved(false);
-  }, [currentDate, records])  // 자동 저장 (\uc785력 후 1.5초)
+  }, [currentDate, records]);
+
+  // 어제까지의 누적값 계산 (이전 날짜들의 누적)
+  const getPreviousCumulativeTotal = (dateStr: string, type: 'cash' | 'card'): number => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const currentDate = new Date(y, m - 1, d);
+    const previousDate = new Date(currentDate);
+    previousDate.setDate(previousDate.getDate() - 1);
+    
+    const prevY = previousDate.getFullYear();
+    const prevM = String(previousDate.getMonth() + 1).padStart(2, '0');
+    const prevD = String(previousDate.getDate()).padStart(2, '0');
+    const prevDateStr = `${prevY}-${prevM}-${prevD}`;
+    
+    const prevRecord = findRecordByDate(records, prevDateStr);
+    if (!prevRecord) return 0;
+    
+    if (type === 'cash') {
+      return parseAmount(prevRecord.cashTotal);
+    } else {
+      return parseAmount(prevRecord.cardTotal);
+    }
+  };
+
+  // 자동 저장 (입력 후 1.5초)
   const autoSave = useCallback((updatedRecord: DailySalesRecord) => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
@@ -268,31 +292,8 @@ export default function Home() {
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
-  const expenseTotal = calcExpenseTotal(record.expenses);
-  
-  // 어제까지의 누적값 계산 (이전 날짜들의 누적)
-  const getPreviousCumulativeTotal = (dateStr: string, type: 'cash' | 'card'): number => {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const currentDate = new Date(y, m - 1, d);
-    const previousDate = new Date(currentDate);
-    previousDate.setDate(previousDate.getDate() - 1);
-    
-    const prevY = previousDate.getFullYear();
-    const prevM = String(previousDate.getMonth() + 1).padStart(2, '0');
-    const prevD = String(previousDate.getDate()).padStart(2, '0');
-    const prevDateStr = `${prevY}-${prevM}-${prevD}`;
-    
-    const prevRecord = findRecordByDate(records, prevDateStr);
-    if (!prevRecord) return 0;
-    
-    if (type === 'cash') {
-      return parseAmount(prevRecord.cashTotal);
-    } else {
-      return parseAmount(prevRecord.cardTotal);
-    }
-  };
-  
-  // 누적값 = 어제 누적 + 오뉸 매출
+  const expenseTotal = calcExpenseTotal(record.expenses);  
+  // 누적값 = 어제 누적 + 오느뒤 매출
   const previousCashTotal = getPreviousCumulativeTotal(currentDate, 'cash');
   const previousCardTotal = getPreviousCumulativeTotal(currentDate, 'card');
   const autoCalculatedCashTotal = previousCashTotal + todayCash;
