@@ -298,10 +298,8 @@ export default function Home() {
   const autoCalculatedCashTotal = previousCashTotal + todayCash;
   const autoCalculatedCardTotal = previousCardTotal + todayCard;
   
-  // 사용자 입력값이 있으면 사용, 없으면 자동 계산값 사용
-  const cashTotalAmount = parseAmount(record.cashTotal) || autoCalculatedCashTotal;
-  const cardTotalAmount = parseAmount(record.cardTotal) || autoCalculatedCardTotal;
-  const grandTotal = cashTotalAmount + cardTotalAmount;
+  // 누적 합계 = 현금누적 + 카드누적 (자동 계산값 사용)
+  const grandTotal = autoCalculatedCashTotal + autoCalculatedCardTotal;
   
   // POS 시작금 = 어제 마감금
   const getPreviousPosEndAmount = (dateStr: string): number => {
@@ -700,11 +698,11 @@ export default function Home() {
             <div className="col-span-2 border-t border-white/30 my-1" />
             <span className="opacity-80 text-xs">현금 누적</span>
             <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {cashTotalAmount > 0 ? `₩${cashTotalAmount.toLocaleString('ko-KR')}` : '—'}
+              {autoCalculatedCashTotal > 0 ? `₩${autoCalculatedCashTotal.toLocaleString('ko-KR')}` : '—'}
             </span>
             <span className="opacity-80 text-xs">카드 누적</span>
             <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {cardTotalAmount > 0 ? `₩${cardTotalAmount.toLocaleString('ko-KR')}` : '—'}
+              {autoCalculatedCardTotal > 0 ? `₩${autoCalculatedCardTotal.toLocaleString('ko-KR')}` : '—'}
             </span>
             <span className="font-bold">총 누적</span>
             <span className="text-right font-bold text-base" style={{ fontVariantNumeric: 'tabular-nums' }}>
