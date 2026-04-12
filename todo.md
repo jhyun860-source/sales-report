@@ -217,3 +217,9 @@
 - [x] server/routers.ts storeSales.notify - paymentChange 필드 제거
 - [x] server/routers.ts tableReport.upsert - upsertDailySalesRecord 호출에서 paymentChange 제거
 - [x] client/src/pages/Home.tsx - createEmptyLocalRecord, 서버 데이터 로드, 저장 함수에서 paymentChange 제거
+
+## 테이블 기록 중복/데이터 변경 버그 수정
+
+- [x] 매출 기록 저장 후 테이블 기록 이동 시 테이블 항목 중복 생성 문제 수정
+- [x] 테이블 기록 이동 시 금액/데이터 변경 문제 수정
+- [x] tableReport.upsert 호출 시 기존 테이블 항목 덮어쓰기 방지

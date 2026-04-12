@@ -157,6 +157,7 @@ export default function TableReport() {
       if (next !== prev) {
         // 날짜가 달라지면 loadedDateRef 초기화 → 새 날짜 데이터 로드 허용
         loadedDateRef.current = null;
+        setSaved(false);
       }
       try { localStorage.setItem('selectedDate', next); } catch {}
       return next;
@@ -234,7 +235,8 @@ export default function TableReport() {
       setItems([emptyItem()]);
       setIncentives([emptyIncentive()]);
     }
-    setSaved(false);
+    // 날짜가 실제로 변경되었을 때만 saved 리셋 (저장 완료 후 데이터 로드 시에는 saved 유지)
+    // setSaved(false)를 여기서 호출하면 저장 완료 후 서버 데이터가 다시 들어올 때 saved 표시가 사라짐
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportData]); // currentDate는 loadedDateRef로 체크하므로 의존성 제외
 
@@ -250,11 +252,14 @@ export default function TableReport() {
   // 저장 함수
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    // 저장 후 loadedDateRef 초기화해서 다음 refetch 시 데이터 갱신 허용
-    loadedDateRef.current = null;
+    // 저장 중에는 loadedDateRef를 건드리지 않음 → useEffect가 중간에 상태를 덮어쓰지 않도록 방지
+    // 저장이 완전히 끝난 후에만 서버 데이터로 갱신
     try {
-      // 1. 테이블 항목 먼저 저장 (upsert에서 합산 계산에 필요)
-      // 임시 reportId가 없으면 먼저 report 생성
+      // 저장 중 새 항목들의 id를 추적하기 위한 로컬 맵
+      const newItemIds = new Map<string, number>(); // localId → serverId
+      const newIncentiveIds = new Map<string, number>();
+
+      // 1. report 생성 (없을 때만)
       let rId = reportId;
       if (!rId) {
         const { id } = await upsertReport.mutateAsync({ date: currentDate, teamCount, notes });
@@ -287,7 +292,7 @@ export default function TableReport() {
             memo: it.memo,
             sortOrder: i,
           });
-          setItems(prev => prev.map(p => p.localId === it.localId ? { ...p, id: newId } : p));
+          newItemIds.set(it.localId, newId);
         }
       }
 
@@ -318,19 +323,28 @@ export default function TableReport() {
             workEnd: inc.workEnd || undefined,
             sortOrder: i,
           });
-          setIncentives(prev => prev.map(p => p.localId === inc.localId ? { ...p, id: newId } : p));
+          newIncentiveIds.set(inc.localId, newId);
         }
       }
 
       // 4. 최종 upsert (현금/카드 합산 → dailySalesRecords 자동 반영)
       const { cashSum, cardSum } = await upsertReport.mutateAsync({ date: currentDate, teamCount, notes });
 
+      // 5. 저장 완료 후 로컬 상태에 새 id 반영 (한 번에 처리)
+      if (newItemIds.size > 0) {
+        setItems(prev => prev.map(p => newItemIds.has(p.localId) ? { ...p, id: newItemIds.get(p.localId) } : p));
+      }
+      if (newIncentiveIds.size > 0) {
+        setIncentives(prev => prev.map(p => newIncentiveIds.has(p.localId) ? { ...p, id: newIncentiveIds.get(p.localId) } : p));
+      }
+
+      // 6. 저장 완료 후 loadedDateRef를 현재 날짜로 설정 → useEffect가 서버 데이터로 덮어쓰지 않도록
+      loadedDateRef.current = currentDate;
+
       setSaved(true);
       const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
       const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
       toast.success(`저장 완료 | 현금 ${cashFmt} / 카드 ${cardFmt}`, { duration: 2500 });
-      // 저장 완료 후 서버 데이터 다시 로드 (loadedDateRef 이미 null로 초기화됨)
-      loadedDateRef.current = null;
     } catch (e: any) {
       toast.error('저장 실패: ' + (e?.message ?? '알 수 없는 오류'));
     }
