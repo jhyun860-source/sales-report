@@ -203,10 +203,17 @@ export default function Home() {
       const prevCashTotal = getPreviousCumulativeTotal(updatedRecord.date, 'cash');
       const prevCardTotal = getPreviousCumulativeTotal(updatedRecord.date, 'card');
       
+      // POS 마감금 자동 계산
+      const updatedExpenseTotal = calcExpenseTotal(updatedRecord.expenses);
+      const updatedPosStartAmount = parseAmount(updatedRecord.posStartAmount) || getPreviousPosEndAmount(updatedRecord.date);
+      const updatedCashDeposit = parseAmount(updatedRecord.cashDeposit);
+      const updatedPosEndAmount = updatedPosStartAmount - updatedExpenseTotal + updatedCashDeposit;
+      
       const recordToSave = {
         ...updatedRecord,
         cashTotal: (prevCashTotal + todayCash).toString(),
         cardTotal: (prevCardTotal + todayCard).toString(),
+        posEndAmount: updatedPosEndAmount > 0 ? updatedPosEndAmount.toString() : '0',
       };
       
       const updated = upsertRecord(records, recordToSave);
@@ -270,6 +277,7 @@ export default function Home() {
       ...record,
       cashTotal: autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : '',
       cardTotal: autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : '',
+      posEndAmount: autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0',
     };
     const updated = upsertRecord(records, recordToSave);
     setRecords(updated);
