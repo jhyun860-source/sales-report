@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { Plus, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2, Users, Wine } from 'lucide-react';
+import { MemoEditor } from '@/components/MemoEditor';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 
@@ -489,15 +490,14 @@ export default function TableReport() {
                   </div>
                 </div>
 
-                {/* 3행: 메모 */}
+                {/* 3행: 메모 (형광펜 기능 포함) */}
                 <div className="px-3 py-2">
-                  <input
-                    type="text"
+                  <MemoEditor
                     value={item.memo}
-                    onChange={e => updateItemField(item.localId, 'memo', e.target.value)}
+                    onChange={html => updateItemField(item.localId, 'memo', html)}
                     placeholder="주문 메모 (예: 무제한x2, 지인3간)"
-                    className="w-full bg-transparent border-none outline-none text-xs"
-                    style={{ color: TEXT }}
+                    textColor={TEXT}
+                    borderColor={BORDER}
                   />
                 </div>
               </div>

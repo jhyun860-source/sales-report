@@ -77,20 +77,35 @@
 
 ## TableReport 개선
 
-- [ ] DB: staffIncentives 테이블에 salesIncentive(금액), workStart(시작시간), workEnd(종료시간) 컬럼 추가
-- [ ] DB: tableReports 테이블에 cashAmount, cardAmount 컬럼 추가 (팀수 옆 현금/카드)
-- [ ] UI: 팀수 옆에 현금 금액 / 카드 금액 입력 추가
-- [ ] UI: 직원 인센티브에 영업인센(금액) 입력 칸 추가
-- [ ] UI: 직원 인센티브에 근무 시간(시작~종료) 입력 추가
-- [ ] UI: 신규손님 팁 섹션 제거
+- [x] DB: staffIncentives 테이블에 salesIncentive(금액), workStart(시작시간), workEnd(종료시간) 컈럼 추가
+- [x] DB: tableReports 테이블에 cashAmount, cardAmount 컈럼 추가 (팀수 옆 현금/카드)
+- [x] UI: 팀수 옆에 현금 금액 / 카드 금액 입력 추가
+- [x] UI: 직원 인센티브에 영업인센(금액) 입력 칸 추가
+- [x] UI: 직원 인센티브에 근무 시간(시작~종료) 입력 추가
+- [x] UI: 신규손님 팁 섹션 제거
 
 ## TableReport 개선 2차
 
-- [ ] DB: staffIncentives에 salesIncentive, workStart, workEnd 컬럼 ALTER TABLE로 추가
-- [ ] DB: tableReports에서 branchNewGuestTip, barNewGuestTip 제거 (cashAmount, cardAmount는 이미 추가됨)
-- [ ] 서버: tableReport.upsert 저장 시 현금 테이블 합산 → dailySalesRecords.cash 자동 업데이트
-- [ ] 서버: tableReport.upsert 저장 시 카드 테이블 합산 → dailySalesRecords.card 자동 업데이트
-- [ ] UI: 직원 인센티브에 영업인센(금액) 입력 칸 추가
-- [ ] UI: 직원 인센티브에 근무 시간(시작~종료) 입력 추가
-- [ ] UI: 신규손님 팁 섹션 제거
-- [ ] UI: TypeScript 오류 해결 (branchNewGuestTip/barNewGuestTip 제거)
+- [x] DB: staffIncentives에 salesIncentive, workStart, workEnd 컈럼 ALTER TABLE로 추가
+- [x] DB: tableReports에서 branchNewGuestTip, barNewGuestTip 제거 (cashAmount, cardAmount는 이미 추가됨)
+- [x] 서버: tableReport.upsert 저장 시 현금 테이블 합산 → dailySalesRecords.cash 자동 업데이트
+- [x] 서버: tableReport.upsert 저장 시 카드 테이블 합산 → dailySalesRecords.card 자동 업데이트
+- [x] UI: 직원 인센티브에 영업인센(금액) 입력 칸 추가
+- [x] UI: 직원 인센티브에 근무 시간(시작~종료) 입력 추가
+- [x] UI: 신규손님 팁 섹션 제거
+- [x] UI: TypeScript 오류 해결 (branchNewGuestTip/barNewGuestTip 제거)
+
+## 메모 형광펜 밑줄 기능
+
+- [ ] TableReport 메모 입력창에 형광펜 밑줄 토글 버튼 추가 (선택한 텍스트에 형광펜 스타일 적용)
+- [ ] 형광펜 색상: 노란색 기본, 초록색/파란색/분홍색 선택 가능
+- [ ] DB: tableItems.memo 컬럼을 HTML 마크업 저장 가능하도록 text 타입 유지 확인
+- [ ] 메모 표시 시 형광펜 스타일 렌더링
+
+## 직원별 월간 인센티브 통계 페이지
+
+- [ ] 서버 API: staffIncentives 월별 집계 쿼리 (직원명별 잔추가/병추가/맥주병추가/영업인센 합계)
+- [ ] 프론트엔드: /staff-incentive 페이지 생성 (월 선택 + 직원별 합계 테이블)
+- [ ] 프론트엔드: 전달 기준 월 자동 선택 (월초에 전달 데이터 확인)
+- [ ] App.tsx에 /staff-incentive 라우트 등록
+- [ ] 헤더 또는 관리자 메뉴에 인센티브 통계 링크 추가

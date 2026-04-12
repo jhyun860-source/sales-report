@@ -26,7 +26,7 @@ import {
   deleteStoreAccount,
 } from "./db";
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives } from "../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, like, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // VAPID 설정
@@ -772,7 +772,7 @@ export const appRouter = router({
         return { success: true };
       }),
     // 직원 인센티브 삭제
-    deleteIncentive: publicProcedure
+      deleteIncentive: publicProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -780,7 +780,55 @@ export const appRouter = router({
         await db.delete(staffIncentives).where(eq(staffIncentives.id, input.id));
         return { success: true };
       }),
+
+    // 직원별 월간 인센티브 집계
+    staffIncentiveStats: publicProcedure
+      .input(z.object({
+        yearMonth: z.string(), // 'YYYY-MM'
+        branchId: z.number().optional(), // 없으면 전체 지점
+      }))
+      .query(async ({ input, ctx }) => {
+        const account = await parseStoreCookie(ctx.req.headers.cookie);
+        if (!account) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+        const prefix = `${input.yearMonth}-%`;
+
+        // DB에서 실제 계정 정보 조회 (branchId 포함)
+        const fullAccount = await getStoreAccountById(account.accountId);
+        if (!fullAccount) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+        // 관리자는 전체 또는 특정 지점, 일반 계정은 자기 지점만
+        const targetBranchId = account.role === 'admin'
+          ? (input.branchId ?? null)
+          : fullAccount.branchId;
+
+        // tableReports 조인 후 직원명별 집계
+        const rows = await db
+          .select({
+            staffName: staffIncentives.staffName,
+            totalGlass: sql<number>`SUM(${staffIncentives.glassCount})`,
+            totalBottle: sql<number>`SUM(${staffIncentives.bottleCount})`,
+            totalBeerBottle: sql<number>`SUM(${staffIncentives.beerBottleCount})`,
+            totalSalesIncentive: sql<string>`SUM(CAST(NULLIF(${staffIncentives.salesIncentive}, '') AS DECIMAL(15,0)))`,
+            workDays: sql<number>`COUNT(DISTINCT ${tableReports.date})`,
+          })
+          .from(staffIncentives)
+          .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
+          .where(
+            targetBranchId !== null
+              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId))
+              : like(tableReports.date, prefix)
+          )
+          .groupBy(staffIncentives.staffName)
+          .orderBy(staffIncentives.staffName);
+
+        return rows;
+      }),
   }),
 });
 
 export type AppRouter = typeof appRouter;
+
