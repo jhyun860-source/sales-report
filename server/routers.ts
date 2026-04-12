@@ -25,7 +25,7 @@ import {
   getAllStoreAccounts,
   deleteStoreAccount,
 } from "./db";
-import { branches, branchManagers, users, dailySalesRecords, storeAccounts } from "../drizzle/schema";
+import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -572,6 +572,172 @@ export const appRouter = router({
           } catch {}
         }
         return { success: true, pushSent };
+      }),
+  }),
+  tableReport: router({
+    // 날짜별 테이블 기록 조회 (없으면 null 반환)
+    getByDate: publicProcedure
+      .input(z.object({ date: z.string() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) return null;
+        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+        const account = await getStoreAccountById(payload.accountId);
+        if (!account?.branchId) return null;
+        const [report] = await db.select().from(tableReports)
+          .where(and(eq(tableReports.branchId, account.branchId), eq(tableReports.date, input.date)))
+          .limit(1);
+        if (!report) return null;
+        const items = await db.select().from(tableItems)
+          .where(eq(tableItems.tableReportId, report.id))
+          .orderBy(tableItems.sortOrder, tableItems.createdAt);
+        const incentives = await db.select().from(staffIncentives)
+          .where(eq(staffIncentives.tableReportId, report.id))
+          .orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
+        return { ...report, items, incentives };
+      }),
+    // 기록 생성 또는 업데이트
+    upsert: publicProcedure
+      .input(z.object({
+        date: z.string(),
+        teamCount: z.number().default(0),
+        notes: z.string().optional(),
+        branchNewGuestTip: z.string().default('0'),
+        barNewGuestTip: z.string().default('0'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+        const account = await getStoreAccountById(payload.accountId);
+        if (!account?.branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
+        const [existing] = await db.select().from(tableReports)
+          .where(and(eq(tableReports.branchId, account.branchId), eq(tableReports.date, input.date)))
+          .limit(1);
+        if (existing) {
+          await db.update(tableReports).set({
+            teamCount: input.teamCount,
+            notes: input.notes || null,
+            branchNewGuestTip: input.branchNewGuestTip,
+            barNewGuestTip: input.barNewGuestTip,
+          }).where(eq(tableReports.id, existing.id));
+          return { id: existing.id };
+        } else {
+          const [result] = await db.insert(tableReports).values({
+            branchId: account.branchId,
+            date: input.date,
+            teamCount: input.teamCount,
+            notes: input.notes || null,
+            branchNewGuestTip: input.branchNewGuestTip,
+            barNewGuestTip: input.barNewGuestTip,
+          });
+          return { id: (result as any).insertId };
+        }
+      }),
+    // 테이블 항목 추가
+    addItem: publicProcedure
+      .input(z.object({
+        tableReportId: z.number(),
+        tableNumber: z.string(),
+        guestType: z.enum(['walking', 'regular']).default('walking'),
+        amount: z.string().default('0'),
+        paymentMethod: z.enum(['card', 'cash', 'mixed']).default('card'),
+        memo: z.string().optional(),
+        sortOrder: z.number().default(0),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const [result] = await db.insert(tableItems).values({
+          tableReportId: input.tableReportId,
+          tableNumber: input.tableNumber,
+          guestType: input.guestType,
+          amount: input.amount,
+          paymentMethod: input.paymentMethod,
+          memo: input.memo || null,
+          sortOrder: input.sortOrder,
+        });
+        return { id: (result as any).insertId };
+      }),
+    // 테이블 항목 수정
+    updateItem: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        tableNumber: z.string().optional(),
+        guestType: z.enum(['walking', 'regular']).optional(),
+        amount: z.string().optional(),
+        paymentMethod: z.enum(['card', 'cash', 'mixed']).optional(),
+        memo: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { id, ...rest } = input;
+        const updateData: Record<string, unknown> = {};
+        if (rest.tableNumber !== undefined) updateData.tableNumber = rest.tableNumber;
+        if (rest.guestType !== undefined) updateData.guestType = rest.guestType;
+        if (rest.amount !== undefined) updateData.amount = rest.amount;
+        if (rest.paymentMethod !== undefined) updateData.paymentMethod = rest.paymentMethod;
+        if (rest.memo !== undefined) updateData.memo = rest.memo;
+        await db.update(tableItems).set(updateData).where(eq(tableItems.id, id));
+        return { success: true };
+      }),
+    // 테이블 항목 삭제
+    deleteItem: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        await db.delete(tableItems).where(eq(tableItems.id, input.id));
+        return { success: true };
+      }),
+    // 직원 인센티브 추가
+    addIncentive: publicProcedure
+      .input(z.object({
+        tableReportId: z.number(),
+        staffName: z.string(),
+        glassCount: z.number().default(0),
+        bottleCount: z.number().default(0),
+        beerBottleCount: z.number().default(0),
+        sortOrder: z.number().default(0),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const [result] = await db.insert(staffIncentives).values(input);
+        return { id: (result as any).insertId };
+      }),
+    // 직원 인센티브 수정
+    updateIncentive: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        staffName: z.string().optional(),
+        glassCount: z.number().optional(),
+        bottleCount: z.number().optional(),
+        beerBottleCount: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { id, ...rest } = input;
+        const updateData: Record<string, unknown> = {};
+        if (rest.staffName !== undefined) updateData.staffName = rest.staffName;
+        if (rest.glassCount !== undefined) updateData.glassCount = rest.glassCount;
+        if (rest.bottleCount !== undefined) updateData.bottleCount = rest.bottleCount;
+        if (rest.beerBottleCount !== undefined) updateData.beerBottleCount = rest.beerBottleCount;
+        await db.update(staffIncentives).set(updateData).where(eq(staffIncentives.id, id));
+        return { success: true };
+      }),
+    // 직원 인센티브 삭제
+    deleteIncentive: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        await db.delete(staffIncentives).where(eq(staffIncentives.id, input.id));
+        return { success: true };
       }),
   }),
 });

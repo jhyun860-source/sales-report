@@ -165,3 +165,84 @@ export const dailySalesRecordsRelations = relations(dailySalesRecords, ({ one })
     references: [users.id],
   }),
 }))
+
+/**
+ * 테이블 영업 기록 헤더 테이블
+ * 날짜별 영업 기록 (팀수, 기타사항, 신규손님 팁 등)
+ */
+export const tableReports = mysqlTable("tableReports", {
+  id: int("id").autoincrement().primaryKey(),
+  branchId: int("branchId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  teamCount: int("teamCount").default(0).notNull(), // 팀수
+  notes: text("notes"), // 기타사항
+  branchNewGuestTip: decimal("branchNewGuestTip", { precision: 15, scale: 0 }).default("0").notNull(), // 지점 신규손님 팁
+  barNewGuestTip: decimal("barNewGuestTip", { precision: 15, scale: 0 }).default("0").notNull(), // BAR 신규손님 팁
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TableReport = typeof tableReports.$inferSelect;
+export type InsertTableReport = typeof tableReports.$inferInsert;
+
+/**
+ * 테이블 항목 테이블
+ * 각 테이블별 손님 정보 (번호, 손님구분, 금액, 결제수단, 메모)
+ */
+export const tableItems = mysqlTable("tableItems", {
+  id: int("id").autoincrement().primaryKey(),
+  tableReportId: int("tableReportId").notNull(),
+  tableNumber: varchar("tableNumber", { length: 20 }).notNull(), // 테이블 번호 (1T, 2T 등)
+  guestType: mysqlEnum("guestType", ["walking", "regular"]).default("walking").notNull(), // 워킹/기존
+  amount: decimal("amount", { precision: 15, scale: 0 }).default("0").notNull(), // 금액
+  paymentMethod: mysqlEnum("paymentMethod", ["card", "cash", "mixed"]).default("card").notNull(), // 결제수단
+  memo: text("memo"), // 주문 메모
+  sortOrder: int("sortOrder").default(0).notNull(), // 정렬 순서
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TableItem = typeof tableItems.$inferSelect;
+export type InsertTableItem = typeof tableItems.$inferInsert;
+
+/**
+ * 직원 인센티브 테이블
+ * 출근자별 잔추가/병추가/맥주병추가 기록
+ */
+export const staffIncentives = mysqlTable("staffIncentives", {
+  id: int("id").autoincrement().primaryKey(),
+  tableReportId: int("tableReportId").notNull(),
+  staffName: varchar("staffName", { length: 50 }).notNull(), // 직원명
+  glassCount: int("glassCount").default(0).notNull(), // 잔추가 수
+  bottleCount: int("bottleCount").default(0).notNull(), // 병추가 수
+  beerBottleCount: int("beerBottleCount").default(0).notNull(), // 맥주 병추가 수
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StaffIncentive = typeof staffIncentives.$inferSelect;
+export type InsertStaffIncentive = typeof staffIncentives.$inferInsert;
+
+export const tableReportsRelations = relations(tableReports, ({ one, many }) => ({
+  branch: one(branches, {
+    fields: [tableReports.branchId],
+    references: [branches.id],
+  }),
+  items: many(tableItems),
+  staffIncentives: many(staffIncentives),
+}));
+
+export const tableItemsRelations = relations(tableItems, ({ one }) => ({
+  tableReport: one(tableReports, {
+    fields: [tableItems.tableReportId],
+    references: [tableReports.id],
+  }),
+}));
+
+export const staffIncentivesRelations = relations(staffIncentives, ({ one }) => ({
+  tableReport: one(tableReports, {
+    fields: [staffIncentives.tableReportId],
+    references: [tableReports.id],
+  }),
+}));

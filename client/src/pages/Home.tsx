@@ -11,7 +11,7 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import {
   type ExpenseItem,
@@ -456,6 +456,20 @@ export default function Home() {
               관리
             </button>
           )}
+
+          {/* 테이블 기록 버튼 */}
+          <button
+            onClick={() => navigate('/table-report')}
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
+            style={{
+              background: 'oklch(0.92 0.015 85)',
+              color: 'oklch(0.25 0.01 50)',
+              borderColor: 'oklch(0.78 0.012 85)',
+            }}
+          >
+            <ClipboardList size={14} />
+            테이블
+          </button>
 
           {/* 기록 버튼 */}
           <button

@@ -9,6 +9,7 @@ import History from "./pages/History";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminManage from "./pages/AdminManage";
 import Login from "./pages/Login";
+import TableReport from "./pages/TableReport";
 import { UpdateBanner } from "./components/UpdateBanner";
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -19,6 +20,7 @@ function Router() {
       <Route path={"/history"} component={History} />
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/manage"} component={AdminManage} />
+      <Route path={"/table-report"} component={TableReport} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

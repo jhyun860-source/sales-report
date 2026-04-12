@@ -58,3 +58,19 @@
 - [x] 지입 내역 테이블: 2열 레이아웃 → 1열 리스트로 변경하여 가독성 향상
 - [x] 전체 폰트 크기 및 여백 모바일 최적화
 - [x] 섹션 타이틀 스타일 통일
+
+## 테이블 영업 기록 (TableReport)
+
+- [x] DB 스키마: tableReports 테이블 (날짜, 지점ID, 팀수, 기타사항, 지점신규팁, BAR신규팁)
+- [x] DB 스키마: tableItems 테이블 (tableReportId, 테이블번호, 손님구분-워킹/기존, 금액, 결제수단, 메모)
+- [x] DB 스키마: staffIncentives 테이블 (tableReportId, 직원명, 잔추가수, 병추가수, 맥주병추가수)
+- [x] pnpm db:push 마이그레이션 실행
+- [x] 서버 API: tableReport CRUD (create, getByDate, update)
+- [x] 서버 API: tableItem CRUD (add, update, delete)
+- [x] 서버 API: staffIncentive CRUD (add, update, delete)
+- [x] 프론트엔드: /table-report 페이지 생성
+- [x] 프론트엔드: 테이블 카드 컴포넌트 (번호, 워킹/기존, 금액, 결제수단, 메모)
+- [x] 프론트엔드: 출근자 인센티브 섹션 (직원명, 잔추가, 병추가, 맥주병추가)
+- [x] 프론트엔드: 날짜 네비게이터 (Home과 동일 방식)
+- [x] 프론트엔드: 헤더에 테이블 기록 버튼 추가
+- [x] App.tsx에 /table-report 라우트 등록

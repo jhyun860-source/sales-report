@@ -29,6 +29,13 @@
       "when": 1775981429356,
       "tag": "0003_broken_post",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1775986767347,
+      "tag": "0004_curly_moonstone",
+      "breakpoints": true
     }
   ]
 }
