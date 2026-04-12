@@ -15,6 +15,7 @@ import {
   createBranch,
   getBranchById,
   getDailySalesRecord,
+  getPrevDailySalesRecord,
   getDailySalesRecordsByDateRange,
   upsertDailySalesRecord,
   getDb,
@@ -349,7 +350,8 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
-        return getDailySalesRecord(input.branchId, input.date);
+        // input.date 이전의 가장 최근 기록을 반환 (하루 전 고정 조회 아님)
+        return getPrevDailySalesRecord(input.branchId, input.date);
       }),
     getRecords: publicProcedure
       .input(z.object({ branchId: z.number(), startDate: z.string(), endDate: z.string() }))

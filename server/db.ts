@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, branches, branchManagers, dailySalesRecords, pushSubscriptions, storeAccounts, type Branch, type BranchManager, type DailySalesRecord, type InsertBranch, type InsertBranchManager, type InsertDailySalesRecord, type InsertPushSubscription, type PushSubscription, type StoreAccount, type InsertStoreAccount } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -131,6 +131,19 @@ export async function getDailySalesRecord(branchId: number, date: string): Promi
     .select()
     .from(dailySalesRecords)
     .where(and(eq(dailySalesRecords.branchId, branchId), eq(dailySalesRecords.date, date)))
+    .limit(1);
+  return result[0] || null;
+}
+
+// 특정 날짜 이전의 가장 최근 기록 조회 (현금누적/카드누적 계산용)
+export async function getPrevDailySalesRecord(branchId: number, beforeDate: string): Promise<DailySalesRecord | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(dailySalesRecords)
+    .where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate)))
+    .orderBy(desc(dailySalesRecords.date))
     .limit(1);
   return result[0] || null;
 }

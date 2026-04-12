@@ -6,7 +6,7 @@
  * - 데이터는 서버 DB에 저장
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -232,14 +232,9 @@ export default function Home() {
     setSaved(false);
   }, [serverRecord, currentDate, selectedBranchId]);
 
-  const prevDate = useMemo(() => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }, [currentDate]);
-
+  // 현재 날짜를 서버에 전달하면 서버가 그 이전의 가장 최근 기록을 반환
   const { data: prevRecord } = trpc.storeSales.getPrevRecord.useQuery(
-    { branchId: selectedBranchId!, date: prevDate },
+    { branchId: selectedBranchId!, date: currentDate },
     { enabled: !!selectedBranchId && !!user }
   );
 
