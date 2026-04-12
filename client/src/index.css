@@ -216,6 +216,15 @@
     margin-bottom: 0.5rem;
   }
 
+  /* memo-editor 플레이스홀더 (contentEditable) */
+  .memo-editor:empty::before,
+  .memo-editor[data-placeholder]:not([data-placeholder=''])::before {
+    content: attr(data-placeholder);
+    color: var(--placeholder-color, #99999970);
+    pointer-events: none;
+    font-size: 0.75rem;
+  }
+
   /* 저장 완료 애니메이션 */
   @keyframes number-update {
     0% { transform: scale(1.05); color: oklch(0.45 0.18 25); }
