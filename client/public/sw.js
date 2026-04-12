@@ -1,8 +1,15 @@
 // 매출 보고 앱 Service Worker
-const CACHE_NAME = 'sales-report-v1';
+const CACHE_NAME = 'sales-report-v2';
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  // 새 버전 설치 시 즉시 skipWaiting 하지 않음 -> 사용자가 업데이트 버튼 클릭 시 처리
+});
+
+// 메인 스레드에서 SKIP_WAITING 메시지를 받으면 즉시 활성화
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

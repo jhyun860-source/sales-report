@@ -9,6 +9,7 @@ import History from "./pages/History";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminManage from "./pages/AdminManage";
 import Login from "./pages/Login";
+import { UpdateBanner } from "./components/UpdateBanner";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -29,6 +30,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
+          <UpdateBanner />
           <Toaster position="top-center" />
           <Router />
         </TooltipProvider>
