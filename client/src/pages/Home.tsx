@@ -241,16 +241,42 @@ export default function Home() {
   };
 
   // 계산값
-  // 현금합계 = 어제까지의 현금합계 + 오늘 현금
-  // 카드합계 = 어제까지의 카드합계 + 오늘 카드
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
   const expenseTotal = calcExpenseTotal(record.expenses);
   
-  // 현금합계와 카드합계는 사용자가 직접 입력하는 누적값
-  const cashTotalAmount = parseAmount(record.cashTotal);
-  const cardTotalAmount = parseAmount(record.cardTotal);
+  // 어제까지의 누적값 계산 (이전 날짜들의 누적)
+  const getPreviousCumulativeTotal = (dateStr: string, type: 'cash' | 'card'): number => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const currentDate = new Date(y, m - 1, d);
+    const previousDate = new Date(currentDate);
+    previousDate.setDate(previousDate.getDate() - 1);
+    
+    const prevY = previousDate.getFullYear();
+    const prevM = String(previousDate.getMonth() + 1).padStart(2, '0');
+    const prevD = String(previousDate.getDate()).padStart(2, '0');
+    const prevDateStr = `${prevY}-${prevM}-${prevD}`;
+    
+    const prevRecord = findRecordByDate(records, prevDateStr);
+    if (!prevRecord) return 0;
+    
+    if (type === 'cash') {
+      return parseAmount(prevRecord.cashTotal);
+    } else {
+      return parseAmount(prevRecord.cardTotal);
+    }
+  };
+  
+  // 누적값 = 어제 누적 + 오늘 매출
+  const previousCashTotal = getPreviousCumulativeTotal(currentDate, 'cash');
+  const previousCardTotal = getPreviousCumulativeTotal(currentDate, 'card');
+  const autoCalculatedCashTotal = previousCashTotal + todayCash;
+  const autoCalculatedCardTotal = previousCardTotal + todayCard;
+  
+  // 사용자 입력값이 있으면 사용, 없으면 자동 계산값 사용
+  const cashTotalAmount = parseAmount(record.cashTotal) || autoCalculatedCashTotal;
+  const cardTotalAmount = parseAmount(record.cardTotal) || autoCalculatedCardTotal;
   const grandTotal = cashTotalAmount + cardTotalAmount;
 
   return (
@@ -357,7 +383,8 @@ export default function Home() {
                   <AmountInput
                     value={record.cashTotal}
                     onChange={val => updateRecord({ cashTotal: val })}
-                    placeholder="0"
+                    placeholder={autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : '0'}
+                    readOnly={true}
                   />
                 </td>
               </tr>
@@ -380,7 +407,8 @@ export default function Home() {
                   <AmountInput
                     value={record.cardTotal}
                     onChange={val => updateRecord({ cardTotal: val })}
-                    placeholder="0"
+                    placeholder={autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : '0'}
+                    readOnly={true}
                   />
                 </td>
               </tr>
