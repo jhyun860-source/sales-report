@@ -79,6 +79,21 @@ export function calcDailyTotal(cash: string, card: string): number {
 // localStorage 키
 const STORAGE_KEY = 'sales_records';
 const CURRENT_DATE_KEY = 'sales_current_date';
+const LAST_RESET_KEY = 'sales_last_reset_month';
+
+// 매월 1일에 누적값 리셋 여부 확인
+export function shouldResetMonthly(): boolean {
+  const today = new Date();
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const lastReset = localStorage.getItem(LAST_RESET_KEY);
+  
+  // 오늘이 1일이고, 이번 달에 아직 리셋하지 않았으면 true
+  if (today.getDate() === 1 && lastReset !== currentMonth) {
+    localStorage.setItem(LAST_RESET_KEY, currentMonth);
+    return true;
+  }
+  return false;
+}
 
 // 저장된 기록 불러오기
 export function loadRecords(): DailySalesRecord[] {
@@ -143,4 +158,13 @@ export function saveCurrentDate(date: string): void {
 
 export function loadCurrentDate(): string {
   return localStorage.getItem(CURRENT_DATE_KEY) || getTodayString();
+}
+
+// 누적값 리셋 함수
+export function resetMonthlyTotals(records: DailySalesRecord[]): DailySalesRecord[] {
+  return records.map(record => ({
+    ...record,
+    cashTotal: '',
+    cardTotal: '',
+  }));
 }

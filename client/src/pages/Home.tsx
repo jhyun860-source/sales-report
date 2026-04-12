@@ -26,6 +26,8 @@ import {
   getTodayString,
   saveCurrentDate,
   loadCurrentDate,
+  shouldResetMonthly,
+  resetMonthlyTotals,
 } from '@/lib/salesUtils';
 
 // 숫자 입력 컴포넌트
@@ -139,7 +141,15 @@ export default function Home() {
 
   // 초기 로드
   useEffect(() => {
-    const loaded = loadRecords();
+    let loaded = loadRecords();
+    
+    // 매월 1일에 누적값 리셋
+    if (shouldResetMonthly()) {
+      loaded = resetMonthlyTotals(loaded);
+      saveRecords(loaded);
+      toast.success('월초 리셋: 누적값이 초기화되었습니다', { duration: 2000 });
+    }
+    
     setRecords(loaded);
     const existing = findRecordByDate(loaded, currentDate);
     setRecord(existing ?? createEmptyRecord(currentDate));
@@ -231,9 +241,17 @@ export default function Home() {
   };
 
   // 계산값
-  const dailyTotal = calcDailyTotal(record.cash, record.card);
+  // 현금합계 = 어제까지의 현금합계 + 오늘 현금
+  // 카드합계 = 어제까지의 카드합계 + 오늘 카드
+  const todayCash = parseAmount(record.cash);
+  const todayCard = parseAmount(record.card);
+  const dailyTotal = todayCash + todayCard;
   const expenseTotal = calcExpenseTotal(record.expenses);
-  const grandTotal = (parseAmount(record.cashTotal) || 0) + (parseAmount(record.cardTotal) || 0);
+  
+  // 현금합계와 카드합계는 사용자가 직접 입력하는 누적값
+  const cashTotalAmount = parseAmount(record.cashTotal);
+  const cardTotalAmount = parseAmount(record.cardTotal);
+  const grandTotal = cashTotalAmount + cardTotalAmount;
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -346,9 +364,8 @@ export default function Home() {
               {/* 카드 / 카드합계 */}
               <tr>
                 <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  카드
-                </td>
-                <td>
+                  카드누적
+                </td>               <td>
                   <AmountInput
                     value={record.card}
                     onChange={val => updateRecord({ card: val })}
@@ -356,7 +373,7 @@ export default function Home() {
                   />
                 </td>
                 <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  카드합계
+                  현금누적
                 </td>
                 <td>
                   <AmountInput
@@ -369,7 +386,7 @@ export default function Home() {
               {/* 합계 / 총합계 */}
               <tr className="total-row">
                 <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-                  합계
+                  오늘
                 </td>
                 <td className="text-right">
                   <span className="total-amount text-sm">
@@ -377,7 +394,7 @@ export default function Home() {
                   </span>
                 </td>
                 <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-                  총 합계
+                  누적
                 </td>
                 <td className="text-right">
                   <span className="total-amount text-sm">
@@ -602,22 +619,30 @@ export default function Home() {
             오늘의 요약
           </div>
           <div className="grid grid-cols-2 gap-y-2 text-sm">
-            <span className="opacity-80">현금</span>
+            <span className="opacity-80">오늘 현금</span>
             <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {record.cash ? `₩${parseAmount(record.cash).toLocaleString('ko-KR')}` : '—'}
+              {todayCash > 0 ? `₩${todayCash.toLocaleString('ko-KR')}` : '—'}
             </span>
-            <span className="opacity-80">카드</span>
+            <span className="opacity-80">오뉸 카드</span>
             <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {record.card ? `₩${parseAmount(record.card).toLocaleString('ko-KR')}` : '—'}
+              {todayCard > 0 ? `₩${todayCard.toLocaleString('ko-KR')}` : '—'}
             </span>
             <span className="opacity-80">지출</span>
             <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
               {expenseTotal > 0 ? `₩${expenseTotal.toLocaleString('ko-KR')}` : '—'}
             </span>
             <div className="col-span-2 border-t border-white/30 my-1" />
-            <span className="font-bold">당일 합계</span>
+            <span className="opacity-80 text-xs">현금 누적</span>
+            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {cashTotalAmount > 0 ? `₩${cashTotalAmount.toLocaleString('ko-KR')}` : '—'}
+            </span>
+            <span className="opacity-80 text-xs">카드 누적</span>
+            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {cardTotalAmount > 0 ? `₩${cardTotalAmount.toLocaleString('ko-KR')}` : '—'}
+            </span>
+            <span className="font-bold">총 누적</span>
             <span className="text-right font-bold text-base" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {dailyTotal > 0 ? `₩${dailyTotal.toLocaleString('ko-KR')}` : '—'}
+              {grandTotal > 0 ? `₩${grandTotal.toLocaleString('ko-KR')}` : '—'}
             </span>
           </div>
         </div>
@@ -649,7 +674,7 @@ export default function Home() {
           style={{ background: 'oklch(0.45 0.18 25)' }}
         >
           <Save size={16} />
-          저장하기
+          저장
         </button>
       </div>
     </div>
