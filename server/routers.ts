@@ -386,8 +386,14 @@ export const appRouter = router({
         const prevCashTotal = Number(prevRec?.cashTotal || 0);
         const prevCardTotal = Number(prevRec?.cardTotal || 0);
         const prevPosEnd = Number(prevRec?.posEndAmount || 0);
-        const todayCash = Number(input.cash || 0);
-        const todayCard = Number(input.card || 0);
+        // 일요일 여부 판단 (0=일요일)
+        const dateObj = new Date(input.date + 'T00:00:00');
+        const isSunday = dateObj.getDay() === 0;
+        // 일요일이면 판매 강제 0, 아니면 입력값 사용
+        const effectiveCash = isSunday ? '0' : (input.cash || '0');
+        const effectiveCard = isSunday ? '0' : (input.card || '0');
+        const todayCash = Number(effectiveCash);
+        const todayCard = Number(effectiveCard);
         // 매달 1일이면 현금/카드 누적 리셋 (전달 마감금은 연속)
         const isFirstOfMonth = input.date.endsWith('-01');
         const computedCashTotal = isFirstOfMonth ? todayCash : prevCashTotal + todayCash;
@@ -396,12 +402,16 @@ export const appRouter = router({
         const effectivePosStart = Number(input.posStartAmount || 0) > 0
           ? input.posStartAmount
           : (prevPosEnd > 0 ? prevPosEnd.toString() : input.posStartAmount);
+        // 일요일이면 마감금 = 시작금 (변동 없음)
+        const effectivePosEnd = isSunday
+          ? effectivePosStart
+          : input.posEndAmount;
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
-          posStartAmount: effectivePosStart, cash: input.cash, card: input.card,
+          posStartAmount: effectivePosStart, cash: effectiveCash, card: effectiveCard,
           cashTotal: computedCashTotal.toString(), cardTotal: computedCardTotal.toString(),
-          posEndAmount: input.posEndAmount,
-          expenses: input.expenses, submittedAt: new Date(),
+          posEndAmount: effectivePosEnd,
+          expenses: isSunday ? [] : input.expenses, submittedAt: new Date(),
         });
         const branch = await getBranchById(input.branchId);
         const branchName = branch?.name ?? '알 수 없는 지점';
