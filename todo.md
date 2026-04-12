@@ -117,6 +117,17 @@
 - [x] 입력 중 글씨 사라지지 않도록 안정적 상태 관리
 - [x] 형광펜: 텍스트 선택 후 색상 클릭 시 mark 태그 삽입 및 표시
 
+## 한글 입력 우선 설정
+
+- [x] MemoEditor contentEditable에 lang="ko" 및 inputMode="text" 설정
+- [x] 전체 페이지 html lang="ko" 확인
+- [x] 모바일에서 한글 키보드 기본 표시
+
+## 버그 수정 (3차)
+
+- [x] 테이블 기록 저장 안 되는 문제 수정
+- [x] 형광펜 두 번 눌러야 칠해지는 문제 수정
+
 ## TableReport 워킹/기존 → 워킹/손님이름 변경
 
 - [x] guestType 타입에서 'regular' 제거, 'named'(지명) 추가

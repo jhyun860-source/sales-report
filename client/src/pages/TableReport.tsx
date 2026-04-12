@@ -478,6 +478,8 @@ export default function TableReport() {
                     placeholder="테이블 번호"
                     className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0"
                     style={{ color: TEXT }}
+                    lang="ko"
+                    inputMode="text"
                   />
                   {/* 손님 구분 토글 */}
                   <div className="flex rounded overflow-hidden flex-shrink-0" style={{ border: `1px solid ${BORDER}` }}>
@@ -511,6 +513,8 @@ export default function TableReport() {
                       placeholder="손님 이름 입력"
                       className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0"
                       style={{ color: TEXT }}
+                      lang="ko"
+                      inputMode="text"
                     />
                   </div>
                 )}
@@ -585,6 +589,8 @@ export default function TableReport() {
                     placeholder="직원 이름"
                     className="flex-1 bg-transparent border-none outline-none text-sm font-semibold"
                     style={{ color: TEXT }}
+                    lang="ko"
+                    inputMode="text"
                   />
                   <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70">
                     <Trash2 size={13} />
