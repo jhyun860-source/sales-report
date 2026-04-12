@@ -49,13 +49,21 @@ function AmountInput({
   const [displayValue, setDisplayValue] = useState('');
 
   useEffect(() => {
-    if (value === '' || value === '0') {
+    if (readOnly && value) {
+      // readOnly일 때는 value를 숫자로 변환하여 포맷팅
+      const num = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (!isNaN(num)) {
+        setDisplayValue(num.toLocaleString('ko-KR'));
+      } else {
+        setDisplayValue('');
+      }
+    } else if (value === '' || value === '0') {
       setDisplayValue(value === '0' ? '0' : '');
     } else {
       const num = parseAmount(value);
       setDisplayValue(isNaN(num) ? '' : num.toLocaleString('ko-KR'));
     }
-  }, [value]);
+  }, [value, readOnly]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, '');
@@ -399,12 +407,9 @@ export default function Home() {
                   현금누적
                 </td>
                 <td className="w-1/4">
-                  <AmountInput
-                    value={autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : ''}
-                    onChange={() => {}}
-                    placeholder="0"
-                    readOnly={true}
-                  />
+                  <div className="text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                    {autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toLocaleString('ko-KR') : '0'}
+                  </div>
                 </td>
               </tr>
               {/* 카드 / 카드누적 */}
@@ -423,12 +428,9 @@ export default function Home() {
                   카드누적
                 </td>
                 <td>
-                  <AmountInput
-                    value={autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : ''}
-                    onChange={() => {}}
-                    placeholder="0"
-                    readOnly={true}
-                  />
+                  <div className="text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                    {autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toLocaleString('ko-KR') : '0'}
+                  </div>
                 </td>
               </tr>
               {/* 합계 / 총합계 */}
