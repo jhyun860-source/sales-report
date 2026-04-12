@@ -400,9 +400,9 @@ export default function Home() {
                 </td>
                 <td className="w-1/4">
                   <AmountInput
-                    value={record.cashTotal}
-                    onChange={val => updateRecord({ cashTotal: val })}
-                    placeholder={autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : '0'}
+                    value={autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : ''}
+                    onChange={() => {}}
+                    placeholder="0"
                     readOnly={true}
                   />
                 </td>
@@ -424,9 +424,9 @@ export default function Home() {
                 </td>
                 <td>
                   <AmountInput
-                    value={record.cardTotal}
-                    onChange={val => updateRecord({ cardTotal: val })}
-                    placeholder={autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : '0'}
+                    value={autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : ''}
+                    onChange={() => {}}
+                    placeholder="0"
                     readOnly={true}
                   />
                 </td>
