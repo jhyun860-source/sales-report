@@ -158,6 +158,11 @@ export default function TableReport() {
         // 날짜가 달라지면 loadedDateRef 초기화 → 새 날짜 데이터 로드 허용
         loadedDateRef.current = null;
         setSaved(false);
+        // 자동저장 타이머 취소: 날짜 이동 시 이전 날짜 데이터가 새 날짜로 저장되는 것 방지
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
+        }
       }
       try { localStorage.setItem('selectedDate', next); } catch {}
       return next;
@@ -175,7 +180,7 @@ export default function TableReport() {
   const loadedDateRef = useRef<string | null>(null);
 
   // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
-  const { data: reportData } = trpc.tableReport.getByDate.useQuery(
+  const { data: reportData, dataUpdatedAt } = trpc.tableReport.getByDate.useQuery(
     { date: currentDate },
     { enabled: !!account, staleTime: Infinity, refetchOnWindowFocus: false }
   );
@@ -189,6 +194,11 @@ export default function TableReport() {
     if (loadedDateRef.current === currentDate) return;
     // 현재 날짜 기록 완료
     loadedDateRef.current = currentDate;
+    // 자동저장 타이머가 있으면 취소 (날짜 이동 시 이전 날짜 데이터로 저장되는 것 방지)
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
 
     if (reportData) {
       setReportId(reportData.id);
@@ -237,9 +247,9 @@ export default function TableReport() {
       setIncentives([emptyIncentive()]);
     }
     // 날짜가 실제로 변경되었을 때만 saved 리셋 (저장 완료 후 데이터 로드 시에는 saved 유지)
-    // setSaved(false)를 여기서 호출하면 저장 완료 후 서버 데이터가 다시 들어올 때 saved 표시가 사라짐
+    // setSaved(false)를 여기서 호출하면 저장 완료 후 서버 데이터가 다시 들어올 때 saved 표시가 사라짘
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportData]); // currentDate는 loadedDateRef로 체크하므로 의존성 제외
+  }, [reportData, currentDate, dataUpdatedAt]); // currentDate는 loadedDateRef로 체크하지만 의존성에도 포함하여 날짜 변경 시 실행 보장
 
   // tRPC mutations
   const batchSave = trpc.tableReport.batchSave.useMutation();
