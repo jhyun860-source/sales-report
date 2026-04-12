@@ -10,6 +10,7 @@ export interface ExpenseItem {
 export interface DailySalesRecord {
   id: string;
   date: string; // YYYY-MM-DD
+  branch: string; // 지점명
   posStartAmount: string;
   cash: string;
   card: string;
@@ -119,10 +120,11 @@ export function findRecordByDate(records: DailySalesRecord[], date: string): Dai
 }
 
 // 새 빈 기록 생성
-export function createEmptyRecord(date: string): DailySalesRecord {
+export function createEmptyRecord(date: string, branch: string = ''): DailySalesRecord {
   return {
     id: `record_${date}_${Date.now()}`,
     date,
+    branch,
     posStartAmount: '',
     cash: '',
     card: '',

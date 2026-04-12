@@ -9,6 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
+import { trpc } from '@/lib/trpc';
 import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2 } from 'lucide-react';
 import {
   type DailySalesRecord,
@@ -139,11 +140,14 @@ function DateNavigator({
   );
 }
 
+const BRANCHES = ['삼성점', '대치점', '선릉점', '문정1호점', '문정2호점'];
+
 export default function Home() {
   const [, navigate] = useLocation();
   const [records, setRecords] = useState<DailySalesRecord[]>([]);
-  const [currentDate, setCurrentDate] = useState(loadCurrentDate);
-  const [record, setRecord] = useState<DailySalesRecord>(() => createEmptyRecord(loadCurrentDate()));
+  const [currentDate, setCurrentDate] = useState(loadCurrentDate());
+  const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
+  const [record, setRecord] = useState<DailySalesRecord>(() => createEmptyRecord(loadCurrentDate(), BRANCHES[0]));
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -163,13 +167,13 @@ export default function Home() {
     setRecord(existing ?? createEmptyRecord(currentDate));
   }, []);
 
-  // 날짜 변경 시 해당 날짜 기록 로드
+  // 날짜 변경 시 지점별 기록 로드
   useEffect(() => {
     saveCurrentDate(currentDate);
-    const existing = findRecordByDate(records, currentDate);
-    setRecord(existing ?? createEmptyRecord(currentDate));
+    const existing = records.find(r => r.date === currentDate && r.branch === selectedBranch);
+    setRecord(existing ?? createEmptyRecord(currentDate, selectedBranch));
     setSaved(false);
-  }, [currentDate, records]);
+  }, [currentDate, selectedBranch, records]);
 
   // 어제까지의 누적값 계산 (이전 날짜들의 누적)
   const getPreviousCumulativeTotal = (dateStr: string, type: 'cash' | 'card'): number => {
@@ -269,8 +273,11 @@ export default function Home() {
     });
   }, [autoSave]);
 
+  // 카톡 전송
+  const sendKakaoMutation = trpc.sales.sendKakao.useMutation();
+
   // 수동 저장
-  const handleSave = () => {
+  const handleSave = async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     // 자동 계산된 누적값을 저장
     const recordToSave = {
@@ -284,6 +291,25 @@ export default function Home() {
     saveRecords(updated);
     setSaved(true);
     toast.success('저장되었습니다', { duration: 1500 });
+
+    // 카톡 전송
+    try {
+      await sendKakaoMutation.mutateAsync({
+        branch: selectedBranch,
+        date: currentDate,
+        cash: record.cash || '0',
+        card: record.card || '0',
+        cashTotal: recordToSave.cashTotal || '0',
+        cardTotal: recordToSave.cardTotal || '0',
+        posStartAmount: record.posStartAmount || '0',
+        posEndAmount: recordToSave.posEndAmount || '0',
+        expenses: record.expenses.filter(e => e.description && e.amount),
+      });
+      toast.success('카톡으로 전송되었습니다', { duration: 1500 });
+    } catch (error) {
+      console.error('카톡 전송 실패:', error);
+      toast.error('카톡 전송에 실패했습니다', { duration: 1500 });
+    }
   };
 
   // 날짜 이동
@@ -345,13 +371,27 @@ export default function Home() {
           boxShadow: '0 1px 4px oklch(0 0 0 / 0.08)',
         }}
       >
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
           <span
             className="text-base font-bold"
             style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}
           >
             매출 일일 보고
           </span>
+          <select
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+            className="px-3 py-1.5 rounded text-sm font-medium border"
+            style={{
+              background: 'oklch(0.92 0.015 85)',
+              color: 'oklch(0.25 0.01 50)',
+              borderColor: 'oklch(0.75 0.015 85)',
+            }}
+          >
+            {BRANCHES.map(branch => (
+              <option key={branch} value={branch}>{branch}</option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-2">
           {saved && (
