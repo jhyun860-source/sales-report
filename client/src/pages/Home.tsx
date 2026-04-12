@@ -224,6 +224,8 @@ export default function Home() {
   const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
   const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
   const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
+  // 매달 1일이면 누적금 리셋 (서버와 동일한 규칙)
+  const isFirstOfMonth = currentDate.endsWith('-01');
 
   // serverRecord와 prevRecord 두 쿼리가 모두 완료된 후 상태 초기화
   // 두 쿼리가 모두 로딩 완료(undefined가 아닌 상태)일 때만 실행
@@ -233,8 +235,11 @@ export default function Home() {
 
     if (serverRecord) {
       // 기존 기록이 있으면 서버 데이터로 채움
+      // posStartAmount가 0이면 이전 날짜 마감금으로 자동 채움 (건너뛴 날 포함)
+      const savedPosStart = Number(serverRecord.posStartAmount || 0);
+      const effectivePosStart = savedPosStart > 0 ? savedPosStart : autoCalculatedPosStartAmount;
       setRecord({
-        posStartAmount: serverRecord.posStartAmount?.toString() || '',
+        posStartAmount: effectivePosStart > 0 ? effectivePosStart.toString() : '',
         cash: serverRecord.cash?.toString() || '',
         card: serverRecord.card?.toString() || '',
         cashDeposit: '',
@@ -257,8 +262,9 @@ export default function Home() {
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
   const expenseTotal = calcExpenseTotal(record.expenses);
-  const autoCalculatedCashTotal = previousCashTotal + todayCash;
-  const autoCalculatedCardTotal = previousCardTotal + todayCard;
+  // 매달 1일이면 누적금 리셋 (서버와 동일한 규칙)
+  const autoCalculatedCashTotal = isFirstOfMonth ? todayCash : previousCashTotal + todayCash;
+  const autoCalculatedCardTotal = isFirstOfMonth ? todayCard : previousCardTotal + todayCard;
   const grandTotal = autoCalculatedCashTotal + autoCalculatedCardTotal;
   const posStartAmountValue = parseAmount(record.posStartAmount) || autoCalculatedPosStartAmount;
   const cashDepositValue = parseAmount(record.cashDeposit);

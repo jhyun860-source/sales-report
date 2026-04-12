@@ -381,10 +381,26 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
+        // 서버에서 이전 기록 조회 후 누적금 및 posStartAmount 자동 재계산
+        const prevRec = await getPrevDailySalesRecord(input.branchId, input.date);
+        const prevCashTotal = Number(prevRec?.cashTotal || 0);
+        const prevCardTotal = Number(prevRec?.cardTotal || 0);
+        const prevPosEnd = Number(prevRec?.posEndAmount || 0);
+        const todayCash = Number(input.cash || 0);
+        const todayCard = Number(input.card || 0);
+        // 매달 1일이면 현금/카드 누적 리셋 (전달 마감금은 연속)
+        const isFirstOfMonth = input.date.endsWith('-01');
+        const computedCashTotal = isFirstOfMonth ? todayCash : prevCashTotal + todayCash;
+        const computedCardTotal = isFirstOfMonth ? todayCard : prevCardTotal + todayCard;
+        // posStartAmount: 클라이언트가 보낸 값이 0이면 이전 마감금으로 채움 (매달 1일도 연속)
+        const effectivePosStart = Number(input.posStartAmount || 0) > 0
+          ? input.posStartAmount
+          : (prevPosEnd > 0 ? prevPosEnd.toString() : input.posStartAmount);
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
-          posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
-          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
+          posStartAmount: effectivePosStart, cash: input.cash, card: input.card,
+          cashTotal: computedCashTotal.toString(), cardTotal: computedCardTotal.toString(),
+          posEndAmount: input.posEndAmount,
           expenses: input.expenses, submittedAt: new Date(),
         });
         const branch = await getBranchById(input.branchId);
