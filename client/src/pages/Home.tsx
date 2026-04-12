@@ -319,6 +319,10 @@ export default function Home() {
   };
   
   const autoCalculatedPosStartAmount = getPreviousPosEndAmount(currentDate);
+  
+  // POS 마감금 = POS 시작금 - 지출합계
+  const posStartAmountValue = parseAmount(record.posStartAmount) || autoCalculatedPosStartAmount;
+  const autoCalculatedPosEndAmount = posStartAmountValue - expenseTotal;
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -500,12 +504,9 @@ export default function Home() {
             </span>
             <div className="flex items-center gap-1 text-sm">
               <span className="text-muted-foreground">₩</span>
-              <AmountInput
-                value={record.posEndAmount}
-                onChange={val => updateRecord({ posEndAmount: val })}
-                placeholder="0"
-                className="w-36 text-right font-semibold text-base"
-              />
+              <div className="w-36 text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                {autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toLocaleString('ko-KR') : '0'}
+              </div>
             </div>
           </div>
         </div>
