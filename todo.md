@@ -74,3 +74,23 @@
 - [x] 프론트엔드: 날짜 네비게이터 (Home과 동일 방식)
 - [x] 프론트엔드: 헤더에 테이블 기록 버튼 추가
 - [x] App.tsx에 /table-report 라우트 등록
+
+## TableReport 개선
+
+- [ ] DB: staffIncentives 테이블에 salesIncentive(금액), workStart(시작시간), workEnd(종료시간) 컬럼 추가
+- [ ] DB: tableReports 테이블에 cashAmount, cardAmount 컬럼 추가 (팀수 옆 현금/카드)
+- [ ] UI: 팀수 옆에 현금 금액 / 카드 금액 입력 추가
+- [ ] UI: 직원 인센티브에 영업인센(금액) 입력 칸 추가
+- [ ] UI: 직원 인센티브에 근무 시간(시작~종료) 입력 추가
+- [ ] UI: 신규손님 팁 섹션 제거
+
+## TableReport 개선 2차
+
+- [ ] DB: staffIncentives에 salesIncentive, workStart, workEnd 컬럼 ALTER TABLE로 추가
+- [ ] DB: tableReports에서 branchNewGuestTip, barNewGuestTip 제거 (cashAmount, cardAmount는 이미 추가됨)
+- [ ] 서버: tableReport.upsert 저장 시 현금 테이블 합산 → dailySalesRecords.cash 자동 업데이트
+- [ ] 서버: tableReport.upsert 저장 시 카드 테이블 합산 → dailySalesRecords.card 자동 업데이트
+- [ ] UI: 직원 인센티브에 영업인센(금액) 입력 칸 추가
+- [ ] UI: 직원 인센티브에 근무 시간(시작~종료) 입력 추가
+- [ ] UI: 신규손님 팁 섹션 제거
+- [ ] UI: TypeScript 오류 해결 (branchNewGuestTip/barNewGuestTip 제거)

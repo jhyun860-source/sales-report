@@ -1,7 +1,8 @@
 /**
  * tableReport 라우터 단위 테스트
- * - getByDate: 날짜별 기록 조회
- * - save: 테이블 기록 저장
+ * - 테이블 항목 구조 검증
+ * - 직원 인센티브 구조 검증 (salesIncentive, workStart, workEnd 포함)
+ * - 현금/카드 합산 로직 검증
  */
 
 import { describe, it, expect } from 'vitest';
@@ -11,30 +12,36 @@ describe('tableReport router', () => {
     const tableItem = {
       tableNumber: '1T',
       guestType: 'walking' as const,
-      amount: 100000,
+      amount: '100000',
       paymentMethod: 'card' as const,
       memo: '무제한x2, 지인3간',
     };
 
     expect(tableItem.tableNumber).toBe('1T');
     expect(tableItem.guestType).toBe('walking');
-    expect(tableItem.amount).toBe(100000);
+    expect(Number(tableItem.amount)).toBe(100000);
     expect(tableItem.paymentMethod).toBe('card');
     expect(tableItem.memo).toBe('무제한x2, 지인3간');
   });
 
-  it('should have correct staff incentive structure', () => {
+  it('should have correct staff incentive structure with new fields', () => {
     const staffIncentive = {
       staffName: '보라',
-      glassAdded: 2,
-      bottleAdded: 1,
-      beerBottleAdded: 0,
+      glassCount: 2,
+      bottleCount: 1,
+      beerBottleCount: 0,
+      salesIncentive: '50000',
+      workStart: '20:00',
+      workEnd: '02:00',
     };
 
     expect(staffIncentive.staffName).toBe('보라');
-    expect(staffIncentive.glassAdded).toBe(2);
-    expect(staffIncentive.bottleAdded).toBe(1);
-    expect(staffIncentive.beerBottleAdded).toBe(0);
+    expect(staffIncentive.glassCount).toBe(2);
+    expect(staffIncentive.bottleCount).toBe(1);
+    expect(staffIncentive.beerBottleCount).toBe(0);
+    expect(Number(staffIncentive.salesIncentive)).toBe(50000);
+    expect(staffIncentive.workStart).toMatch(/^\d{2}:\d{2}$/);
+    expect(staffIncentive.workEnd).toMatch(/^\d{2}:\d{2}$/);
   });
 
   it('should validate guest types', () => {
@@ -51,27 +58,44 @@ describe('tableReport router', () => {
     expect(validPaymentMethods).toContain('mixed');
   });
 
-  it('should calculate total table amount correctly', () => {
+  it('should calculate cash/card sums separately for daily sales auto-sync', () => {
     const tableItems = [
-      { amount: 388000 },
-      { amount: 105000 },
-      { amount: 370000 },
+      { paymentMethod: 'cash', amount: '100000' },
+      { paymentMethod: 'card', amount: '200000' },
+      { paymentMethod: 'cash', amount: '50000' },
+      { paymentMethod: 'card', amount: '300000' },
+      { paymentMethod: 'mixed', amount: '80000' }, // 혼합은 합산에서 제외
     ];
-    const total = tableItems.reduce((sum, item) => sum + item.amount, 0);
-    expect(total).toBe(863000);
+
+    const cashSum = tableItems
+      .filter(it => it.paymentMethod === 'cash')
+      .reduce((sum, it) => sum + Number(it.amount), 0);
+
+    const cardSum = tableItems
+      .filter(it => it.paymentMethod === 'card')
+      .reduce((sum, it) => sum + Number(it.amount), 0);
+
+    expect(cashSum).toBe(150000);
+    expect(cardSum).toBe(500000);
   });
 
   it('should calculate total incentives correctly', () => {
     const staffList = [
-      { glassAdded: 3, bottleAdded: 1, beerBottleAdded: 0 },
-      { glassAdded: 2, bottleAdded: 0, beerBottleAdded: 2 },
+      { glassCount: 3, bottleCount: 1, beerBottleCount: 0 },
+      { glassCount: 2, bottleCount: 0, beerBottleCount: 2 },
     ];
-    const totalGlass = staffList.reduce((sum, s) => sum + s.glassAdded, 0);
-    const totalBottle = staffList.reduce((sum, s) => sum + s.bottleAdded, 0);
-    const totalBeer = staffList.reduce((sum, s) => sum + s.beerBottleAdded, 0);
+    const totalGlass = staffList.reduce((sum, s) => sum + s.glassCount, 0);
+    const totalBottle = staffList.reduce((sum, s) => sum + s.bottleCount, 0);
+    const totalBeer = staffList.reduce((sum, s) => sum + s.beerBottleCount, 0);
 
     expect(totalGlass).toBe(5);
     expect(totalBottle).toBe(1);
     expect(totalBeer).toBe(2);
+  });
+
+  it('teamCount should be non-negative integer', () => {
+    const teamCount = 5;
+    expect(teamCount).toBeGreaterThanOrEqual(0);
+    expect(Number.isInteger(teamCount)).toBe(true);
   });
 });

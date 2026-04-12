@@ -1,8 +1,9 @@
 /**
  * 테이블 영업 기록 페이지
  * - 날짜별 테이블 목록 (번호, 손님구분, 금액, 결제수단, 메모)
- * - 출근자 인센티브 (잔추가, 병추가, 맥주병추가)
- * - 팀수, 기타 사항, 신규손님 팁
+ * - 출근자 인센티브 (잔추가, 병추가, 맥주병추가, 영업인센, 근무시간)
+ * - 팀수, 기타 사항
+ * - 저장 시 현금/카드 합산값이 매출기록에 자동 반영됨
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -64,8 +65,7 @@ function AmountInput({
         onChange(raw);
       }}
       placeholder={placeholder}
-      className={`bg-transparent border-none outline-none text-right ${className}`}
-      style={{ fontVariantNumeric: 'tabular-nums' }}
+      className={`bg-transparent border-none outline-none ${className}`}
     />
   );
 }
@@ -89,6 +89,9 @@ type IncentiveLocal = {
   glassCount: number;
   bottleCount: number;
   beerBottleCount: number;
+  salesIncentive: string;
+  workStart: string;
+  workEnd: string;
 };
 
 function makeLocalId() {
@@ -100,7 +103,7 @@ function emptyItem(): TableItemLocal {
 }
 
 function emptyIncentive(): IncentiveLocal {
-  return { localId: makeLocalId(), staffName: '', glassCount: 0, bottleCount: 0, beerBottleCount: 0 };
+  return { localId: makeLocalId(), staffName: '', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '' };
 }
 
 export default function TableReport() {
@@ -109,8 +112,6 @@ export default function TableReport() {
   const [currentDate, setCurrentDate] = useState(getTodayString);
   const [teamCount, setTeamCount] = useState(0);
   const [notes, setNotes] = useState('');
-  const [branchNewGuestTip, setBranchNewGuestTip] = useState('');
-  const [barNewGuestTip, setBarNewGuestTip] = useState('');
   const [items, setItems] = useState<TableItemLocal[]>([emptyItem()]);
   const [incentives, setIncentives] = useState<IncentiveLocal[]>([emptyIncentive()]);
   const [reportId, setReportId] = useState<number | null>(null);
@@ -123,15 +124,12 @@ export default function TableReport() {
     { enabled: !!account }
   );
 
-
   // 서버 데이터 → 로컬 상태 동기화
   useEffect(() => {
     if (reportData) {
       setReportId(reportData.id);
       setTeamCount(reportData.teamCount ?? 0);
       setNotes(reportData.notes ?? '');
-      setBranchNewGuestTip(reportData.branchNewGuestTip ?? '');
-      setBarNewGuestTip(reportData.barNewGuestTip ?? '');
       if (reportData.items && reportData.items.length > 0) {
         setItems(reportData.items.map((it: any) => ({
           id: it.id,
@@ -153,6 +151,9 @@ export default function TableReport() {
           glassCount: inc.glassCount ?? 0,
           bottleCount: inc.bottleCount ?? 0,
           beerBottleCount: inc.beerBottleCount ?? 0,
+          salesIncentive: inc.salesIncentive ?? '',
+          workStart: inc.workStart ?? '',
+          workEnd: inc.workEnd ?? '',
         })));
       } else {
         setIncentives([emptyIncentive()]);
@@ -161,8 +162,6 @@ export default function TableReport() {
       setReportId(null);
       setTeamCount(0);
       setNotes('');
-      setBranchNewGuestTip('');
-      setBarNewGuestTip('');
       setItems([emptyItem()]);
       setIncentives([emptyIncentive()]);
     }
@@ -182,20 +181,19 @@ export default function TableReport() {
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     try {
-      // 1. 기록 upsert
-      const { id: rId } = await upsertReport.mutateAsync({
-        date: currentDate,
-        teamCount,
-        notes,
-        branchNewGuestTip: branchNewGuestTip || '0',
-        barNewGuestTip: barNewGuestTip || '0',
-      });
-      setReportId(rId);
+      // 1. 테이블 항목 먼저 저장 (upsert에서 합산 계산에 필요)
+      // 임시 reportId가 없으면 먼저 report 생성
+      let rId = reportId;
+      if (!rId) {
+        const { id } = await upsertReport.mutateAsync({ date: currentDate, teamCount, notes });
+        rId = id;
+        setReportId(rId);
+      }
 
-      // 2. 테이블 항목 저장 (id 없으면 추가, 있으면 수정)
+      // 2. 테이블 항목 저장
       for (let i = 0; i < items.length; i++) {
         const it = items[i];
-        if (!it.tableNumber && !it.amount && !it.memo) continue; // 빈 항목 스킵
+        if (!it.tableNumber && !it.amount && !it.memo) continue;
         if (it.id) {
           await updateItem.mutateAsync({
             id: it.id,
@@ -230,6 +228,9 @@ export default function TableReport() {
             glassCount: inc.glassCount,
             bottleCount: inc.bottleCount,
             beerBottleCount: inc.beerBottleCount,
+            salesIncentive: inc.salesIncentive || '0',
+            workStart: inc.workStart || undefined,
+            workEnd: inc.workEnd || undefined,
           });
         } else {
           const { id: newId } = await addIncentive.mutateAsync({
@@ -238,19 +239,27 @@ export default function TableReport() {
             glassCount: inc.glassCount,
             bottleCount: inc.bottleCount,
             beerBottleCount: inc.beerBottleCount,
+            salesIncentive: inc.salesIncentive || '0',
+            workStart: inc.workStart || undefined,
+            workEnd: inc.workEnd || undefined,
             sortOrder: i,
           });
           setIncentives(prev => prev.map(p => p.localId === inc.localId ? { ...p, id: newId } : p));
         }
       }
 
+      // 4. 최종 upsert (현금/카드 합산 → dailySalesRecords 자동 반영)
+      const { cashSum, cardSum } = await upsertReport.mutateAsync({ date: currentDate, teamCount, notes });
+
       setSaved(true);
-      toast.success('저장되었습니다', { duration: 1500 });
+      const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
+      const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
+      toast.success(`저장 완료 | 현금 ${cashFmt} / 카드 ${cardFmt}`, { duration: 2500 });
       refetch();
     } catch (e: any) {
       toast.error('저장 실패: ' + (e?.message ?? '알 수 없는 오류'));
     }
-  }, [currentDate, teamCount, notes, branchNewGuestTip, barNewGuestTip, items, incentives]);
+  }, [currentDate, teamCount, notes, items, incentives, reportId]);
 
   // 자동 저장 트리거
   const scheduleAutoSave = useCallback(() => {
@@ -317,6 +326,10 @@ export default function TableReport() {
   const TEXT = 'oklch(0.12 0.01 50)';
   const MUTED = 'oklch(0.55 0.01 50)';
 
+  // 현금/카드 합산 (화면 표시용)
+  const cashTotal = items.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
+  const cardTotal = items.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
+
   return (
     <div className="min-h-screen pb-28" style={{ background: BG }}>
       {/* 헤더 */}
@@ -371,16 +384,33 @@ export default function TableReport() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 pt-4 space-y-4">
-        {/* 팀수 */}
-        <div className="flex items-center justify-between px-3 py-2.5 rounded-lg" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-          <div className="flex items-center gap-2">
-            <Users size={15} style={{ color: MUTED }} />
-            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>팀수</span>
+        {/* 팀수 + 현금/카드 합산 요약 */}
+        <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+          <div className="flex items-center justify-between px-3 py-2.5" style={{ background: CARD_BG }}>
+            <div className="flex items-center gap-2">
+              <Users size={15} style={{ color: MUTED }} />
+              <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>팀수</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setTeamCount(c => Math.max(0, c - 1)); scheduleAutoSave(); }} className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold" style={{ background: HEADER_BG, color: TEXT }}>−</button>
+              <span className="w-8 text-center font-bold text-base" style={{ color: TEXT }}>{teamCount}</span>
+              <button onClick={() => { setTeamCount(c => c + 1); scheduleAutoSave(); }} className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold" style={{ background: PRIMARY, color: 'white' }}>+</button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => { setTeamCount(c => Math.max(0, c - 1)); scheduleAutoSave(); }} className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold" style={{ background: HEADER_BG, color: TEXT }}>−</button>
-            <span className="w-8 text-center font-bold text-base" style={{ color: TEXT }}>{teamCount}</span>
-            <button onClick={() => { setTeamCount(c => c + 1); scheduleAutoSave(); }} className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold" style={{ background: PRIMARY, color: 'white' }}>+</button>
+          {/* 현금/카드 합산 표시 */}
+          <div className="grid grid-cols-2 divide-x" style={{ borderTop: `1px solid ${BORDER}`, background: HEADER_BG, divideColor: BORDER } as any}>
+            <div className="px-3 py-2 text-center">
+              <div className="text-xs mb-0.5" style={{ color: MUTED }}>현금 합계</div>
+              <div className="text-sm font-bold" style={{ color: cashTotal > 0 ? 'oklch(0.35 0.15 150)' : MUTED }}>
+                {cashTotal > 0 ? `₩${cashTotal.toLocaleString('ko-KR')}` : '—'}
+              </div>
+            </div>
+            <div className="px-3 py-2 text-center" style={{ borderLeft: `1px solid ${BORDER}` }}>
+              <div className="text-xs mb-0.5" style={{ color: MUTED }}>카드 합계</div>
+              <div className="text-sm font-bold" style={{ color: cardTotal > 0 ? 'oklch(0.35 0.12 250)' : MUTED }}>
+                {cardTotal > 0 ? `₩${cardTotal.toLocaleString('ko-KR')}` : '—'}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -400,19 +430,19 @@ export default function TableReport() {
           <div className="space-y-2">
             {items.map((item, idx) => (
               <div key={item.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
-                {/* 1행: 테이블 번호 + 손님구분 + 삭제 */}
+                {/* 1행: 번호 + 손님구분 + 삭제 */}
                 <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
-                  <span className="text-xs font-semibold w-6 text-center" style={{ color: MUTED }}>{idx + 1}</span>
+                  <span className="text-xs font-semibold w-5 text-center flex-shrink-0" style={{ color: MUTED }}>{idx + 1}</span>
                   <input
                     type="text"
                     value={item.tableNumber}
                     onChange={e => updateItemField(item.localId, 'tableNumber', e.target.value)}
                     placeholder="테이블 번호"
-                    className="flex-1 bg-transparent border-none outline-none text-sm font-semibold"
+                    className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0"
                     style={{ color: TEXT }}
                   />
                   {/* 손님 구분 토글 */}
-                  <div className="flex rounded overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+                  <div className="flex rounded overflow-hidden flex-shrink-0" style={{ border: `1px solid ${BORDER}` }}>
                     {(['walking', 'regular'] as const).map(type => (
                       <button
                         key={type}
@@ -427,22 +457,22 @@ export default function TableReport() {
                       </button>
                     ))}
                   </div>
-                  <button onClick={() => removeItem(item)} className="p-1 opacity-40 hover:opacity-70">
+                  <button onClick={() => removeItem(item)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
                   </button>
                 </div>
 
                 {/* 2행: 금액 + 결제수단 */}
                 <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <span className="text-xs" style={{ color: MUTED }}>₩</span>
+                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
                   <AmountInput
                     value={item.amount}
                     onChange={v => updateItemField(item.localId, 'amount', v)}
                     placeholder="금액"
-                    className="flex-1 text-sm font-semibold"
+                    className="flex-1 text-sm font-semibold min-w-0"
                   />
                   {/* 결제수단 */}
-                  <div className="flex rounded overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+                  <div className="flex rounded overflow-hidden flex-shrink-0" style={{ border: `1px solid ${BORDER}` }}>
                     {(['card', 'cash', 'mixed'] as const).map(pm => (
                       <button
                         key={pm}
@@ -491,51 +521,80 @@ export default function TableReport() {
             </button>
           </div>
 
-          <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
-            {/* 헤더 행 */}
-            <div className="grid text-xs font-semibold py-2" style={{ gridTemplateColumns: '1fr 60px 60px 60px 32px', background: HEADER_BG, color: MUTED, borderBottom: `1px solid ${BORDER}` }}>
-              <div className="px-3">이름</div>
-              <div className="text-center">잔추가</div>
-              <div className="text-center">병추가</div>
-              <div className="text-center">맥주병</div>
-              <div />
-            </div>
-
+          <div className="space-y-2">
             {incentives.map(inc => (
-              <div
-                key={inc.localId}
-                className="grid items-center py-1.5"
-                style={{ gridTemplateColumns: '1fr 60px 60px 60px 32px', background: CARD_BG, borderBottom: `1px solid ${BORDER}` }}
-              >
-                <div className="px-3">
+              <div key={inc.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
+                {/* 1행: 이름 + 삭제 */}
+                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
                   <input
                     type="text"
                     value={inc.staffName}
                     onChange={e => updateIncentiveField(inc.localId, 'staffName', e.target.value)}
-                    placeholder="이름"
-                    className="w-full bg-transparent border-none outline-none text-sm"
+                    placeholder="직원 이름"
+                    className="flex-1 bg-transparent border-none outline-none text-sm font-semibold"
                     style={{ color: TEXT }}
                   />
-                </div>
-                {(['glassCount', 'bottleCount', 'beerBottleCount'] as const).map(field => (
-                  <div key={field} className="flex items-center justify-center gap-0.5">
-                    <button
-                      onClick={() => updateIncentiveField(inc.localId, field, Math.max(0, (inc[field] as number) - 1))}
-                      className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
-                      style={{ background: HEADER_BG, color: TEXT }}
-                    >−</button>
-                    <span className="w-5 text-center text-sm font-semibold" style={{ color: TEXT }}>{inc[field]}</span>
-                    <button
-                      onClick={() => updateIncentiveField(inc.localId, field, (inc[field] as number) + 1)}
-                      className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
-                      style={{ background: PRIMARY, color: 'white' }}
-                    >+</button>
-                  </div>
-                ))}
-                <div className="flex justify-center">
                   <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70">
-                    <Trash2 size={12} />
+                    <Trash2 size={13} />
                   </button>
+                </div>
+
+                {/* 2행: 잔추가 / 병추가 / 맥주병 */}
+                <div className="grid grid-cols-3 divide-x" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                  {([
+                    { field: 'glassCount' as const, label: '잔추가' },
+                    { field: 'bottleCount' as const, label: '병추가' },
+                    { field: 'beerBottleCount' as const, label: '맥주병' },
+                  ]).map(({ field, label }) => (
+                    <div key={field} className="px-2 py-2 text-center" style={{ borderRight: field !== 'beerBottleCount' ? `1px solid ${BORDER}` : undefined }}>
+                      <div className="text-xs mb-1" style={{ color: MUTED }}>{label}</div>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => updateIncentiveField(inc.localId, field, Math.max(0, (inc[field] as number) - 1))}
+                          className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
+                          style={{ background: HEADER_BG, color: TEXT }}
+                        >−</button>
+                        <span className="w-5 text-center text-sm font-semibold" style={{ color: TEXT }}>{inc[field]}</span>
+                        <button
+                          onClick={() => updateIncentiveField(inc.localId, field, (inc[field] as number) + 1)}
+                          className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
+                          style={{ background: PRIMARY, color: 'white' }}
+                        >+</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 3행: 영업인센 금액 */}
+                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
+                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
+                  <AmountInput
+                    value={inc.salesIncentive}
+                    onChange={v => updateIncentiveField(inc.localId, 'salesIncentive', v)}
+                    placeholder="금액 입력"
+                    className="flex-1 text-sm font-semibold"
+                  />
+                </div>
+
+                {/* 4행: 근무 시간 */}
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>근무시간</span>
+                  <input
+                    type="time"
+                    value={inc.workStart}
+                    onChange={e => updateIncentiveField(inc.localId, 'workStart', e.target.value)}
+                    className="flex-1 bg-transparent border-none outline-none text-sm text-center"
+                    style={{ color: TEXT, minWidth: 0 }}
+                  />
+                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>~</span>
+                  <input
+                    type="time"
+                    value={inc.workEnd}
+                    onChange={e => updateIncentiveField(inc.localId, 'workEnd', e.target.value)}
+                    className="flex-1 bg-transparent border-none outline-none text-sm text-center"
+                    style={{ color: TEXT, minWidth: 0 }}
+                  />
                 </div>
               </div>
             ))}
@@ -548,35 +607,11 @@ export default function TableReport() {
           <textarea
             value={notes}
             onChange={e => { setNotes(e.target.value); scheduleAutoSave(); }}
-            placeholder="근무 시간, 특이사항 등 자유롭게 입력"
+            placeholder="특이사항 등 자유롭게 입력"
             rows={3}
             className="w-full bg-transparent border-none outline-none text-sm resize-none"
             style={{ color: TEXT }}
           />
-        </div>
-
-        {/* 신규손님 팁 */}
-        <div className="rounded-lg p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-          <div className="text-sm font-bold mb-3" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 신규손님 팁</div>
-          <div className="space-y-2">
-            {[
-              { label: '지점 신규손님', value: branchNewGuestTip, onChange: setBranchNewGuestTip },
-              { label: 'BAR 신규손님', value: barNewGuestTip, onChange: setBarNewGuestTip },
-            ].map(({ label, value, onChange }) => (
-              <div key={label} className="flex items-center justify-between py-1.5" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <span className="text-sm" style={{ color: MUTED }}>{label}</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs" style={{ color: MUTED }}>₩</span>
-                  <AmountInput
-                    value={value}
-                    onChange={v => { onChange(v); scheduleAutoSave(); }}
-                    placeholder="0"
-                    className="w-28 text-sm font-semibold"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </main>
 
@@ -590,7 +625,7 @@ export default function TableReport() {
           className="w-full py-3 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2"
           style={{ background: PRIMARY }}
         >
-          <Save size={16} />저장하기
+          <Save size={16} />저장하기 (현금/카드 매출 자동 반영)
         </button>
       </div>
     </div>

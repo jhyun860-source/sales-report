@@ -603,8 +603,6 @@ export const appRouter = router({
         date: z.string(),
         teamCount: z.number().default(0),
         notes: z.string().optional(),
-        branchNewGuestTip: z.string().default('0'),
-        barNewGuestTip: z.string().default('0'),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -613,28 +611,62 @@ export const appRouter = router({
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account?.branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
+
+        // 1. tableReport upsert
         const [existing] = await db.select().from(tableReports)
           .where(and(eq(tableReports.branchId, account.branchId), eq(tableReports.date, input.date)))
           .limit(1);
+        let reportId: number;
         if (existing) {
           await db.update(tableReports).set({
             teamCount: input.teamCount,
             notes: input.notes || null,
-            branchNewGuestTip: input.branchNewGuestTip,
-            barNewGuestTip: input.barNewGuestTip,
           }).where(eq(tableReports.id, existing.id));
-          return { id: existing.id };
+          reportId = existing.id;
         } else {
           const [result] = await db.insert(tableReports).values({
             branchId: account.branchId,
             date: input.date,
             teamCount: input.teamCount,
             notes: input.notes || null,
-            branchNewGuestTip: input.branchNewGuestTip,
-            barNewGuestTip: input.barNewGuestTip,
           });
-          return { id: (result as any).insertId };
+          reportId = (result as any).insertId;
         }
+
+        // 2. 현금/카드 테이블 합산 → dailySalesRecords 자동 반영
+        const allItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, reportId));
+        const cashSum = allItems
+          .filter(it => it.paymentMethod === 'cash')
+          .reduce((sum, it) => sum + Number(it.amount || 0), 0);
+        const cardSum = allItems
+          .filter(it => it.paymentMethod === 'card')
+          .reduce((sum, it) => sum + Number(it.amount || 0), 0);
+
+        // cashAmount, cardAmount를 tableReports에도 저장
+        await db.update(tableReports).set({
+          cashAmount: String(cashSum),
+          cardAmount: String(cardSum),
+        }).where(eq(tableReports.id, reportId));
+
+        // dailySalesRecords의 cash, card 칸에 자동 반영 (기존 값 유지하되 테이블 합산값으로 덮어씀)
+        const existingSales = await getDailySalesRecord(account.branchId, input.date);
+        await upsertDailySalesRecord({
+          branchId: account.branchId,
+          date: input.date,
+          posStartAmount: existingSales?.posStartAmount ?? '0',
+          cash: String(cashSum),
+          card: String(cardSum),
+          cashTotal: existingSales?.cashTotal ?? '0',
+          cardTotal: existingSales?.cardTotal ?? '0',
+          posEndAmount: existingSales?.posEndAmount ?? '0',
+          paymentChangeNote: existingSales?.paymentChangeNote ?? undefined,
+          paymentChangeDate: existingSales?.paymentChangeDate ?? undefined,
+          paymentChangeAmount: existingSales?.paymentChangeAmount ?? '0',
+          expenses: (existingSales?.expenses as any) ?? [],
+          submittedAt: new Date(),
+        });
+
+        return { id: reportId, cashSum, cardSum };
       }),
     // 테이블 항목 추가
     addItem: publicProcedure
@@ -701,6 +733,9 @@ export const appRouter = router({
         glassCount: z.number().default(0),
         bottleCount: z.number().default(0),
         beerBottleCount: z.number().default(0),
+        salesIncentive: z.string().default('0'),
+        workStart: z.string().optional(),
+        workEnd: z.string().optional(),
         sortOrder: z.number().default(0),
       }))
       .mutation(async ({ input }) => {
@@ -717,6 +752,9 @@ export const appRouter = router({
         glassCount: z.number().optional(),
         bottleCount: z.number().optional(),
         beerBottleCount: z.number().optional(),
+        salesIncentive: z.string().optional(),
+        workStart: z.string().optional(),
+        workEnd: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -727,6 +765,9 @@ export const appRouter = router({
         if (rest.glassCount !== undefined) updateData.glassCount = rest.glassCount;
         if (rest.bottleCount !== undefined) updateData.bottleCount = rest.bottleCount;
         if (rest.beerBottleCount !== undefined) updateData.beerBottleCount = rest.beerBottleCount;
+        if (rest.salesIncentive !== undefined) updateData.salesIncentive = rest.salesIncentive;
+        if (rest.workStart !== undefined) updateData.workStart = rest.workStart;
+        if (rest.workEnd !== undefined) updateData.workEnd = rest.workEnd;
         await db.update(staffIncentives).set(updateData).where(eq(staffIncentives.id, id));
         return { success: true };
       }),

@@ -175,9 +175,9 @@ export const tableReports = mysqlTable("tableReports", {
   branchId: int("branchId").notNull(),
   date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
   teamCount: int("teamCount").default(0).notNull(), // 팀수
+  cashAmount: decimal("cashAmount", { precision: 15, scale: 0 }).default("0").notNull(), // 현금 금액
+  cardAmount: decimal("cardAmount", { precision: 15, scale: 0 }).default("0").notNull(), // 카드 금액
   notes: text("notes"), // 기타사항
-  branchNewGuestTip: decimal("branchNewGuestTip", { precision: 15, scale: 0 }).default("0").notNull(), // 지점 신규손님 팁
-  barNewGuestTip: decimal("barNewGuestTip", { precision: 15, scale: 0 }).default("0").notNull(), // BAR 신규손님 팁
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -216,6 +216,9 @@ export const staffIncentives = mysqlTable("staffIncentives", {
   glassCount: int("glassCount").default(0).notNull(), // 잔추가 수
   bottleCount: int("bottleCount").default(0).notNull(), // 병추가 수
   beerBottleCount: int("beerBottleCount").default(0).notNull(), // 맥주 병추가 수
+  salesIncentive: decimal("salesIncentive", { precision: 15, scale: 0 }).default("0").notNull(), // 영업 인센티브 금액
+  workStart: varchar("workStart", { length: 5 }), // 근무 시작 시간 (HH:mm)
+  workEnd: varchar("workEnd", { length: 5 }), // 근무 종료 시간 (HH:mm)
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
