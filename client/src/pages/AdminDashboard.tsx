@@ -1,0 +1,244 @@
+/**
+ * 관리자 통합 대시보드
+ * - 전 지점 매출 현황 한눈에 보기
+ * - 날짜별 지점별 매출 비교
+ */
+
+import { useState, useMemo } from 'react';
+import { useLocation } from 'wouter';
+import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { getLoginUrl } from '@/const';
+import { ChevronLeft, ChevronRight, Settings, FileText, LogOut } from 'lucide-react';
+import { getTodayString, formatDateDisplay } from '@/lib/salesUtils';
+
+function moveDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export default function AdminDashboard() {
+  const [, navigate] = useLocation();
+  const { user, loading: authLoading, logout } = useAuth();
+  const [currentDate, setCurrentDate] = useState(getTodayString);
+
+  const today = getTodayString();
+  const isToday = currentDate === today;
+
+  // 전 지점 매출 조회 (adminDailyDetail: [{branch, record}])
+  const { data: dailyDetail = [], isLoading } = trpc.sales.adminDailyDetail.useQuery(
+    { date: currentDate },
+    { enabled: !!user && user.role === 'admin' }
+  );
+
+  // 합계 계산
+  const totals = useMemo(() => {
+    return dailyDetail.reduce(
+      (acc: { cash: number; card: number; cashTotal: number; cardTotal: number; expenses: number }, item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null }) => ({
+        cash: acc.cash + (Number(item.record?.cash) || 0),
+        card: acc.card + (Number(item.record?.card) || 0),
+        cashTotal: acc.cashTotal + (Number(item.record?.cashTotal) || 0),
+        cardTotal: acc.cardTotal + (Number(item.record?.cardTotal) || 0),
+        expenses: acc.expenses + (Array.isArray(item.record?.expenses)
+          ? (item.record!.expenses as { amount: string }[]).reduce((s, e) => s + (parseInt(e.amount || '0', 10) || 0), 0)
+          : 0),
+      }),
+      { cash: 0, card: 0, cashTotal: 0, cardTotal: 0, expenses: 0 }
+    );
+  }, [dailyDetail]);
+
+  const fmt = (n: number) => n > 0 ? `₩${n.toLocaleString('ko-KR')}` : '—';
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <div className="text-sm" style={{ color: 'oklch(0.45 0.01 50)' }}>불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>로그인이 필요합니다</p>
+        <button onClick={() => { window.location.href = getLoginUrl(); }} className="px-4 py-2 rounded text-sm font-bold text-white" style={{ background: 'oklch(0.45 0.18 25)' }}>
+          로그인
+        </button>
+      </div>
+    );
+  }
+
+  if (user.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>관리자만 접근할 수 있습니다</p>
+        <button onClick={() => navigate('/')} className="px-4 py-2 rounded text-sm font-bold text-white" style={{ background: 'oklch(0.45 0.18 25)' }}>
+          홈으로
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
+      {/* 헤더 */}
+      <header
+        className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
+        style={{ background: 'oklch(0.98 0.01 85)', borderColor: 'oklch(0.7 0.015 85)', boxShadow: '0 1px 4px oklch(0 0 0 / 0.08)' }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-base font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+            전지점 통합 현황
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/admin/manage')}
+            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
+          >
+            <Settings size={15} />
+            관리
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
+          >
+            <FileText size={15} />
+            입력
+          </button>
+          <button
+            onClick={logout}
+            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.45 0.18 25)', border: '1px solid oklch(0.75 0.015 85)' }}
+          >
+            <LogOut size={15} />
+            로그아웃
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 py-5">
+        {/* 날짜 네비게이터 */}
+        <div className="flex items-center justify-between mb-5">
+          <button onClick={() => setCurrentDate(d => moveDate(d, -1))} className="p-2 rounded-full hover:bg-black/8 transition-colors">
+            <ChevronLeft size={22} strokeWidth={2.5} />
+          </button>
+          <div className="text-center flex-1">
+            <div className="date-header">{formatDateDisplay(currentDate)}</div>
+            {!isToday && (
+              <button onClick={() => setCurrentDate(today)} className="text-xs text-primary mt-0.5 underline underline-offset-2">
+                오늘로 이동
+              </button>
+            )}
+          </div>
+          <button onClick={() => setCurrentDate(d => moveDate(d, 1))} disabled={isToday} className="p-2 rounded-full hover:bg-black/8 transition-colors disabled:opacity-30">
+            <ChevronRight size={22} strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {/* 전체 합계 카드 */}
+        <div className="rounded-lg p-4 mb-5" style={{ background: 'oklch(0.45 0.18 25)', color: 'white' }}>
+          <div className="text-sm font-semibold mb-3 opacity-90" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+            전지점 합계
+          </div>
+          <div className="grid grid-cols-2 gap-y-2 text-sm">
+            <span className="opacity-80">오늘 현금</span>
+            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totals.cash)}</span>
+            <span className="opacity-80">오늘 카드</span>
+            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totals.card)}</span>
+            <span className="opacity-80">지출 합계</span>
+            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totals.expenses)}</span>
+            <div className="col-span-2 border-t border-white/30 my-1" />
+            <span className="opacity-80 text-xs">현금 누적</span>
+            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totals.cashTotal)}</span>
+            <span className="opacity-80 text-xs">카드 누적</span>
+            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totals.cardTotal)}</span>
+            <span className="font-bold">총 누적</span>
+            <span className="text-right font-bold text-base" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totals.cashTotal + totals.cardTotal)}</span>
+          </div>
+        </div>
+
+        {/* 지점별 현황 */}
+        <div className="section-title mb-3">■ 지점별 현황</div>
+
+        {isLoading ? (
+          <div className="text-center py-8 text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>불러오는 중...</div>
+        ) : dailyDetail.length === 0 ? (
+          <div className="text-center py-8 text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>
+            등록된 지점이 없습니다.{' '}
+            <button onClick={() => navigate('/admin/manage')} className="underline" style={{ color: 'oklch(0.45 0.18 25)' }}>
+              지점 추가하기
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {dailyDetail.map((item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null }) => {
+              const branch = item.branch;
+              const rec = item.record;
+              const cash = Number(rec?.cash || 0);
+              const card = Number(rec?.card || 0);
+              const cashTotal = Number(rec?.cashTotal || 0);
+              const cardTotal = Number(rec?.cardTotal || 0);
+              const expTotal = rec && Array.isArray(rec.expenses)
+                ? (rec.expenses as { amount: string }[]).reduce((s, e) => s + (parseInt(e.amount || '0', 10) || 0), 0)
+                : 0;
+              const hasData = cash > 0 || card > 0;
+
+              return (
+                <div
+                  key={branch.id}
+                  className="rounded-lg p-4"
+                  style={{ background: 'oklch(0.995 0.005 85)', border: `1px solid ${hasData ? 'oklch(0.75 0.015 85)' : 'oklch(0.82 0.01 85)'}` }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+                      {branch.name}
+                    </span>
+                    {!hasData && (
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'oklch(0.88 0.01 85)', color: 'oklch(0.55 0.01 50)' }}>
+                        미입력
+                      </span>
+                    )}
+                    {hasData && (
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'oklch(0.9 0.08 150)', color: 'oklch(0.35 0.12 150)' }}>
+                        입력 완료
+                      </span>
+                    )}
+                  </div>
+                  {hasData ? (
+                    <div className="grid grid-cols-2 gap-y-1.5 text-sm">
+                      <span style={{ color: 'oklch(0.45 0.01 50)' }}>현금</span>
+                      <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.12 0.01 50)' }}>{fmt(cash)}</span>
+                      <span style={{ color: 'oklch(0.45 0.01 50)' }}>카드</span>
+                      <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.12 0.01 50)' }}>{fmt(card)}</span>
+                      {expTotal > 0 && (
+                        <>
+                          <span style={{ color: 'oklch(0.45 0.01 50)' }}>지출</span>
+                          <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.12 0.01 50)' }}>{fmt(expTotal)}</span>
+                        </>
+                      )}
+                      <div className="col-span-2 border-t my-1" style={{ borderColor: 'oklch(0.82 0.01 85)' }} />
+                      <span className="text-xs" style={{ color: 'oklch(0.45 0.01 50)' }}>현금 누적</span>
+                      <span className="text-right text-xs font-semibold" style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.12 0.01 50)' }}>{fmt(cashTotal)}</span>
+                      <span className="text-xs" style={{ color: 'oklch(0.45 0.01 50)' }}>카드 누적</span>
+                      <span className="text-right text-xs font-semibold" style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.12 0.01 50)' }}>{fmt(cardTotal)}</span>
+                      <span className="font-bold text-sm" style={{ color: 'oklch(0.25 0.01 50)' }}>오늘 합계</span>
+                      <span className="text-right font-bold text-sm" style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.45 0.18 25)' }}>{fmt(cash + card)}</span>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-center py-2" style={{ color: 'oklch(0.65 0.01 50)' }}>
+                      아직 매출이 입력되지 않았습니다
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

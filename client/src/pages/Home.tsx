@@ -1,35 +1,25 @@
 /**
  * 매출 일일 보고 - 메인 입력 페이지
- * Design: 장부/영수증 감성
- * - 크림색 배경, 먹색 텍스트, 붉은 포인트
- * - Noto Serif KR 헤더, Noto Sans KR 본문
- * - 실물 양식과 유사한 레이아웃
+ * - 로그인 필수
+ * - 점장: 배정된 지점만 접근 가능
+ * - 관리자: 전체 지점 접근 가능
+ * - 데이터는 서버 DB에 저장
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff } from 'lucide-react';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { getLoginUrl } from '@/const';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import {
-  type DailySalesRecord,
   type ExpenseItem,
-  formatNumber,
   parseAmount,
   formatDateDisplay,
   calcExpenseTotal,
-  calcDailyTotal,
-  loadRecords,
-  saveRecords,
-  findRecordByDate,
-  createEmptyRecord,
-  upsertRecord,
   getTodayString,
-  saveCurrentDate,
-  loadCurrentDate,
-  shouldResetMonthly,
-  resetMonthlyTotals,
 } from '@/lib/salesUtils';
 
 // 숫자 입력 컴포넌트
@@ -39,33 +29,23 @@ function AmountInput({
   placeholder = '0',
   className = '',
   readOnly = false,
-  autoFocus = false,
 }: {
   value: string;
   onChange?: (val: string) => void;
   placeholder?: string;
   className?: string;
   readOnly?: boolean;
-  autoFocus?: boolean;
 }) {
   const [displayValue, setDisplayValue] = useState('');
 
   useEffect(() => {
-    if (readOnly && value) {
-      // readOnly일 때는 value를 숫자로 변환하여 포맷팅
-      const num = typeof value === 'string' ? parseInt(value, 10) : value;
-      if (!isNaN(num)) {
-        setDisplayValue(num.toLocaleString('ko-KR'));
-      } else {
-        setDisplayValue('');
-      }
-    } else if (value === '' || value === '0') {
+    if (value === '' || value === '0') {
       setDisplayValue(value === '0' ? '0' : '');
     } else {
       const num = parseAmount(value);
       setDisplayValue(isNaN(num) ? '' : num.toLocaleString('ko-KR'));
     }
-  }, [value, readOnly]);
+  }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, '');
@@ -88,7 +68,6 @@ function AmountInput({
       onChange={handleChange}
       placeholder={placeholder}
       readOnly={readOnly}
-      autoFocus={autoFocus}
       className={`amount-input ${className} ${readOnly ? 'opacity-70' : ''}`}
     />
   );
@@ -141,240 +120,231 @@ function DateNavigator({
   );
 }
 
-const BRANCHES = ['삼성점', '대치점', '선릉점', '문정1호점', '문정2호점'];
+// 빈 기록 생성
+function createEmptyLocalRecord() {
+  return {
+    posStartAmount: '',
+    cash: '',
+    card: '',
+    cashDeposit: '',
+    paymentChangeDate: '',
+    paymentChangeNote: '',
+    paymentChangeAmount: '',
+    expenses: [{ id: `exp_${Date.now()}`, description: '', amount: '' }] as ExpenseItem[],
+  };
+}
+
+type LocalRecord = ReturnType<typeof createEmptyLocalRecord>;
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const [records, setRecords] = useState<DailySalesRecord[]>([]);
-  const [currentDate, setCurrentDate] = useState(loadCurrentDate());
-  const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
-  const [record, setRecord] = useState<DailySalesRecord>(() => createEmptyRecord(loadCurrentDate(), BRANCHES[0]));
+  const { user, loading: authLoading } = useAuth();
+  const [currentDate, setCurrentDate] = useState(getTodayString);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const [record, setRecord] = useState<LocalRecord>(createEmptyLocalRecord);
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 초기 로드
+  // 내 지점 목록 조회
+  const { data: myBranches = [], isLoading: branchesLoading } = trpc.branch.myBranches.useQuery(
+    undefined,
+    { enabled: !!user }
+  );
+
+  // 첫 번째 지점 자동 선택
   useEffect(() => {
-    let loaded = loadRecords();
-    
-    // 매월 1일에 누적값 리셋
-    if (shouldResetMonthly()) {
-      loaded = resetMonthlyTotals(loaded);
-      saveRecords(loaded);
-      toast.success('월초 리셋: 누적값이 초기화되었습니다', { duration: 2000 });
+    if (myBranches.length > 0 && selectedBranchId === null) {
+      setSelectedBranchId(myBranches[0].id);
     }
-    
-    setRecords(loaded);
-    const existing = findRecordByDate(loaded, currentDate);
-    setRecord(existing ?? createEmptyRecord(currentDate));
-  }, []);
+  }, [myBranches, selectedBranchId]);
 
-  // 날짜 변경 시 지점별 기록 로드
+  // 서버에서 해당 날짜 기록 조회
+  const { data: serverRecord, refetch: refetchRecord } = trpc.sales.getRecord.useQuery(
+    { branchId: selectedBranchId!, date: currentDate },
+    { enabled: !!selectedBranchId && !!user }
+  );
+
+  // 서버 데이터로 로컬 상태 동기화
   useEffect(() => {
-    saveCurrentDate(currentDate);
-    const existing = records.find(r => r.date === currentDate && r.branch === selectedBranch);
-    setRecord(existing ?? createEmptyRecord(currentDate, selectedBranch));
-    setSaved(false);
-  }, [currentDate, selectedBranch, records]);
-
-  // 어제까지의 누적값 계산 (이전 날짜들의 누적)
-  const getPreviousCumulativeTotal = (dateStr: string, type: 'cash' | 'card'): number => {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const currentDate = new Date(y, m - 1, d);
-    const previousDate = new Date(currentDate);
-    previousDate.setDate(previousDate.getDate() - 1);
-    
-    const prevY = previousDate.getFullYear();
-    const prevM = String(previousDate.getMonth() + 1).padStart(2, '0');
-    const prevD = String(previousDate.getDate()).padStart(2, '0');
-    const prevDateStr = `${prevY}-${prevM}-${prevD}`;
-    
-    const prevRecord = findRecordByDate(records, prevDateStr);
-    if (!prevRecord) return 0;
-    
-    if (type === 'cash') {
-      return parseAmount(prevRecord.cashTotal);
-    } else {
-      return parseAmount(prevRecord.cardTotal);
-    }
-  };
-
-  // 자동 저장 (입력 후 1.5초)
-  const autoSave = useCallback((updatedRecord: DailySalesRecord) => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      // 자동 계산된 누적값을 저장
-      const todayCash = parseAmount(updatedRecord.cash);
-      const todayCard = parseAmount(updatedRecord.card);
-      const prevCashTotal = getPreviousCumulativeTotal(updatedRecord.date, 'cash');
-      const prevCardTotal = getPreviousCumulativeTotal(updatedRecord.date, 'card');
-      
-      // POS 마감금 자동 계산
-      const updatedExpenseTotal = calcExpenseTotal(updatedRecord.expenses);
-      const updatedPosStartAmount = parseAmount(updatedRecord.posStartAmount) || getPreviousPosEndAmount(updatedRecord.date);
-      const updatedCashDeposit = parseAmount(updatedRecord.cashDeposit);
-      const updatedPosEndAmount = updatedPosStartAmount - updatedExpenseTotal + updatedCashDeposit;
-      
-      const recordToSave = {
-        ...updatedRecord,
-        cashTotal: (prevCashTotal + todayCash).toString(),
-        cardTotal: (prevCardTotal + todayCard).toString(),
-        posEndAmount: updatedPosEndAmount > 0 ? updatedPosEndAmount.toString() : '0',
-      };
-      
-      const updated = upsertRecord(records, recordToSave);
-      setRecords(updated);
-      saveRecords(updated);
-      setSaved(true);
-    }, 1500);
-  }, [records]);
-
-  const updateRecord = useCallback((patch: Partial<DailySalesRecord>) => {
-    setRecord(prev => {
-      const updated = { ...prev, ...patch };
-      autoSave(updated);
-      setSaved(false);
-      return updated;
-    });
-  }, [autoSave]);
-
-  // 지출 항목 업데이트
-  const updateExpense = useCallback((id: string, field: keyof ExpenseItem, value: string) => {
-    setRecord(prev => {
-      const expenses = prev.expenses.map(e =>
-        e.id === id ? { ...e, [field]: value } : e
-      );
-      const updated = { ...prev, expenses };
-      autoSave(updated);
-      setSaved(false);
-      return updated;
-    });
-  }, [autoSave]);
-
-  // 지출 항목 추가
-  const addExpense = useCallback(() => {
-    setRecord(prev => {
-      const expenses = [
-        ...prev.expenses,
-        { id: `exp_${Date.now()}`, description: '', amount: '' },
-      ];
-      const updated = { ...prev, expenses };
-      autoSave(updated);
-      return updated;
-    });
-  }, [autoSave]);
-
-  // 지출 항목 삭제
-  const removeExpense = useCallback((id: string) => {
-    setRecord(prev => {
-      if (prev.expenses.length <= 1) return prev;
-      const expenses = prev.expenses.filter(e => e.id !== id);
-      const updated = { ...prev, expenses };
-      autoSave(updated);
-      return updated;
-    });
-  }, [autoSave]);
-
-  // 알림 전송
-  const notifyMutation = trpc.sales.notify.useMutation();
-
-  // 푸시 알림 구독
-  const { isSubscribed, isLoading: pushLoading, isSupported, subscribe, unsubscribe } = usePushNotification();
-
-  // 수동 저장
-  const handleSave = async () => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    // 자동 계산된 누적값을 저장
-    const cashTotalStr = autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : '0';
-    const cardTotalStr = autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : '0';
-    const posEndStr = autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0';
-    const grandTotalStr = (autoCalculatedCashTotal + autoCalculatedCardTotal).toString();
-    const dailyTotalStr = (todayCash + todayCard).toString();
-
-    const recordToSave = {
-      ...record,
-      cashTotal: cashTotalStr,
-      cardTotal: cardTotalStr,
-      posEndAmount: posEndStr,
-    };
-    const updated = upsertRecord(records, recordToSave);
-    setRecords(updated);
-    saveRecords(updated);
-    setSaved(true);
-    toast.success('저장되었습니다', { duration: 1500 });
-
-    // 사장님께 알림 전송
-    try {
-      const result = await notifyMutation.mutateAsync({
-        branch: selectedBranch,
-        date: currentDate,
-        cash: record.cash || '0',
-        card: record.card || '0',
-        dailyTotal: dailyTotalStr,
-        cashTotal: cashTotalStr,
-        cardTotal: cardTotalStr,
-        grandTotal: grandTotalStr,
-        posStartAmount: record.posStartAmount || posStartAmountValue.toString() || '0',
-        posEndAmount: posEndStr,
-        cashDeposit: record.cashDeposit || '0',
-        expenses: record.expenses.filter(e => e.description && e.amount),
-        paymentChangeNote: record.paymentChangeNote || '',
-        paymentChangeAmount: record.paymentChangeAmount || '0',
+    if (serverRecord) {
+      setRecord({
+        posStartAmount: serverRecord.posStartAmount?.toString() || '',
+        cash: serverRecord.cash?.toString() || '',
+        card: serverRecord.card?.toString() || '',
+        cashDeposit: '',
+        paymentChangeDate: serverRecord.paymentChangeDate || '',
+        paymentChangeNote: serverRecord.paymentChangeNote || '',
+        paymentChangeAmount: serverRecord.paymentChangeAmount?.toString() || '',
+        expenses: (serverRecord.expenses as ExpenseItem[]).length > 0
+          ? (serverRecord.expenses as ExpenseItem[])
+          : [{ id: `exp_${Date.now()}`, description: '', amount: '' }],
       });
-      if (result.pushSent) {
-        toast.success('핸드폰으로 알림이 발송되었습니다 🔔', { duration: 2000 });
-      }
-    } catch (error) {
-      console.error('알림 전송 실패:', error);
+    } else {
+      setRecord(createEmptyLocalRecord());
     }
-  };
+    setSaved(false);
+  }, [serverRecord, currentDate, selectedBranchId]);
 
-  // 날짜 이동
-  const moveDate = (days: number) => {
+  // 이전 날짜 마감금 조회 (POS 시작금 자동 계산용)
+  const prevDate = useMemo(() => {
     const d = new Date(currentDate);
-    d.setDate(d.getDate() + days);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    setCurrentDate(`${y}-${m}-${day}`);
-  };
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, [currentDate]);
+
+  const { data: prevRecord } = trpc.sales.getRecord.useQuery(
+    { branchId: selectedBranchId!, date: prevDate },
+    { enabled: !!selectedBranchId && !!user }
+  );
+
+  // 이전 날짜 누적값 (현금/카드)
+  const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
+  const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
+  const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
 
   // 계산값
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
-  const expenseTotal = calcExpenseTotal(record.expenses);  
-  // 누적값 = 어제 누적 + 오느뒤 매출
-  const previousCashTotal = getPreviousCumulativeTotal(currentDate, 'cash');
-  const previousCardTotal = getPreviousCumulativeTotal(currentDate, 'card');
+  const expenseTotal = calcExpenseTotal(record.expenses);
   const autoCalculatedCashTotal = previousCashTotal + todayCash;
   const autoCalculatedCardTotal = previousCardTotal + todayCard;
-  
-  // 누적 합계 = 현금누적 + 카드누적 (자동 계산값 사용)
   const grandTotal = autoCalculatedCashTotal + autoCalculatedCardTotal;
-  
-  // POS 시작금 = 어제 마감금
-  const getPreviousPosEndAmount = (dateStr: string): number => {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const currentDate = new Date(y, m - 1, d);
-    const previousDate = new Date(currentDate);
-    previousDate.setDate(previousDate.getDate() - 1);
-    
-    const prevY = previousDate.getFullYear();
-    const prevM = String(previousDate.getMonth() + 1).padStart(2, '0');
-    const prevD = String(previousDate.getDate()).padStart(2, '0');
-    const prevDateStr = `${prevY}-${prevM}-${prevD}`;
-    
-    const prevRecord = findRecordByDate(records, prevDateStr);
-    if (!prevRecord) return 0;
-    return parseAmount(prevRecord.posEndAmount);
-  };
-  
-  const autoCalculatedPosStartAmount = getPreviousPosEndAmount(currentDate);
-  
-  // POS 마감금 = POS 시작금 - 지출합계 + 시제 입금
   const posStartAmountValue = parseAmount(record.posStartAmount) || autoCalculatedPosStartAmount;
   const cashDepositValue = parseAmount(record.cashDeposit);
   const autoCalculatedPosEndAmount = posStartAmountValue - expenseTotal + cashDepositValue;
+
+  const updateRecord = useCallback((patch: Partial<LocalRecord>) => {
+    setRecord(prev => ({ ...prev, ...patch }));
+    setSaved(false);
+  }, []);
+
+  const updateExpense = useCallback((id: string, field: keyof ExpenseItem, value: string) => {
+    setRecord(prev => ({
+      ...prev,
+      expenses: prev.expenses.map(e => e.id === id ? { ...e, [field]: value } : e),
+    }));
+    setSaved(false);
+  }, []);
+
+  const addExpense = useCallback(() => {
+    setRecord(prev => ({
+      ...prev,
+      expenses: [...prev.expenses, { id: `exp_${Date.now()}`, description: '', amount: '' }],
+    }));
+  }, []);
+
+  const removeExpense = useCallback((id: string) => {
+    setRecord(prev => {
+      if (prev.expenses.length <= 1) return prev;
+      return { ...prev, expenses: prev.expenses.filter(e => e.id !== id) };
+    });
+  }, []);
+
+  // 저장 mutation
+  const saveMutation = trpc.sales.save.useMutation();
+  const { isSubscribed, isLoading: pushLoading, isSupported, subscribe, unsubscribe } = usePushNotification();
+
+  const handleSave = async () => {
+    if (!selectedBranchId) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    const cashTotalStr = autoCalculatedCashTotal.toString();
+    const cardTotalStr = autoCalculatedCardTotal.toString();
+    const posEndStr = autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0';
+
+    try {
+      const result = await saveMutation.mutateAsync({
+        branchId: selectedBranchId,
+        date: currentDate,
+        posStartAmount: (parseAmount(record.posStartAmount) || autoCalculatedPosStartAmount).toString(),
+        cash: record.cash || '0',
+        card: record.card || '0',
+        cashTotal: cashTotalStr,
+        cardTotal: cardTotalStr,
+        posEndAmount: posEndStr,
+        cashDeposit: record.cashDeposit || '0',
+        paymentChangeDate: record.paymentChangeDate,
+        paymentChangeNote: record.paymentChangeNote,
+        paymentChangeAmount: record.paymentChangeAmount || '0',
+        expenses: record.expenses.filter(e => e.description || e.amount),
+      });
+
+      setSaved(true);
+      toast.success('저장되었습니다', { duration: 1500 });
+      if (result.pushSent) {
+        toast.success('핸드폰으로 알림이 발송되었습니다 🔔', { duration: 2000 });
+      }
+      refetchRecord();
+    } catch (error) {
+      console.error('저장 실패:', error);
+      toast.error('저장에 실패했습니다');
+    }
+  };
+
+  const moveDate = (days: number) => {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() + days);
+    setCurrentDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  };
+
+  const selectedBranch = myBranches.find(b => b.id === selectedBranchId);
+
+  // 로딩 중
+  if (authLoading || branchesLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <div className="text-sm" style={{ color: 'oklch(0.45 0.01 50)' }}>불러오는 중...</div>
+      </div>
+    );
+  }
+
+  // 로그인 필요
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+            매출 일일 보고
+          </h1>
+          <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>
+            로그인 후 이용하실 수 있습니다
+          </p>
+        </div>
+        <button
+          onClick={() => { window.location.href = getLoginUrl(); }}
+          className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold text-white"
+          style={{ background: 'oklch(0.45 0.18 25)' }}
+        >
+          <LogIn size={16} />
+          로그인
+        </button>
+      </div>
+    );
+  }
+
+  // 배정된 지점 없음
+  if (myBranches.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <div className="text-center">
+          <h1 className="text-xl font-bold mb-2" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+            배정된 지점이 없습니다
+          </h1>
+          <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>
+            관리자에게 지점 배정을 요청해 주세요
+          </p>
+        </div>
+        <button
+          onClick={() => { window.location.href = getLoginUrl(); }}
+          className="text-sm underline"
+          style={{ color: 'oklch(0.45 0.18 25)' }}
+        >
+          다른 계정으로 로그인
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -394,20 +364,33 @@ export default function Home() {
           >
             매출 일일 보고
           </span>
-          <select
-            value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
-            className="px-3 py-1.5 rounded text-sm font-medium border"
-            style={{
-              background: 'oklch(0.92 0.015 85)',
-              color: 'oklch(0.25 0.01 50)',
-              borderColor: 'oklch(0.75 0.015 85)',
-            }}
-          >
-            {BRANCHES.map(branch => (
-              <option key={branch} value={branch}>{branch}</option>
-            ))}
-          </select>
+          {myBranches.length > 1 ? (
+            <select
+              value={selectedBranchId ?? ''}
+              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+              className="px-3 py-1.5 rounded text-sm font-medium border"
+              style={{
+                background: 'oklch(0.92 0.015 85)',
+                color: 'oklch(0.25 0.01 50)',
+                borderColor: 'oklch(0.75 0.015 85)',
+              }}
+            >
+              {myBranches.map(branch => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
+            </select>
+          ) : (
+            <span
+              className="px-3 py-1.5 rounded text-sm font-semibold border"
+              style={{
+                background: 'oklch(0.92 0.015 85)',
+                color: 'oklch(0.25 0.01 50)',
+                borderColor: 'oklch(0.75 0.015 85)',
+              }}
+            >
+              {selectedBranch?.name ?? ''}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {saved && (
@@ -431,6 +414,20 @@ export default function Home() {
               {isSubscribed ? <Bell size={15} /> : <BellOff size={15} />}
             </button>
           )}
+          {user.role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+              style={{
+                background: 'oklch(0.92 0.015 85)',
+                color: 'oklch(0.25 0.01 50)',
+                border: '1px solid oklch(0.75 0.015 85)',
+              }}
+            >
+              <LayoutDashboard size={15} />
+              관리
+            </button>
+          )}
           <button
             onClick={() => navigate('/history')}
             className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
@@ -445,11 +442,12 @@ export default function Home() {
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium text-white transition-colors active:scale-95"
+            disabled={saveMutation.isPending}
+            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium text-white transition-colors active:scale-95 disabled:opacity-60"
             style={{ background: 'oklch(0.45 0.18 25)' }}
           >
             <Save size={15} />
-            저장
+            {saveMutation.isPending ? '저장 중...' : '저장'}
           </button>
         </div>
       </header>
@@ -478,7 +476,7 @@ export default function Home() {
               <AmountInput
                 value={record.posStartAmount}
                 onChange={val => updateRecord({ posStartAmount: val })}
-                placeholder={autoCalculatedPosStartAmount > 0 ? autoCalculatedPosStartAmount.toString() : '0'}
+                placeholder={autoCalculatedPosStartAmount > 0 ? autoCalculatedPosStartAmount.toLocaleString('ko-KR') : '0'}
                 className="w-36 text-right font-semibold text-base"
               />
             </div>
@@ -490,80 +488,44 @@ export default function Home() {
           <div className="section-title">■ 매출 현황</div>
           <table className="ledger-table">
             <tbody>
-              {/* 현금 / 현금누적 */}
               <tr>
-                <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  현금
-                </td>
+                <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>현금</td>
                 <td className="w-1/4">
-                  <AmountInput
-                    value={record.cash}
-                    onChange={val => updateRecord({ cash: val })}
-                    placeholder="0"
-                  />
+                  <AmountInput value={record.cash} onChange={val => updateRecord({ cash: val })} placeholder="0" />
                 </td>
-                <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  현금누적
-                </td>
+                <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>현금누적</td>
                 <td className="w-1/4">
-                  <div className="text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                  <div className="text-right font-semibold text-base px-2" style={{ color: 'oklch(0.12 0.01 50)' }}>
                     {autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toLocaleString('ko-KR') : '0'}
                   </div>
                 </td>
               </tr>
-              {/* 카드 / 카드누적 */}
               <tr>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  카드
-                </td>
+                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>카드</td>
                 <td>
-                  <AmountInput
-                    value={record.card}
-                    onChange={val => updateRecord({ card: val })}
-                    placeholder="0"
-                  />
+                  <AmountInput value={record.card} onChange={val => updateRecord({ card: val })} placeholder="0" />
                 </td>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  카드누적
-                </td>
+                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>카드누적</td>
                 <td>
-                  <div className="text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
+                  <div className="text-right font-semibold text-base px-2" style={{ color: 'oklch(0.12 0.01 50)' }}>
                     {autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toLocaleString('ko-KR') : '0'}
                   </div>
                 </td>
               </tr>
-              {/* 합계 / 총합계 */}
               <tr className="total-row">
-                <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-                  오늘
-                </td>
-                <td className="text-right">
-                  <span className="total-amount text-sm">
-                    {dailyTotal > 0 ? dailyTotal.toLocaleString('ko-KR') : '—'}
-                  </span>
-                </td>
-                <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-                  누적
-                </td>
-                <td className="text-right">
-                  <span className="total-amount text-sm">
-                    {grandTotal > 0 ? grandTotal.toLocaleString('ko-KR') : '—'}
-                  </span>
-                </td>
+                <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>오늘</td>
+                <td className="text-right"><span className="total-amount text-sm">{dailyTotal > 0 ? dailyTotal.toLocaleString('ko-KR') : '—'}</span></td>
+                <td className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>누적</td>
+                <td className="text-right"><span className="total-amount text-sm">{grandTotal > 0 ? grandTotal.toLocaleString('ko-KR') : '—'}</span></td>
               </tr>
-              {/* 지출 / 지출합계 */}
               <tr>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  지출
-                </td>
+                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>지출</td>
                 <td className="text-right">
                   <span className="text-sm font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {expenseTotal > 0 ? expenseTotal.toLocaleString('ko-KR') : '—'}
                   </span>
                 </td>
-                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  지출합계
-                </td>
+                <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>지출합계</td>
                 <td className="text-right">
                   <span className="text-sm font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {expenseTotal > 0 ? expenseTotal.toLocaleString('ko-KR') : '—'}
@@ -575,14 +537,9 @@ export default function Home() {
         </div>
 
         {/* POS 마감금 */}
-        <div
-          className="mb-5 p-3 rounded"
-          style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}
-        >
+        <div className="mb-5 p-3 rounded" style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-              POS 마감금
-            </span>
+            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>POS 마감금</span>
             <div className="flex items-center gap-1 text-sm">
               <span className="text-muted-foreground">₩</span>
               <div className="w-36 text-right font-semibold text-base" style={{ color: 'oklch(0.12 0.01 50)' }}>
@@ -593,14 +550,9 @@ export default function Home() {
         </div>
 
         {/* 시제 입금 */}
-        <div
-          className="mb-5 p-3 rounded"
-          style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}
-        >
+        <div className="mb-5 p-3 rounded" style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-              시제 입금
-            </span>
+            <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif" }}>시제 입금</span>
             <div className="flex items-center gap-1 text-sm">
               <span className="text-muted-foreground">₩</span>
               <AmountInput
@@ -620,11 +572,7 @@ export default function Home() {
             <button
               onClick={addExpense}
               className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors active:scale-95"
-              style={{
-                background: 'oklch(0.92 0.015 85)',
-                color: 'oklch(0.25 0.01 50)',
-                border: '1px solid oklch(0.75 0.015 85)',
-              }}
+              style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
             >
               <Plus size={13} />
               항목 추가
@@ -640,13 +588,11 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {/* 2열씩 묶어서 표시 */}
               {Array.from({ length: Math.ceil(record.expenses.length / 2) }, (_, rowIdx) => {
                 const left = record.expenses[rowIdx * 2];
                 const right = record.expenses[rowIdx * 2 + 1];
                 return (
                   <tr key={rowIdx}>
-                    {/* 왼쪽 */}
                     <td className="p-0">
                       <div className="flex items-center">
                         <input
@@ -658,24 +604,15 @@ export default function Home() {
                           style={{ color: 'oklch(0.12 0.01 50)' }}
                         />
                         {record.expenses.length > 1 && (
-                          <button
-                            onClick={() => removeExpense(left.id)}
-                            className="pr-1 opacity-30 hover:opacity-70 transition-opacity flex-shrink-0"
-                          >
+                          <button onClick={() => removeExpense(left.id)} className="pr-1 opacity-30 hover:opacity-70 transition-opacity flex-shrink-0">
                             <Trash2 size={12} />
                           </button>
                         )}
                       </div>
                     </td>
                     <td className="p-0">
-                      <AmountInput
-                        value={left?.amount ?? ''}
-                        onChange={val => updateExpense(left.id, 'amount', val)}
-                        placeholder="0"
-                        className="px-2 py-1.5 text-sm"
-                      />
+                      <AmountInput value={left?.amount ?? ''} onChange={val => updateExpense(left.id, 'amount', val)} placeholder="0" className="px-2 py-1.5 text-sm" />
                     </td>
-                    {/* 오른쪽 */}
                     <td className="p-0">
                       {right ? (
                         <div className="flex items-center">
@@ -687,43 +624,25 @@ export default function Home() {
                             className="w-full bg-transparent border-none outline-none text-sm px-2 py-1.5"
                             style={{ color: 'oklch(0.12 0.01 50)' }}
                           />
-                          <button
-                            onClick={() => removeExpense(right.id)}
-                            className="pr-1 opacity-30 hover:opacity-70 transition-opacity flex-shrink-0"
-                          >
+                          <button onClick={() => removeExpense(right.id)} className="pr-1 opacity-30 hover:opacity-70 transition-opacity flex-shrink-0">
                             <Trash2 size={12} />
                           </button>
                         </div>
-                      ) : (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground/30">—</div>
-                      )}
+                      ) : <div className="px-2 py-1.5 text-sm text-muted-foreground/30">—</div>}
                     </td>
                     <td className="p-0">
-                      {right ? (
-                        <AmountInput
-                          value={right.amount}
-                          onChange={val => updateExpense(right.id, 'amount', val)}
-                          placeholder="0"
-                          className="px-2 py-1.5 text-sm"
-                        />
-                      ) : (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground/30">—</div>
-                      )}
+                      {right
+                        ? <AmountInput value={right.amount} onChange={val => updateExpense(right.id, 'amount', val)} placeholder="0" className="px-2 py-1.5 text-sm" />
+                        : <div className="px-2 py-1.5 text-sm text-muted-foreground/30">—</div>
+                      }
                     </td>
                   </tr>
                 );
               })}
-              {/* 지출 합계 행 */}
               {expenseTotal > 0 && (
                 <tr className="total-row">
-                  <td colSpan={2} className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-                    지출 합계
-                  </td>
-                  <td colSpan={2} className="text-right">
-                    <span className="total-amount text-sm">
-                      {expenseTotal.toLocaleString('ko-KR')}
-                    </span>
-                  </td>
+                  <td colSpan={2} className="text-center font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif" }}>지출 합계</td>
+                  <td colSpan={2} className="text-right"><span className="total-amount text-sm">{expenseTotal.toLocaleString('ko-KR')}</span></td>
                 </tr>
               )}
             </tbody>
@@ -731,10 +650,7 @@ export default function Home() {
         </div>
 
         {/* 결제변경 사항 */}
-        <div
-          className="mb-6 p-3 rounded"
-          style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}
-        >
+        <div className="mb-6 p-3 rounded" style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}>
           <div className="section-title">■ 결제변경 사항</div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -775,73 +691,46 @@ export default function Home() {
         </div>
 
         {/* 요약 카드 */}
-        <div
-          className="rounded-lg p-4"
-          style={{
-            background: 'oklch(0.45 0.18 25)',
-            color: 'white',
-          }}
-        >
-          <div className="text-sm font-semibold mb-3 opacity-90" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-            오늘의 요약
-          </div>
+        <div className="rounded-lg p-4" style={{ background: 'oklch(0.45 0.18 25)', color: 'white' }}>
+          <div className="text-sm font-semibold mb-3 opacity-90" style={{ fontFamily: "'Noto Serif KR', serif" }}>오늘의 요약</div>
           <div className="grid grid-cols-2 gap-y-2 text-sm">
             <span className="opacity-80">오늘 현금</span>
-            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {todayCash > 0 ? `₩${todayCash.toLocaleString('ko-KR')}` : '—'}
-            </span>
-            <span className="opacity-80">오뉸 카드</span>
-            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {todayCard > 0 ? `₩${todayCard.toLocaleString('ko-KR')}` : '—'}
-            </span>
+            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{todayCash > 0 ? `₩${todayCash.toLocaleString('ko-KR')}` : '—'}</span>
+            <span className="opacity-80">오늘 카드</span>
+            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{todayCard > 0 ? `₩${todayCard.toLocaleString('ko-KR')}` : '—'}</span>
             <span className="opacity-80">지출</span>
-            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {expenseTotal > 0 ? `₩${expenseTotal.toLocaleString('ko-KR')}` : '—'}
-            </span>
+            <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{expenseTotal > 0 ? `₩${expenseTotal.toLocaleString('ko-KR')}` : '—'}</span>
             <div className="col-span-2 border-t border-white/30 my-1" />
             <span className="opacity-80 text-xs">현금 누적</span>
-            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {autoCalculatedCashTotal > 0 ? `₩${autoCalculatedCashTotal.toLocaleString('ko-KR')}` : '—'}
-            </span>
+            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>{autoCalculatedCashTotal > 0 ? `₩${autoCalculatedCashTotal.toLocaleString('ko-KR')}` : '—'}</span>
             <span className="opacity-80 text-xs">카드 누적</span>
-            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {autoCalculatedCardTotal > 0 ? `₩${autoCalculatedCardTotal.toLocaleString('ko-KR')}` : '—'}
-            </span>
+            <span className="text-right font-semibold text-xs" style={{ fontVariantNumeric: 'tabular-nums' }}>{autoCalculatedCardTotal > 0 ? `₩${autoCalculatedCardTotal.toLocaleString('ko-KR')}` : '—'}</span>
             <span className="font-bold">총 누적</span>
-            <span className="text-right font-bold text-base" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {grandTotal > 0 ? `₩${grandTotal.toLocaleString('ko-KR')}` : '—'}
-            </span>
+            <span className="text-right font-bold text-base" style={{ fontVariantNumeric: 'tabular-nums' }}>{grandTotal > 0 ? `₩${grandTotal.toLocaleString('ko-KR')}` : '—'}</span>
           </div>
         </div>
       </main>
 
-      {/* 하단 저장 버튼 (고정) */}
+      {/* 하단 저장 버튼 */}
       <div
         className="fixed bottom-0 left-0 right-0 px-4 py-3 flex gap-3"
-        style={{
-          background: 'oklch(0.985 0.008 85)',
-          borderTop: '1px solid oklch(0.75 0.015 85)',
-          boxShadow: '0 -2px 8px oklch(0 0 0 / 0.06)',
-        }}
+        style={{ background: 'oklch(0.985 0.008 85)', borderTop: '1px solid oklch(0.75 0.015 85)', boxShadow: '0 -2px 8px oklch(0 0 0 / 0.06)' }}
       >
         <button
           onClick={() => navigate('/history')}
           className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors active:scale-95"
-          style={{
-            background: 'oklch(0.92 0.015 85)',
-            color: 'oklch(0.25 0.01 50)',
-            border: '1px solid oklch(0.75 0.015 85)',
-          }}
+          style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
         >
           기록 보기
         </button>
         <button
           onClick={handleSave}
-          className="flex-[2] py-3 rounded-lg text-sm font-bold text-white transition-colors active:scale-95 flex items-center justify-center gap-2"
+          disabled={saveMutation.isPending}
+          className="flex-[2] py-3 rounded-lg text-sm font-bold text-white transition-colors active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60"
           style={{ background: 'oklch(0.45 0.18 25)' }}
         >
           <Save size={16} />
-          저장
+          {saveMutation.isPending ? '저장 중...' : '저장'}
         </button>
       </div>
     </div>
