@@ -242,6 +242,19 @@ export default function Home() {
   const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
   const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
 
+  // 이전 날짜 마감금 → 현재 날짜 POS 시작금 자동 반영
+  // 조건: 현재 날짜 기록이 없고(serverRecord가 null), 시작금이 비어 있고, 이전 마감금이 0보다 클 때
+  useEffect(() => {
+    if (serverRecord === null && autoCalculatedPosStartAmount > 0) {
+      setRecord(prev => {
+        if (!prev.posStartAmount) {
+          return { ...prev, posStartAmount: autoCalculatedPosStartAmount.toString() };
+        }
+        return prev;
+      });
+    }
+  }, [serverRecord, autoCalculatedPosStartAmount]);
+
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
