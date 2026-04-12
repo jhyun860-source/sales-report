@@ -188,7 +188,12 @@ export default function Home() {
     return getTodayString();
   });
 
+  // 날짜/지점 조합별 초기화 완료 여부 추적 ref (선언 순서: setCurrentDate보다 앞에)
+  const initDoneRef = useRef<string>('');
+
   const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
+    // 날짜 변경 시 initDoneRef 초기화 → 새 날짜로 데이터 다시 로드
+    initDoneRef.current = '';
     setCurrentDateState(prev => {
       const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
       try { localStorage.setItem('selectedDate', next); } catch {}
@@ -228,16 +233,25 @@ export default function Home() {
   const isFirstOfMonth = currentDate.endsWith('-01');
 
   // serverRecord와 prevRecord 두 쿼리가 모두 완료된 후 상태 초기화
-  // 두 쿼리가 모두 로딩 완료(undefined가 아닌 상태)일 때만 실행
+  // 날짜/지점이 바뀌거나 쿼리가 완료될 때만 실행 (autoCalculatedPosStartAmount 의존성 제거)
   useEffect(() => {
     // 아직 로딩 중이면 대기
     if (recordLoading || prevLoading) return;
+    if (!selectedBranchId) return;
+
+    const key = `${selectedBranchId}-${currentDate}`;
+    // 이미 이 날짜/지점 조합으로 초기화했으면 스킵 (중복 실행 방지)
+    if (initDoneRef.current === key) return;
+    initDoneRef.current = key;
+
+    // prevRecord에서 이전 마감금 가져오기
+    const prevPosEnd = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
 
     if (serverRecord) {
       // 기존 기록이 있으면 서버 데이터로 채움
       // posStartAmount가 0이면 이전 날짜 마감금으로 자동 채움 (건너뛴 날 포함)
       const savedPosStart = Number(serverRecord.posStartAmount || 0);
-      const effectivePosStart = savedPosStart > 0 ? savedPosStart : autoCalculatedPosStartAmount;
+      const effectivePosStart = savedPosStart > 0 ? savedPosStart : prevPosEnd;
       setRecord({
         posStartAmount: effectivePosStart > 0 ? effectivePosStart.toString() : '',
         cash: serverRecord.cash?.toString() || '',
@@ -249,14 +263,13 @@ export default function Home() {
       });
     } else {
       // 기록 없는 새 날짜: 이전 날짜 마감금을 POS 시작금으로 자동 반영
-      const prevPosEnd = autoCalculatedPosStartAmount;
       setRecord({
         ...createEmptyLocalRecord(),
         posStartAmount: prevPosEnd > 0 ? prevPosEnd.toString() : '',
       });
     }
     setSaved(false);
-  }, [serverRecord, recordLoading, prevLoading, autoCalculatedPosStartAmount, currentDate, selectedBranchId]);
+  }, [serverRecord, prevRecord, recordLoading, prevLoading, currentDate, selectedBranchId]);
 
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
