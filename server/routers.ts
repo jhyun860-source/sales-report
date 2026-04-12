@@ -673,7 +673,8 @@ export const appRouter = router({
       .input(z.object({
         tableReportId: z.number(),
         tableNumber: z.string(),
-        guestType: z.enum(['walking', 'regular']).default('walking'),
+        guestType: z.enum(['walking', 'regular', 'named']).default('walking'),
+        guestName: z.string().optional(),
         amount: z.string().default('0'),
         paymentMethod: z.enum(['card', 'cash', 'mixed']).default('card'),
         memo: z.string().optional(),
@@ -686,6 +687,7 @@ export const appRouter = router({
           tableReportId: input.tableReportId,
           tableNumber: input.tableNumber,
           guestType: input.guestType,
+          guestName: input.guestName || null,
           amount: input.amount,
           paymentMethod: input.paymentMethod,
           memo: input.memo || null,
@@ -698,7 +700,8 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         tableNumber: z.string().optional(),
-        guestType: z.enum(['walking', 'regular']).optional(),
+        guestType: z.enum(['walking', 'regular', 'named']).optional(),
+        guestName: z.string().optional().nullable(),
         amount: z.string().optional(),
         paymentMethod: z.enum(['card', 'cash', 'mixed']).optional(),
         memo: z.string().optional(),
@@ -710,6 +713,7 @@ export const appRouter = router({
         const updateData: Record<string, unknown> = {};
         if (rest.tableNumber !== undefined) updateData.tableNumber = rest.tableNumber;
         if (rest.guestType !== undefined) updateData.guestType = rest.guestType;
+        if (rest.guestName !== undefined) updateData.guestName = rest.guestName;
         if (rest.amount !== undefined) updateData.amount = rest.amount;
         if (rest.paymentMethod !== undefined) updateData.paymentMethod = rest.paymentMethod;
         if (rest.memo !== undefined) updateData.memo = rest.memo;

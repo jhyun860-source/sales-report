@@ -76,7 +76,8 @@ type TableItemLocal = {
   id?: number;
   localId: string;
   tableNumber: string;
-  guestType: 'walking' | 'regular';
+  guestType: 'walking' | 'regular' | 'named';
+  guestName: string;
   amount: string;
   paymentMethod: 'card' | 'cash' | 'mixed';
   memo: string;
@@ -100,7 +101,7 @@ function makeLocalId() {
 }
 
 function emptyItem(): TableItemLocal {
-  return { localId: makeLocalId(), tableNumber: '', guestType: 'walking', amount: '', paymentMethod: 'card', memo: '' };
+  return { localId: makeLocalId(), tableNumber: '', guestType: 'walking', guestName: '', amount: '', paymentMethod: 'card', memo: '' };
 }
 
 function emptyIncentive(): IncentiveLocal {
@@ -166,6 +167,7 @@ export default function TableReport() {
           localId: makeLocalId(),
           tableNumber: it.tableNumber,
           guestType: it.guestType,
+          guestName: it.guestName ?? '',
           amount: it.amount ?? '',
           paymentMethod: it.paymentMethod,
           memo: it.memo ?? '',
@@ -231,6 +233,7 @@ export default function TableReport() {
             id: it.id,
             tableNumber: it.tableNumber,
             guestType: it.guestType,
+            guestName: it.guestName || null,
             amount: it.amount || '0',
             paymentMethod: it.paymentMethod,
             memo: it.memo,
@@ -240,6 +243,7 @@ export default function TableReport() {
             tableReportId: rId,
             tableNumber: it.tableNumber,
             guestType: it.guestType,
+            guestName: it.guestName || undefined,
             amount: it.amount || '0',
             paymentMethod: it.paymentMethod,
             memo: it.memo,
@@ -477,7 +481,7 @@ export default function TableReport() {
                   />
                   {/* 손님 구분 토글 */}
                   <div className="flex rounded overflow-hidden flex-shrink-0" style={{ border: `1px solid ${BORDER}` }}>
-                    {(['walking', 'regular'] as const).map(type => (
+                    {(['walking', 'named'] as const).map(type => (
                       <button
                         key={type}
                         onClick={() => updateItemField(item.localId, 'guestType', type)}
@@ -487,7 +491,7 @@ export default function TableReport() {
                           color: item.guestType === type ? 'white' : MUTED,
                         }}
                       >
-                        {type === 'walking' ? '워킹' : '기존'}
+                        {type === 'walking' ? '워킹' : '지명'}
                       </button>
                     ))}
                   </div>
@@ -495,6 +499,21 @@ export default function TableReport() {
                     <Trash2 size={13} />
                   </button>
                 </div>
+
+                {/* 1.5행: 지명 시 손님 이름 입력 */}
+                {item.guestType === 'named' && (
+                  <div className="flex items-center gap-2 px-3 py-1.5" style={{ borderBottom: `1px solid ${BORDER}`, background: `${PRIMARY}10` }}>
+                    <span className="text-xs flex-shrink-0 font-medium" style={{ color: PRIMARY }}>손님</span>
+                    <input
+                      type="text"
+                      value={item.guestName}
+                      onChange={e => updateItemField(item.localId, 'guestName', e.target.value)}
+                      placeholder="손님 이름 입력"
+                      className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0"
+                      style={{ color: TEXT }}
+                    />
+                  </div>
+                )}
 
                 {/* 2행: 금액 + 결제수단 */}
                 <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
@@ -610,9 +629,9 @@ export default function TableReport() {
                   />
                 </div>
 
-                {/* 4행: 근무 시간 */}
+                {/* 4행: 근무 시간 + 자동 계산 */}
                 <div className="flex items-center gap-2 px-3 py-2">
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>근무시간</span>
+                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>근무</span>
                   <input
                     type="time"
                     value={inc.workStart}
@@ -628,6 +647,22 @@ export default function TableReport() {
                     className="flex-1 bg-transparent border-none outline-none text-sm text-center"
                     style={{ color: TEXT, minWidth: 0 }}
                   />
+                  {/* 자동 계산 총 근무시간 */}
+                  {inc.workStart && inc.workEnd && (() => {
+                    const [sh, sm] = inc.workStart.split(':').map(Number);
+                    const [eh, em] = inc.workEnd.split(':').map(Number);
+                    let startMin = sh * 60 + sm;
+                    let endMin = eh * 60 + em;
+                    if (endMin <= startMin) endMin += 24 * 60; // 자정 넘침
+                    const diff = endMin - startMin;
+                    const hours = Math.floor(diff / 60);
+                    const mins = diff % 60;
+                    return (
+                      <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: PRIMARY, color: 'white', minWidth: 0 }}>
+                        {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

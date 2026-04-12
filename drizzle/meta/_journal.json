@@ -36,6 +36,13 @@
       "when": 1775986767347,
       "tag": "0004_curly_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1776000317841,
+      "tag": "0005_fat_the_phantom",
+      "breakpoints": true
     }
   ]
 }

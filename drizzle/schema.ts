@@ -193,7 +193,8 @@ export const tableItems = mysqlTable("tableItems", {
   id: int("id").autoincrement().primaryKey(),
   tableReportId: int("tableReportId").notNull(),
   tableNumber: varchar("tableNumber", { length: 20 }).notNull(), // 테이블 번호 (1T, 2T 등)
-  guestType: mysqlEnum("guestType", ["walking", "regular"]).default("walking").notNull(), // 워킹/기존
+  guestType: mysqlEnum("guestType", ["walking", "regular", "named"]).default("walking").notNull(), // 워킹/기존/지명
+  guestName: varchar("guestName", { length: 100 }), // 손님 이름 (지명 시)
   amount: decimal("amount", { precision: 15, scale: 0 }).default("0").notNull(), // 금액
   paymentMethod: mysqlEnum("paymentMethod", ["card", "cash", "mixed"]).default("card").notNull(), // 결제수단
   memo: text("memo"), // 주문 메모
