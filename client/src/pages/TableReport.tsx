@@ -118,15 +118,29 @@ export default function TableReport() {
   const [reportId, setReportId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 이미 로드한 날짜 추적 (items 덮어쓰기 방지)
+  const loadedDateRef = useRef<string | null>(null);
 
-  // 날짜별 기록 조회
-  const { data: reportData, refetch } = trpc.tableReport.getByDate.useQuery(
+  // 날짜 변경 시 loadedDateRef 초기화 (새 날짜 데이터 로드 허용)
+  useEffect(() => {
+    loadedDateRef.current = null;
+  }, [currentDate]);
+
+  // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
+  const { data: reportData } = trpc.tableReport.getByDate.useQuery(
     { date: currentDate },
-    { enabled: !!account }
+    { enabled: !!account, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
-  // 서버 데이터 → 로컬 상태 동기화
+  // 서버 데이터 → 로컈 상태 동기화 (날짜가 바뀔 때만 덮어씀)
   useEffect(() => {
+    // 이미 이 날짜 데이터를 로드했으면 다시 덮어쓰지 않음
+    if (loadedDateRef.current === currentDate) return;
+
+    if (reportData !== undefined) {
+      loadedDateRef.current = currentDate;
+    }
+
     if (reportData) {
       setReportId(reportData.id);
       setTeamCount(reportData.teamCount ?? 0);
@@ -159,7 +173,7 @@ export default function TableReport() {
       } else {
         setIncentives([emptyIncentive()]);
       }
-    } else {
+    } else if (reportData === null) {
       setReportId(null);
       setTeamCount(0);
       setNotes('');
@@ -181,6 +195,8 @@ export default function TableReport() {
   // 저장 함수
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    // 저장 후 loadedDateRef 초기화해서 다음 refetch 시 데이터 갱신 허용
+    loadedDateRef.current = null;
     try {
       // 1. 테이블 항목 먼저 저장 (upsert에서 합산 계산에 필요)
       // 임시 reportId가 없으면 먼저 report 생성
@@ -256,23 +272,25 @@ export default function TableReport() {
       const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
       const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
       toast.success(`저장 완료 | 현금 ${cashFmt} / 카드 ${cardFmt}`, { duration: 2500 });
-      refetch();
+      // 저장 완료 후 서버 데이터 다시 로드 (loadedDateRef 이미 null로 초기화됨)
+      loadedDateRef.current = null;
     } catch (e: any) {
       toast.error('저장 실패: ' + (e?.message ?? '알 수 없는 오류'));
     }
   }, [currentDate, teamCount, notes, items, incentives, reportId]);
 
-  // 자동 저장 트리거
+  // 자동 저장 트리거 - 메모 입력 중 덮어쓰기 방지를 위해 딜레이를 길게 설정
   const scheduleAutoSave = useCallback(() => {
     setSaved(false);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => handleSave(), 2000);
+    // 자동저장은 5초 후 (입력 중 리셋 방지)
+    saveTimeoutRef.current = setTimeout(() => handleSave(), 5000);
   }, [handleSave]);
 
-  // 테이블 항목 업데이트
+  // 테이블 항목 업데이트 - 메모 변경 시 자동저장 트리거 안 함 (수동 저장만)
   const updateItemField = (localId: string, field: keyof TableItemLocal, value: string) => {
     setItems(prev => prev.map(it => it.localId === localId ? { ...it, [field]: value } : it));
-    scheduleAutoSave();
+    if (field !== 'memo') scheduleAutoSave();
   };
 
   // 테이블 항목 삭제

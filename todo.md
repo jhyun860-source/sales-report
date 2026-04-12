@@ -117,6 +117,13 @@
 - [x] 입력 중 글씨 사라지지 않도록 안정적 상태 관리
 - [x] 형광펜: 텍스트 선택 후 색상 클릭 시 mark 태그 삽입 및 표시
 
+## 메모 글씨 사라지는 문제 근본 수정
+
+- [x] TableReport: staleTime=Infinity, refetchOnWindowFocus=false 설정
+- [x] useEffect 의존성에서 currentDate 제거, loadedDateRef로 날짜별 로드 제어
+- [x] 메모 입력 시 자동저장 트리거 안 함 (수동 저장만)
+- [x] 자동저장 딜레이 2초 → 5초로 증가
+
 ## MemoEditor 버그 수정
 
 - [x] 플레이스홀더 텍스트와 입력 글씨 겹침 문제 수정
