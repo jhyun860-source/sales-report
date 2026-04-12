@@ -210,13 +210,29 @@ export default function Home() {
     }
   }, [myBranches, selectedBranchId]);
 
-  const { data: serverRecord, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
+  const { data: serverRecord, isLoading: recordLoading, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
     { branchId: selectedBranchId!, date: currentDate },
     { enabled: !!selectedBranchId && !!user }
   );
 
+  // 현재 날짜를 서버에 전달하면 서버가 그 이전의 가장 최근 기록을 반환
+  const { data: prevRecord, isLoading: prevLoading } = trpc.storeSales.getPrevRecord.useQuery(
+    { branchId: selectedBranchId!, date: currentDate },
+    { enabled: !!selectedBranchId && !!user }
+  );
+
+  const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
+  const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
+  const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
+
+  // serverRecord와 prevRecord 두 쿼리가 모두 완료된 후 상태 초기화
+  // 두 쿼리가 모두 로딩 완료(undefined가 아닌 상태)일 때만 실행
   useEffect(() => {
+    // 아직 로딩 중이면 대기
+    if (recordLoading || prevLoading) return;
+
     if (serverRecord) {
+      // 기존 기록이 있으면 서버 데이터로 채움
       setRecord({
         posStartAmount: serverRecord.posStartAmount?.toString() || '',
         cash: serverRecord.cash?.toString() || '',
@@ -227,33 +243,15 @@ export default function Home() {
           : [{ id: `exp_${Date.now()}`, description: '', amount: '' }],
       });
     } else {
-      setRecord(createEmptyLocalRecord());
-    }
-    setSaved(false);
-  }, [serverRecord, currentDate, selectedBranchId]);
-
-  // 현재 날짜를 서버에 전달하면 서버가 그 이전의 가장 최근 기록을 반환
-  const { data: prevRecord } = trpc.storeSales.getPrevRecord.useQuery(
-    { branchId: selectedBranchId!, date: currentDate },
-    { enabled: !!selectedBranchId && !!user }
-  );
-
-  const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
-  const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
-  const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
-
-  // 이전 날짜 마감금 → 현재 날짜 POS 시작금 자동 반영
-  // 조건: 현재 날짜 기록이 없고(serverRecord가 null), 시작금이 비어 있고, 이전 마감금이 0보다 클 때
-  useEffect(() => {
-    if (serverRecord === null && autoCalculatedPosStartAmount > 0) {
-      setRecord(prev => {
-        if (!prev.posStartAmount) {
-          return { ...prev, posStartAmount: autoCalculatedPosStartAmount.toString() };
-        }
-        return prev;
+      // 기록 없는 새 날짜: 이전 날짜 마감금을 POS 시작금으로 자동 반영
+      const prevPosEnd = autoCalculatedPosStartAmount;
+      setRecord({
+        ...createEmptyLocalRecord(),
+        posStartAmount: prevPosEnd > 0 ? prevPosEnd.toString() : '',
       });
     }
-  }, [serverRecord, autoCalculatedPosStartAmount]);
+    setSaved(false);
+  }, [serverRecord, recordLoading, prevLoading, autoCalculatedPosStartAmount, currentDate, selectedBranchId]);
 
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
