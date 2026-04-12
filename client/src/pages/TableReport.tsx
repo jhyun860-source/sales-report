@@ -110,7 +110,22 @@ function emptyIncentive(): IncentiveLocal {
 export default function TableReport() {
   const [, navigate] = useLocation();
   const { user: account, loading: authLoading } = useStoreAuth();
-  const [currentDate, setCurrentDate] = useState(getTodayString);
+  // 날짜를 localStorage에 저장/복원 (새로고침 후에도 유지)
+  const [currentDate, setCurrentDateState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('tableReport_currentDate');
+      if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) return saved;
+    } catch {}
+    return getTodayString();
+  });
+
+  const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
+    setCurrentDateState(prev => {
+      const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
+      try { localStorage.setItem('tableReport_currentDate', next); } catch {}
+      return next;
+    });
+  };
   const [teamCount, setTeamCount] = useState(0);
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<TableItemLocal[]>([emptyItem()]);

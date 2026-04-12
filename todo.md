@@ -117,6 +117,11 @@
 - [x] 입력 중 글씨 사라지지 않도록 안정적 상태 관리
 - [x] 형광펜: 텍스트 선택 후 색상 클릭 시 mark 태그 삽입 및 표시
 
+## TableReport 날짜 새로고침 후 유지
+
+- [x] 선택한 날짜를 localStorage에 저장
+- [x] 페이지 로드 시 localStorage에서 날짜 복원 (없으면 오늘 날짜)
+
 ## MemoEditor 모바일/PC 호환 재설계
 
 - [x] contentEditable 제거, textarea 기반으로 전환 (모바일 IME 호환)
