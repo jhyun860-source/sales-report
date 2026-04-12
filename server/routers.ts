@@ -1,11 +1,11 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { notifyOwner } from "./_core/notification";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -19,47 +19,67 @@ export const appRouter = router({
   }),
 
   sales: router({
-    sendKakao: publicProcedure
+    notify: publicProcedure
       .input(z.object({
         branch: z.string(),
         date: z.string(),
         cash: z.string(),
         card: z.string(),
+        dailyTotal: z.string(),
         cashTotal: z.string(),
         cardTotal: z.string(),
+        grandTotal: z.string(),
         posStartAmount: z.string(),
         posEndAmount: z.string(),
+        cashDeposit: z.string().optional(),
         expenses: z.array(z.object({
           description: z.string(),
           amount: z.string(),
         })),
+        paymentChangeNote: z.string().optional(),
+        paymentChangeAmount: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        // 카톡 메시지 구성
-        const expenseText = input.expenses.length > 0 
-          ? input.expenses
-              .filter(e => e.description && e.amount)
-              .map(e => `  - ${e.description}: ${e.amount}`)
-              .join('\n')
-          : '  없음';
+        const expenseLines = input.expenses
+          .filter(e => e.description && e.amount)
+          .map(e => `• ${e.description}: ₩${Number(e.amount).toLocaleString('ko-KR')}`)
+          .join('\n');
 
-        const message = `[매출 일일 보고]\n\n지점: ${input.branch}\n날짜: ${input.date}\n\n오늘 매출\n- 현금: ${input.cash}\n- 카드: ${input.card}\n\n누적 매출\n- 현금누적: ${input.cashTotal}\n- 카드누적: ${input.cardTotal}\n\nPOS 기기\n- 시작금: ${input.posStartAmount}\n- 마감금: ${input.posEndAmount}\n\n지출 내역\n${expenseText}`;
+        const fmt = (v: string) => {
+          const n = Number(v.replace(/,/g, ''));
+          return isNaN(n) || n === 0 ? '—' : `₩${n.toLocaleString('ko-KR')}`;
+        };
+
+        const title = `[${input.branch}] ${input.date} 매출 보고`;
+
+        const content = [
+          `📍 지점: ${input.branch}`,
+          `📅 날짜: ${input.date}`,
+          ``,
+          `💰 오늘 매출`,
+          `  현금: ${fmt(input.cash)}`,
+          `  카드: ${fmt(input.card)}`,
+          `  합계: ${fmt(input.dailyTotal)}`,
+          ``,
+          `📊 누적 매출`,
+          `  현금누적: ${fmt(input.cashTotal)}`,
+          `  카드누적: ${fmt(input.cardTotal)}`,
+          `  총누적: ${fmt(input.grandTotal)}`,
+          ``,
+          `🖥️ POS`,
+          `  시작금: ${fmt(input.posStartAmount)}`,
+          ...(input.cashDeposit && Number(input.cashDeposit) > 0 ? [`  시제 입금: ${fmt(input.cashDeposit)}`] : []),
+          `  마감금: ${fmt(input.posEndAmount)}`,
+          ...(expenseLines ? [``, `🧾 지출 내역`, expenseLines] : []),
+          ...(input.paymentChangeNote ? [``, `📝 결제변경: ${input.paymentChangeNote}${input.paymentChangeAmount ? ` (${fmt(input.paymentChangeAmount)})` : ''}`] : []),
+        ].join('\n');
 
         try {
-          // 카톡 API로 메시지 전송
-          // 실제 구동을 위해서는 카톡 API 키가 필요합니다
-          console.log('[Kakao Message]', message);
-          
-          return {
-            success: true,
-            message: '카톡 메시지가 전송되었습니다.',
-          };
+          const result = await notifyOwner({ title, content });
+          return { success: result };
         } catch (error) {
-          console.error('[Kakao Error]', error);
-          return {
-            success: false,
-            message: '카톡 메시지 전송에 실패했습니다.',
-          };
+          console.error('[Notify Error]', error);
+          return { success: false };
         }
       }),
   }),

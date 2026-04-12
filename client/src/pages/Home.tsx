@@ -273,18 +273,24 @@ export default function Home() {
     });
   }, [autoSave]);
 
-  // 카톡 전송
-  const sendKakaoMutation = trpc.sales.sendKakao.useMutation();
+  // 알림 전송
+  const notifyMutation = trpc.sales.notify.useMutation();
 
   // 수동 저장
   const handleSave = async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     // 자동 계산된 누적값을 저장
+    const cashTotalStr = autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : '0';
+    const cardTotalStr = autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : '0';
+    const posEndStr = autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0';
+    const grandTotalStr = (autoCalculatedCashTotal + autoCalculatedCardTotal).toString();
+    const dailyTotalStr = (todayCash + todayCard).toString();
+
     const recordToSave = {
       ...record,
-      cashTotal: autoCalculatedCashTotal > 0 ? autoCalculatedCashTotal.toString() : '',
-      cardTotal: autoCalculatedCardTotal > 0 ? autoCalculatedCardTotal.toString() : '',
-      posEndAmount: autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0',
+      cashTotal: cashTotalStr,
+      cardTotal: cardTotalStr,
+      posEndAmount: posEndStr,
     };
     const updated = upsertRecord(records, recordToSave);
     setRecords(updated);
@@ -292,23 +298,26 @@ export default function Home() {
     setSaved(true);
     toast.success('저장되었습니다', { duration: 1500 });
 
-    // 카톡 전송
+    // 사장님께 알림 전송
     try {
-      await sendKakaoMutation.mutateAsync({
+      await notifyMutation.mutateAsync({
         branch: selectedBranch,
         date: currentDate,
         cash: record.cash || '0',
         card: record.card || '0',
-        cashTotal: recordToSave.cashTotal || '0',
-        cardTotal: recordToSave.cardTotal || '0',
-        posStartAmount: record.posStartAmount || '0',
-        posEndAmount: recordToSave.posEndAmount || '0',
+        dailyTotal: dailyTotalStr,
+        cashTotal: cashTotalStr,
+        cardTotal: cardTotalStr,
+        grandTotal: grandTotalStr,
+        posStartAmount: record.posStartAmount || posStartAmountValue.toString() || '0',
+        posEndAmount: posEndStr,
+        cashDeposit: record.cashDeposit || '0',
         expenses: record.expenses.filter(e => e.description && e.amount),
+        paymentChangeNote: record.paymentChangeNote || '',
+        paymentChangeAmount: record.paymentChangeAmount || '0',
       });
-      toast.success('카톡으로 전송되었습니다', { duration: 1500 });
     } catch (error) {
-      console.error('카톡 전송 실패:', error);
-      toast.error('카톡 전송에 실패했습니다', { duration: 1500 });
+      console.error('알림 전송 실패:', error);
     }
   };
 
