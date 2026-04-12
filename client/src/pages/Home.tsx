@@ -10,8 +10,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
-import { getLoginUrl } from '@/const';
+import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import {
@@ -138,18 +137,18 @@ type LocalRecord = ReturnType<typeof createEmptyLocalRecord>;
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, logout } = useStoreAuth();
   const [currentDate, setCurrentDate] = useState(getTodayString);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [record, setRecord] = useState<LocalRecord>(createEmptyLocalRecord);
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 내 지점 목록 조회
-  const { data: myBranches = [], isLoading: branchesLoading } = trpc.branch.myBranches.useQuery(
-    undefined,
-    { enabled: !!user }
-  );
+  // 내 지점 목록 조회 (storeAccount 기반)
+  const myBranches = user?.role === 'admin'
+    ? (user.allBranches ?? [])
+    : user?.branch ? [user.branch] : [];
+  const branchesLoading = false;
 
   // 첫 번째 지점 자동 선택
   useEffect(() => {
@@ -158,8 +157,8 @@ export default function Home() {
     }
   }, [myBranches, selectedBranchId]);
 
-  // 서버에서 해당 날짜 기록 조회
-  const { data: serverRecord, refetch: refetchRecord } = trpc.sales.getRecord.useQuery(
+  // 서버에서 해당 날짜 기록 조회 (storeSales API)
+  const { data: serverRecord, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
     { branchId: selectedBranchId!, date: currentDate },
     { enabled: !!selectedBranchId && !!user }
   );
@@ -192,7 +191,7 @@ export default function Home() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }, [currentDate]);
 
-  const { data: prevRecord } = trpc.sales.getRecord.useQuery(
+  const { data: prevRecord } = trpc.storeSales.getPrevRecord.useQuery(
     { branchId: selectedBranchId!, date: prevDate },
     { enabled: !!selectedBranchId && !!user }
   );
@@ -241,8 +240,8 @@ export default function Home() {
     });
   }, []);
 
-  // 저장 mutation
-  const saveMutation = trpc.sales.save.useMutation();
+  // 저장 mutation (storeSales API)
+  const saveMutation = trpc.storeSales.save.useMutation();
   const { isSubscribed, isLoading: pushLoading, isSupported, subscribe, unsubscribe } = usePushNotification();
 
   const handleSave = async () => {
@@ -299,7 +298,7 @@ export default function Home() {
     );
   }
 
-  // 로그인 필요
+  // 로그인 필요 - /login으로 리다이렉트
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -312,7 +311,7 @@ export default function Home() {
           </p>
         </div>
         <button
-          onClick={() => { window.location.href = getLoginUrl(); }}
+          onClick={() => navigate('/login')}
           className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold text-white"
           style={{ background: 'oklch(0.45 0.18 25)' }}
         >
@@ -336,11 +335,11 @@ export default function Home() {
           </p>
         </div>
         <button
-          onClick={() => { window.location.href = getLoginUrl(); }}
+          onClick={logout}
           className="text-sm underline"
           style={{ color: 'oklch(0.45 0.18 25)' }}
         >
-          다른 계정으로 로그인
+          로그아웃
         </button>
       </div>
     );
@@ -448,6 +447,14 @@ export default function Home() {
           >
             <Save size={15} />
             {saveMutation.isPending ? '저장 중...' : '저장'}
+          </button>
+          <button
+            onClick={logout}
+            className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium transition-colors"
+            style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.45 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
+            title="로그아웃"
+          >
+            로그아웃
           </button>
         </div>
       </header>

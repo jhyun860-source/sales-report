@@ -8,11 +8,13 @@ import Home from "./pages/Home";
 import History from "./pages/History";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminManage from "./pages/AdminManage";
+import Login from "./pages/Login";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/login"} component={Login} />
       <Route path={"/history"} component={History} />
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/manage"} component={AdminManage} />

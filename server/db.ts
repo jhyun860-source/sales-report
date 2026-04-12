@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, branches, branchManagers, dailySalesRecords, pushSubscriptions, type Branch, type BranchManager, type DailySalesRecord, type InsertBranch, type InsertBranchManager, type InsertDailySalesRecord, type InsertPushSubscription, type PushSubscription } from "../drizzle/schema";
+import { InsertUser, users, branches, branchManagers, dailySalesRecords, pushSubscriptions, storeAccounts, type Branch, type BranchManager, type DailySalesRecord, type InsertBranch, type InsertBranchManager, type InsertDailySalesRecord, type InsertPushSubscription, type PushSubscription, type StoreAccount, type InsertStoreAccount } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -303,4 +303,55 @@ export async function getPushSubscriptionsByOpenId(openId: string): Promise<Push
   const user = await getUserByOpenId(openId);
   if (!user) return [];
   return getPushSubscriptionsByUserId(user.id);
+}
+
+/**
+ * storeAccounts (자체 아이디/비밀번호 계정) 쿼리
+ */
+
+// loginId로 계정 조회
+export async function getStoreAccountByLoginId(loginId: string): Promise<StoreAccount | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(storeAccounts).where(eq(storeAccounts.loginId, loginId)).limit(1);
+  return result[0] || null;
+}
+
+// id로 계정 조회
+export async function getStoreAccountById(id: number): Promise<StoreAccount | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(storeAccounts).where(eq(storeAccounts.id, id)).limit(1);
+  return result[0] || null;
+}
+
+// 계정 생성
+export async function createStoreAccount(data: InsertStoreAccount): Promise<StoreAccount | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(storeAccounts).values(data);
+  const accountId = (result as any).insertId;
+  if (!accountId) return null;
+  return getStoreAccountById(accountId);
+}
+
+// 계정 업데이트
+export async function updateStoreAccount(id: number, data: Partial<InsertStoreAccount>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(storeAccounts).set({ ...data, updatedAt: new Date() }).where(eq(storeAccounts.id, id));
+}
+
+// 전체 계정 목록 조회
+export async function getAllStoreAccounts(): Promise<StoreAccount[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(storeAccounts).orderBy(storeAccounts.loginId);
+}
+
+// 계정 삭제
+export async function deleteStoreAccount(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(storeAccounts).where(eq(storeAccounts.id, id));
 }

@@ -1,261 +1,238 @@
 /**
- * 매출 기록 목록 페이지
- * Design: 장부/영수증 감성
- * - 날짜별 기록 목록
- * - 당일 합계, 지출 표시
- * - 기록 삭제 기능
+ * 매출 기록 목록 페이지 (서버 기반)
+ * - 서버 DB에서 기록 조회
+ * - storeAccount 인증 기반
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { ChevronLeft, Trash2, TrendingUp, Calendar, AlertTriangle } from 'lucide-react';
-import {
-  type DailySalesRecord,
-  formatDateDisplay,
-  calcExpenseTotal,
-  calcDailyTotal,
-  parseAmount,
-  loadRecords,
-  saveRecords,
-  getDateList,
-} from '@/lib/salesUtils';
+import { trpc } from '@/lib/trpc';
+import { useStoreAuth } from '@/hooks/useStoreAuth';
+import { ChevronLeft, TrendingUp, Calendar, AlertTriangle, LogIn } from 'lucide-react';
+import { formatDateDisplay, calcExpenseTotal, parseAmount } from '@/lib/salesUtils';
 
-function ConfirmDialog({
-  open,
-  onConfirm,
-  onCancel,
-  date,
-}: {
-  open: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  date: string;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'oklch(0 0 0 / 0.5)' }}>
-      <div
-        className="w-full max-w-sm rounded-xl p-5"
-        style={{ background: 'oklch(0.995 0.005 85)', border: '1px solid oklch(0.75 0.015 85)' }}
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <AlertTriangle size={20} style={{ color: 'oklch(0.45 0.18 25)' }} />
-          <span className="font-bold text-base" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-            기록 삭제
-          </span>
-        </div>
-        <p className="text-sm mb-5" style={{ color: 'oklch(0.35 0.01 50)' }}>
-          <strong>{formatDateDisplay(date)}</strong>의 기록을 삭제하시겠습니까?<br />
-          삭제된 데이터는 복구할 수 없습니다.
-        </p>
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 rounded-lg text-sm font-semibold"
-            style={{
-              background: 'oklch(0.92 0.015 85)',
-              color: 'oklch(0.25 0.01 50)',
-              border: '1px solid oklch(0.75 0.015 85)',
-            }}
-          >
-            취소
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white"
-            style={{ background: 'oklch(0.45 0.18 25)' }}
-          >
-            삭제
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+// 지난 90일 날짜 범위 계산
+function getDateRange(days = 90) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { startDate: fmt(start), endDate: fmt(end) };
 }
 
 export default function History() {
   const [, navigate] = useLocation();
-  const [records, setRecords] = useState<DailySalesRecord[]>([]);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const { user, loading: authLoading } = useStoreAuth();
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
 
-  useEffect(() => {
-    setRecords(loadRecords());
-  }, []);
+  // 내 지점 목록
+  const myBranches = user?.role === 'admin'
+    ? (user.allBranches ?? [])
+    : user?.branch ? [user.branch] : [];
 
-  const dateList = getDateList(records);
+  // 첫 번째 지점 자동 선택
+  const activeBranchId = selectedBranchId ?? (myBranches.length > 0 ? myBranches[0].id : null);
 
-  const getRecord = (date: string) => records.find(r => r.date === date);
+  const { startDate, endDate } = useMemo(() => getDateRange(90), []);
 
-  const handleDelete = (date: string) => {
-    setDeleteTarget(date);
-  };
+  // 서버에서 기록 조회
+  const { data: records = [], isLoading } = trpc.storeSales.getRecords.useQuery(
+    { branchId: activeBranchId!, startDate, endDate },
+    { enabled: !!activeBranchId && !!user }
+  );
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
-    const updated = records.filter(r => r.date !== deleteTarget);
-    setRecords(updated);
-    saveRecords(updated);
-    setDeleteTarget(null);
-  };
+  const fmt = (n: number) => n > 0 ? `₩${n.toLocaleString('ko-KR')}` : '—';
 
-  // 전체 통계
-  const totalCash = records.reduce((s, r) => s + parseAmount(r.cash), 0);
-  const totalCard = records.reduce((s, r) => s + parseAmount(r.card), 0);
-  const totalExpense = records.reduce((s, r) => s + calcExpenseTotal(r.expenses), 0);
+  // 전체 합계
+  const totals = useMemo(() => {
+    let totalCash = 0, totalCard = 0, totalExpense = 0;
+    records.forEach((r: { cash?: string | null; card?: string | null; expenses?: unknown }) => {
+      totalCash += parseAmount((r.cash as string) || '0');
+      totalCard += parseAmount((r.card as string) || '0');
+      totalExpense += calcExpenseTotal((r.expenses as any[]) || []);
+    });
+    return { totalCash, totalCard, totalExpense };
+  }, [records]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <div className="text-sm" style={{ color: 'oklch(0.45 0.01 50)' }}>불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6" style={{ background: 'oklch(0.985 0.008 85)' }}>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+            매출 일일 보고
+          </h1>
+          <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>로그인 후 이용하실 수 있습니다</p>
+        </div>
+        <button
+          onClick={() => navigate('/login')}
+          className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold text-white"
+          style={{ background: 'oklch(0.45 0.18 25)' }}
+        >
+          <LogIn size={16} />
+          로그인
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
       {/* 헤더 */}
       <header
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b"
+        className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
         style={{
           background: 'oklch(0.98 0.01 85)',
           borderColor: 'oklch(0.7 0.015 85)',
           boxShadow: '0 1px 4px oklch(0 0 0 / 0.08)',
         }}
       >
-        <button
-          onClick={() => navigate('/')}
-          className="p-1.5 rounded-full hover:bg-black/8 transition-colors"
-        >
-          <ChevronLeft size={22} strokeWidth={2.5} />
-        </button>
-        <span
-          className="text-base font-bold"
-          style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}
-        >
-          매출 기록
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 rounded-full hover:bg-black/8 active:bg-black/15 transition-colors"
+          >
+            <ChevronLeft size={22} strokeWidth={2.5} />
+          </button>
+          <span className="text-base font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+            매출 기록
+          </span>
+        </div>
+
+        {/* 지점 선택 (관리자만) */}
+        {user.role === 'admin' && myBranches.length > 1 && (
+          <select
+            value={activeBranchId ?? ''}
+            onChange={e => setSelectedBranchId(Number(e.target.value))}
+            className="text-sm px-2 py-1 rounded border outline-none"
+            style={{
+              background: 'oklch(0.97 0.008 85)',
+              borderColor: 'oklch(0.75 0.015 85)',
+              color: 'oklch(0.25 0.01 50)',
+            }}
+          >
+            {myBranches.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        )}
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-5 pb-10">
-        {/* 전체 통계 */}
+      <main className="max-w-lg mx-auto px-4 py-5 pb-12">
+        {/* 현재 지점 표시 */}
+        {activeBranchId && myBranches.find(b => b.id === activeBranchId) && (
+          <div className="flex items-center gap-1.5 mb-4">
+            <Calendar size={14} style={{ color: 'oklch(0.45 0.18 25)' }} />
+            <span className="text-sm font-semibold" style={{ color: 'oklch(0.35 0.01 50)' }}>
+              {myBranches.find(b => b.id === activeBranchId)?.name} · 최근 90일
+            </span>
+          </div>
+        )}
+
+        {/* 전체 합계 카드 */}
         {records.length > 0 && (
           <div
-            className="mb-5 rounded-xl p-4"
+            className="mb-5 rounded-lg p-4"
             style={{ background: 'oklch(0.45 0.18 25)', color: 'white' }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp size={16} />
+            <div className="flex items-center gap-1.5 mb-3">
+              <TrendingUp size={15} className="opacity-80" />
               <span className="text-sm font-semibold opacity-90" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-                전체 누적 ({records.length}일)
+                기간 합계 ({records.length}일)
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-3 gap-3 text-sm">
               <div>
-                <div className="text-xs opacity-70 mb-0.5">현금 합계</div>
-                <div className="text-sm font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                  {totalCash.toLocaleString('ko-KR')}
+                <div className="opacity-70 text-xs mb-0.5">현금</div>
+                <div className="font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {fmt(totals.totalCash)}
                 </div>
               </div>
               <div>
-                <div className="text-xs opacity-70 mb-0.5">카드 합계</div>
-                <div className="text-sm font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                  {totalCard.toLocaleString('ko-KR')}
+                <div className="opacity-70 text-xs mb-0.5">카드</div>
+                <div className="font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {fmt(totals.totalCard)}
                 </div>
               </div>
               <div>
-                <div className="text-xs opacity-70 mb-0.5">지출 합계</div>
-                <div className="text-sm font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                  {totalExpense.toLocaleString('ko-KR')}
+                <div className="opacity-70 text-xs mb-0.5">합계</div>
+                <div className="font-bold text-base" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {fmt(totals.totalCash + totals.totalCard)}
                 </div>
               </div>
-            </div>
-            <div className="border-t border-white/30 mt-3 pt-2 text-center">
-              <span className="text-xs opacity-70">총 매출 합계 </span>
-              <span className="font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                ₩{(totalCash + totalCard).toLocaleString('ko-KR')}
-              </span>
             </div>
           </div>
         )}
 
         {/* 기록 목록 */}
-        {dateList.length === 0 ? (
-          <div className="text-center py-16">
-            <Calendar size={40} className="mx-auto mb-3 opacity-25" />
-            <p className="text-sm text-muted-foreground">저장된 기록이 없습니다.</p>
-            <button
-              onClick={() => navigate('/')}
-              className="mt-4 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-              style={{ background: 'oklch(0.45 0.18 25)' }}
-            >
-              오늘 매출 입력하기
-            </button>
+        {isLoading ? (
+          <div className="text-center py-12 text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>
+            불러오는 중...
+          </div>
+        ) : records.length === 0 ? (
+          <div className="text-center py-12">
+            <Calendar size={32} className="mx-auto mb-3 opacity-30" />
+            <p className="text-sm" style={{ color: 'oklch(0.55 0.01 50)' }}>
+              최근 90일간 기록이 없습니다
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {dateList.map(date => {
-              const rec = getRecord(date);
-              if (!rec) return null;
-              const dailyTotal = calcDailyTotal(rec.cash, rec.card);
-              const expenseTotal = calcExpenseTotal(rec.expenses);
-              const hasData = rec.cash || rec.card || expenseTotal > 0;
+          <div className="space-y-2">
+            {records.map((record: { id: number; date: string; cash?: string | null; card?: string | null; expenses?: unknown }) => {
+              const cash = parseAmount(record.cash || '0');
+              const card = parseAmount(record.card || '0');
+              const dailyTotal = cash + card;
+              const expenseTotal = calcExpenseTotal(record.expenses as any[] || []);
 
               return (
                 <div
-                  key={date}
-                  className="rounded-lg overflow-hidden"
+                  key={record.id}
+                  onClick={() => navigate('/')}
+                  className="rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-99"
                   style={{
                     background: 'oklch(0.995 0.005 85)',
-                    border: '1px solid oklch(0.75 0.015 85)',
-                    boxShadow: '0 1px 3px oklch(0 0 0 / 0.05)',
+                    border: '1px solid oklch(0.78 0.015 85)',
                   }}
                 >
-                  <button
-                    className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-black/5 transition-colors"
-                    onClick={() => navigate('/')}
-                  >
+                  <div className="flex items-center justify-between">
                     <div>
-                      <div
-                        className="font-semibold text-sm mb-0.5"
-                        style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.15 0.01 50)' }}
-                      >
-                        {formatDateDisplay(date)}
+                      <div className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+                        {formatDateDisplay(record.date)}
                       </div>
-                      {hasData ? (
-                        <div className="flex items-center gap-3 text-xs" style={{ color: 'oklch(0.5 0.01 50)' }}>
-                          <span>현금 {rec.cash ? parseAmount(rec.cash).toLocaleString('ko-KR') : '—'}</span>
-                          <span>카드 {rec.card ? parseAmount(rec.card).toLocaleString('ko-KR') : '—'}</span>
-                          {expenseTotal > 0 && <span>지출 {expenseTotal.toLocaleString('ko-KR')}</span>}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground">데이터 없음</div>
-                      )}
+                      <div className="text-xs mt-0.5 flex gap-2" style={{ color: 'oklch(0.55 0.01 50)' }}>
+                        <span>현금 {cash > 0 ? `₩${cash.toLocaleString('ko-KR')}` : '—'}</span>
+                        <span>·</span>
+                        <span>카드 {card > 0 ? `₩${card.toLocaleString('ko-KR')}` : '—'}</span>
+                        {expenseTotal > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>지출 ₩{expenseTotal.toLocaleString('ko-KR')}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {dailyTotal > 0 && (
-                        <div className="text-right">
-                          <div className="text-xs text-muted-foreground">합계</div>
-                          <div
-                            className="font-bold text-sm"
-                            style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.45 0.18 25)' }}
-                          >
-                            ₩{dailyTotal.toLocaleString('ko-KR')}
-                          </div>
-                        </div>
-                      )}
-                      <button
-                        onClick={e => { e.stopPropagation(); handleDelete(date); }}
-                        className="p-2 rounded-full opacity-30 hover:opacity-70 transition-opacity"
+                    <div className="text-right">
+                      <div
+                        className="text-base font-bold"
+                        style={{ fontVariantNumeric: 'tabular-nums', color: 'oklch(0.45 0.18 25)' }}
                       >
-                        <Trash2 size={15} />
-                      </button>
+                        {dailyTotal > 0 ? `₩${dailyTotal.toLocaleString('ko-KR')}` : '—'}
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </main>
-
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        date={deleteTarget ?? ''}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
     </div>
   );
 }

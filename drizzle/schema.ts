@@ -130,6 +130,31 @@ export const pushSubscriptions = mysqlTable("pushSubscriptions", {
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
 
+/**
+ * 지점 계정 테이블 - 자체 아이디/비밀번호 로그인
+ * 점장들이 아이디/비밀번호로 로그인하는 계정
+ */
+export const storeAccounts = mysqlTable("storeAccounts", {
+  id: int("id").autoincrement().primaryKey(),
+  loginId: varchar("loginId", { length: 50 }).notNull().unique(), // 로그인 아이디
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(), // bcrypt 해시
+  branchId: int("branchId"), // 배정된 지점 (null이면 미배정)
+  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  displayName: varchar("displayName", { length: 100 }), // 표시 이름
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StoreAccount = typeof storeAccounts.$inferSelect;
+export type InsertStoreAccount = typeof storeAccounts.$inferInsert;
+
+export const storeAccountsRelations = relations(storeAccounts, ({ one }) => ({
+  branch: one(branches, {
+    fields: [storeAccounts.branchId],
+    references: [branches.id],
+  }),
+}));
+
 export const dailySalesRecordsRelations = relations(dailySalesRecords, ({ one }) => ({
   branch: one(branches, {
     fields: [dailySalesRecords.branchId],

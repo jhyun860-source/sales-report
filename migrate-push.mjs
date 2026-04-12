@@ -42,6 +42,23 @@ async function migrate() {
     )
   `);
   console.log('pushSubscriptions table OK');
+
+  // storeAccounts 테이블 생성
+  await conn.execute(`
+    CREATE TABLE IF NOT EXISTS \`storeAccounts\` (
+      \`id\` int AUTO_INCREMENT NOT NULL,
+      \`loginId\` varchar(50) NOT NULL,
+      \`passwordHash\` varchar(255) NOT NULL,
+      \`branchId\` int,
+      \`role\` enum('user','admin') NOT NULL DEFAULT 'user',
+      \`displayName\` varchar(100),
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT \`storeAccounts_id\` PRIMARY KEY(\`id\`),
+      CONSTRAINT \`storeAccounts_loginId_unique\` UNIQUE(\`loginId\`)
+    )
+  `);
+  console.log('storeAccounts table OK');
   
   const [rows] = await conn.execute('SHOW TABLES');
   console.log('All tables:', rows.map(r => Object.values(r)[0]));

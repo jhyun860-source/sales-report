@@ -7,8 +7,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
-import { getLoginUrl } from '@/const';
+import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { ChevronLeft, ChevronRight, Settings, FileText, LogOut } from 'lucide-react';
 import { getTodayString, formatDateDisplay } from '@/lib/salesUtils';
 
@@ -20,14 +19,14 @@ function moveDate(dateStr: string, days: number): string {
 
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, logout } = useStoreAuth();
   const [currentDate, setCurrentDate] = useState(getTodayString);
 
   const today = getTodayString();
   const isToday = currentDate === today;
 
   // 전 지점 매출 조회 (adminDailyDetail: [{branch, record}])
-  const { data: dailyDetail = [], isLoading } = trpc.sales.adminDailyDetail.useQuery(
+  const { data: dailyDetail = [], isLoading } = trpc.storeSales.adminDailyDetail.useQuery(
     { date: currentDate },
     { enabled: !!user && user.role === 'admin' }
   );
@@ -62,7 +61,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'oklch(0.985 0.008 85)' }}>
         <p className="text-sm" style={{ color: 'oklch(0.5 0.01 50)' }}>로그인이 필요합니다</p>
-        <button onClick={() => { window.location.href = getLoginUrl(); }} className="px-4 py-2 rounded text-sm font-bold text-white" style={{ background: 'oklch(0.45 0.18 25)' }}>
+        <button onClick={() => navigate('/login')} className="px-4 py-2 rounded text-sm font-bold text-white" style={{ background: 'oklch(0.45 0.18 25)' }}>
           로그인
         </button>
       </div>

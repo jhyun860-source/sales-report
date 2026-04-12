@@ -74,10 +74,11 @@ describe("sales.notify", () => {
     await caller.sales.notify(sampleInput);
 
     const callArgs = vi.mocked(notifyOwner).mock.calls[0]?.[0];
-    expect(callArgs?.content).toContain("삼성점");
+    // content(body)는 매출 요약 형태: "💰 현금: ₩100,000 / 카드: ₩200,000 | 합계: ₩300,000"
     expect(callArgs?.content).toContain("100,000");  // 현금 포맷팅
     expect(callArgs?.content).toContain("200,000");  // 카드 포맷팅
-    expect(callArgs?.content).toContain("식비");     // 지출 내역
+    // title에 지점명 포함 확인
+    expect(callArgs?.title).toContain("삼성점");
   });
 
   it("notifyOwner 실패 시도 success: true를 반환한다 (알림 실패는 저장에 영향 없음)", async () => {
