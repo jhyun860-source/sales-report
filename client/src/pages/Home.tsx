@@ -127,9 +127,6 @@ function createEmptyLocalRecord() {
     cash: '',
     card: '',
     cashDeposit: '',
-    paymentChangeDate: '',
-    paymentChangeNote: '',
-    paymentChangeAmount: '',
     expenses: [{ id: `exp_${Date.now()}`, description: '', amount: '' }] as ExpenseItem[],
   };
 }
@@ -225,9 +222,6 @@ export default function Home() {
         cash: serverRecord.cash?.toString() || '',
         card: serverRecord.card?.toString() || '',
         cashDeposit: '',
-        paymentChangeDate: serverRecord.paymentChangeDate || '',
-        paymentChangeNote: serverRecord.paymentChangeNote || '',
-        paymentChangeAmount: serverRecord.paymentChangeAmount?.toString() || '',
         expenses: (serverRecord.expenses as ExpenseItem[]).length > 0
           ? (serverRecord.expenses as ExpenseItem[])
           : [{ id: `exp_${Date.now()}`, description: '', amount: '' }],
@@ -309,9 +303,6 @@ export default function Home() {
         cardTotal: autoCalculatedCardTotal.toString(),
         posEndAmount: autoCalculatedPosEndAmount > 0 ? autoCalculatedPosEndAmount.toString() : '0',
         cashDeposit: record.cashDeposit || '0',
-        paymentChangeDate: record.paymentChangeDate,
-        paymentChangeNote: record.paymentChangeNote,
-        paymentChangeAmount: record.paymentChangeAmount || '0',
         expenses: record.expenses.filter(e => e.description || e.amount),
       });
 
@@ -732,55 +723,6 @@ export default function Home() {
                 <span className="total-amount text-sm">{expenseTotal.toLocaleString('ko-KR')}</span>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* ── 결제변경 사항 ── */}
-        <div
-          className="mb-5 rounded-lg overflow-hidden"
-          style={{ border: '1px solid oklch(0.78 0.012 85)' }}
-        >
-          <div
-            className="px-4 py-2.5 text-sm font-semibold"
-            style={{ background: 'oklch(0.9 0.015 85)', fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)', borderBottom: '1px solid oklch(0.82 0.012 85)' }}
-          >
-            ■ 결제변경 사항
-          </div>
-          <div className="px-4 py-3 space-y-3" style={{ background: 'oklch(0.995 0.005 85)' }}>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium w-16 flex-shrink-0" style={{ color: 'oklch(0.4 0.01 50)' }}>결제 날짜</span>
-              <input
-                type="text"
-                value={record.paymentChangeDate}
-                onChange={e => updateRecord({ paymentChangeDate: e.target.value })}
-                placeholder="예) 4/10"
-                className="flex-1 bg-transparent border-b text-sm py-1 outline-none"
-                style={{ borderColor: 'oklch(0.78 0.012 85)', color: 'oklch(0.12 0.01 50)' }}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium w-16 flex-shrink-0" style={{ color: 'oklch(0.4 0.01 50)' }}>변경 내용</span>
-              <input
-                type="text"
-                value={record.paymentChangeNote}
-                onChange={e => updateRecord({ paymentChangeNote: e.target.value })}
-                placeholder="변경 내용 입력"
-                className="flex-1 bg-transparent border-b text-sm py-1 outline-none"
-                style={{ borderColor: 'oklch(0.78 0.012 85)', color: 'oklch(0.12 0.01 50)' }}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium w-16 flex-shrink-0" style={{ color: 'oklch(0.4 0.01 50)' }}>금액</span>
-              <div className="flex-1 flex items-center gap-1 border-b" style={{ borderColor: 'oklch(0.78 0.012 85)' }}>
-                <span className="text-sm" style={{ color: 'oklch(0.6 0.01 50)' }}>₩</span>
-                <AmountInput
-                  value={record.paymentChangeAmount}
-                  onChange={val => updateRecord({ paymentChangeAmount: val })}
-                  placeholder="0"
-                  className="flex-1 py-1 text-sm"
-                />
-              </div>
-            </div>
           </div>
         </div>
 

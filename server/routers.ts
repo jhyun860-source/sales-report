@@ -368,8 +368,7 @@ export const appRouter = router({
         branchId: z.number(), date: z.string(),
         posStartAmount: z.string().default('0'), cash: z.string().default('0'), card: z.string().default('0'),
         cashTotal: z.string().default('0'), cardTotal: z.string().default('0'), posEndAmount: z.string().default('0'),
-        cashDeposit: z.string().optional(), paymentChangeNote: z.string().optional(),
-        paymentChangeDate: z.string().optional(), paymentChangeAmount: z.string().default('0'),
+        cashDeposit: z.string().optional(),
         expenses: z.array(z.object({ id: z.string(), description: z.string(), amount: z.string() })).default([]),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -384,8 +383,7 @@ export const appRouter = router({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
           cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
-          paymentChangeNote: input.paymentChangeNote, paymentChangeDate: input.paymentChangeDate,
-          paymentChangeAmount: input.paymentChangeAmount, expenses: input.expenses, submittedAt: new Date(),
+          expenses: input.expenses, submittedAt: new Date(),
         });
         const branch = await getBranchById(input.branchId);
         const branchName = branch?.name ?? '알 수 없는 지점';
@@ -394,7 +392,7 @@ export const appRouter = router({
         const title = `[${branchName}] ${input.date} 매출 보고`;
         const body = `💰 현금: ${fmt(input.cash)} / 카드: ${fmt(input.card)} | 합계: ₩${dailyTotal.toLocaleString('ko-KR')}`;
         const expenseLines = input.expenses.filter(e=>e.description&&e.amount).map(e=>`• ${e.description}: ${fmt(e.amount)}`).join('\n');
-        const content = [`📍 지점: ${branchName}`,`📅 날짜: ${input.date}`,'','💰 오늘 매출',`  현금: ${fmt(input.cash)}`,`  카드: ${fmt(input.card)}`,`  합계: ₩${dailyTotal.toLocaleString('ko-KR')}`, ...(expenseLines?['',"🧾 지출 내역",expenseLines]:[]), ...(input.paymentChangeNote?['',"📝 결제변경: "+input.paymentChangeNote]:[])].join('\n');
+        const content = [`📍 지점: ${branchName}`,`📅 날짜: ${input.date}`,'','💰 오늘 매출',`  현금: ${fmt(input.cash)}`,`  카드: ${fmt(input.card)}`,`  합계: ₩${dailyTotal.toLocaleString('ko-KR')}`, ...(expenseLines?['',"🧾 지출 내역",expenseLines]:[])].join('\n');
         try { await notifyOwner({ title, content }); } catch {}
         let pushSent = false;
         if (ENV.ownerOpenId && ENV.vapidPublicKey && ENV.vapidPrivateKey) {
@@ -477,8 +475,7 @@ export const appRouter = router({
         branchId: z.number(), date: z.string(),
         posStartAmount: z.string().default('0'), cash: z.string().default('0'), card: z.string().default('0'),
         cashTotal: z.string().default('0'), cardTotal: z.string().default('0'), posEndAmount: z.string().default('0'),
-        cashDeposit: z.string().optional(), paymentChangeNote: z.string().optional(),
-        paymentChangeDate: z.string().optional(), paymentChangeAmount: z.string().default('0'),
+        cashDeposit: z.string().optional(),
         expenses: z.array(z.object({ id: z.string(), description: z.string(), amount: z.string() })).default([]),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -493,8 +490,7 @@ export const appRouter = router({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
           cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
-          paymentChangeNote: input.paymentChangeNote, paymentChangeDate: input.paymentChangeDate,
-          paymentChangeAmount: input.paymentChangeAmount, expenses: input.expenses,
+          expenses: input.expenses,
           submittedBy: ctx.user.id, submittedAt: new Date(),
         });
         const branch = await getBranchById(input.branchId);
@@ -554,7 +550,6 @@ export const appRouter = router({
         dailyTotal: z.string(), cashTotal: z.string(), cardTotal: z.string(), grandTotal: z.string(),
         posStartAmount: z.string(), posEndAmount: z.string(), cashDeposit: z.string().optional(),
         expenses: z.array(z.object({ description: z.string(), amount: z.string() })),
-        paymentChangeNote: z.string().optional(), paymentChangeAmount: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const fmt = (v: string) => { const n = Number((v||''). replace(/,/g,'')); return isNaN(n)||n===0?'—':`₩${n.toLocaleString('ko-KR')}`; };
@@ -659,9 +654,6 @@ export const appRouter = router({
           cashTotal: existingSales?.cashTotal ?? '0',
           cardTotal: existingSales?.cardTotal ?? '0',
           posEndAmount: existingSales?.posEndAmount ?? '0',
-          paymentChangeNote: existingSales?.paymentChangeNote ?? undefined,
-          paymentChangeDate: existingSales?.paymentChangeDate ?? undefined,
-          paymentChangeAmount: existingSales?.paymentChangeAmount ?? '0',
           expenses: (existingSales?.expenses as any) ?? [],
           submittedAt: new Date(),
         });

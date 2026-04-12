@@ -92,8 +92,14 @@ type IncentiveLocal = {
   bottleCount: number;
   beerBottleCount: number;
   salesIncentive: string;
-  workStart: string;
-  workEnd: string;
+  workStart: string;       // HH:mm 24시간 형식으로 저장
+  workEnd: string;         // HH:mm 24시간 형식으로 저장
+  workStartAmPm: 'AM' | 'PM';
+  workEndAmPm: 'AM' | 'PM';
+  workStartHour: string;   // 표시용 시간 (1~12)
+  workEndHour: string;     // 표시용 시간 (1~12)
+  workStartMin: string;    // 표시용 분 (00~59)
+  workEndMin: string;      // 표시용 분 (00~59)
 };
 
 function makeLocalId() {
@@ -105,7 +111,32 @@ function emptyItem(): TableItemLocal {
 }
 
 function emptyIncentive(): IncentiveLocal {
-  return { localId: makeLocalId(), staffName: '', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '' };
+  return { localId: makeLocalId(), staffName: '', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '', workStartAmPm: 'PM', workEndAmPm: 'PM', workStartHour: '', workEndHour: '', workStartMin: '', workEndMin: '' };
+}
+
+// HH:mm → 오전/오후, 시간(1~12), 분 역변환
+function fromHHMM(hhmm: string): { ampm: 'AM' | 'PM'; hour: string; min: string } {
+  if (!hhmm) return { ampm: 'PM', hour: '', min: '' };
+  const [hStr, mStr] = hhmm.split(':');
+  const h24 = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h24) || isNaN(m)) return { ampm: 'PM', hour: '', min: '' };
+  const ampm: 'AM' | 'PM' = h24 < 12 ? 'AM' : 'PM';
+  let h12 = h24 % 12;
+  if (h12 === 0) h12 = 12;
+  return { ampm, hour: String(h12), min: String(m).padStart(2, '0') };
+}
+
+// 오전/오후 + 시간/분 → HH:mm 24시간 변환
+function toHHMM(ampm: 'AM' | 'PM', hour: string, min: string): string {
+  const h = parseInt(hour, 10);
+  const m = parseInt(min || '0', 10);
+  if (isNaN(h) || h < 1 || h > 12) return '';
+  if (isNaN(m) || m < 0 || m > 59) return '';
+  let h24 = h;
+  if (ampm === 'AM' && h === 12) h24 = 0;
+  else if (ampm === 'PM' && h !== 12) h24 = h + 12;
+  return `${String(h24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 export default function TableReport() {
@@ -123,6 +154,10 @@ export default function TableReport() {
   const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
     setCurrentDateState(prev => {
       const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
+      if (next !== prev) {
+        // 날짜가 달라지면 loadedDateRef 초기화 → 새 날짜 데이터 로드 허용
+        loadedDateRef.current = null;
+      }
       try { localStorage.setItem('selectedDate', next); } catch {}
       return next;
     });
@@ -137,25 +172,21 @@ export default function TableReport() {
   // 이미 로드한 날짜 추적 (items 덮어쓰기 방지)
   const loadedDateRef = useRef<string | null>(null);
 
-  // 날짜 변경 시 loadedDateRef 초기화 (새 날짜 데이터 로드 허용)
-  useEffect(() => {
-    loadedDateRef.current = null;
-  }, [currentDate]);
-
   // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
   const { data: reportData } = trpc.tableReport.getByDate.useQuery(
     { date: currentDate },
     { enabled: !!account, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
-  // 서버 데이터 → 로컈 상태 동기화 (날짜가 바뀔 때만 덮어씀)
+  // 서버 데이터 → 로컬 상태 동기화
+  // reportData가 해당 날짜(currentDate)의 데이터일 때만 덮어씀
   useEffect(() => {
+    // reportData가 아직 undefined면 로딩 중 → 건너뜀
+    if (reportData === undefined) return;
     // 이미 이 날짜 데이터를 로드했으면 다시 덮어쓰지 않음
     if (loadedDateRef.current === currentDate) return;
-
-    if (reportData !== undefined) {
-      loadedDateRef.current = currentDate;
-    }
+    // 현재 날짜 기록 완료
+    loadedDateRef.current = currentDate;
 
     if (reportData) {
       setReportId(reportData.id);
@@ -186,6 +217,12 @@ export default function TableReport() {
           salesIncentive: inc.salesIncentive ?? '',
           workStart: inc.workStart ?? '',
           workEnd: inc.workEnd ?? '',
+          workStartAmPm: fromHHMM(inc.workStart ?? '').ampm,
+          workEndAmPm: fromHHMM(inc.workEnd ?? '').ampm,
+          workStartHour: fromHHMM(inc.workStart ?? '').hour,
+          workEndHour: fromHHMM(inc.workEnd ?? '').hour,
+          workStartMin: fromHHMM(inc.workStart ?? '').min,
+          workEndMin: fromHHMM(inc.workEnd ?? '').min,
         })));
       } else {
         setIncentives([emptyIncentive()]);
@@ -198,7 +235,8 @@ export default function TableReport() {
       setIncentives([emptyIncentive()]);
     }
     setSaved(false);
-  }, [reportData, currentDate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportData]); // currentDate는 loadedDateRef로 체크하므로 의존성 제외
 
   // tRPC mutations
   const upsertReport = trpc.tableReport.upsert.useMutation();
@@ -635,40 +673,134 @@ export default function TableReport() {
                   />
                 </div>
 
-                {/* 4행: 근무 시간 + 자동 계산 */}
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>근무</span>
-                  <input
-                    type="time"
-                    value={inc.workStart}
-                    onChange={e => updateIncentiveField(inc.localId, 'workStart', e.target.value)}
-                    className="flex-1 bg-transparent border-none outline-none text-sm text-center"
-                    style={{ color: TEXT, minWidth: 0 }}
-                  />
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>~</span>
-                  <input
-                    type="time"
-                    value={inc.workEnd}
-                    onChange={e => updateIncentiveField(inc.localId, 'workEnd', e.target.value)}
-                    className="flex-1 bg-transparent border-none outline-none text-sm text-center"
-                    style={{ color: TEXT, minWidth: 0 }}
-                  />
-                  {/* 자동 계산 총 근무시간 */}
-                  {inc.workStart && inc.workEnd && (() => {
-                    const [sh, sm] = inc.workStart.split(':').map(Number);
-                    const [eh, em] = inc.workEnd.split(':').map(Number);
-                    let startMin = sh * 60 + sm;
-                    let endMin = eh * 60 + em;
-                    if (endMin <= startMin) endMin += 24 * 60; // 자정 넘침
-                    const diff = endMin - startMin;
-                    const hours = Math.floor(diff / 60);
-                    const mins = diff % 60;
-                    return (
-                      <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: PRIMARY, color: 'white', minWidth: 0 }}>
-                        {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
-                      </span>
-                    );
-                  })()}
+                {/* 4행: 근무 시간 - 오전/오후 토글 + 시간 직접 입력 */}
+                <div className="px-3 py-2 space-y-1.5">
+                  {/* 시작 시간 */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs w-8 flex-shrink-0" style={{ color: MUTED }}>출근</span>
+                    <div className="flex rounded overflow-hidden border text-xs" style={{ borderColor: BORDER }}>
+                      {(['AM', 'PM'] as const).map(ap => (
+                        <button
+                          key={ap}
+                          type="button"
+                          onClick={() => {
+                            const hhmm = toHHMM(ap, inc.workStartHour, inc.workStartMin);
+                            updateIncentiveField(inc.localId, 'workStartAmPm', ap);
+                            if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
+                          }}
+                          className="px-2 py-0.5 font-medium transition-colors"
+                          style={{
+                            background: inc.workStartAmPm === ap ? PRIMARY : 'transparent',
+                            color: inc.workStartAmPm === ap ? 'white' : MUTED,
+                          }}
+                        >
+                          {ap === 'AM' ? '오전' : '오후'}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      lang="ko"
+                      value={inc.workStartHour}
+                      onChange={e => {
+                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        updateIncentiveField(inc.localId, 'workStartHour', v);
+                        const hhmm = toHHMM(inc.workStartAmPm, v, inc.workStartMin);
+                        if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
+                      }}
+                      placeholder="시"
+                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
+                      style={{ borderColor: BORDER, color: TEXT }}
+                    />
+                    <span className="text-xs" style={{ color: MUTED }}>:</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      lang="ko"
+                      value={inc.workStartMin}
+                      onChange={e => {
+                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        updateIncentiveField(inc.localId, 'workStartMin', v);
+                        const hhmm = toHHMM(inc.workStartAmPm, inc.workStartHour, v);
+                        if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
+                      }}
+                      placeholder="분"
+                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
+                      style={{ borderColor: BORDER, color: TEXT }}
+                    />
+                  </div>
+                  {/* 종료 시간 */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs w-8 flex-shrink-0" style={{ color: MUTED }}>퇴근</span>
+                    <div className="flex rounded overflow-hidden border text-xs" style={{ borderColor: BORDER }}>
+                      {(['AM', 'PM'] as const).map(ap => (
+                        <button
+                          key={ap}
+                          type="button"
+                          onClick={() => {
+                            const hhmm = toHHMM(ap, inc.workEndHour, inc.workEndMin);
+                            updateIncentiveField(inc.localId, 'workEndAmPm', ap);
+                            if (hhmm) updateIncentiveField(inc.localId, 'workEnd', hhmm);
+                          }}
+                          className="px-2 py-0.5 font-medium transition-colors"
+                          style={{
+                            background: inc.workEndAmPm === ap ? PRIMARY : 'transparent',
+                            color: inc.workEndAmPm === ap ? 'white' : MUTED,
+                          }}
+                        >
+                          {ap === 'AM' ? '오전' : '오후'}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      lang="ko"
+                      value={inc.workEndHour}
+                      onChange={e => {
+                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        updateIncentiveField(inc.localId, 'workEndHour', v);
+                        const hhmm = toHHMM(inc.workEndAmPm, v, inc.workEndMin);
+                        if (hhmm) updateIncentiveField(inc.localId, 'workEnd', hhmm);
+                      }}
+                      placeholder="시"
+                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
+                      style={{ borderColor: BORDER, color: TEXT }}
+                    />
+                    <span className="text-xs" style={{ color: MUTED }}>:</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      lang="ko"
+                      value={inc.workEndMin}
+                      onChange={e => {
+                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        updateIncentiveField(inc.localId, 'workEndMin', v);
+                        const hhmm = toHHMM(inc.workEndAmPm, inc.workEndHour, v);
+                        if (hhmm) updateIncentiveField(inc.localId, 'workEnd', hhmm);
+                      }}
+                      placeholder="분"
+                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
+                      style={{ borderColor: BORDER, color: TEXT }}
+                    />
+                    {/* 자동 계산 총 근무시간 */}
+                    {inc.workStart && inc.workEnd && (() => {
+                      const [sh, sm] = inc.workStart.split(':').map(Number);
+                      const [eh, em] = inc.workEnd.split(':').map(Number);
+                      let startMin = sh * 60 + sm;
+                      let endMin = eh * 60 + em;
+                      if (endMin <= startMin) endMin += 24 * 60;
+                      const diff = endMin - startMin;
+                      const hours = Math.floor(diff / 60);
+                      const mins = diff % 60;
+                      return (
+                        <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: PRIMARY, color: 'white' }}>
+                          {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             ))}

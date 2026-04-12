@@ -117,6 +117,23 @@
 - [x] 입력 중 글씨 사라지지 않도록 안정적 상태 관리
 - [x] 형광펜: 텍스트 선택 후 색상 클릭 시 mark 태그 삽입 및 표시
 
+## 인센티브 자동 인원 추가 버그 수정
+
+- [x] 날짜 변경 시 incentives useEffect가 중복 실행되어 빈 항목 추가되는 문제 수정
+- [x] 서버 데이터 로드 시 incentives 데이터 덮어쓰기 방지
+
+## 매출 보고 결제 변경사항 제거
+
+- [x] Home.tsx에서 결제 변경사항 섬션 UI 제거
+- [x] DB 스키마에서 관련 필드 제거 (필요 시)
+- [x] 저장/로드 API에서 결제 변경사항 필드 제거
+
+## 근무시간 UI 변경
+
+- [x] 시작/종료 각각 오전/오후 토글 버튼 추가
+- [x] 시간 입력을 type="time" → type="text" 직접 입력으로 변경
+- [x] 오전/오후 선택 + 시간 직접 입력 조합으로 총 근무시간 자동 계산
+
 ## 테이블 기록 ↔ 매출 기록 날짜 동기화
 
 - [x] TableReport와 Home(DailySales)이 동일한 localStorage 키 'selectedDate' 사용
@@ -192,3 +209,11 @@
 - [x] 플레이스홀더 텍스트와 입력 글씨 겹침 문제 수정
 - [x] 형광펜 버튼 클릭 시 텍스트 사라지는 문제 수정 (selection 유실 방지)
 - [x] 형광펜 색상 적용 안 되는 문제 수정
+
+## 결제 변경사항 서버/API 완전 제거
+
+- [x] server/routers.ts storeSales.save (publicProcedure) - paymentChange 필드 제거
+- [x] server/routers.ts storeSales.save (protectedProcedure) - paymentChange 필드 제거
+- [x] server/routers.ts storeSales.notify - paymentChange 필드 제거
+- [x] server/routers.ts tableReport.upsert - upsertDailySalesRecord 호출에서 paymentChange 제거
+- [x] client/src/pages/Home.tsx - createEmptyLocalRecord, 서버 데이터 로드, 저장 함수에서 paymentChange 제거
