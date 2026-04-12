@@ -33,7 +33,8 @@ export function formatNumber(value: string | number): string {
 }
 
 // 입력값 파싱: "1,234,567" → 1234567
-export function parseAmount(value: string): number {
+export function parseAmount(value: string | undefined | null): number {
+  if (!value) return 0;
   const cleaned = value.replace(/[^0-9.]/g, '');
   return cleaned === '' ? 0 : parseFloat(cleaned);
 }
