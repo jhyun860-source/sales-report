@@ -338,7 +338,7 @@ export default function Home() {
           <div className="section-title">■ 매출 현황</div>
           <table className="ledger-table">
             <tbody>
-              {/* 현금 / 현금합계 */}
+              {/* 현금 / 현금누적 */}
               <tr>
                 <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
                   현금
@@ -351,7 +351,7 @@ export default function Home() {
                   />
                 </td>
                 <td className="w-1/4 text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  현금합계
+                  현금누적
                 </td>
                 <td className="w-1/4">
                   <AmountInput
@@ -361,11 +361,12 @@ export default function Home() {
                   />
                 </td>
               </tr>
-              {/* 카드 / 카드합계 */}
+              {/* 카드 / 카드누적 */}
               <tr>
                 <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  카드누적
-                </td>               <td>
+                  카드
+                </td>
+                <td>
                   <AmountInput
                     value={record.card}
                     onChange={val => updateRecord({ card: val })}
@@ -373,7 +374,7 @@ export default function Home() {
                   />
                 </td>
                 <td className="text-center font-semibold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", background: 'oklch(0.93 0.015 85)' }}>
-                  현금누적
+                  카드누적
                 </td>
                 <td>
                   <AmountInput
