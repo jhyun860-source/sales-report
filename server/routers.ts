@@ -30,6 +30,8 @@ import {
   computeCumulativesForDate,
 } from "./db";
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives } from "../drizzle/schema";
+import { invokeLLM } from "./_core/llm";
+import { storagePut } from "./storage";
 import { eq, and, desc, like, sql, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -493,6 +495,92 @@ export const appRouter = router({
         });
         const byDate = Object.entries(dateMap).map(([date,data])=>({date,...data})).sort((a,b)=>b.date.localeCompare(a.date));
         return { byBranch, byDate };
+      }),
+    analyzeImage: publicProcedure
+      .input(z.object({
+        imageBase64: z.string(),
+        mimeType: z.string().default('image/jpeg'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+
+        // base64 → Buffer → S3 업로드
+        const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const ext = input.mimeType.includes('png') ? 'png' : 'jpg';
+        const fileKey = `pos-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
+
+        // LLM Vision으로 포스기 화면 분석
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: '당신은 한국 카페/음식점 포스기 주문내역 이미지를 분석하는 전문가입니다. 이미지에서 현금 매출, 카드 매출, 지출 항목을 추출합니다.',
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url' as const,
+                  image_url: { url: imageUrl, detail: 'high' as const },
+                },
+                {
+                  type: 'text' as const,
+                  text: `이 포스기 주문내역 이미지에서 다음 정보를 추출해주세요:\n1. 현금 매출 합계 (cash): 현금으로 결제된 총 금액\n2. 카드 매출 합계 (card): 카드/신용카드/체크카드로 결제된 총 금액\n3. 지출 항목 (expenses): 지출/비용 항목이 있다면 각 항목의 이름과 금액\n\n숫자는 원화 기준 정수로만 반환하세요 (쉼표, 원 기호 없이). 해당 항목이 없거나 확인 불가하면 0으로 반환하세요.`,
+                },
+              ],
+            },
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'pos_analysis',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  cash: { type: 'integer', description: '현금 매출 합계 (원)' },
+                  card: { type: 'integer', description: '카드 매출 합계 (원)' },
+                  expenses: {
+                    type: 'array',
+                    description: '지출 항목 목록',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        description: { type: 'string', description: '지출 항목명' },
+                        amount: { type: 'integer', description: '지출 금액 (원)' },
+                      },
+                      required: ['description', 'amount'],
+                      additionalProperties: false,
+                    },
+                  },
+                  confidence: { type: 'string', description: '분석 신뢰도: high/medium/low' },
+                  note: { type: 'string', description: '분석 시 참고사항이나 불확실한 부분' },
+                },
+                required: ['cash', 'card', 'expenses', 'confidence', 'note'],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        if (!rawContent) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI 분석 결과를 받지 못했습니다' });
+        const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
+        const result = JSON.parse(content);
+        return {
+          cash: String(result.cash || 0),
+          card: String(result.card || 0),
+          expenses: (result.expenses || []).map((e: { description: string; amount: number }, i: number) => ({
+            id: `exp_ai_${Date.now()}_${i}`,
+            description: e.description,
+            amount: String(e.amount),
+          })),
+          confidence: result.confidence as string,
+          note: result.note as string,
+        };
       }),
   }),
 

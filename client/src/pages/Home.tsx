@@ -11,7 +11,7 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2 } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, Camera, X } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import {
   type ExpenseItem,
@@ -293,7 +293,47 @@ export default function Home() {
   }, []);
 
   const saveMutation = trpc.storeSales.save.useMutation();
+  const analyzeImageMutation = trpc.storeSales.analyzeImage.useMutation();
+  const [showAnalysisResult, setShowAnalysisResult] = useState(false);
+  const [analysisNote, setAnalysisNote] = useState('');
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
+
+  const handleImageAnalyze = async (file: File) => {
+    if (!file) return;
+    if (file.size > 16 * 1024 * 1024) {
+      toast.error('이미지 크기가 16MB를 초과합니다');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      if (!base64) return;
+      try {
+        toast.loading('포스기 화면 분석 중...', { id: 'analyze' });
+        const result = await analyzeImageMutation.mutateAsync({
+          imageBase64: base64,
+          mimeType: file.type || 'image/jpeg',
+        });
+        toast.dismiss('analyze');
+        const updates: Partial<LocalRecord> = {};
+        if (result.cash && result.cash !== '0') updates.cash = result.cash;
+        if (result.card && result.card !== '0') updates.card = result.card;
+        if (result.expenses && result.expenses.length > 0) {
+          updates.expenses = result.expenses;
+        }
+        updateRecord(updates);
+        setAnalysisNote(result.note || '');
+        setShowAnalysisResult(true);
+        const confidence = result.confidence === 'high' ? '높음' : result.confidence === 'medium' ? '보통' : '낮음';
+        toast.success(`AI 분석 완료! (신뢰도: ${confidence})`, { duration: 3000 });
+      } catch {
+        toast.dismiss('analyze');
+        toast.error('AI 분석에 실패했습니다. 직접 입력해 주세요.');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
   const { isSubscribed, isLoading: pushLoading, isSupported, subscribe, unsubscribe } = usePushNotification();
 
   const handleSave = async () => {
@@ -562,6 +602,55 @@ export default function Home() {
           onChange={val => updateRecord({ posStartAmount: val })}
           placeholder={autoCalculatedPosStartAmount > 0 ? autoCalculatedPosStartAmount.toLocaleString('ko-KR') : '0'}
         />
+
+        {/* ── AI 사진 분석 버튼 ── */}
+        <div className="mb-3">
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageAnalyze(file);
+              e.target.value = '';
+            }}
+          />
+          <button
+            onClick={() => imageInputRef.current?.click()}
+            disabled={analyzeImageMutation.isPending}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-colors active:scale-95 disabled:opacity-60"
+            style={{
+              background: analyzeImageMutation.isPending ? 'oklch(0.88 0.015 85)' : 'oklch(0.92 0.015 85)',
+              color: 'oklch(0.25 0.01 50)',
+              border: '1.5px dashed oklch(0.65 0.015 85)',
+            }}
+          >
+            {analyzeImageMutation.isPending ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                포스기 화면 분석 중...
+              </>
+            ) : (
+              <>
+                <Camera size={16} />
+                포스기 주문내역 사진으로 자동 입력
+              </>
+            )}
+          </button>
+          {showAnalysisResult && analysisNote && (
+            <div
+              className="mt-2 flex items-start gap-2 px-3 py-2 rounded-lg text-xs"
+              style={{ background: 'oklch(0.97 0.02 85)', border: '1px solid oklch(0.82 0.015 85)', color: 'oklch(0.4 0.01 50)' }}
+            >
+              <span className="flex-1">🤖 {analysisNote}</span>
+              <button onClick={() => setShowAnalysisResult(false)} className="flex-shrink-0 opacity-50 hover:opacity-100">
+                <X size={12} />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* ── 매출 현황 ── */}
         <div className="mb-3">
