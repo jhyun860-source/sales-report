@@ -1398,6 +1398,11 @@ export const appRouter = router({
               content: `당신은 한국 클럽/바/나이트의 포스기 주문내역 이미지를 분석하는 전문가입니다.
 이미지에서 주문 항목을 추출하고, 이전 기록 패턴을 참고하여 형광펜 HTML을 적용한 메모와 총 금액을 계산합니다.
 
+수량 표기 변환 규칙 (최우선):
+- 포스기의 "x1", "X1", "×1", "*1" 형식을 모두 "(1)" 괄호 형식으로 변환
+- 예: 히비키x1 → 히비키(1), 모엣x2 → 모엣(2), 발렌17 X1 → 발렌17(1)
+- 형광펜은 수량 괄호 끝까지 포함하여 적용
+
 형광펜 규칙:
 ${yellowGuide}
 ${pinkGuide}
@@ -1419,13 +1424,24 @@ ${pinkGuide}
                   text: `이 포스기 주문내역 이미지를 분석해서 다음을 반환해주세요:
 
 1. memo: 주문 내역을 한 줄로 요약한 HTML 텍스트
-   - 메뉴명과 수량 포함 (예: 무제한2, 연장1, 소주3)
-   - 주류/샴페인/위스키 등 특이 메뉴는 노란 형광펜 적용
-   - 직원명(호스티스/스텝)은 분홍 형광펜 적용
-   - 형광펜 없는 일반 텍스트는 그냥 텍스트로
-   - 예시: 무제한2, 연장1, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">모엣1</mark>, <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름3, 예나2</mark>
+
+   [수량 표기 규칙 - 중요]
+   - 포스기에 "x1", "X1", "×1", "*1" 등으로 표시된 수량은 반드시 괄호로 변환하세요
+   - 예: "히비키x1" → "히비키(1)", "모엣x2" → "모엣(2)", "발렌17 X1" → "발렌17(1)"
+   - 수량이 없으면 괄호 생략 (예: "무제한2", "연장1")
+
+   [형광펜 규칙]
+   - 주류/샴페인/위스키 등 특이 메뉴: 노란 형광펜
+     수량 괄호까지 포함해서 형광펜 적용 (예: <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">히비키(1)</mark>)
+   - 직원명(호스티스/스텝): 분홍 형광펜 (수량 괄호 포함)
+     (예: <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>)
+   - 일반 텍스트(무제한, 연장 등)는 형광펜 없이 그대로
+
+   예시 출력: 무제한2, 연장1, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">모엣(1)</mark>, <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>
 
 2. amount: 이미지에서 파악한 총 결제금액 (원 단위 정수, 파악 불가시 0)
+   - 이미지에 합계 금액이 명시되어 있으면 그 값 사용
+   - 없으면 개별 항목 금액 합산
 
 3. confidence: 분석 신뢰도 (high/medium/low)`,
                 },

@@ -496,3 +496,10 @@
 - [x] 서버: 응답에 memo(HTML), amount(숫자) 반환
 - [x] 프론트: analyzeOrderMemo 호출 시 branchId/date 전달
 - [x] 프론트: 분석 결과 amount가 있으면 해당 아이템 금액 자동 입력
+
+## 사진 AI 분석 메모 형식 개선 + 대치점 지점명/매출현황 버그
+
+- [x] 대치점 storeMe 응답에서 branchId/branch 정상 반환 여부 확인 (정상 확인)
+- [x] Home.tsx에서 selectedBranchId/myBranches 로딩 타이밍 버그 확인 및 수정 (myBranches 유효성 검사 로직 추가)
+- [x] analyzeOrderMemo: x1 → (1) 형식으로 변환, 괄호 끝까지 형광펜 적용
+- [x] analyzeOrderMemo: 이미지에서 각 항목 금액 파악 후 합산 → amount 자동 입력

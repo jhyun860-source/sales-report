@@ -204,7 +204,12 @@ export default function Home() {
       return next;
     });
   };
+  const myBranches = user?.role === 'admin'
+    ? (user.allBranches ?? [])
+    : user?.branch ? [user.branch] : [];
+
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(() => {
+    // localStorage에 저장된 값 우선, 없으면 null (useEffect에서 myBranches 로드 후 설정)
     const saved = localStorage.getItem('selectedBranchId');
     return saved ? parseInt(saved, 10) : null;
   });
@@ -212,15 +217,18 @@ export default function Home() {
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const myBranches = user?.role === 'admin'
-    ? (user.allBranches ?? [])
-    : user?.branch ? [user.branch] : [];
-
+  // user가 로드되면 selectedBranchId 보정:
+  // 1) selectedBranchId가 null이면 첫 번째 지점으로 설정
+  // 2) selectedBranchId가 myBranches에 없으면 (다른 계정 잔여 값) 첫 번째 지점으로 재설정
   useEffect(() => {
-    if (myBranches.length > 0 && selectedBranchId === null) {
-      setSelectedBranchId(myBranches[0].id);
+    if (myBranches.length === 0) return;
+    const isValid = myBranches.some(b => b.id === selectedBranchId);
+    if (!isValid) {
+      const firstId = myBranches[0].id;
+      setSelectedBranchId(firstId);
+      try { localStorage.setItem('selectedBranchId', String(firstId)); } catch {}
     }
-  }, [myBranches, selectedBranchId]);
+  }, [myBranches.map(b => b.id).join(',')]);
 
   const { data: serverRecord, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
     { branchId: selectedBranchId!, date: currentDate },
