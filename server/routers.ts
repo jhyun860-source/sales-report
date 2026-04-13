@@ -53,16 +53,23 @@ async function createStoreSessionToken(accountId: number, loginId: string, role:
     .sign(secret);
 }
 
-// 쿠키에서 storeAccount 페이로드 파싱 헬퍼
-async function parseStoreCookie(cookieHeader: string | undefined) {
-  if (!cookieHeader) return null;
-  const cookies = Object.fromEntries(
-    cookieHeader.split(';').map(c => {
-      const [k, ...v] = c.trim().split('=');
-      return [k.trim(), v.join('=')];
-    })
-  );
-  const token = cookies[COOKIE_NAME];
+// 쿠키 또는 Authorization 헤더에서 storeAccount 페이로드 파싱 헬퍼
+async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: string) {
+  // 1) Authorization: Bearer <token> 헤더 우선 확인
+  let token: string | undefined;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  }
+  // 2) 헤더 없으면 쿠키에서 확인
+  if (!token && cookieHeader) {
+    const cookies = Object.fromEntries(
+      cookieHeader.split(';').map(c => {
+        const [k, ...v] = c.trim().split('=');
+        return [k.trim(), v.join('=')];
+      })
+    );
+    token = cookies[COOKIE_NAME];
+  }
   if (!token) return null;
   try {
     const secret = new TextEncoder().encode(ENV.cookieSecret);
@@ -112,6 +119,7 @@ export const appRouter = router({
 
         return {
           success: true,
+          token, // localStorage에 저장하여 Authorization 헤더로 전달
           account: {
             id: account.id,
             loginId: account.loginId,
@@ -125,7 +133,7 @@ export const appRouter = router({
 
     // 자체 계정 현재 사용자 조회
     storeMe: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie(ctx.req.headers.cookie);
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
       if (!payload) return null;
 
       const account = await getStoreAccountById(payload.accountId);
@@ -265,7 +273,7 @@ export const appRouter = router({
   // storeAccount 관리 API
   storeAccount: router({
     list: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie(ctx.req.headers.cookie);
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
       if (!payload || payload.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
       const accounts = await getAllStoreAccounts();
       const db = await getDb();
@@ -285,7 +293,7 @@ export const appRouter = router({
         branchId: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload || payload.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
         const existing = await getStoreAccountByLoginId(input.loginId);
         if (existing) throw new TRPCError({ code: 'CONFLICT', message: '이미 사용 중인 아이디입니다' });
@@ -300,7 +308,7 @@ export const appRouter = router({
     changePassword: publicProcedure
       .input(z.object({ accountId: z.number(), newPassword: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload || payload.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
         const passwordHash = await bcrypt.hash(input.newPassword, 10);
         await updateStoreAccount(input.accountId, { passwordHash });
@@ -309,7 +317,7 @@ export const appRouter = router({
     delete: publicProcedure
       .input(z.object({ accountId: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload || payload.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
         await deleteStoreAccount(input.accountId);
         return { success: true };
@@ -317,13 +325,13 @@ export const appRouter = router({
     assignBranch: publicProcedure
       .input(z.object({ accountId: z.number(), branchId: z.number().nullable() }))
       .mutation(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload || payload.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
         await updateStoreAccount(input.accountId, { branchId: input.branchId });
         return { success: true };
       }),
     branchList: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie(ctx.req.headers.cookie);
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
       if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
       const db = await getDb();
       if (!db) return [];
@@ -336,7 +344,7 @@ export const appRouter = router({
     getRecord: publicProcedure
       .input(z.object({ branchId: z.number(), date: z.string() }))
       .query(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
@@ -348,7 +356,7 @@ export const appRouter = router({
     getPrevRecord: publicProcedure
       .input(z.object({ branchId: z.number(), date: z.string() }))
       .query(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
@@ -361,7 +369,7 @@ export const appRouter = router({
     getRecords: publicProcedure
       .input(z.object({ branchId: z.number(), startDate: z.string(), endDate: z.string() }))
       .query(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
@@ -379,7 +387,7 @@ export const appRouter = router({
         expenses: z.array(z.object({ id: z.string(), description: z.string(), amount: z.string() })).default([]),
       }))
       .mutation(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
@@ -437,7 +445,7 @@ export const appRouter = router({
       .input(z.object({ date: z.string() }))
       .query(async ({ ctx, input }) => {
         // storeAccount 관리자 OR Manus OAuth 관리자 모두 허용
-        const storePayload = await parseStoreCookie(ctx.req.headers.cookie);
+        const storePayload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         const isStoreAdmin = storePayload?.role === 'admin';
         const isOAuthAdmin = ctx.user?.role === 'admin';
         if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
@@ -472,7 +480,7 @@ export const appRouter = router({
     adminSummary: publicProcedure
       .input(z.object({ startDate: z.string(), endDate: z.string() }))
       .query(async ({ ctx, input }) => {
-        const storePayload2 = await parseStoreCookie(ctx.req.headers.cookie);
+        const storePayload2 = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         const isStoreAdmin2 = storePayload2?.role === 'admin';
         const isOAuthAdmin2 = ctx.user?.role === 'admin';
         if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
@@ -502,7 +510,7 @@ export const appRouter = router({
         mimeType: z.string().default('image/jpeg'),
       }))
       .mutation(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
 
         // base64 → Buffer → S3 업로드
@@ -757,7 +765,7 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) return null;
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account) return null;
@@ -787,7 +795,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
@@ -1002,7 +1010,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
         if (!account) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
@@ -1136,7 +1144,7 @@ export const appRouter = router({
         branchId: z.number().optional(), // 없으면 전체 지점
       }))
       .query(async ({ input, ctx }) => {
-        const account = await parseStoreCookie(ctx.req.headers.cookie);
+        const account = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!account) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
         const db = await getDb();
@@ -1291,7 +1299,7 @@ export const appRouter = router({
         mimeType: z.string().default('image/jpeg'),
       }))
       .mutation(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
 
         // base64 → Buffer → S3 업로드

@@ -44,6 +44,11 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      headers() {
+        // localStorage 토큰을 Authorization 헤더로 전달 (모바일 Chrome 쿠키 차단 문제 해결)
+        const token = typeof window !== 'undefined' ? localStorage.getItem('store_token') : null;
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),

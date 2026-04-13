@@ -472,3 +472,18 @@
 - [x] 테이블 기록 주문메모에 사진 AI 분석 기능 이동 (tableReport.analyzeOrderMemo 프로시저 + 카메라 버튼 UI)
 - [x] 주문메모 저장 버그 수정 (memo 필드도 scheduleAutoSave 트리거)
 - [x] 누적금액 미표시 버그 수정 (batchSave/upsert에서 cascadeUpdateCumulativeAmounts 호출)
+
+## 누적금 0 표시 + 지점명 미표시 버그 (4/14 재확인)
+
+- [ ] DB에서 실제 4월 13일~14일 cashTotal/cardTotal 값 확인
+- [ ] 테이블 기록 저장 시 cascadeUpdateCumulativeAmounts 실제 호출 여부 확인
+- [ ] Home.tsx 헤더 지점명 표시 로직 확인 및 수정
+- [ ] 누적금 0 원인 수정 (DB 보정 또는 로직 수정)
+
+## 모바일 쿠키 차단 문제 → localStorage 토큰 인증 전환
+
+- [ ] 서버: parseStoreCookie에서 Authorization 헤더 Bearer 토큰도 파싱하도록 수정
+- [ ] 서버: loginWithPassword 응답에 token 필드 추가
+- [ ] 프론트: loginWithPassword 성공 시 token을 localStorage에 저장
+- [ ] 프론트: trpc client에서 모든 요청에 Authorization 헤더 추가
+- [ ] 프론트: 로그아웃 시 localStorage 토큰 삭제

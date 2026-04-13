@@ -16,6 +16,8 @@ export function useStoreAuth() {
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: async () => {
+      // localStorage 토큰 삭제 (모바일 Chrome 쿠키 차단 문제 해결)
+      localStorage.removeItem('store_token');
       await utils.auth.storeMe.invalidate();
       navigate('/login');
     },

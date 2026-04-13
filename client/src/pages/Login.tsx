@@ -28,7 +28,11 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      await loginMutation.mutateAsync({ loginId: loginId.trim(), password });
+      const result = await loginMutation.mutateAsync({ loginId: loginId.trim(), password });
+      // localStorage에 토큰 저장 (모바일 Chrome 쿠키 차단 문제 해결)
+      if (result.token) {
+        localStorage.setItem('store_token', result.token);
+      }
       // storeMe 캐시 무효화
       await utils.auth.storeMe.invalidate();
       navigate('/');
