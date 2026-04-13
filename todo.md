@@ -327,3 +327,10 @@
 - [x] staffIncentives 스키마 확인 (직원명/윉4추/병추/맥주병추/영업인센/근무시간)
 - [x] adminDailyDetail API에 staffIncentives 포함 (inArray 조회 추가)
 - [x] 관리자 대시보드 테이블 기록 섹션 아래 출근자 인센티브 표 추가 (직원/윉4추/병추/맥주/영업인센, 근무시간 표시)
+
+## 누적금(cashTotal/cardTotal) 연쇄 업데이트 자동화
+
+- [x] 현재 누적금 계산 로직 파악 (cascadeUpdatePosAmounts 참고)
+- [x] db.ts에 cascadeUpdateCumulativeAmounts 함수 추가 (일요일 이월/월1일 리셋/일반일 누적 로직 포함)
+- [x] routers.ts save mutation 두 곳에 cascadeUpdateCumulativeAmounts 호출 추가
+- [x] 테스트 33개 전체 통과 확인

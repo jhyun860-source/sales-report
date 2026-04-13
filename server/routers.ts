@@ -26,6 +26,7 @@ import {
   getAllStoreAccounts,
   deleteStoreAccount,
   cascadeUpdatePosAmounts,
+  cascadeUpdateCumulativeAmounts,
 } from "./db";
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives } from "../drizzle/schema";
 import { eq, and, desc, like, sql, inArray } from "drizzle-orm";
@@ -418,6 +419,8 @@ export const appRouter = router({
         });
         // 저장 후 이후 날짜들의 posStart/posEnd 연쇄 재계산
         try { await cascadeUpdatePosAmounts(input.branchId, input.date); } catch {}
+        // 저장 후 이후 날짜들의 cashTotal/cardTotal 연쇄 재계산
+        try { await cascadeUpdateCumulativeAmounts(input.branchId, input.date); } catch {}
         const branch = await getBranchById(input.branchId);
         const branchName = branch?.name ?? '알 수 없는 지점';
         const fmt = (v: string) => { const n = Number((v||''). replace(/,/g,'')); return isNaN(n)||n===0?'—':`₩${n.toLocaleString('ko-KR')}`; };
@@ -578,6 +581,8 @@ export const appRouter = router({
         });
         // 저장 후 이후 날짜들의 posStart/posEnd 연쇄 재계산
         try { await cascadeUpdatePosAmounts(input.branchId, input.date); } catch {}
+        // 저장 후 이후 날짜들의 cashTotal/cardTotal 연쇄 재계산
+        try { await cascadeUpdateCumulativeAmounts(input.branchId, input.date); } catch {}
         const branch = await getBranchById(input.branchId);
         const branchName = branch?.name ?? '알 수 없는 지점';
         const fmt = (v: string) => { const n = Number((v||''). replace(/,/g,'')); return isNaN(n)||n===0?'—':`₩${n.toLocaleString('ko-KR')}`; };

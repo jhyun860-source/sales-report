@@ -411,3 +411,63 @@ export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string
     }
   }
 }
+
+// 특정 날짜 이후의 동일 지점 기록들의 cashTotal/cardTotal을 연쇄 재계산
+// 저장된 날짜의 cash/card가 바뀌면 이후 날짜들의 누적금도 연쇄 업데이트
+export async function cascadeUpdateCumulativeAmounts(branchId: number, fromDate: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // fromDate 이후의 모든 기록을 날짜 오름차순으로 조회 (같은 달만 처리 — 월 경계는 1일에 리셋)
+  const futureRecords = await db
+    .select()
+    .from(dailySalesRecords)
+    .where(and(eq(dailySalesRecords.branchId, branchId), gt(dailySalesRecords.date, fromDate)))
+    .orderBy(dailySalesRecords.date);
+
+  if (futureRecords.length === 0) return;
+
+  // fromDate 기록의 cashTotal/cardTotal을 기준으로 연쇄 계산
+  let prevRecord = await getDailySalesRecord(branchId, fromDate);
+  if (!prevRecord) return;
+
+  for (const rec of futureRecords) {
+    const recDateObj = new Date(rec.date + 'T12:00:00');
+    const isSunday = recDateObj.getDay() === 0;
+    const isFirstOfMonth = rec.date.endsWith('-01');
+
+    const prevCashTotal: number = parseInt(prevRecord.cashTotal || '0') || 0;
+    const prevCardTotal: number = parseInt(prevRecord.cardTotal || '0') || 0;
+    const todayCash: number = parseInt(rec.cash || '0') || 0;
+    const todayCard: number = parseInt(rec.card || '0') || 0;
+
+    let newCashTotal: number;
+    let newCardTotal: number;
+
+    if (isFirstOfMonth) {
+      // 매월 1일은 리셋: 이전 누적과 무관하게 당일 매출만
+      newCashTotal = todayCash;
+      newCardTotal = todayCard;
+    } else if (isSunday) {
+      // 일요일은 영업 없음: 이전 누적 그대로 이월
+      newCashTotal = prevCashTotal;
+      newCardTotal = prevCardTotal;
+    } else {
+      newCashTotal = prevCashTotal + todayCash;
+      newCardTotal = prevCardTotal + todayCard;
+    }
+
+    // 값이 달라진 경우에만 업데이트
+    if (String(newCashTotal) !== rec.cashTotal || String(newCardTotal) !== rec.cardTotal) {
+      await db
+        .update(dailySalesRecords)
+        .set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: new Date() })
+        .where(eq(dailySalesRecords.id, rec.id));
+      prevRecord = { ...rec, cashTotal: String(newCashTotal), cardTotal: String(newCardTotal) };
+    } else {
+      prevRecord = rec;
+    }
+
+    // 월 경계(1일)에서 이전 누적 연산이 끊기므로, 1일 이후는 그 1일 기록을 기준으로 계속 진행
+  }
+}
