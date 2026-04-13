@@ -434,8 +434,11 @@ export const appRouter = router({
     adminDailyDetail: publicProcedure
       .input(z.object({ date: z.string() }))
       .query(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
-        if (!payload || payload.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
+        // storeAccount 관리자 OR Manus OAuth 관리자 모두 허용
+        const storePayload = await parseStoreCookie(ctx.req.headers.cookie);
+        const isStoreAdmin = storePayload?.role === 'admin';
+        const isOAuthAdmin = ctx.user?.role === 'admin';
+        if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
         const db = await getDb();
         if (!db) return [];
         const allBranches = await db.select().from(branches).orderBy(branches.name);
@@ -467,8 +470,10 @@ export const appRouter = router({
     adminSummary: publicProcedure
       .input(z.object({ startDate: z.string(), endDate: z.string() }))
       .query(async ({ ctx, input }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie);
-        if (!payload || payload.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
+        const storePayload2 = await parseStoreCookie(ctx.req.headers.cookie);
+        const isStoreAdmin2 = storePayload2?.role === 'admin';
+        const isOAuthAdmin2 = ctx.user?.role === 'admin';
+        if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
         const db = await getDb();
         if (!db) return { byBranch: [], byDate: [] };
         const allBranches = await db.select().from(branches).orderBy(branches.name);

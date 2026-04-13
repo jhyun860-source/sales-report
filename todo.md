@@ -434,3 +434,8 @@
 
 - [x] StaffIncentiveStats에서 branchId 전달 로직 파악 (원인: branchId를 쿼리에 전혀 전달 안 함)
 - [x] Home.tsx에서 인센티브 통계 이동 시 URL 파라미터로 branchId 전달, StaffIncentiveStats에서 URL 파라미터 읽어 쿼리에 전달
+
+## 관리자 로그인 시 테이블 기록 미표시 버그
+
+- [x] adminDailyDetail 프로시저에서 tableReport 조회 로직 확인 (원인: storeAccount 쿠키만 확인, Manus OAuth 관리자 차단)
+- [x] adminDailyDetail/adminSummary에 Manus OAuth 관리자(ctx.user.role==='admin')도 허용하도록 수정
