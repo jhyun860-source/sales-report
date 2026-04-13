@@ -487,3 +487,12 @@
 - [x] 프론트: loginWithPassword 성공 시 token을 localStorage에 저장
 - [x] 프론트: trpc client에서 모든 요청에 Authorization 헤더 추가
 - [x] 프론트: 로그아웃 시 localStorage 토큰 삭제
+
+## 포스기 사진 AI 분석 - 이전 기록 참고 형광펜 + 금액 자동 계산
+
+- [x] 서버: analyzeOrderMemo에 branchId/date 파라미터 추가 (이전 기록 조회용)
+- [x] 서버: 해당 지점 최근 60일 tableItems 메모에서 형광펜 패턴(직원명/주류명) 추출
+- [x] 서버: 형광펜 패턴을 LLM 프롬프트에 포함하여 형광펜 HTML + 금액 계산
+- [x] 서버: 응답에 memo(HTML), amount(숫자) 반환
+- [x] 프론트: analyzeOrderMemo 호출 시 branchId/date 전달
+- [x] 프론트: 분석 결과 amount가 있으면 해당 아이템 금액 자동 입력

@@ -1292,11 +1292,13 @@ export const appRouter = router({
         return { stats: result, weekLabels: allWeekLabels };
       }),
 
-    // 포스기 주문내역 사진에서 주문메모 텍스트 자동 추출
+    // 포스기 주문내역 사진에서 주문메모 텍스트 자동 추출 (이전 기록 참고 형광펜 + 금액 계산)
     analyzeOrderMemo: publicProcedure
       .input(z.object({
         imageBase64: z.string(),
         mimeType: z.string().default('image/jpeg'),
+        branchId: z.number().optional(),
+        date: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
@@ -1309,12 +1311,101 @@ export const appRouter = router({
         const fileKey = `order-memo-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
 
-        // LLM Vision으로 포스기 주문내역 분석 → 메모 텍스트 생성
+        // 이전 기록에서 형광펜 패턴 추출
+        const account = await getStoreAccountById(payload.accountId);
+        const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
+        let yellowKeywords: string[] = []; // 노란 형광펜 (주류/특이 메뉴)
+        let pinkKeywords: string[] = [];   // 분홍 형광펜 (직원명)
+        let recentMemoExamples: string[] = [];
+
+        if (effectiveBranchId) {
+          try {
+            const db = await getDb();
+            if (db) {
+              // 최근 60일 해당 지점 메모 조회
+              const cutoffDate = new Date();
+              cutoffDate.setDate(cutoffDate.getDate() - 60);
+              const cutoff = cutoffDate.toISOString().slice(0, 10);
+              const recentItems = await db
+                .select({ memo: tableItems.memo, amount: tableItems.amount })
+                .from(tableItems)
+                .innerJoin(tableReports, eq(tableItems.tableReportId, tableReports.id))
+                .where(
+                  and(
+                    eq(tableReports.branchId, effectiveBranchId),
+                    sql`${tableReports.date} >= ${cutoff}`,
+                    sql`${tableItems.memo} IS NOT NULL`,
+                    sql`${tableItems.memo} != ''`,
+                  )
+                )
+                .orderBy(desc(tableReports.date))
+                .limit(80);
+
+              // 형광펜 패턴 추출
+              const yellowSet = new Set<string>();
+              const pinkSet = new Set<string>();
+              for (const row of recentItems) {
+                const memo = row.memo ?? '';
+                // 노란 형광펜 텍스트 추출
+                const yMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*224,\s*102\)[^>]*>([\s\S]*?)<\/mark>/g));
+                for (const m of yMatches) {
+                  const text = m[1].replace(/<[^>]+>/g, '').trim();
+                  if (text && text.length > 0 && text.length < 30) yellowSet.add(text);
+                }
+                // 분홍 형광펜 텍스트 추출 (쉼표로 분리된 직원명 개별 처리)
+                const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+                for (const m of pMatches) {
+                  const text = m[1].replace(/<[^>]+>/g, '').trim();
+                  // 쉼표로 분리하여 개별 직원명 추출
+                  const parts = text.split(/[,，]/).map((p: string) => p.trim()).filter((p: string) => p.length > 0 && p.length < 15);
+                  for (const p of parts) {
+                    // 숫자만 있는 경우 제외, 직원명+숫자 패턴 (예: 아름4, 예나5)
+                    const nameMatch = p.match(/^([가-힣a-zA-Z]+)\d*$/);
+                    if (nameMatch) pinkSet.add(nameMatch[1]);
+                    else if (/^[가-힣a-zA-Z]{1,6}$/.test(p)) pinkSet.add(p);
+                  }
+                }
+                // 최근 메모 예시 (형광펜 제거한 텍스트)
+                if (recentMemoExamples.length < 8) {
+                  const cleanMemo = memo.replace(/<[^>]+>/g, '').trim();
+                  if (cleanMemo) recentMemoExamples.push(cleanMemo);
+                }
+              }
+              yellowKeywords = Array.from(yellowSet).slice(0, 30);
+              pinkKeywords = Array.from(pinkSet).slice(0, 30);
+            }
+          } catch (e) {
+            console.error('[analyzeOrderMemo] 이전 기록 조회 실패:', e);
+          }
+        }
+
+        // 형광펜 가이드 프롬프트 구성
+        const yellowGuide = yellowKeywords.length > 0
+          ? `노란 형광펜(<mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">텍스트</mark>): 주류/샴페인/위스키/특이 메뉴. 이전 기록에서 노란 형광펜이 적용된 키워드 예시: ${yellowKeywords.join(', ')}`
+          : '노란 형광펜: 주류/샴페인/위스키/특이 메뉴에 적용';
+        const pinkGuide = pinkKeywords.length > 0
+          ? `분홍 형광펜(<mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">텍스트</mark>): 직원명(호스티스/스텝 이름). 이전 기록에서 분홍 형광펜이 적용된 직원명 예시: ${pinkKeywords.join(', ')}`
+          : '분홍 형광펜: 직원명(호스티스/스텝 이름)에 적용';
+        const examplesGuide = recentMemoExamples.length > 0
+          ? `\n\n이전 기록 메모 형식 예시:\n${recentMemoExamples.slice(0, 5).map(m => `- ${m}`).join('\n')}`
+          : '';
+
+        // LLM Vision으로 포스기 주문내역 분석 → 형광펜 HTML 메모 + 금액 계산
         const response = await invokeLLM({
           messages: [
             {
               role: 'system',
-              content: '당신은 한국 클럽/바/나이트에이의 포스기 주문내역 이미지를 분석하는 전문가입니다. 이미지에서 주문된 메뉴 항목들을 읽기 쉬운 메모 형식으로 정리합니다.',
+              content: `당신은 한국 클럽/바/나이트의 포스기 주문내역 이미지를 분석하는 전문가입니다.
+이미지에서 주문 항목을 추출하고, 이전 기록 패턴을 참고하여 형광펜 HTML을 적용한 메모와 총 금액을 계산합니다.
+
+형광펜 규칙:
+${yellowGuide}
+${pinkGuide}
+
+금액 계산 규칙:
+- 이미지에 표시된 총 결제금액을 그대로 사용 (있는 경우)
+- 없으면 개별 항목 금액 합산
+- 금액이 전혀 파악 안 되면 0 반환${examplesGuide}`,
             },
             {
               role: 'user',
@@ -1325,14 +1416,18 @@ export const appRouter = router({
                 },
                 {
                   type: 'text' as const,
-                  text: `이 포스기 주문내역 이미지에서 주문된 메뉴 항목들을 추출해서 주문 메모로 정리해주세요.
+                  text: `이 포스기 주문내역 이미지를 분석해서 다음을 반환해주세요:
 
-요청사항:
-- 메뉴명과 수량을 간결하게 정리 (ex: 소주 2, 맥주 3병, 안주 모음)
-- 무제한/세트 여부 포함
-- 한 줄로 요약 (ex: 소주 2, 맥주 3병, 안주세트x2)
-- 한국어로 작성
-- 주문 내역이 없거나 파악이 안 되면 빈 문자열 반환`,
+1. memo: 주문 내역을 한 줄로 요약한 HTML 텍스트
+   - 메뉴명과 수량 포함 (예: 무제한2, 연장1, 소주3)
+   - 주류/샴페인/위스키 등 특이 메뉴는 노란 형광펜 적용
+   - 직원명(호스티스/스텝)은 분홍 형광펜 적용
+   - 형광펜 없는 일반 텍스트는 그냥 텍스트로
+   - 예시: 무제한2, 연장1, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">모엣1</mark>, <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름3, 예나2</mark>
+
+2. amount: 이미지에서 파악한 총 결제금액 (원 단위 정수, 파악 불가시 0)
+
+3. confidence: 분석 신뢰도 (high/medium/low)`,
                 },
               ],
             },
@@ -1340,15 +1435,16 @@ export const appRouter = router({
           response_format: {
             type: 'json_schema',
             json_schema: {
-              name: 'order_memo',
+              name: 'order_memo_v2',
               strict: true,
               schema: {
                 type: 'object',
                 properties: {
-                  memo: { type: 'string', description: '주문 메모 텍스트 (한 줄 요약)' },
+                  memo: { type: 'string', description: '형광펜 HTML이 포함된 주문 메모 (한 줄)' },
+                  amount: { type: 'integer', description: '총 결제금액 (원, 파악 불가시 0)' },
                   confidence: { type: 'string', description: '분석 신뢰도: high/medium/low' },
                 },
-                required: ['memo', 'confidence'],
+                required: ['memo', 'amount', 'confidence'],
                 additionalProperties: false,
               },
             },
@@ -1361,6 +1457,7 @@ export const appRouter = router({
         const result = JSON.parse(content);
         return {
           memo: (result.memo as string) || '',
+          amount: typeof result.amount === 'number' && result.amount > 0 ? String(result.amount) : '',
           confidence: (result.confidence as string) || 'low',
         };
       }),

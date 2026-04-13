@@ -408,13 +408,20 @@ export default function TableReport() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      const { memo } = await analyzeOrderMemo.mutateAsync({
+      const { memo, amount } = await analyzeOrderMemo.mutateAsync({
         imageBase64: base64,
         mimeType: file.type || 'image/jpeg',
+        branchId: urlBranchId ?? account?.branchId ?? undefined,
+        date: currentDate,
       });
       if (memo) {
         updateItemField(localId, 'memo', memo);
-        toast.success('주문 메모가 자동 입력되었습니다', { duration: 2000 });
+        if (amount) {
+          updateItemField(localId, 'amount', amount);
+          toast.success('주문 메모와 금액이 자동 입력되었습니다 형광펜도 적용되었습니다', { duration: 2500 });
+        } else {
+          toast.success('주문 메모가 자동 입력되었습니다', { duration: 2000 });
+        }
       } else {
         toast.error('주문 내역을 파악하지 못했습니다. 다시 시도해주세요.');
       }
