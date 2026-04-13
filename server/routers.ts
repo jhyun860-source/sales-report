@@ -1039,7 +1039,7 @@ export const appRouter = router({
           ? (input.branchId ?? null)
           : fullAccount.branchId;
 
-        // 집계용 rows (직원명별 합계, 알바 제외)
+        // 집계용 rows (직원명별 합계, 직원+알바 모두 포함)
         const rows = await db
           .select({
             staffName: staffIncentives.staffName,
@@ -1054,13 +1054,13 @@ export const appRouter = router({
           .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
           .where(
             targetBranchId !== null
-              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId), eq(staffIncentives.staffType, 'staff'))
-              : and(like(tableReports.date, prefix), eq(staffIncentives.staffType, 'staff'))
+              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId))
+              : like(tableReports.date, prefix)
           )
           .groupBy(staffIncentives.staffName, staffIncentives.staffType)
-          .orderBy(staffIncentives.staffName);
+          .orderBy(staffIncentives.staffType, staffIncentives.staffName);
 
-        // 근무시간 계산을 위한 상세 rows (날짜별 직원 근무시간, 알바 제외)
+        // 근무시간 계산을 위한 상세 rows (날짜별 직원/알바 근무시간, 모두 포함)
         const detailRows = await db
           .select({
             staffName: staffIncentives.staffName,
@@ -1073,8 +1073,8 @@ export const appRouter = router({
           .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
           .where(
             targetBranchId !== null
-              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId), eq(staffIncentives.staffType, 'staff'))
-              : and(like(tableReports.date, prefix), eq(staffIncentives.staffType, 'staff'))
+              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId))
+              : like(tableReports.date, prefix)
           )
           .orderBy(tableReports.date);
 

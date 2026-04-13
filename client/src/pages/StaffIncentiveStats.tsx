@@ -112,8 +112,9 @@ export default function StaffIncentiveStats() {
   const totalBeer = stats.reduce((s, r) => s + (Number(r.totalBeerBottle) || 0), 0);
   const totalIncentive = stats.reduce((s, r) => s + (r.incentiveAmount || 0), 0);
   const totalWorkMins = stats.reduce((s, r) => s + (r.totalWorkMinutes || 0), 0);
-  const totalStandardMins = stats.reduce((s, r) => s + (r.standardMinutes ?? 0), 0);
-  const totalDiffMins = stats.reduce((s, r) => s + (r.workDiffMinutes ?? 0), 0);
+  // 기준시간/차이시간은 직원(staff)만 합산
+  const totalStandardMins = stats.filter(r => r.staffType !== 'parttime').reduce((s, r) => s + (r.standardMinutes ?? 0), 0);
+  const totalDiffMins = stats.filter(r => r.staffType !== 'parttime').reduce((s, r) => s + (r.workDiffMinutes ?? 0), 0);
 
   return (
     <div className="min-h-screen" style={{ background: BG }}>
@@ -220,9 +221,14 @@ export default function StaffIncentiveStats() {
                       className="px-4 py-3 flex items-center justify-between"
                       style={{ background: HEADER_BG, borderBottom: `1px solid ${BORDER}` }}
                     >
-                      <span className="font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>
-                        {row.staffName || '(이름 없음)'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>
+                          {row.staffName || '(이름 없음)'}
+                        </span>
+                        {row.staffType === 'parttime' && (
+                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'oklch(0.88 0.04 250)', color: 'oklch(0.35 0.12 250)', fontWeight: 600 }}>알바</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1 text-xs" style={{ color: MUTED }}>
                           <Calendar size={12} />
@@ -235,8 +241,8 @@ export default function StaffIncentiveStats() {
                       </div>
                     </div>
 
-                    {/* +/- 시간 통계 배너 */}
-                    {(() => {
+                    {/* +/- 시간 통계 배너 (직원만 표시) */}
+                    {row.staffType !== 'parttime' && (() => {
                       const diff = row.workDiffMinutes ?? 0;
                       const std = row.standardMinutes ?? 0;
                       const isOver = diff > 0;
@@ -262,8 +268,8 @@ export default function StaffIncentiveStats() {
                       );
                     })()}
 
-                    {/* 주간 근무시간 테이블 */}
-                    {weekLabels.length > 0 && (
+                    {/* 주간 근무시간 테이블 (직원만 표시) */}
+                    {row.staffType !== 'parttime' && weekLabels.length > 0 && (
                       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
                         <div className="px-4 py-2 text-xs font-semibold" style={{ color: MUTED, background: 'oklch(0.97 0.006 85)' }}>
                           주간 근무시간
