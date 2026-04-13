@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { toast } from 'sonner';
 import { Plus, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2, Users, Wine } from 'lucide-react';
 import { MemoEditor } from '@/components/MemoEditor';
@@ -192,9 +192,17 @@ export default function TableReport() {
   // 이미 로드한 날짜 추적 (items 덮어쓰기 방지)
   const loadedDateRef = useRef<string | null>(null);
 
+  // URL 파라미터에서 branchId 읽기 (관리자가 지점 선택 후 이동 시 사용)
+  const search = useSearch();
+  const urlBranchId = (() => {
+    const params = new URLSearchParams(search);
+    const v = params.get('branchId');
+    return v ? parseInt(v, 10) : undefined;
+  })();
+
   // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
   const { data: reportData, dataUpdatedAt } = trpc.tableReport.getByDate.useQuery(
-    { date: currentDate },
+    { date: currentDate, branchId: urlBranchId },
     { enabled: !!account, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
@@ -281,6 +289,7 @@ export default function TableReport() {
         date: currentDate,
         teamCount,
         notes,
+        branchId: urlBranchId,
         items: items.map((it, i) => ({
           id: it.id,
           localId: it.localId,

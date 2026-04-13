@@ -477,7 +477,7 @@ export default function Home() {
 
           {/* 테이블 기록 버튼 */}
           <button
-            onClick={() => navigate('/table-report')}
+            onClick={() => navigate(`/table-report${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
             className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
             style={{
               background: 'oklch(0.92 0.015 85)',

@@ -665,16 +665,19 @@ export const appRouter = router({
   tableReport: router({
     // 날짜별 테이블 기록 조회 (없으면 null 반환)
     getByDate: publicProcedure
-      .input(z.object({ date: z.string() }))
+      .input(z.object({ date: z.string(), branchId: z.number().optional() }))
       .query(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) return null;
         const payload = await parseStoreCookie(ctx.req.headers.cookie);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
-        if (!account?.branchId) return null;
+        if (!account) return null;
+        // 관리자(branchId=null)인 경우 input.branchId를 사용, 일반 직원은 자신의 branchId 사용
+        const effectiveBranchId = account.branchId ?? input.branchId;
+        if (!effectiveBranchId) return null;
         const [report] = await db.select().from(tableReports)
-          .where(and(eq(tableReports.branchId, account.branchId), eq(tableReports.date, input.date)))
+          .where(and(eq(tableReports.branchId, effectiveBranchId), eq(tableReports.date, input.date)))
           .limit(1);
         if (!report) return null;
         const items = await db.select().from(tableItems)
@@ -685,12 +688,13 @@ export const appRouter = router({
           .orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
         return { ...report, items, incentives };
       }),
-    // 기록 생성 또는 업데이트
+     // 기록 생성 또는 업데이트
     upsert: publicProcedure
       .input(z.object({
         date: z.string(),
         teamCount: z.number().default(0),
         notes: z.string().optional(),
+        branchId: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -698,11 +702,13 @@ export const appRouter = router({
         const payload = await parseStoreCookie(ctx.req.headers.cookie);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
-        if (!account?.branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
-
+        if (!account) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
+        // 관리자(branchId=null)인 경우 input.branchId를 사용
+        const effectiveBranchId = account.branchId ?? input.branchId;
+        if (!effectiveBranchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 정보가 필요합니다' });
         // 1. tableReport upsert
         const [existing] = await db.select().from(tableReports)
-          .where(and(eq(tableReports.branchId, account.branchId), eq(tableReports.date, input.date)))
+          .where(and(eq(tableReports.branchId, effectiveBranchId), eq(tableReports.date, input.date)))
           .limit(1);
         let reportId: number;
         if (existing) {
@@ -713,14 +719,13 @@ export const appRouter = router({
           reportId = existing.id;
         } else {
           const [result] = await db.insert(tableReports).values({
-            branchId: account.branchId,
+            branchId: effectiveBranchId,
             date: input.date,
             teamCount: input.teamCount,
             notes: input.notes || null,
           });
           reportId = (result as any).insertId;
         }
-
         // 2. 현금/카드 테이블 합산 → dailySalesRecords 자동 반영
         const allItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, reportId));
         const cashSum = allItems
@@ -729,17 +734,15 @@ export const appRouter = router({
         const cardSum = allItems
           .filter(it => it.paymentMethod === 'card')
           .reduce((sum, it) => sum + Number(it.amount || 0), 0);
-
         // cashAmount, cardAmount를 tableReports에도 저장
         await db.update(tableReports).set({
           cashAmount: String(cashSum),
           cardAmount: String(cardSum),
         }).where(eq(tableReports.id, reportId));
-
-        // dailySalesRecords의 cash, card 칸에 자동 반영 (기존 값 유지하되 테이블 합산값으로 덮어씀)
-        const existingSales = await getDailySalesRecord(account.branchId, input.date);
+        // dailySalesRecords의 cash, card 칸에 자동 반영 (기존 값 유지하되 테이블 합산값으로 덮어씨)
+        const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
         await upsertDailySalesRecord({
-          branchId: account.branchId,
+          branchId: effectiveBranchId,
           date: input.date,
           posStartAmount: existingSales?.posStartAmount ?? '0',
           cash: String(cashSum),
@@ -876,6 +879,7 @@ export const appRouter = router({
         date: z.string(),
         teamCount: z.number().default(0),
         notes: z.string().optional(),
+        branchId: z.number().optional(),
         items: z.array(z.object({
           id: z.number().optional(),
           localId: z.string(),
@@ -907,11 +911,14 @@ export const appRouter = router({
         const payload = await parseStoreCookie(ctx.req.headers.cookie);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
         const account = await getStoreAccountById(payload.accountId);
-        if (!account?.branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
+        if (!account) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 계정이 필요합니다' });
+        // 관리자(branchId=null)인 경우 input.branchId를 사용
+        const effectiveBranchId = account.branchId ?? input.branchId;
+        if (!effectiveBranchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 정보가 필요합니다' });
 
         // 1. tableReport upsert
         const [existing] = await db.select().from(tableReports)
-          .where(and(eq(tableReports.branchId, account.branchId), eq(tableReports.date, input.date)))
+          .where(and(eq(tableReports.branchId, effectiveBranchId), eq(tableReports.date, input.date)))
           .limit(1);
         let reportId: number;
         if (existing) {
@@ -922,7 +929,7 @@ export const appRouter = router({
           reportId = existing.id;
         } else {
           const [result] = await db.insert(tableReports).values({
-            branchId: account.branchId,
+            branchId: effectiveBranchId,
             date: input.date,
             teamCount: input.teamCount,
             notes: input.notes || null,
@@ -1003,9 +1010,9 @@ export const appRouter = router({
           cardAmount: String(cardSum),
         }).where(eq(tableReports.id, reportId));
 
-        const existingSales = await getDailySalesRecord(account.branchId, input.date);
+        const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
         await upsertDailySalesRecord({
-          branchId: account.branchId,
+          branchId: effectiveBranchId,
           date: input.date,
           posStartAmount: existingSales?.posStartAmount ?? '0',
           cash: String(cashSum),

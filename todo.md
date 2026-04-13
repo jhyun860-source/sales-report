@@ -439,3 +439,14 @@
 
 - [x] adminDailyDetail 프로시저에서 tableReport 조회 로직 확인 (원인: storeAccount 쿠키만 확인, Manus OAuth 관리자 차단)
 - [x] adminDailyDetail/adminSummary에 Manus OAuth 관리자(ctx.user.role==='admin')도 허용하도록 수정
+
+## 관리자 선릉점 테이블 기록 여전히 안 보이는 버그 (재확인)
+
+- [ ] AdminDashboard에서 선릉점 선택 시 tableReport 데이터 실제 반환 여부 확인
+- [ ] adminDailyDetail 두 번째 정의(adminProcedure)도 OAuth 관리자 허용 여부 확인
+
+## 관리자 테이블 기록 접근 전면 수정
+
+- [x] Home.tsx 테이블 버튼 클릭 시 selectedBranchId를 URL 파라미터로 전달
+- [x] tableReport.getByDate 서버 프로시저에서 관리자가 branchId 직접 지정 가능하도록 수정
+- [x] TableReport.tsx에서 URL 파라미터 branchId를 읽어 쿼리에 전달 (관리자 모드)
