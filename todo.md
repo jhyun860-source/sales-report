@@ -365,10 +365,18 @@
 
 ## 선릉점 4월 1일 카드 매출 수정
 
-- [ ] 선릉점 4월 1일 카드 항목 확인 및 100,000원 차이 원인 파악
-- [ ] DB 수정 및 cardTotal 연쇄 재보정
+- [x] 선릉점 4월 1일 카드 항목 확인 및 100,000원 차이 원인 파악 (수정 불필요 - 현재 2,454,000원 유지)
+- [x] DB 수정 및 cardTotal 연쇄 재보정 (수정 없음)
 
 ## 선릉점 4월 3일 이후 누적금/포스 시작금/마감금 누락 버그
 
 - [x] 선릉점 4월 1일~이후 dailySalesRecords 전체 확인 (4월 2~4일 cashTotal/cardTotal/posStart/posEnd 모두 0)
 - [x] cashTotal/cardTotal/posStartAmount/posEndAmount 누락 원인 파악 및 DB 보정 (4월 2~4일 연쇄 보정 완료)
+
+## 전 지점 4월 데이터 정합성 검사
+
+- [x] 전 지점 4월 dailySalesRecords 전수 조회 (cashTotal/cardTotal/posStart/posEnd 이상 감지)
+- [x] 이상 데이터 원인 분석 및 보정값 계산
+- [x] DB 보정 실행 (대치점 4월 11~12일, 선릉점 4월 6~7일 보정 완료 / 삼성점 사용자 확인 대기)
+- [x] 선릉점 4월 6일 이후 cashTotal/cardTotal/posStart/posEnd 연쇄 보정 (4월 6일 cardTotal=9,873,000 / 4월 7일 13,893,000 / posStart/posEnd=35,000)
+- [ ] 삼성점 4월 1일 포스 시작금 확인 후 cashTotal/cardTotal/posStart/posEnd 연쇄 보정
