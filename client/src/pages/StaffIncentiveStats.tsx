@@ -9,7 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { ChevronLeft, ChevronRight, ArrowLeft, BarChart2, Clock, Calendar, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, BarChart2, Clock, Calendar, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 
@@ -53,6 +53,16 @@ function formatMinutes(mins: number): string {
   const m = mins % 60;
   if (m === 0) return `${h}시간`;
   return `${h}시간 ${m}분`;
+}
+
+function formatDiffMinutes(mins: number): string {
+  const abs = Math.abs(mins);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  const sign = mins > 0 ? '+' : mins < 0 ? '-' : '';
+  if (abs === 0) return '±0분';
+  if (m === 0) return `${sign}${h}시간`;
+  return `${sign}${h}시간 ${m}분`;
 }
 
 export default function StaffIncentiveStats() {
@@ -102,6 +112,8 @@ export default function StaffIncentiveStats() {
   const totalBeer = stats.reduce((s, r) => s + (Number(r.totalBeerBottle) || 0), 0);
   const totalIncentive = stats.reduce((s, r) => s + (r.incentiveAmount || 0), 0);
   const totalWorkMins = stats.reduce((s, r) => s + (r.totalWorkMinutes || 0), 0);
+  const totalStandardMins = stats.reduce((s, r) => s + (r.standardMinutes ?? 0), 0);
+  const totalDiffMins = stats.reduce((s, r) => s + (r.workDiffMinutes ?? 0), 0);
 
   return (
     <div className="min-h-screen" style={{ background: BG }}>
@@ -223,6 +235,33 @@ export default function StaffIncentiveStats() {
                       </div>
                     </div>
 
+                    {/* +/- 시간 통계 배너 */}
+                    {(() => {
+                      const diff = row.workDiffMinutes ?? 0;
+                      const std = row.standardMinutes ?? 0;
+                      const isOver = diff > 0;
+                      const isUnder = diff < 0;
+                      const diffColor = isOver ? 'oklch(0.45 0.15 150)' : isUnder ? 'oklch(0.5 0.2 25)' : MUTED;
+                      const DiffIcon = isOver ? TrendingUp : isUnder ? TrendingDown : Minus;
+                      return (
+                        <div
+                          className="px-4 py-2.5 flex items-center justify-between"
+                          style={{
+                            background: isOver ? 'oklch(0.97 0.015 150)' : isUnder ? 'oklch(0.98 0.015 25)' : 'oklch(0.97 0.006 85)',
+                            borderBottom: `1px solid ${BORDER}`,
+                          }}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <DiffIcon size={13} style={{ color: diffColor }} />
+                            <span className="text-xs" style={{ color: MUTED }}>기준 {formatMinutes(std)} 대비</span>
+                          </div>
+                          <span className="text-sm font-bold" style={{ color: diffColor, fontVariantNumeric: 'tabular-nums' }}>
+                            {formatDiffMinutes(diff)}
+                          </span>
+                        </div>
+                      );
+                    })()}
+
                     {/* 주간 근무시간 테이블 */}
                     {weekLabels.length > 0 && (
                       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
@@ -330,10 +369,21 @@ export default function StaffIncentiveStats() {
                 <div className="col-span-2 border-t border-white/30 my-1" />
                 <span className="opacity-80 flex items-center gap-1">
                   <Clock size={13} />
-                  총 근무시간
+                  전체 근무시간
                 </span>
                 <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
                   {formatMinutes(totalWorkMins)}
+                </span>
+                <span className="opacity-80">기준 시간 합계</span>
+                <span className="text-right font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {formatMinutes(totalStandardMins)}
+                </span>
+                <span className="opacity-80">+/- 시간 합계</span>
+                <span
+                  className="text-right font-bold"
+                  style={{ fontVariantNumeric: 'tabular-nums', color: totalDiffMins > 0 ? 'oklch(0.85 0.12 150)' : totalDiffMins < 0 ? 'oklch(0.9 0.12 25)' : 'white' }}
+                >
+                  {formatDiffMinutes(totalDiffMins)}
                 </span>
                 <div className="col-span-2 border-t border-white/30 my-1" />
                 <span className="font-bold">인센티브 합계</span>

@@ -392,3 +392,9 @@
 - [x] computeCumulativesForDate 함수 추가 및 save mutation 수정 (중간 날짜 누락 보정 포함)
 - [x] 선릅점 4월 8~9일 DB 보정 (cardTotal: 18,290,000 / 22,309,000)
 - [x] TypeScript 오류 3건 해결 (cashDeposit 타입 불일치 - tsc 통과 확인)
+
+## 직원 월간 근무 시간 +/- 통계
+
+- [x] staffIncentives 데이터 구조 및 workStart/workEnd 파악
+- [x] 서버: staffIncentiveStats 프로시저에 알바 제외 필터 및 workDiffMinutes/standardMinutes 추가
+- [x] 프론트엔드: 직원 카드에 +/- 시간 배너 및 전체 합계 카드에 +/- 시간 합계 표시 추가

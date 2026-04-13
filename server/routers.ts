@@ -1018,10 +1018,11 @@ export const appRouter = router({
           ? (input.branchId ?? null)
           : fullAccount.branchId;
 
-        // 집계용 rows (직원명별 합계)
+        // 집계용 rows (직원명별 합계, 알바 제외)
         const rows = await db
           .select({
             staffName: staffIncentives.staffName,
+            staffType: staffIncentives.staffType,
             totalGlass: sql<number>`SUM(${staffIncentives.glassCount})`,
             totalBottle: sql<number>`SUM(${staffIncentives.bottleCount})`,
             totalBeerBottle: sql<number>`SUM(${staffIncentives.beerBottleCount})`,
@@ -1032,16 +1033,17 @@ export const appRouter = router({
           .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
           .where(
             targetBranchId !== null
-              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId))
-              : like(tableReports.date, prefix)
+              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId), eq(staffIncentives.staffType, 'staff'))
+              : and(like(tableReports.date, prefix), eq(staffIncentives.staffType, 'staff'))
           )
-          .groupBy(staffIncentives.staffName)
+          .groupBy(staffIncentives.staffName, staffIncentives.staffType)
           .orderBy(staffIncentives.staffName);
 
-        // 근무시간 계산을 위한 상세 rows (날짜별 직원 근무시간)
+        // 근무시간 계산을 위한 상세 rows (날짜별 직원 근무시간, 알바 제외)
         const detailRows = await db
           .select({
             staffName: staffIncentives.staffName,
+            staffType: staffIncentives.staffType,
             date: tableReports.date,
             workStart: staffIncentives.workStart,
             workEnd: staffIncentives.workEnd,
@@ -1050,8 +1052,8 @@ export const appRouter = router({
           .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
           .where(
             targetBranchId !== null
-              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId))
-              : like(tableReports.date, prefix)
+              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId), eq(staffIncentives.staffType, 'staff'))
+              : and(like(tableReports.date, prefix), eq(staffIncentives.staffType, 'staff'))
           )
           .orderBy(tableReports.date);
 
@@ -1128,10 +1130,17 @@ export const appRouter = router({
           const weekCount = Object.keys(weeklyHours).length || 1;
           const avgWeeklyIncentive = Math.round(incentiveAmount / weekCount);
 
+          // 기준 시간: 출근일수 × 7시간(420분)
+          const workDays = Number(row.workDays) || 0;
+          const standardMinutes = workDays * 420; // 7시간 = 420분
+          const workDiffMinutes = totalMins - standardMinutes; // 양수=초과, 음수=부족
+
           return {
             ...row,
             incentiveAmount,
             totalWorkMinutes: totalMins,
+            standardMinutes,
+            workDiffMinutes,
             weeklyWorkMinutes: weeklyHours, // { '4/6~4/12': 분수 }
             avgWeeklyIncentive,
           };
