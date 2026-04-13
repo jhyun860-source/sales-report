@@ -412,6 +412,71 @@ export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string
   }
 }
 
+/**
+ * 특정 날짜 저장 시 이전 레코드와의 사이 날짜들의 매출을 합산해서 올바른 누적금을 계산한다.
+ * 예: 4월 6~7일 레코드가 있는 상태에서 4월 8일을 저장할 때,
+ * getPrevDailySalesRecord가 4월 7일을 반환하면 정상이지만,
+ * 4월 7일 레코드가 없으면 4월 4일을 반환 → 4월 6~7일 매출 누락 문제 발생.
+ * 이 함수는 prevRecord.date ~ currentDate 사이의 모든 레코드를 합산해서 보정한다.
+ */
+export async function computeCumulativesForDate(
+  branchId: number,
+  date: string,
+  prevRecord: DailySalesRecord | null,
+  todayCash: number,
+  todayCard: number
+): Promise<{ cashTotal: number; cardTotal: number }> {
+  const db = await getDb();
+  const isFirstOfMonth = date.endsWith('-01');
+  const dateObj = new Date(date + 'T12:00:00');
+  const isSunday = dateObj.getDay() === 0;
+
+  if (isFirstOfMonth) {
+    return { cashTotal: todayCash, cardTotal: todayCard };
+  }
+
+  if (!prevRecord) {
+    // 이전 레코드 없음 → 당일 매출이 곧 누적
+    return { cashTotal: isSunday ? 0 : todayCash, cardTotal: isSunday ? 0 : todayCard };
+  }
+
+  let baseCashTotal = parseInt(prevRecord.cashTotal || '0') || 0;
+  let baseCardTotal = parseInt(prevRecord.cardTotal || '0') || 0;
+
+  // prevRecord.date와 date 사이에 저장되지 않은 날짜들의 매출을 합산
+  if (db && prevRecord.date < date) {
+    const betweenRecords = await db
+      .select()
+      .from(dailySalesRecords)
+      .where(and(
+        eq(dailySalesRecords.branchId, branchId),
+        gt(dailySalesRecords.date, prevRecord.date),
+        lt(dailySalesRecords.date, date)
+      ))
+      .orderBy(dailySalesRecords.date);
+
+    for (const r of betweenRecords) {
+      const rDateObj = new Date(r.date + 'T12:00:00');
+      const rIsSunday = rDateObj.getDay() === 0;
+      const rIsFirstOfMonth = r.date.endsWith('-01');
+      if (rIsFirstOfMonth) {
+        // 월 경계 리셋
+        baseCashTotal = parseInt(r.cash || '0') || 0;
+        baseCardTotal = parseInt(r.card || '0') || 0;
+      } else if (!rIsSunday) {
+        baseCashTotal += parseInt(r.cash || '0') || 0;
+        baseCardTotal += parseInt(r.card || '0') || 0;
+      }
+      // 일요일은 이월만 (baseCashTotal/baseCardTotal 변경 없음)
+    }
+  }
+
+  if (isSunday) {
+    return { cashTotal: baseCashTotal, cardTotal: baseCardTotal };
+  }
+  return { cashTotal: baseCashTotal + todayCash, cardTotal: baseCardTotal + todayCard };
+}
+
 // 특정 날짜 이후의 동일 지점 기록들의 cashTotal/cardTotal을 연쇄 재계산
 // 저장된 날짜의 cash/card가 바뀌면 이후 날짜들의 누적금도 연쇄 업데이트
 export async function cascadeUpdateCumulativeAmounts(branchId: number, fromDate: string): Promise<void> {

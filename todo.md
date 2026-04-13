@@ -380,3 +380,15 @@
 - [x] DB 보정 실행 (대치점 4월 11~12일, 선릉점 4월 6~7일 보정 완료 / 삼성점 사용자 확인 대기)
 - [x] 선릉점 4월 6일 이후 cashTotal/cardTotal/posStart/posEnd 연쇄 보정 (4월 6일 cardTotal=9,873,000 / 4월 7일 13,893,000 / posStart/posEnd=35,000)
 - [ ] 삼성점 4월 1일 포스 시작금 확인 후 cashTotal/cardTotal/posStart/posEnd 연쇄 보정
+
+## 전 지점 4월 데이터 정밀 정합성 검사 (2차)
+
+- [ ] 전 지점 cashTotal/cardTotal/posStart/posEnd 연쇄 계산 검증 스크립트 실행
+- [ ] 오류 항목 보정값 계산 및 DB 업데이트
+
+## 선릉점 4월 9일 이후 누적금 누락 근본 원인 수정
+
+- [x] 선릅점 4월 9일 이후 데이터 확인 및 누락 원인 분석
+- [x] computeCumulativesForDate 함수 추가 및 save mutation 수정 (중간 날짜 누락 보정 포함)
+- [x] 선릅점 4월 8~9일 DB 보정 (cardTotal: 18,290,000 / 22,309,000)
+- [x] TypeScript 오류 3건 해결 (cashDeposit 타입 불일치 - tsc 통과 확인)
