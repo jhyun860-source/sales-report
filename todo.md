@@ -465,3 +465,10 @@
 - [x] 프론트엔드: AI 분석 결과(현금/카드/지출항목)를 폼에 자동 체우기
 - [x] 프론트엔드: 분석 중 로딩 상태 및 에러 처리
 - [x] 분석 결과 확인 후 수정 가능하도록 UI 구성 (자동 체우기 후 수동 수정 가능)
+
+## 누적금액 미표시 + 주문메모 저장 + 사진 AI 기능 이동
+
+- [x] 매출 입력 화면 사진 분석 버튼 제거
+- [x] 테이블 기록 주문메모에 사진 AI 분석 기능 이동 (tableReport.analyzeOrderMemo 프로시저 + 카메라 버튼 UI)
+- [x] 주문메모 저장 버그 수정 (memo 필드도 scheduleAutoSave 트리거)
+- [x] 누적금액 미표시 버그 수정 (batchSave/upsert에서 cascadeUpdateCumulativeAmounts 호출)

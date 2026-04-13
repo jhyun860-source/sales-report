@@ -827,20 +827,26 @@ export const appRouter = router({
           cashAmount: String(cashSum),
           cardAmount: String(cardSum),
         }).where(eq(tableReports.id, reportId));
-        // dailySalesRecords의 cash, card 칸에 자동 반영 (기존 값 유지하되 테이블 합산값으로 덮어씨)
+        // dailySalesRecords의 cash, card 칸에 자동 반영 + 누적금 재계산
         const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
+        const prevRec2 = await getPrevDailySalesRecord(effectiveBranchId, input.date);
+        const { cashTotal: computedCashTotal2, cardTotal: computedCardTotal2 } = await computeCumulativesForDate(
+          effectiveBranchId, input.date, prevRec2 ?? null, cashSum, cardSum
+        );
         await upsertDailySalesRecord({
           branchId: effectiveBranchId,
           date: input.date,
           posStartAmount: existingSales?.posStartAmount ?? '0',
           cash: String(cashSum),
           card: String(cardSum),
-          cashTotal: existingSales?.cashTotal ?? '0',
-          cardTotal: existingSales?.cardTotal ?? '0',
+          cashTotal: String(computedCashTotal2),
+          cardTotal: String(computedCardTotal2),
           posEndAmount: existingSales?.posEndAmount ?? '0',
           expenses: (existingSales?.expenses as any) ?? [],
           submittedAt: new Date(),
         });
+        try { await cascadeUpdateCumulativeAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdateCumulativeAmounts 오류]', e); }
+        try { await cascadeUpdatePosAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdatePosAmounts 오류]', e); }
 
         return { id: reportId, cashSum, cardSum };
       }),
@@ -1099,18 +1105,26 @@ export const appRouter = router({
         }).where(eq(tableReports.id, reportId));
 
         const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
+        // cashTotal/cardTotal 서버 재계산 (중간 날짜 누락 보정 포함)
+        const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
+        const { cashTotal: computedCashTotal, cardTotal: computedCardTotal } = await computeCumulativesForDate(
+          effectiveBranchId, input.date, prevRec ?? null, cashSum, cardSum
+        );
         await upsertDailySalesRecord({
           branchId: effectiveBranchId,
           date: input.date,
           posStartAmount: existingSales?.posStartAmount ?? '0',
           cash: String(cashSum),
           card: String(cardSum),
-          cashTotal: existingSales?.cashTotal ?? '0',
-          cardTotal: existingSales?.cardTotal ?? '0',
+          cashTotal: String(computedCashTotal),
+          cardTotal: String(computedCardTotal),
           posEndAmount: existingSales?.posEndAmount ?? '0',
           expenses: (existingSales?.expenses as any) ?? [],
           submittedAt: new Date(),
         });
+        // 이후 날짜 누적금 연쇄 재계산
+        try { await cascadeUpdateCumulativeAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdateCumulativeAmounts 오류]', e); }
+        try { await cascadeUpdatePosAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdatePosAmounts 오류]', e); }
 
         return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
       }),
@@ -1268,6 +1282,79 @@ export const appRouter = router({
         });
 
         return { stats: result, weekLabels: allWeekLabels };
+      }),
+
+    // 포스기 주문내역 사진에서 주문메모 텍스트 자동 추출
+    analyzeOrderMemo: publicProcedure
+      .input(z.object({
+        imageBase64: z.string(),
+        mimeType: z.string().default('image/jpeg'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const payload = await parseStoreCookie(ctx.req.headers.cookie);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+
+        // base64 → Buffer → S3 업로드
+        const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const ext = input.mimeType.includes('png') ? 'png' : 'jpg';
+        const fileKey = `order-memo-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
+
+        // LLM Vision으로 포스기 주문내역 분석 → 메모 텍스트 생성
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: '당신은 한국 클럽/바/나이트에이의 포스기 주문내역 이미지를 분석하는 전문가입니다. 이미지에서 주문된 메뉴 항목들을 읽기 쉬운 메모 형식으로 정리합니다.',
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url' as const,
+                  image_url: { url: imageUrl, detail: 'high' as const },
+                },
+                {
+                  type: 'text' as const,
+                  text: `이 포스기 주문내역 이미지에서 주문된 메뉴 항목들을 추출해서 주문 메모로 정리해주세요.
+
+요청사항:
+- 메뉴명과 수량을 간결하게 정리 (ex: 소주 2, 맥주 3병, 안주 모음)
+- 무제한/세트 여부 포함
+- 한 줄로 요약 (ex: 소주 2, 맥주 3병, 안주세트x2)
+- 한국어로 작성
+- 주문 내역이 없거나 파악이 안 되면 빈 문자열 반환`,
+                },
+              ],
+            },
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'order_memo',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  memo: { type: 'string', description: '주문 메모 텍스트 (한 줄 요약)' },
+                  confidence: { type: 'string', description: '분석 신뢰도: high/medium/low' },
+                },
+                required: ['memo', 'confidence'],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        if (!rawContent) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI 분석 결과를 받지 못했습니다' });
+        const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
+        const result = JSON.parse(content);
+        return {
+          memo: (result.memo as string) || '',
+          confidence: (result.confidence as string) || 'low',
+        };
       }),
   }),
 });

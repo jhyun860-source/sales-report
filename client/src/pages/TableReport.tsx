@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { toast } from 'sonner';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2, Users, Wine } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2, Users, Wine, Camera } from 'lucide-react';
 import { MemoEditor } from '@/components/MemoEditor';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
@@ -277,6 +277,13 @@ export default function TableReport() {
   const batchSave = trpc.tableReport.batchSave.useMutation();
   const deleteItem = trpc.tableReport.deleteItem.useMutation();
   const deleteIncentive = trpc.tableReport.deleteIncentive.useMutation();
+  const analyzeOrderMemo = trpc.tableReport.analyzeOrderMemo.useMutation();
+
+  // 사진 분석 중인 항목 localId 추적
+  const [analyzingLocalId, setAnalyzingLocalId] = useState<string | null>(null);
+  // 카메라 입력 ref (localId별)
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingAnalyzeLocalIdRef = useRef<string | null>(null);
 
   // 저장 함수 - batchSave 단일 호출로 모든 항목 한 번에 저장
   const handleSave = useCallback(async () => {
@@ -347,10 +354,10 @@ export default function TableReport() {
     saveTimeoutRef.current = setTimeout(() => handleSave(), 5000);
   }, [handleSave]);
 
-  // 테이블 항목 업데이트 - 메모 변경 시 자동저장 트리거 안 함 (수동 저장만)
+  // 테이블 항목 업데이트 - 모든 필드 변경 시 자동저장 트리거 (메모 포함)
   const updateItemField = (localId: string, field: keyof TableItemLocal, value: string) => {
     setItems(prev => prev.map(it => it.localId === localId ? { ...it, [field]: value } : it));
-    if (field !== 'memo') scheduleAutoSave();
+    scheduleAutoSave();
   };
 
   // 테이블 항목 삭제
@@ -380,6 +387,43 @@ export default function TableReport() {
       return next.length === 0 ? [emptyIncentive()] : next;
     });
   };
+
+  // 사진 찍어서 메모 자동 입력
+  const handleCameraCapture = useCallback((localId: string) => {
+    pendingAnalyzeLocalIdRef.current = localId;
+    cameraInputRef.current?.click();
+  }, []);
+
+  const handleImageFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const localId = pendingAnalyzeLocalIdRef.current;
+    e.target.value = '';
+    if (!file || !localId) return;
+
+    setAnalyzingLocalId(localId);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const { memo } = await analyzeOrderMemo.mutateAsync({
+        imageBase64: base64,
+        mimeType: file.type || 'image/jpeg',
+      });
+      if (memo) {
+        updateItemField(localId, 'memo', memo);
+        toast.success('주문 메모가 자동 입력되었습니다', { duration: 2000 });
+      } else {
+        toast.error('주문 내역을 파악하지 못했습니다. 다시 시도해주세요.');
+      }
+    } catch (err: any) {
+      toast.error('분석 실패: ' + (err?.message ?? '알 수 없는 오류'));
+    } finally {
+      setAnalyzingLocalId(null);
+    }
+  }, [analyzeOrderMemo, updateItemField]);
 
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{ background: 'oklch(0.985 0.008 85)' }}>
@@ -412,6 +456,15 @@ export default function TableReport() {
 
   return (
     <div className="min-h-screen pb-28" style={{ background: BG }}>
+      {/* 카메라/파일 입력 (hidden) - 주문메모 AI 분석용 */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleImageFileChange}
+      />
       {/* 헤더 */}
       <header className="sticky top-0 z-10" style={{ background: BG, borderBottom: `1px solid ${BORDER}`, boxShadow: '0 1px 4px oklch(0 0 0 / 0.07)' }}>
         <div className="flex items-center justify-between px-4 py-2.5">
@@ -600,15 +653,37 @@ export default function TableReport() {
                   </div>
                 </div>
 
-                {/* 3행: 메모 (형광펜 기능 포함) */}
+                {/* 3행: 메모 (형광펜 기능 포함) + 카메라 버튼 */}
                 <div className="px-3 py-2">
-                  <MemoEditor
-                    value={item.memo}
-                    onChange={html => updateItemField(item.localId, 'memo', html)}
-                    placeholder="주문 메모 (예: 무제한x2, 지인3간)"
-                    textColor={TEXT}
-                    borderColor={BORDER}
-                  />
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <MemoEditor
+                        value={item.memo}
+                        onChange={html => updateItemField(item.localId, 'memo', html)}
+                        placeholder="주문 메모 (예: 무제한x2, 지인3간)"
+                        textColor={TEXT}
+                        borderColor={BORDER}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCameraCapture(item.localId)}
+                      disabled={analyzingLocalId === item.localId}
+                      title="포스기 사진으로 메모 자동 입력"
+                      className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-colors mt-5"
+                      style={{
+                        background: analyzingLocalId === item.localId ? 'oklch(0.88 0.015 85)' : HEADER_BG,
+                        border: `1px solid ${BORDER}`,
+                        color: analyzingLocalId === item.localId ? MUTED : PRIMARY,
+                      }}
+                    >
+                      {analyzingLocalId === item.localId ? (
+                        <svg className="animate-spin" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+                      ) : (
+                        <Camera size={14} />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
