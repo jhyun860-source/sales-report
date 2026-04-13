@@ -188,7 +188,7 @@ export default function AdminDashboard() {
                 ? (rec.expenses as { amount: string }[]).reduce((s, e) => s + (parseInt(e.amount || '0', 10) || 0), 0)
                 : 0;
               const hasData = cash > 0 || card > 0;
-              const hasTableData = tr && tr.items.length > 0;
+              const hasTableData = !!tr && (tr.items.length > 0 || tr.incentives.length > 0 || tr.teamCount > 0);
 
               return (
                 <div

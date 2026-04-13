@@ -607,9 +607,30 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) return [];
-        const allBranches = await db.select().from(branches);
+        const allBranches = await db.select().from(branches).orderBy(branches.name);
         const records = await db.select().from(dailySalesRecords).where(eq(dailySalesRecords.date, input.date));
-        return allBranches.map(branch => ({ branch, record: records.find(r => r.branchId === branch.id) || null }));
+        // 테이블 기록도 함께 조회
+        const tableReportRows = await db.select().from(tableReports).where(eq(tableReports.date, input.date));
+        const reportIds = tableReportRows.map(r => r.id);
+        const tableItemRows = reportIds.length > 0
+          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds))
+          : [];
+        const incentiveRows = reportIds.length > 0
+          ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt)
+          : [];
+        return allBranches.map(branch => ({
+          branch,
+          record: records.find(r => r.branchId === branch.id) || null,
+          tableReport: (() => {
+            const tr = tableReportRows.find(r => r.branchId === branch.id);
+            if (!tr) return null;
+            return {
+              ...tr,
+              items: tableItemRows.filter(i => i.tableReportId === tr.id),
+              incentives: incentiveRows.filter(i => i.tableReportId === tr.id),
+            };
+          })(),
+        }));
       }),
     notify: publicProcedure
       .input(z.object({

@@ -204,7 +204,10 @@ export default function Home() {
       return next;
     });
   };
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(() => {
+    const saved = localStorage.getItem('selectedBranchId');
+    return saved ? parseInt(saved, 10) : null;
+  });
   const [record, setRecord] = useState<LocalRecord>(createEmptyLocalRecord);
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -400,7 +403,11 @@ export default function Home() {
             {myBranches.length > 1 ? (
               <select
                 value={selectedBranchId ?? ''}
-                onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+                onChange={(e) => {
+                  const id = Number(e.target.value);
+                  setSelectedBranchId(id);
+                  try { localStorage.setItem('selectedBranchId', String(id)); } catch {}
+                }}
                 className="px-2 py-1 rounded text-sm font-medium border min-w-0 max-w-[130px]"
                 style={{
                   background: 'oklch(0.92 0.015 85)',

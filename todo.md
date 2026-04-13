@@ -418,3 +418,9 @@
 - [x] cascadeUpdateCumulativeAmounts도 computeCumulativesForDate 기반으로 재작성
 - [x] 선릉점 4월 1일 cash→card 수정 및 연쇄 재계산 완료 (전체 ✓ 검증)
 - [ ] computeCumulativesForDate/cascadeUpdateCumulativeAmounts Vitest 회귀 테스트 추가
+
+## 관리자 페이지 지점 선택 새로고침 버그
+
+- [x] 관리자 페이지 지점 선택 상태 유지 로직 파악 (새로고침 시 대치점으로 초기화되는 원인)
+- [x] 선택된 지점을 localStorage에 유지하도록 수정 (저장/복원 완료)
+- [x] 관리자 페이지 테이블 기록 전 지점 안 보이는 원인 파악 및 수정 (adminDailyDetail 두 번 정의 문제 해결, hasTableData 조건 완화)
