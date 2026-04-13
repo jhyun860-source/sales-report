@@ -381,10 +381,37 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
+        // cashTotal/cardTotal 서버 재계산
+        const prevRec = await getPrevDailySalesRecord(input.branchId, input.date);
+        const dateObj = new Date(input.date + 'T12:00:00');
+        const isSunday = dateObj.getDay() === 0;
+        const isFirstOfMonth = input.date.endsWith('-01');
+        const todayCash = parseInt(input.cash || '0') || 0;
+        const todayCard = parseInt(input.card || '0') || 0;
+        const prevCashTotal = parseInt(prevRec?.cashTotal || '0') || 0;
+        const prevCardTotal = parseInt(prevRec?.cardTotal || '0') || 0;
+        let computedCashTotal: number;
+        let computedCardTotal: number;
+        if (isFirstOfMonth) {
+          computedCashTotal = todayCash;
+          computedCardTotal = todayCard;
+        } else if (isSunday) {
+          computedCashTotal = prevCashTotal;
+          computedCardTotal = prevCardTotal;
+        } else {
+          computedCashTotal = prevCashTotal + todayCash;
+          computedCardTotal = prevCardTotal + todayCard;
+        }
+        // posEndAmount 서버 재계산
+        const posStartVal = parseInt(input.posStartAmount || '0') || 0;
+        const expenseTotal = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
+        const cashDepositVal = parseInt(input.cashDeposit || '0') || 0;
+        const computedPosEnd = isSunday ? posStartVal : posStartVal - expenseTotal + cashDepositVal;
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
-          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
+          cashTotal: String(computedCashTotal), cardTotal: String(computedCardTotal),
+          posEndAmount: String(computedPosEnd),
           cashDeposit: input.cashDeposit ?? '0',
           expenses: input.expenses, submittedAt: new Date(),
         });
@@ -489,10 +516,37 @@ export const appRouter = router({
             .where(and(eq(branchManagers.userId, ctx.user.id), eq(branchManagers.branchId, input.branchId))).limit(1);
           if (managed.length === 0) throw new Error('접근 권한이 없습니다');
         }
+        // cashTotal/cardTotal 서버 재계산
+        const prevRec2 = await getPrevDailySalesRecord(input.branchId, input.date);
+        const dateObj2 = new Date(input.date + 'T12:00:00');
+        const isSunday2 = dateObj2.getDay() === 0;
+        const isFirstOfMonth2 = input.date.endsWith('-01');
+        const todayCash2 = parseInt(input.cash || '0') || 0;
+        const todayCard2 = parseInt(input.card || '0') || 0;
+        const prevCashTotal2 = parseInt(prevRec2?.cashTotal || '0') || 0;
+        const prevCardTotal2 = parseInt(prevRec2?.cardTotal || '0') || 0;
+        let computedCashTotal2: number;
+        let computedCardTotal2: number;
+        if (isFirstOfMonth2) {
+          computedCashTotal2 = todayCash2;
+          computedCardTotal2 = todayCard2;
+        } else if (isSunday2) {
+          computedCashTotal2 = prevCashTotal2;
+          computedCardTotal2 = prevCardTotal2;
+        } else {
+          computedCashTotal2 = prevCashTotal2 + todayCash2;
+          computedCardTotal2 = prevCardTotal2 + todayCard2;
+        }
+        // posEndAmount 서버 재계산
+        const posStartVal2 = parseInt(input.posStartAmount || '0') || 0;
+        const expenseTotal2 = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
+        const cashDepositVal2 = parseInt(input.cashDeposit || '0') || 0;
+        const computedPosEnd2 = isSunday2 ? posStartVal2 : posStartVal2 - expenseTotal2 + cashDepositVal2;
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
-          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
+          cashTotal: String(computedCashTotal2), cardTotal: String(computedCardTotal2),
+          posEndAmount: String(computedPosEnd2),
           cashDeposit: input.cashDeposit ?? '0',
           expenses: input.expenses,
           submittedBy: ctx.user.id, submittedAt: new Date(),
