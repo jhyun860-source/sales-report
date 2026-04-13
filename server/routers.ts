@@ -888,6 +888,7 @@ export const appRouter = router({
           id: z.number().optional(),
           localId: z.string(),
           staffName: z.string(),
+          staffType: z.enum(['staff', 'parttime']).default('staff'),
           glassCount: z.number().default(0),
           bottleCount: z.number().default(0),
           beerBottleCount: z.number().default(0),
@@ -963,6 +964,7 @@ export const appRouter = router({
           if (inc.id) {
             await db.update(staffIncentives).set({
               staffName: inc.staffName,
+              staffType: inc.staffType,
               glassCount: inc.glassCount,
               bottleCount: inc.bottleCount,
               beerBottleCount: inc.beerBottleCount,
@@ -975,6 +977,7 @@ export const appRouter = router({
             const [result] = await db.insert(staffIncentives).values({
               tableReportId: reportId,
               staffName: inc.staffName,
+              staffType: inc.staffType,
               glassCount: inc.glassCount,
               bottleCount: inc.bottleCount,
               beerBottleCount: inc.beerBottleCount,

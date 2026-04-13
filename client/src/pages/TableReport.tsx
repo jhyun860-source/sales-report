@@ -92,6 +92,7 @@ type IncentiveLocal = {
   id?: number;
   localId: string;
   staffName: string;
+  staffType: 'staff' | 'parttime'; // 직원/아르바이트
   glassCount: number;
   bottleCount: number;
   beerBottleCount: number;
@@ -115,7 +116,7 @@ function emptyItem(): TableItemLocal {
 }
 
 function emptyIncentive(): IncentiveLocal {
-  return { localId: makeLocalId(), staffName: '', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '', workStartAmPm: 'PM', workEndAmPm: 'PM', workStartHour: '', workEndHour: '', workStartMin: '', workEndMin: '' };
+  return { localId: makeLocalId(), staffName: '', staffType: 'staff', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '', workStartAmPm: 'PM', workEndAmPm: 'PM', workStartHour: '', workEndHour: '', workStartMin: '', workEndMin: '' };
 }
 
 // HH:mm → 오전/오후, 시간(1~12), 분 역변환
@@ -235,6 +236,7 @@ export default function TableReport() {
           id: inc.id,
           localId: makeLocalId(),
           staffName: inc.staffName,
+          staffType: (inc.staffType as 'staff' | 'parttime') ?? 'staff',
           glassCount: inc.glassCount ?? 0,
           bottleCount: inc.bottleCount ?? 0,
           beerBottleCount: inc.beerBottleCount ?? 0,
@@ -294,6 +296,7 @@ export default function TableReport() {
           id: inc.id,
           localId: inc.localId,
           staffName: inc.staffName,
+          staffType: inc.staffType,
           glassCount: inc.glassCount,
           bottleCount: inc.bottleCount,
           beerBottleCount: inc.beerBottleCount,
@@ -622,7 +625,7 @@ export default function TableReport() {
           <div className="space-y-2">
             {incentives.map(inc => (
               <div key={inc.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
-                {/* 1행: 이름 + 삭제 */}
+                {/* 1행: 이름 + 아르바이트/직원 토글 + 삭제 */}
                 <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
                   <input
                     type="text"
@@ -634,6 +637,16 @@ export default function TableReport() {
                     lang="ko"
                     inputMode="text"
                   />
+                  <button
+                    onClick={() => updateIncentiveField(inc.localId, 'staffType', inc.staffType === 'staff' ? 'parttime' : 'staff')}
+                    className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0"
+                    style={{
+                      background: inc.staffType === 'staff' ? PRIMARY : 'oklch(0.65 0.12 200)',
+                      color: 'white',
+                    }}
+                  >
+                    {inc.staffType === 'staff' ? '직원' : '아르바'}
+                  </button>
                   <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70">
                     <Trash2 size={13} />
                   </button>
@@ -795,12 +808,12 @@ export default function TableReport() {
                           <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: PRIMARY, color: 'white' }}>
                             {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
                           </span>
-                          {shortage > 0 && (
+                          {inc.staffType === 'staff' && shortage > 0 && (
                             <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-0.5" style={{ background: 'oklch(0.55 0.2 25)', color: 'white' }}>
                               -{shortage}분
                             </span>
                           )}
-                          {shortage <= 0 && (
+                          {inc.staffType === 'staff' && shortage <= 0 && (
                             <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-0.5" style={{ background: 'oklch(0.45 0.15 150)', color: 'white' }}>
                               ✓
                             </span>

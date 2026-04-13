@@ -176,7 +176,7 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {dailyDetail.map((item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null; tableReport: { id: number; teamCount: number; cashAmount: string; cardAmount: string; notes: string | null; items: { id: number; tableNumber: string; guestType: string; guestName: string | null; amount: string; paymentMethod: string; memo: string | null }[]; incentives: { id: number; staffName: string; glassCount: number; bottleCount: number; beerBottleCount: number; salesIncentive: string; workStart: string | null; workEnd: string | null }[] } | null }) => {
+            {dailyDetail.map((item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null; tableReport: { id: number; teamCount: number; cashAmount: string; cardAmount: string; notes: string | null; items: { id: number; tableNumber: string; guestType: string; guestName: string | null; amount: string; paymentMethod: string; memo: string | null }[]; incentives: { id: number; staffName: string; staffType: string; glassCount: number; bottleCount: number; beerBottleCount: number; salesIncentive: string; workStart: string | null; workEnd: string | null }[] } | null }) => {
               const branch = item.branch;
               const rec = item.record;
               const tr = item.tableReport;
@@ -297,7 +297,7 @@ export default function AdminDashboard() {
                                     {(inc.workStart || inc.workEnd) && (() => {
                                       const timeStr = `(${inc.workStart || '?'}~${inc.workEnd || '?'})`;
                                       let shortageEl = null;
-                                      if (inc.workStart && inc.workEnd) {
+                                      if (inc.workStart && inc.workEnd && inc.staffType === 'staff') {
                                         const [sh, sm] = inc.workStart.split(':').map(Number);
                                         const [eh, em] = inc.workEnd.split(':').map(Number);
                                         let startMin = sh * 60 + sm;

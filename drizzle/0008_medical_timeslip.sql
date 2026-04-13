@@ -1,0 +1,1 @@
+ALTER TABLE `staffIncentives` ADD `staffType` enum('staff','parttime') DEFAULT 'staff' NOT NULL;

@@ -345,3 +345,10 @@
 - [x] 선를점 4월 1일 데이터(dailySalesRecords, tableReports) 삼성점(branchId=3)으로 이동 (tableItems/staffIncentives는 tableReportId로 연결되어 자동 이동)
 - [x] 출근자 인센티브 화면에 오후 8시~새벽 3시(420분) 기준 부족분(-분) 표시 기능 추가 (모든 지점 적용)
 - [x] 관리자 화면에도 근무시간 부족분 표시 추가
+
+## 출근자 인센티브 아르바이트/직원 구분 기능
+
+- [x] staffIncentives 스키마에 staffType 콼럼 추가 (enum: 'staff'|'parttime', default: 'staff')
+- [x] DB 마이그레이션 (pnpm db:push)
+- [x] TableReport.tsx에 직원/아르바 토글 버튼 추가, 직원만 -분/✓ 표시
+- [x] AdminDashboard.tsx에 staffType 포함 및 직원만 부족분 표시
