@@ -952,7 +952,7 @@ export const appRouter = router({
           ? (input.branchId ?? null)
           : fullAccount.branchId;
 
-        // tableReports 조인 후 직원명별 집계
+        // 집계용 rows (직원명별 합계)
         const rows = await db
           .select({
             staffName: staffIncentives.staffName,
@@ -972,7 +972,106 @@ export const appRouter = router({
           .groupBy(staffIncentives.staffName)
           .orderBy(staffIncentives.staffName);
 
-        return rows;
+        // 근무시간 계산을 위한 상세 rows (날짜별 직원 근무시간)
+        const detailRows = await db
+          .select({
+            staffName: staffIncentives.staffName,
+            date: tableReports.date,
+            workStart: staffIncentives.workStart,
+            workEnd: staffIncentives.workEnd,
+          })
+          .from(staffIncentives)
+          .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
+          .where(
+            targetBranchId !== null
+              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId))
+              : like(tableReports.date, prefix)
+          )
+          .orderBy(tableReports.date);
+
+        // 근무시간 계산 헬퍼 (HH:mm 형식, 자정 넘어서 근무 처리)
+        function calcWorkMinutes(start: string | null, end: string | null): number {
+          if (!start || !end) return 0;
+          const [sh, sm] = start.split(':').map(Number);
+          const [eh, em] = end.split(':').map(Number);
+          if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return 0;
+          let startMin = sh * 60 + sm;
+          let endMin = eh * 60 + em;
+          // 종료가 시작보다 이르면 자정을 넘긴 것으로 처리
+          if (endMin <= startMin) endMin += 24 * 60;
+          return endMin - startMin;
+        }
+
+        // 주간 경계 계산: 해당 월의 첫 번째 월요일을 기준점으로 사용 (동적 계산)
+        // 예: 2026-04의 첫 월요일은 4월 6일
+        function getBaseMondayOfMonth(ym: string): Date {
+          const [y, m] = ym.split('-').map(Number);
+          // 해당 월 1일부터 첫 번째 월요일 찾기
+          const firstDay = new Date(y, m - 1, 1);
+          const dayOfWeek = firstDay.getDay(); // 0=일, 1=월, ..., 6=토
+          // 월요일이 아니면 다음 월요일로
+          const daysToMonday = dayOfWeek === 0 ? 1 : (dayOfWeek === 1 ? 0 : 8 - dayOfWeek);
+          return new Date(y, m - 1, 1 + daysToMonday);
+        }
+
+        const baseMondayOfMonth = getBaseMondayOfMonth(input.yearMonth);
+
+        function getWeekLabel(date: string): string {
+          const d = new Date(date + 'T00:00:00');
+          const diffMs = d.getTime() - baseMondayOfMonth.getTime();
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          const weekNum = Math.floor(diffDays / 7);
+          const weekStart = new Date(baseMondayOfMonth.getTime() + weekNum * 7 * 24 * 60 * 60 * 1000);
+          const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+          const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+          return `${fmt(weekStart)}~${fmt(weekEnd)}`;
+        }
+
+        // 직원별 주간 근무시간 집계
+        const staffWeeklyMap: Record<string, Record<string, number>> = {};
+        const staffTotalMinutes: Record<string, number> = {};
+
+        for (const row of detailRows) {
+          const name = row.staffName;
+          const mins = calcWorkMinutes(row.workStart, row.workEnd);
+          if (!staffWeeklyMap[name]) staffWeeklyMap[name] = {};
+          const weekLabel = getWeekLabel(row.date);
+          staffWeeklyMap[name][weekLabel] = (staffWeeklyMap[name][weekLabel] || 0) + mins;
+          staffTotalMinutes[name] = (staffTotalMinutes[name] || 0) + mins;
+        }
+
+        // 인센티브 단가 계산
+        const GLASS_PRICE = 5000;
+        const BOTTLE_PRICE = 10000;
+        const BEER_PRICE = 3000;
+
+        // 주간 목록 (해당 월에 등장하는 주간들)
+        const allWeekLabels = Array.from(new Set(detailRows.map(r => getWeekLabel(r.date)))).sort();
+
+        // 최종 결과 조합
+        const result = rows.map(row => {
+          const name = row.staffName;
+          const glass = Number(row.totalGlass) || 0;
+          const bottle = Number(row.totalBottle) || 0;
+          const beer = Number(row.totalBeerBottle) || 0;
+          const salesInc = Number(row.totalSalesIncentive) || 0;
+          const incentiveAmount = glass * GLASS_PRICE + bottle * BOTTLE_PRICE + beer * BEER_PRICE + salesInc;
+
+          const totalMins = staffTotalMinutes[name] || 0;
+          const weeklyHours = staffWeeklyMap[name] || {};
+          const weekCount = Object.keys(weeklyHours).length || 1;
+          const avgWeeklyIncentive = Math.round(incentiveAmount / weekCount);
+
+          return {
+            ...row,
+            incentiveAmount,
+            totalWorkMinutes: totalMins,
+            weeklyWorkMinutes: weeklyHours, // { '4/6~4/12': 분수 }
+            avgWeeklyIncentive,
+          };
+        });
+
+        return { stats: result, weekLabels: allWeekLabels };
       }),
   }),
 });
