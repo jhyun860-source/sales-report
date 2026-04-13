@@ -50,6 +50,13 @@
       "when": 1776047845971,
       "tag": "0006_flashy_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1776049100209,
+      "tag": "0007_simple_infant_terrible",
+      "breakpoints": true
     }
   ]
 }

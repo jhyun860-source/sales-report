@@ -264,3 +264,10 @@
 - [x] TableReport.tsx에서 출근 오전/오후 선택란 제거 및 PM 고정
 - [x] emptyIncentive() 기본값 workStartAmPm: 'PM' 확인 (이미 PM으로 설정되어 있음)
 - [x] DB 전 지점 staffIncentives의 workStartAmPm 모두 PM으로 보정 (오전 항목 없음 확인)
+
+## 시제 입금 새로고침 시 사라지는 버그
+
+- [x] 4월 8일 cashDeposit DB 저장 여부 확인 (스키마 컨럼 누락 확인)
+- [x] 클라이언트 cashDeposit 로드 로직 진단 (serverRecord → record 초기화 시 '' 하드코딩 문제 발견)
+- [x] 서버 save mutation에서 cashDeposit 처리 방식 확인 (스키마/routers 모두 수정)
+- [x] 버그 수정 (Home.tsx cashDeposit: '' → serverRecord.cashDeposit?.toString() || '')

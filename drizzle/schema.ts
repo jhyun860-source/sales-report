@@ -72,6 +72,7 @@ export const dailySalesRecords = mysqlTable("dailySalesRecords", {
   cashTotal: decimal("cashTotal", { precision: 15, scale: 0 }).default("0").notNull(),
   cardTotal: decimal("cardTotal", { precision: 15, scale: 0 }).default("0").notNull(),
   posEndAmount: decimal("posEndAmount", { precision: 15, scale: 0 }).default("0").notNull(),
+  cashDeposit: decimal("cashDeposit", { precision: 15, scale: 0 }).default("0").notNull(), // 시제 입금
   paymentChangeNote: text("paymentChangeNote"),
   paymentChangeDate: varchar("paymentChangeDate", { length: 10 }),
   paymentChangeAmount: decimal("paymentChangeAmount", { precision: 15, scale: 0 }).default("0").notNull(),

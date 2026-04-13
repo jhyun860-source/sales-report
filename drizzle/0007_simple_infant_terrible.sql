@@ -1,0 +1,1 @@
+ALTER TABLE `dailySalesRecords` ADD `cashDeposit` decimal(15,0) DEFAULT '0' NOT NULL;

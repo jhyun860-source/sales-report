@@ -221,7 +221,7 @@ export default function Home() {
         posStartAmount: serverRecord.posStartAmount?.toString() || '',
         cash: serverRecord.cash?.toString() || '',
         card: serverRecord.card?.toString() || '',
-        cashDeposit: '',
+        cashDeposit: serverRecord.cashDeposit?.toString() || '',
         expenses: (serverRecord.expenses as ExpenseItem[]).length > 0
           ? (serverRecord.expenses as ExpenseItem[])
           : [{ id: `exp_${Date.now()}`, description: '', amount: '' }],

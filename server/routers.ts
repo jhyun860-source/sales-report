@@ -385,6 +385,7 @@ export const appRouter = router({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
           cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
+          cashDeposit: input.cashDeposit ?? '0',
           expenses: input.expenses, submittedAt: new Date(),
         });
         const branch = await getBranchById(input.branchId);
@@ -492,6 +493,7 @@ export const appRouter = router({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
           cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
+          cashDeposit: input.cashDeposit ?? '0',
           expenses: input.expenses,
           submittedBy: ctx.user.id, submittedAt: new Date(),
         });
