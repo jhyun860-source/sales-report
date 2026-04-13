@@ -247,9 +247,9 @@
 
 ## 테이블 기록 총합 계산 버그
 
-- [ ] 테이블 번호별 금액 합산 총합이 잘못 계산되는 원인 파악 (4월 8일 기준)
-- [ ] 총합 계산 로직 수정
-- [ ] 영향받은 날짜 데이터 재보정
+- [x] 테이블 번호별 금액 합산 싙합이 잘못 계산되는 원인 파악 (4월 8일 기준 - mixed 누락 문제)
+- [x] 싙합 계산 로직 수정 (mixed 제거로 해결)
+- [x] 영향받은 날짜 데이터 재보정 (4월 8일 대치점 cashSum/cardSum 수정 및 누적금 연쇄 보정)
 
 ## 혼합(mixed) 결제 옵션 제거
 
@@ -258,3 +258,9 @@
 - [x] 서버 routers.ts에서 mixed enum 제거 및 cashSum/cardSum 계산 로직 수정
 - [x] 클라이언트 TableReport.tsx에서 혼합 버튼 제거
 - [x] 드리즘 스키마에서 mixed enum 제거 후 db:push
+
+## 직원 인센티브 출근 시간 오후 고정
+
+- [x] TableReport.tsx에서 출근 오전/오후 선택란 제거 및 PM 고정
+- [x] emptyIncentive() 기본값 workStartAmPm: 'PM' 확인 (이미 PM으로 설정되어 있음)
+- [x] DB 전 지점 staffIncentives의 workStartAmPm 모두 PM으로 보정 (오전 항목 없음 확인)

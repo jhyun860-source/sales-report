@@ -667,28 +667,16 @@ export default function TableReport() {
 
                 {/* 4행: 근무 시간 - 오전/오후 토글 + 시간 직접 입력 */}
                 <div className="px-3 py-2 space-y-1.5">
-                  {/* 시작 시간 */}
+                  {/* 시작 시간 - 출근은 오후(PM) 고정 */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs w-8 flex-shrink-0" style={{ color: MUTED }}>출근</span>
                     <div className="flex rounded overflow-hidden border text-xs" style={{ borderColor: BORDER }}>
-                      {(['AM', 'PM'] as const).map(ap => (
-                        <button
-                          key={ap}
-                          type="button"
-                          onClick={() => {
-                            const hhmm = toHHMM(ap, inc.workStartHour, inc.workStartMin);
-                            updateIncentiveField(inc.localId, 'workStartAmPm', ap);
-                            if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
-                          }}
-                          className="px-2 py-0.5 font-medium transition-colors"
-                          style={{
-                            background: inc.workStartAmPm === ap ? PRIMARY : 'transparent',
-                            color: inc.workStartAmPm === ap ? 'white' : MUTED,
-                          }}
-                        >
-                          {ap === 'AM' ? '오전' : '오후'}
-                        </button>
-                      ))}
+                      <span
+                        className="px-2 py-0.5 font-medium"
+                        style={{ background: PRIMARY, color: 'white' }}
+                      >
+                        오후
+                      </span>
                     </div>
                     <input
                       type="text"
@@ -698,8 +686,9 @@ export default function TableReport() {
                       onChange={e => {
                         const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
                         updateIncentiveField(inc.localId, 'workStartHour', v);
-                        const hhmm = toHHMM(inc.workStartAmPm, v, inc.workStartMin);
+                        const hhmm = toHHMM('PM', v, inc.workStartMin);
                         if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
+                        if (inc.workStartAmPm !== 'PM') updateIncentiveField(inc.localId, 'workStartAmPm', 'PM');
                       }}
                       placeholder="시"
                       className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
@@ -714,8 +703,9 @@ export default function TableReport() {
                       onChange={e => {
                         const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
                         updateIncentiveField(inc.localId, 'workStartMin', v);
-                        const hhmm = toHHMM(inc.workStartAmPm, inc.workStartHour, v);
+                        const hhmm = toHHMM('PM', inc.workStartHour, v);
                         if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
+                        if (inc.workStartAmPm !== 'PM') updateIncentiveField(inc.localId, 'workStartAmPm', 'PM');
                       }}
                       placeholder="분"
                       className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
