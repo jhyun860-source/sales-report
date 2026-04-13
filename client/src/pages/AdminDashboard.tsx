@@ -176,9 +176,10 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {dailyDetail.map((item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null }) => {
+            {dailyDetail.map((item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null; tableReport: { id: number; teamCount: number; cashAmount: string; cardAmount: string; notes: string | null; items: { id: number; tableNumber: string; guestType: string; guestName: string | null; amount: string; paymentMethod: string; memo: string | null }[] } | null }) => {
               const branch = item.branch;
               const rec = item.record;
+              const tr = item.tableReport;
               const cash = Number(rec?.cash || 0);
               const card = Number(rec?.card || 0);
               const cashTotal = Number(rec?.cashTotal || 0);
@@ -187,6 +188,7 @@ export default function AdminDashboard() {
                 ? (rec.expenses as { amount: string }[]).reduce((s, e) => s + (parseInt(e.amount || '0', 10) || 0), 0)
                 : 0;
               const hasData = cash > 0 || card > 0;
+              const hasTableData = tr && tr.items.length > 0;
 
               return (
                 <div
@@ -232,6 +234,47 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="text-sm text-center py-2" style={{ color: 'oklch(0.65 0.01 50)' }}>
                       아직 매출이 입력되지 않았습니다
+                    </div>
+                  )}
+                  {/* 테이블 기록 섹션 */}
+                  {hasTableData && (
+                    <div className="mt-3">
+                      <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.35 0.01 50)' }}>■ 테이블 기록 ({tr!.items.length}건 / 팀수 {tr!.teamCount})</div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                        <thead>
+                          <tr style={{ background: 'oklch(0.93 0.015 85)' }}>
+                            <th style={{ padding: '3px 6px', textAlign: 'left', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>손님</th>
+                            <th style={{ padding: '3px 6px', textAlign: 'right', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>결제</th>
+                            <th style={{ padding: '3px 6px', textAlign: 'right', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>금액</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tr!.items.map((item, idx) => (
+                            <tr key={item.id} style={{ background: idx % 2 === 0 ? 'transparent' : 'oklch(0.97 0.005 85)' }}>
+                              <td style={{ padding: '3px 6px', color: 'oklch(0.25 0.01 50)' }}>
+                                {item.guestName || (item.guestType === 'walking' ? '워킹' : item.guestType === 'regular' ? '기존' : '지명')}
+                              </td>
+                              <td style={{ padding: '3px 6px', textAlign: 'right', color: item.paymentMethod === 'card' ? 'oklch(0.35 0.15 250)' : 'oklch(0.35 0.15 150)' }}>
+                                {item.paymentMethod === 'card' ? '카드' : '현금'}
+                              </td>
+                              <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'oklch(0.12 0.01 50)' }}>
+                                {Number(item.amount).toLocaleString('ko-KR')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ borderTop: '1px solid oklch(0.78 0.015 85)', background: 'oklch(0.93 0.015 85)' }}>
+                            <td colSpan={2} style={{ padding: '3px 6px', fontWeight: 700, color: 'oklch(0.25 0.01 50)' }}>합계</td>
+                            <td style={{ padding: '3px 6px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'oklch(0.45 0.18 25)' }}>
+                              {tr!.items.reduce((s, i) => s + Number(i.amount), 0).toLocaleString('ko-KR')}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                      {tr!.notes && (
+                        <div className="mt-1.5 text-xs" style={{ color: 'oklch(0.45 0.01 50)' }}>기타: {tr!.notes}</div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -28,7 +28,7 @@ import {
   cascadeUpdatePosAmounts,
 } from "./db";
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives } from "../drizzle/schema";
-import { eq, and, desc, like, sql } from "drizzle-orm";
+import { eq, and, desc, like, sql, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // VAPID 설정
@@ -448,7 +448,20 @@ export const appRouter = router({
         if (!db) return [];
         const allBranches = await db.select().from(branches).orderBy(branches.name);
         const records = await db.select().from(dailySalesRecords).where(eq(dailySalesRecords.date, input.date));
-        return allBranches.map(branch => ({ branch, record: records.find(r => r.branchId === branch.id) || null }));
+        // 테이블 기록도 함께 조회
+        const tableReportRows = await db.select().from(tableReports).where(eq(tableReports.date, input.date));
+        const tableItemRows = tableReportRows.length > 0
+          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, tableReportRows.map(r => r.id)))
+          : [];
+        return allBranches.map(branch => ({
+          branch,
+          record: records.find(r => r.branchId === branch.id) || null,
+          tableReport: (() => {
+            const tr = tableReportRows.find(r => r.branchId === branch.id);
+            if (!tr) return null;
+            return { ...tr, items: tableItemRows.filter(i => i.tableReportId === tr.id) };
+          })(),
+        }));
       }),
     adminSummary: publicProcedure
       .input(z.object({ startDate: z.string(), endDate: z.string() }))
