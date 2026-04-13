@@ -188,12 +188,7 @@ export default function Home() {
     return getTodayString();
   });
 
-  // 날짜/지점 조합별 초기화 완료 여부 추적 ref (선언 순서: setCurrentDate보다 앞에)
-  const initDoneRef = useRef<string>('');
-
   const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
-    // 날짜 변경 시 initDoneRef 초기화 → 새 날짜로 데이터 다시 로드
-    initDoneRef.current = '';
     setCurrentDateState(prev => {
       const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
       try { localStorage.setItem('selectedDate', next); } catch {}
@@ -215,45 +210,15 @@ export default function Home() {
     }
   }, [myBranches, selectedBranchId]);
 
-  const { data: serverRecord, isLoading: recordLoading, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
+  const { data: serverRecord, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
     { branchId: selectedBranchId!, date: currentDate },
     { enabled: !!selectedBranchId && !!user }
   );
 
-  // 현재 날짜를 서버에 전달하면 서버가 그 이전의 가장 최근 기록을 반환
-  const { data: prevRecord, isLoading: prevLoading } = trpc.storeSales.getPrevRecord.useQuery(
-    { branchId: selectedBranchId!, date: currentDate },
-    { enabled: !!selectedBranchId && !!user }
-  );
-
-  const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
-  const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
-  const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
-  // 매달 1일이면 누적금 리셋 (서버와 동일한 규칙)
-  const isFirstOfMonth = currentDate.endsWith('-01');
-
-  // serverRecord와 prevRecord 두 쿼리가 모두 완료된 후 상태 초기화
-  // 날짜/지점이 바뀌거나 쿼리가 완료될 때만 실행 (autoCalculatedPosStartAmount 의존성 제거)
   useEffect(() => {
-    // 아직 로딩 중이면 대기
-    if (recordLoading || prevLoading) return;
-    if (!selectedBranchId) return;
-
-    const key = `${selectedBranchId}-${currentDate}`;
-    // 이미 이 날짜/지점 조합으로 초기화했으면 스킵 (중복 실행 방지)
-    if (initDoneRef.current === key) return;
-    initDoneRef.current = key;
-
-    // prevRecord에서 이전 마감금 가져오기
-    const prevPosEnd = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
-
     if (serverRecord) {
-      // 기존 기록이 있으면 서버 데이터로 채움
-      // posStartAmount가 0이면 이전 날짜 마감금으로 자동 채움 (건너뛴 날 포함)
-      const savedPosStart = Number(serverRecord.posStartAmount || 0);
-      const effectivePosStart = savedPosStart > 0 ? savedPosStart : prevPosEnd;
       setRecord({
-        posStartAmount: effectivePosStart > 0 ? effectivePosStart.toString() : '',
+        posStartAmount: serverRecord.posStartAmount?.toString() || '',
         cash: serverRecord.cash?.toString() || '',
         card: serverRecord.card?.toString() || '',
         cashDeposit: '',
@@ -262,22 +227,27 @@ export default function Home() {
           : [{ id: `exp_${Date.now()}`, description: '', amount: '' }],
       });
     } else {
-      // 기록 없는 새 날짜: 이전 날짜 마감금을 POS 시작금으로 자동 반영
-      setRecord({
-        ...createEmptyLocalRecord(),
-        posStartAmount: prevPosEnd > 0 ? prevPosEnd.toString() : '',
-      });
+      setRecord(createEmptyLocalRecord());
     }
     setSaved(false);
-  }, [serverRecord, prevRecord, recordLoading, prevLoading, currentDate, selectedBranchId]);
+  }, [serverRecord, currentDate, selectedBranchId]);
+
+  // 현재 날짜를 서버에 전달하면 서버가 그 이전의 가장 최근 기록을 반환
+  const { data: prevRecord } = trpc.storeSales.getPrevRecord.useQuery(
+    { branchId: selectedBranchId!, date: currentDate },
+    { enabled: !!selectedBranchId && !!user }
+  );
+
+  const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
+  const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
+  const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
 
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
   const expenseTotal = calcExpenseTotal(record.expenses);
-  // 매달 1일이면 누적금 리셋 (서버와 동일한 규칙)
-  const autoCalculatedCashTotal = isFirstOfMonth ? todayCash : previousCashTotal + todayCash;
-  const autoCalculatedCardTotal = isFirstOfMonth ? todayCard : previousCardTotal + todayCard;
+  const autoCalculatedCashTotal = previousCashTotal + todayCash;
+  const autoCalculatedCardTotal = previousCardTotal + todayCard;
   const grandTotal = autoCalculatedCashTotal + autoCalculatedCardTotal;
   const posStartAmountValue = parseAmount(record.posStartAmount) || autoCalculatedPosStartAmount;
   const cashDepositValue = parseAmount(record.cashDeposit);

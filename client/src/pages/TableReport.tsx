@@ -79,7 +79,7 @@ type TableItemLocal = {
   guestType: 'walking' | 'regular' | 'named';
   guestName: string;
   amount: string;
-  paymentMethod: 'card' | 'cash' | 'mixed';
+  paymentMethod: 'card' | 'cash';
   memo: string;
 };
 
@@ -384,6 +384,7 @@ export default function TableReport() {
   // 현금/카드 합산 (화면 표시용)
   const cashTotal = items.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
   const cardTotal = items.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
+  const totalAll = cashTotal + cardTotal;
 
   return (
     <div className="min-h-screen pb-28" style={{ background: BG }}>
@@ -459,7 +460,7 @@ export default function TableReport() {
             </div>
           </div>
           {/* 현금/카드 합산 표시 */}
-          <div className="grid grid-cols-2 divide-x" style={{ borderTop: `1px solid ${BORDER}`, background: HEADER_BG, divideColor: BORDER } as any}>
+          <div className="grid grid-cols-3 divide-x" style={{ borderTop: `1px solid ${BORDER}`, background: HEADER_BG } as any}>
             <div className="px-3 py-2 text-center">
               <div className="text-xs mb-0.5" style={{ color: MUTED }}>현금 합계</div>
               <div className="text-sm font-bold" style={{ color: cashTotal > 0 ? 'oklch(0.35 0.15 150)' : MUTED }}>
@@ -470,6 +471,12 @@ export default function TableReport() {
               <div className="text-xs mb-0.5" style={{ color: MUTED }}>카드 합계</div>
               <div className="text-sm font-bold" style={{ color: cardTotal > 0 ? 'oklch(0.35 0.12 250)' : MUTED }}>
                 {cardTotal > 0 ? `₩${cardTotal.toLocaleString('ko-KR')}` : '—'}
+              </div>
+            </div>
+            <div className="px-3 py-2 text-center" style={{ borderLeft: `1px solid ${BORDER}` }}>
+              <div className="text-xs mb-0.5" style={{ color: MUTED }}>전체 합계</div>
+              <div className="text-sm font-bold" style={{ color: totalAll > 0 ? 'oklch(0.35 0.18 25)' : MUTED }}>
+                {totalAll > 0 ? `₩${totalAll.toLocaleString('ko-KR')}` : '—'}
               </div>
             </div>
           </div>
@@ -553,7 +560,7 @@ export default function TableReport() {
                   />
                   {/* 결제수단 */}
                   <div className="flex rounded overflow-hidden flex-shrink-0" style={{ border: `1px solid ${BORDER}` }}>
-                    {(['card', 'cash', 'mixed'] as const).map(pm => (
+                    {(['card', 'cash'] as const).map(pm => (
                       <button
                         key={pm}
                         onClick={() => updateItemField(item.localId, 'paymentMethod', pm)}
@@ -563,7 +570,7 @@ export default function TableReport() {
                           color: item.paymentMethod === pm ? 'white' : MUTED,
                         }}
                       >
-                        {pm === 'card' ? '카드' : pm === 'cash' ? '현금' : '혼합'}
+                        {pm === 'card' ? '카드' : '현금'}
                       </button>
                     ))}
                   </div>

@@ -381,45 +381,11 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
-        // 서버에서 이전 기록 조회 후 누적금 및 posStartAmount 자동 재계산
-        const prevRec = await getPrevDailySalesRecord(input.branchId, input.date);
-        const prevCashTotal = Number(prevRec?.cashTotal || 0);
-        const prevCardTotal = Number(prevRec?.cardTotal || 0);
-        const prevPosEnd = Number(prevRec?.posEndAmount || 0);
-        // 일요일 여부 판단 (0=일요일)
-        const dateObj = new Date(input.date + 'T00:00:00');
-        const isSunday = dateObj.getDay() === 0;
-        // 일요일이면 판매 강제 0, 아니면 입력값 사용
-        const effectiveCash = isSunday ? '0' : (input.cash || '0');
-        const effectiveCard = isSunday ? '0' : (input.card || '0');
-        const todayCash = Number(effectiveCash);
-        const todayCard = Number(effectiveCard);
-        // 매달 1일이면 현금/카드 누적 리셋 (전달 마감금은 연속)
-        const isFirstOfMonth = input.date.endsWith('-01');
-        const computedCashTotal = isFirstOfMonth ? todayCash : prevCashTotal + todayCash;
-        const computedCardTotal = isFirstOfMonth ? todayCard : prevCardTotal + todayCard;
-        // posStartAmount: 클라이언트가 보낸 값이 0이면 이전 마감금으로 채움 (매달 1일도 연속)
-        const effectivePosStart = Number(input.posStartAmount || 0) > 0
-          ? input.posStartAmount
-          : (prevPosEnd > 0 ? prevPosEnd.toString() : input.posStartAmount);
-        // posEndAmount: 서버에서 직접 재계산 (시작금 - 지출합계 + 현금입금)
-        // 클라이언트 전달값을 믿지 않고 서버가 항상 올바른 값을 계산
-        const effectivePosStartNum = Number(effectivePosStart || 0);
-        const expenseTotal = isSunday ? 0 : input.expenses
-          .filter(e => e.description || e.amount)
-          .reduce((sum, e) => sum + Number((e.amount || '0').replace(/,/g, '')), 0);
-        const cashDepositNum = Number(input.cashDeposit || 0);
-        const computedPosEnd = effectivePosStartNum - expenseTotal + cashDepositNum;
-        // 일요일이면 마감금 = 시작금 (변동 없음), 아니면 서버 계산값 사용
-        const effectivePosEnd = isSunday
-          ? effectivePosStart
-          : (computedPosEnd >= 0 ? computedPosEnd.toString() : '0');
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
-          posStartAmount: effectivePosStart, cash: effectiveCash, card: effectiveCard,
-          cashTotal: computedCashTotal.toString(), cardTotal: computedCardTotal.toString(),
-          posEndAmount: effectivePosEnd,
-          expenses: isSunday ? [] : input.expenses, submittedAt: new Date(),
+          posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
+          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
+          expenses: input.expenses, submittedAt: new Date(),
         });
         const branch = await getBranchById(input.branchId);
         const branchName = branch?.name ?? '알 수 없는 지점';
@@ -522,18 +488,10 @@ export const appRouter = router({
             .where(and(eq(branchManagers.userId, ctx.user.id), eq(branchManagers.branchId, input.branchId))).limit(1);
           if (managed.length === 0) throw new Error('접근 권한이 없습니다');
         }
-        // posEndAmount 서버 재계산: 시작금 - 지출합계 + 현금입금
-        const protectedPosStartNum = Number(input.posStartAmount || 0);
-        const protectedExpenseTotal = input.expenses
-          .filter(e => e.description || e.amount)
-          .reduce((sum, e) => sum + Number((e.amount || '0').replace(/,/g, '')), 0);
-        const protectedCashDeposit = Number(input.cashDeposit || 0);
-        const protectedComputedPosEnd = protectedPosStartNum - protectedExpenseTotal + protectedCashDeposit;
-        const protectedEffectivePosEnd = protectedComputedPosEnd >= 0 ? protectedComputedPosEnd.toString() : '0';
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
           posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
-          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: protectedEffectivePosEnd,
+          cashTotal: input.cashTotal, cardTotal: input.cardTotal, posEndAmount: input.posEndAmount,
           expenses: input.expenses,
           submittedBy: ctx.user.id, submittedAt: new Date(),
         });
@@ -712,7 +670,7 @@ export const appRouter = router({
         guestType: z.enum(['walking', 'regular', 'named']).default('walking'),
         guestName: z.string().optional(),
         amount: z.string().default('0'),
-        paymentMethod: z.enum(['card', 'cash', 'mixed']).default('card'),
+        paymentMethod: z.enum(['card', 'cash']).default('card'),
         memo: z.string().optional(),
         sortOrder: z.number().default(0),
       }))
@@ -739,7 +697,7 @@ export const appRouter = router({
         guestType: z.enum(['walking', 'regular', 'named']).optional(),
         guestName: z.string().optional().nullable(),
         amount: z.string().optional(),
-        paymentMethod: z.enum(['card', 'cash', 'mixed']).optional(),
+        paymentMethod: z.enum(['card', 'cash']).optional(),
         memo: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
@@ -834,7 +792,7 @@ export const appRouter = router({
           guestType: z.enum(['walking', 'regular', 'named']).default('walking'),
           guestName: z.string().optional().nullable(),
           amount: z.string().default('0'),
-          paymentMethod: z.enum(['card', 'cash', 'mixed']).default('card'),
+          paymentMethod: z.enum(['card', 'cash']).default('card'),
           memo: z.string().optional(),
           sortOrder: z.number().default(0),
         })),

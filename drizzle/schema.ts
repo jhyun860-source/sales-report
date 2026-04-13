@@ -196,7 +196,7 @@ export const tableItems = mysqlTable("tableItems", {
   guestType: mysqlEnum("guestType", ["walking", "regular", "named"]).default("walking").notNull(), // 워킹/기존/지명
   guestName: varchar("guestName", { length: 100 }), // 손님 이름 (지명 시)
   amount: decimal("amount", { precision: 15, scale: 0 }).default("0").notNull(), // 금액
-  paymentMethod: mysqlEnum("paymentMethod", ["card", "cash", "mixed"]).default("card").notNull(), // 결제수단
+  paymentMethod: mysqlEnum("paymentMethod", ["card", "cash"]).default("card").notNull(), // 결제수단
   memo: text("memo"), // 주문 메모
   sortOrder: int("sortOrder").default(0).notNull(), // 정렬 순서
   createdAt: timestamp("createdAt").defaultNow().notNull(),

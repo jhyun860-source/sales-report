@@ -1,0 +1,1 @@
+ALTER TABLE `tableItems` MODIFY COLUMN `paymentMethod` enum('card','cash') NOT NULL DEFAULT 'card';
