@@ -284,10 +284,18 @@
 
 ## 테이블 기록 한글 키보드 우선 설정
 
-- [ ] TableReport.tsx 텍스트 입력 필드에 lang="ko" 및 inputMode="text" 속성 추가
+- [x] TableReport.tsx 텍스트 입력 필드에 lang="ko" 및 inputMode="text" 속성 추가 (이미 적용되어 있음 확인 - 브라우저 보안정송 한계로 강제 불가)
 
 ## 4월 10일 누적금 오류
 
 - [x] 4월 10일 cashTotal/cardTotal DB 값 확인 (대치점 4/6~4/12 전체 누락 확인)
 - [x] 서버 누적금 계산 로직 재검토 (클라이언트 값 신뢰 → 서버 재계산으로 배포수정)
 - [x] 영향받은 날짜 데이터 보정 (대치점 4/6~4/12 cashTotal/cardTotal 재보정 완료)
+
+## 4월 9일/10일 posStartAmount/posEndAmount 보정
+
+- [x] 대치점 4월 9일 posStartAmount/posEndAmount=0 → 1,099,000으로 보정
+- [x] 대치점 4월 10일 posStartAmount/posEndAmount=0 → 1,099,000으로 보정
+- [x] 대치점 4월 12일(일요일) posStartAmount/posEndAmount → 1,099,000으로 보정
+- [x] 전 지점 posStart/posEnd=0 레코드 없음 확인 완료
+- [x] 테스트 33개 전체 통과 확인
