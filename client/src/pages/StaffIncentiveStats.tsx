@@ -8,7 +8,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { ChevronLeft, ChevronRight, ArrowLeft, BarChart2, Clock, Calendar, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
@@ -67,8 +67,16 @@ function formatDiffMinutes(mins: number): string {
 
 export default function StaffIncentiveStats() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { user: account, loading: authLoading } = useStoreAuth();
   const [yearMonth, setYearMonth] = useState(getPrevMonth);
+
+  // URL 파라미터에서 branchId 읽기 (관리자가 지점 선택 후 이동 시 전달됨)
+  const branchIdFromUrl = useMemo(() => {
+    const params = new URLSearchParams(search);
+    const val = params.get('branchId');
+    return val ? Number(val) : undefined;
+  }, [search]);
 
   const currentYearMonth = useMemo(() => {
     const d = new Date();
@@ -76,7 +84,7 @@ export default function StaffIncentiveStats() {
   }, []);
 
   const { data, isLoading } = trpc.tableReport.staffIncentiveStats.useQuery(
-    { yearMonth },
+    { yearMonth, branchId: branchIdFromUrl },
     { enabled: !authLoading && !!account }
   );
 

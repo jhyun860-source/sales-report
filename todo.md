@@ -429,3 +429,8 @@
 
 - [x] staffIncentiveStats 프로시저에서 알바(parttime) 필터링 로직 확인 (원인: staffType='staff' 하드코딩 필터)
 - [x] 알바생도 통계에 표시되도록 수정 (알바 도움말 배지, 근무시간 기준은 직원만 적용, 전 지점 동일 적용)
+
+## 인센티브 통계 지점 필터 버그
+
+- [x] StaffIncentiveStats에서 branchId 전달 로직 파악 (원인: branchId를 쿼리에 전혀 전달 안 함)
+- [x] Home.tsx에서 인센티브 통계 이동 시 URL 파라미터로 branchId 전달, StaffIncentiveStats에서 URL 파라미터 읽어 쿼리에 전달
