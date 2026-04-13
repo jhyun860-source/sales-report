@@ -379,12 +379,12 @@
 - [x] 이상 데이터 원인 분석 및 보정값 계산
 - [x] DB 보정 실행 (대치점 4월 11~12일, 선릉점 4월 6~7일 보정 완료 / 삼성점 사용자 확인 대기)
 - [x] 선릉점 4월 6일 이후 cashTotal/cardTotal/posStart/posEnd 연쇄 보정 (4월 6일 cardTotal=9,873,000 / 4월 7일 13,893,000 / posStart/posEnd=35,000)
-- [ ] 삼성점 4월 1일 포스 시작금 확인 후 cashTotal/cardTotal/posStart/posEnd 연쇄 보정
+- [x] 삼성점 4월 1일 포스 시작금 확인 후 cashTotal/cardTotal/posStart/posEnd 연쇄 보정 (64,000원 확인 완료)
 
 ## 전 지점 4월 데이터 정밀 정합성 검사 (2차)
 
-- [ ] 전 지점 cashTotal/cardTotal/posStart/posEnd 연쇄 계산 검증 스크립트 실행
-- [ ] 오류 항목 보정값 계산 및 DB 업데이트
+- [x] 전 지점 cashTotal/cardTotal/posStart/posEnd 연쇄 계산 검증 스크립트 실행 (선를점 4/7~4/10 21,000원 차이 및 삼성점 4/13 포스 시작금 오류 발견 및 보정)
+- [x] 오류 항목 보정값 계산 및 DB 업데이트 (자동 보정 스크립트 11개 항목 보정 완료)
 
 ## 선릉점 4월 9일 이후 누적금 누락 근본 원인 수정
 
@@ -401,14 +401,14 @@
 
 ## 매출 수정 시 이후 날짜 누적금 자동 연쇄 업데이트
 
-- [ ] save mutation에서 현금/카드 변경 시 cascadeUpdateCumulativeAmounts 호출 보장 (현재 누락 여부 확인)
-- [ ] 선릉점 4월 6~7일 현금 누적금 불일치 DB 보정
+- [x] save mutation에서 현금/카드 변경 시 cascadeUpdateCumulativeAmounts 호출 보장 (이미 구현 완료)
+- [x] 선를점 4월 6~7일 현금 누적금 불일치 DB 보정 (이전 보정 완료)
 
 ## 누적금 오류 근본 해결 (전면 개선)
 
-- [ ] computeCumulativesForDate: 이전 레코드 없어도 해당 달 전체 스캔으로 정확한 누적금 계산
-- [ ] cascadeUpdateCumulativeAmounts: 중간 날짜 누락 포함 완전 연쇄 재계산
-- [ ] 전 지점 4월 누적금 일괄 재계산 DB 보정 스크립트 실행
+- [x] computeCumulativesForDate: 이전 레코드 없어도 해당 달 전체 스캔으로 정확한 누적금 계산 (이미 구현 완료)
+- [x] cascadeUpdateCumulativeAmounts: 중간 날짜 누락 포함 완전 연쇄 재계산 (이미 구현 완료)
+- [x] 전 지점 4월 누적금 일괄 재계산 DB 보정 스크립트 실행 (이전 보정 완료)
 
 ## 매출 수정 시 이후 날짜 자동 연쇄 업데이트 근본 해결
 
@@ -417,7 +417,7 @@
 - [x] computeCumulativesForDate 전체 달 스캔 방식으로 재작성 (이전 레코드 의존 제거)
 - [x] cascadeUpdateCumulativeAmounts도 computeCumulativesForDate 기반으로 재작성
 - [x] 선릉점 4월 1일 cash→card 수정 및 연쇄 재계산 완료 (전체 ✓ 검증)
-- [ ] computeCumulativesForDate/cascadeUpdateCumulativeAmounts Vitest 회귀 테스트 추가
+- [x] computeCumulativesForDate/cascadeUpdateCumulativeAmounts Vitest 회귀 테스트 추가 (server/cumulative.test.ts 9개 테스트 전체 통과)
 
 ## 관리자 페이지 지점 선택 새로고침 버그
 
@@ -442,8 +442,8 @@
 
 ## 관리자 선릉점 테이블 기록 여전히 안 보이는 버그 (재확인)
 
-- [ ] AdminDashboard에서 선릉점 선택 시 tableReport 데이터 실제 반환 여부 확인
-- [ ] adminDailyDetail 두 번째 정의(adminProcedure)도 OAuth 관리자 허용 여부 확인
+- [x] AdminDashboard에서 선를점 선택 시 tableReport 데이터 실제 반환 여부 확인 (관리자 테이블 기록 접근 전면 수정으로 해결)
+- [x] adminDailyDetail 두 번째 정의(adminProcedure)도 OAuth 관리자 허용 여부 확인 (이전 수정 완료)
 
 ## 관리자 테이블 기록 접근 전면 수정
 
