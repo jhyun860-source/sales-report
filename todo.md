@@ -475,15 +475,15 @@
 
 ## 누적금 0 표시 + 지점명 미표시 버그 (4/14 재확인)
 
-- [ ] DB에서 실제 4월 13일~14일 cashTotal/cardTotal 값 확인
-- [ ] 테이블 기록 저장 시 cascadeUpdateCumulativeAmounts 실제 호출 여부 확인
-- [ ] Home.tsx 헤더 지점명 표시 로직 확인 및 수정
-- [ ] 누적금 0 원인 수정 (DB 보정 또는 로직 수정)
+- [x] DB에서 실제 4월 13일~14일 cashTotal/cardTotal 값 확인 (대치점/삼성점 정상, 선릅점 4/11까지만 존재)
+- [x] 테이블 기록 저장 시 cascadeUpdateCumulativeAmounts 실제 호출 여부 확인 (이미 구현됨)
+- [x] Home.tsx 헤더 지점명 표시 로직 확인 (정상 - localStorage 토큰 인증 전환으로 해결)
+- [x] 누적금 0 원인 수정 (모바일 Chrome 쿠키 차단 문제 해결 + 선릅점 posStart/posEnd 보정)
 
 ## 모바일 쿠키 차단 문제 → localStorage 토큰 인증 전환
 
-- [ ] 서버: parseStoreCookie에서 Authorization 헤더 Bearer 토큰도 파싱하도록 수정
-- [ ] 서버: loginWithPassword 응답에 token 필드 추가
-- [ ] 프론트: loginWithPassword 성공 시 token을 localStorage에 저장
-- [ ] 프론트: trpc client에서 모든 요청에 Authorization 헤더 추가
-- [ ] 프론트: 로그아웃 시 localStorage 토큰 삭제
+- [x] 서버: parseStoreCookie에서 Authorization 헤더 Bearer 토큰도 파싱하도록 수정
+- [x] 서버: loginWithPassword 응답에 token 필드 추가
+- [x] 프론트: loginWithPassword 성공 시 token을 localStorage에 저장
+- [x] 프론트: trpc client에서 모든 요청에 Authorization 헤더 추가
+- [x] 프론트: 로그아웃 시 localStorage 토큰 삭제
