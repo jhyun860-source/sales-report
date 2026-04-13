@@ -242,7 +242,7 @@ export default function Home() {
   }, [serverRecord, currentDate, selectedBranchId]);
 
   // 현재 날짜를 서버에 전달하면 서버가 그 이전의 가장 최근 기록을 반환
-  const { data: prevRecord } = trpc.storeSales.getPrevRecord.useQuery(
+  const { data: prevRecord, refetch: refetchPrevRecord } = trpc.storeSales.getPrevRecord.useQuery(
     { branchId: selectedBranchId!, date: currentDate },
     { enabled: !!selectedBranchId && !!user }
   );
@@ -316,6 +316,7 @@ export default function Home() {
         toast.success('핸드폰으로 알림이 발송되었습니다 🔔', { duration: 2000 });
       }
       refetchRecord();
+      refetchPrevRecord();
     } catch (error) {
       console.error('저장 실패:', error);
       toast.error('저장에 실패했습니다');

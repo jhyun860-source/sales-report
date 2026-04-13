@@ -334,3 +334,8 @@
 - [x] db.ts에 cascadeUpdateCumulativeAmounts 함수 추가 (일요일 이월/월1일 리셋/일반일 누적 로직 포함)
 - [x] routers.ts save mutation 두 곳에 cascadeUpdateCumulativeAmounts 호출 추가
 - [x] 테스트 33개 전체 통과 확인
+
+## 저장 후 누적금 즉시 화면 반영
+
+- [x] Home.tsx save mutation onSuccess에서 서버 데이터 refetch/invalidate 추가 (refetchRecord + refetchPrevRecord)
+- [x] 저장 후 cashTotal/cardTotal/posStartAmount/posEndAmount가 새로고침 없이 즉시 반영
