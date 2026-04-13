@@ -290,6 +290,7 @@ export default function Home() {
   }, []);
 
   const saveMutation = trpc.storeSales.save.useMutation();
+  const utils = trpc.useUtils();
   const { isSubscribed, isLoading: pushLoading, isSupported, subscribe, unsubscribe } = usePushNotification();
 
   const handleSave = async () => {
@@ -315,6 +316,8 @@ export default function Home() {
       if (result.pushSent) {
         toast.success('핸드폰으로 알림이 발송되었습니다 🔔', { duration: 2000 });
       }
+      // 저장 후 모든 날짜 데이터 갱신 (이후 날짜 누적금 연쇄 업데이트 반영)
+      await utils.storeSales.invalidate();
       refetchRecord();
       refetchPrevRecord();
     } catch (error) {

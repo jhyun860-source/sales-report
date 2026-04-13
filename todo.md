@@ -398,3 +398,23 @@
 - [x] staffIncentives 데이터 구조 및 workStart/workEnd 파악
 - [x] 서버: staffIncentiveStats 프로시저에 알바 제외 필터 및 workDiffMinutes/standardMinutes 추가
 - [x] 프론트엔드: 직원 카드에 +/- 시간 배너 및 전체 합계 카드에 +/- 시간 합계 표시 추가
+
+## 매출 수정 시 이후 날짜 누적금 자동 연쇄 업데이트
+
+- [ ] save mutation에서 현금/카드 변경 시 cascadeUpdateCumulativeAmounts 호출 보장 (현재 누락 여부 확인)
+- [ ] 선릉점 4월 6~7일 현금 누적금 불일치 DB 보정
+
+## 누적금 오류 근본 해결 (전면 개선)
+
+- [ ] computeCumulativesForDate: 이전 레코드 없어도 해당 달 전체 스캔으로 정확한 누적금 계산
+- [ ] cascadeUpdateCumulativeAmounts: 중간 날짜 누락 포함 완전 연쇄 재계산
+- [ ] 전 지점 4월 누적금 일괄 재계산 DB 보정 스크립트 실행
+
+## 매출 수정 시 이후 날짜 자동 연쇄 업데이트 근본 해결
+
+- [x] save mutation에서 cascadeUpdateCumulativeAmounts catch {} → catch (e) { console.error } 로 수정
+- [x] 프론트엔드 저장 후 utils.storeSales.invalidate() 추가 (이후 날짜 화면 갱신)
+- [x] computeCumulativesForDate 전체 달 스캔 방식으로 재작성 (이전 레코드 의존 제거)
+- [x] cascadeUpdateCumulativeAmounts도 computeCumulativesForDate 기반으로 재작성
+- [x] 선릉점 4월 1일 cash→card 수정 및 연쇄 재계산 완료 (전체 ✓ 검증)
+- [ ] computeCumulativesForDate/cascadeUpdateCumulativeAmounts Vitest 회귀 테스트 추가

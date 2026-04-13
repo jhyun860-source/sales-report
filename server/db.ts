@@ -413,16 +413,14 @@ export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string
 }
 
 /**
- * 특정 날짜 저장 시 이전 레코드와의 사이 날짜들의 매출을 합산해서 올바른 누적금을 계산한다.
- * 예: 4월 6~7일 레코드가 있는 상태에서 4월 8일을 저장할 때,
- * getPrevDailySalesRecord가 4월 7일을 반환하면 정상이지만,
- * 4월 7일 레코드가 없으면 4월 4일을 반환 → 4월 6~7일 매출 누락 문제 발생.
- * 이 함수는 prevRecord.date ~ currentDate 사이의 모든 레코드를 합산해서 보정한다.
+ * 특정 날짜 저장 시 해당 달 1일부터 현재 날짜 직전까지 모든 레코드를 스캔해
+ * 정확한 cashTotal/cardTotal을 계산한다.
+ * prevRecord 파라미터는 폀지되었지만 폀이하지 않도록 선택적 유지.
  */
 export async function computeCumulativesForDate(
   branchId: number,
   date: string,
-  prevRecord: DailySalesRecord | null,
+  _prevRecord: DailySalesRecord | null,  // 사용하지 않음 - 전체 스캔 방식으로 대체
   todayCash: number,
   todayCard: number
 ): Promise<{ cashTotal: number; cardTotal: number }> {
@@ -431,44 +429,44 @@ export async function computeCumulativesForDate(
   const dateObj = new Date(date + 'T12:00:00');
   const isSunday = dateObj.getDay() === 0;
 
+  // 매월 1일은 당일 매출만
   if (isFirstOfMonth) {
-    return { cashTotal: todayCash, cardTotal: todayCard };
-  }
-
-  if (!prevRecord) {
-    // 이전 레코드 없음 → 당일 매출이 곧 누적
     return { cashTotal: isSunday ? 0 : todayCash, cardTotal: isSunday ? 0 : todayCard };
   }
 
-  let baseCashTotal = parseInt(prevRecord.cashTotal || '0') || 0;
-  let baseCardTotal = parseInt(prevRecord.cardTotal || '0') || 0;
+  if (!db) {
+    return { cashTotal: isSunday ? 0 : todayCash, cardTotal: isSunday ? 0 : todayCard };
+  }
 
-  // prevRecord.date와 date 사이에 저장되지 않은 날짜들의 매출을 합산
-  if (db && prevRecord.date < date) {
-    const betweenRecords = await db
-      .select()
-      .from(dailySalesRecords)
-      .where(and(
-        eq(dailySalesRecords.branchId, branchId),
-        gt(dailySalesRecords.date, prevRecord.date),
-        lt(dailySalesRecords.date, date)
-      ))
-      .orderBy(dailySalesRecords.date);
+  // 해당 달 1일부터 현재 날짜 직전까지 모든 레코드 스캔
+  const [year, month] = date.split('-');
+  const monthStart = `${year}-${month}-01`;
 
-    for (const r of betweenRecords) {
-      const rDateObj = new Date(r.date + 'T12:00:00');
-      const rIsSunday = rDateObj.getDay() === 0;
-      const rIsFirstOfMonth = r.date.endsWith('-01');
-      if (rIsFirstOfMonth) {
-        // 월 경계 리셋
-        baseCashTotal = parseInt(r.cash || '0') || 0;
-        baseCardTotal = parseInt(r.card || '0') || 0;
-      } else if (!rIsSunday) {
-        baseCashTotal += parseInt(r.cash || '0') || 0;
-        baseCardTotal += parseInt(r.card || '0') || 0;
-      }
-      // 일요일은 이월만 (baseCashTotal/baseCardTotal 변경 없음)
+  const allPrevRecords = await db
+    .select()
+    .from(dailySalesRecords)
+    .where(and(
+      eq(dailySalesRecords.branchId, branchId),
+      gte(dailySalesRecords.date, monthStart),
+      lt(dailySalesRecords.date, date)
+    ))
+    .orderBy(dailySalesRecords.date);
+
+  let baseCashTotal = 0;
+  let baseCardTotal = 0;
+
+  for (const r of allPrevRecords) {
+    const rDateObj = new Date(r.date + 'T12:00:00');
+    const rIsSunday = rDateObj.getDay() === 0;
+    if (r.date === monthStart) {
+      // 1일은 리셋: 당일 매출만
+      baseCashTotal = rIsSunday ? 0 : (parseInt(r.cash || '0') || 0);
+      baseCardTotal = rIsSunday ? 0 : (parseInt(r.card || '0') || 0);
+    } else if (!rIsSunday) {
+      baseCashTotal += parseInt(r.cash || '0') || 0;
+      baseCardTotal += parseInt(r.card || '0') || 0;
     }
+    // 일요일은 이월만
   }
 
   if (isSunday) {
@@ -478,12 +476,12 @@ export async function computeCumulativesForDate(
 }
 
 // 특정 날짜 이후의 동일 지점 기록들의 cashTotal/cardTotal을 연쇄 재계산
-// 저장된 날짜의 cash/card가 바뀌면 이후 날짜들의 누적금도 연쇄 업데이트
+// computeCumulativesForDate(전체 스캔 방식)를 각 레코드에 적용해 항상 정확한 값을 보장
 export async function cascadeUpdateCumulativeAmounts(branchId: number, fromDate: string): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  // fromDate 이후의 모든 기록을 날짜 오름차순으로 조회 (같은 달만 처리 — 월 경계는 1일에 리셋)
+  // fromDate 이후의 모든 기록을 날짜 오름차순으로 조회
   const futureRecords = await db
     .select()
     .from(dailySalesRecords)
@@ -492,35 +490,14 @@ export async function cascadeUpdateCumulativeAmounts(branchId: number, fromDate:
 
   if (futureRecords.length === 0) return;
 
-  // fromDate 기록의 cashTotal/cardTotal을 기준으로 연쇄 계산
-  let prevRecord = await getDailySalesRecord(branchId, fromDate);
-  if (!prevRecord) return;
-
+  // 각 레코드에 대해 computeCumulativesForDate로 정확한 누적금 재계산
   for (const rec of futureRecords) {
-    const recDateObj = new Date(rec.date + 'T12:00:00');
-    const isSunday = recDateObj.getDay() === 0;
-    const isFirstOfMonth = rec.date.endsWith('-01');
+    const todayCash = parseInt(rec.cash || '0') || 0;
+    const todayCard = parseInt(rec.card || '0') || 0;
 
-    const prevCashTotal: number = parseInt(prevRecord.cashTotal || '0') || 0;
-    const prevCardTotal: number = parseInt(prevRecord.cardTotal || '0') || 0;
-    const todayCash: number = parseInt(rec.cash || '0') || 0;
-    const todayCard: number = parseInt(rec.card || '0') || 0;
-
-    let newCashTotal: number;
-    let newCardTotal: number;
-
-    if (isFirstOfMonth) {
-      // 매월 1일은 리셋: 이전 누적과 무관하게 당일 매출만
-      newCashTotal = todayCash;
-      newCardTotal = todayCard;
-    } else if (isSunday) {
-      // 일요일은 영업 없음: 이전 누적 그대로 이월
-      newCashTotal = prevCashTotal;
-      newCardTotal = prevCardTotal;
-    } else {
-      newCashTotal = prevCashTotal + todayCash;
-      newCardTotal = prevCardTotal + todayCard;
-    }
+    const { cashTotal: newCashTotal, cardTotal: newCardTotal } = await computeCumulativesForDate(
+      branchId, rec.date, null, todayCash, todayCard
+    );
 
     // 값이 달라진 경우에만 업데이트
     if (String(newCashTotal) !== rec.cashTotal || String(newCardTotal) !== rec.cardTotal) {
@@ -528,11 +505,6 @@ export async function cascadeUpdateCumulativeAmounts(branchId: number, fromDate:
         .update(dailySalesRecords)
         .set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: new Date() })
         .where(eq(dailySalesRecords.id, rec.id));
-      prevRecord = { ...rec, cashTotal: String(newCashTotal), cardTotal: String(newCardTotal) };
-    } else {
-      prevRecord = rec;
     }
-
-    // 월 경계(1일)에서 이전 누적 연산이 끊기므로, 1일 이후는 그 1일 기록을 기준으로 계속 진행
   }
 }
