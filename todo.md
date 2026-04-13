@@ -450,3 +450,10 @@
 - [x] Home.tsx 테이블 버튼 클릭 시 selectedBranchId를 URL 파라미터로 전달
 - [x] tableReport.getByDate 서버 프로시저에서 관리자가 branchId 직접 지정 가능하도록 수정
 - [x] TableReport.tsx에서 URL 파라미터 branchId를 읽어 쿼리에 전달 (관리자 모드)
+
+## 삼성점 누적금/포스 시작금/마감금 전혀 안 넘어가는 버그
+
+- [x] 삼성점 4월 dailySalesRecords 전체 조회 (cashTotal/cardTotal/posStart/posEnd 상태 확인)
+- [x] 누락 원인 파악 (4/1 cashTotal=0, 4/10 cardTotal=0, posStart/posEnd 전부 0 - 초기값 미설정)
+- [x] 보정값 계산 및 DB 업데이트 (4/1~4/10 cashTotal/cardTotal/posStart/posEnd 전부 보정)
+- [x] 삼성점 포스 시작금 64,000원 초기값 설정 및 이후 날짜 연쇄 보정 완료
