@@ -9,7 +9,7 @@ import { useLocation } from 'wouter';
 export function useStoreAuth() {
   const { data: storeUser, isLoading, error } = trpc.auth.storeMe.useQuery(undefined, {
     retry: false,
-    staleTime: 1000 * 60 * 5, // 5분 캐시
+    // staleTime 제거: 항상 최신 인증 상태 반영 (캐시로 인한 지점명 미표시 방지)
   });
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();

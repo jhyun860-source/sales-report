@@ -503,3 +503,10 @@
 - [x] Home.tsx에서 selectedBranchId/myBranches 로딩 타이밍 버그 확인 및 수정 (myBranches 유효성 검사 로직 추가)
 - [x] analyzeOrderMemo: x1 → (1) 형식으로 변환, 괄호 끝까지 형광펜 적용
 - [x] analyzeOrderMemo: 이미지에서 각 항목 금액 파악 후 합산 → amount 자동 입력
+
+## 대치점 지점명/매출현황 미표시 버그 재조사 (4/14)
+
+- [x] useStoreAuth 훈에서 storeMe 응답 파싱 로직 확인
+- [x] Home.tsx myBranches 계산 로직 재확인
+- [x] 브라우저 콘솔 오류 및 네트워크 요청 확인 (서버 응답 정상)
+- [x] 근본 원인 수정: selectedBranchId 렌더링시 직접 계산 + staleTime 제거

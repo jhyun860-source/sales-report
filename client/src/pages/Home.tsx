@@ -208,27 +208,28 @@ export default function Home() {
     ? (user.allBranches ?? [])
     : user?.branch ? [user.branch] : [];
 
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(() => {
-    // localStorage에 저장된 값 우선, 없으면 null (useEffect에서 myBranches 로드 후 설정)
+  // selectedBranchId: localStorage 저장값이 현재 계정 지점 목록에 있으면 사용,
+  // 없거나 null이면 첫 번째 지점 ID 사용 (user 로드 후 즉시 결정)
+  const [_selectedBranchId, _setSelectedBranchId] = useState<number | null>(() => {
     const saved = localStorage.getItem('selectedBranchId');
     return saved ? parseInt(saved, 10) : null;
   });
+
+  // myBranches가 있을 때 유효한 branchId 결정 (렌더링마다 계산)
+  const selectedBranchId: number | null = (() => {
+    if (myBranches.length === 0) return null;
+    const isValid = myBranches.some(b => b.id === _selectedBranchId);
+    return isValid ? _selectedBranchId : myBranches[0].id;
+  })();
+
+  const setSelectedBranchId = (id: number) => {
+    _setSelectedBranchId(id);
+    try { localStorage.setItem('selectedBranchId', String(id)); } catch {}
+  };
+
   const [record, setRecord] = useState<LocalRecord>(createEmptyLocalRecord);
   const [saved, setSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // user가 로드되면 selectedBranchId 보정:
-  // 1) selectedBranchId가 null이면 첫 번째 지점으로 설정
-  // 2) selectedBranchId가 myBranches에 없으면 (다른 계정 잔여 값) 첫 번째 지점으로 재설정
-  useEffect(() => {
-    if (myBranches.length === 0) return;
-    const isValid = myBranches.some(b => b.id === selectedBranchId);
-    if (!isValid) {
-      const firstId = myBranches[0].id;
-      setSelectedBranchId(firstId);
-      try { localStorage.setItem('selectedBranchId', String(firstId)); } catch {}
-    }
-  }, [myBranches.map(b => b.id).join(',')]);
 
   const { data: serverRecord, refetch: refetchRecord } = trpc.storeSales.getRecord.useQuery(
     { branchId: selectedBranchId!, date: currentDate },
@@ -414,7 +415,6 @@ export default function Home() {
                 onChange={(e) => {
                   const id = Number(e.target.value);
                   setSelectedBranchId(id);
-                  try { localStorage.setItem('selectedBranchId', String(id)); } catch {}
                 }}
                 className="px-2 py-1 rounded text-sm font-medium border min-w-0 max-w-[130px]"
                 style={{
