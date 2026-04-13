@@ -19,6 +19,7 @@ import {
   formatDateDisplay,
   calcExpenseTotal,
   getTodayString,
+  moveDateSkipSunday,
 } from '@/lib/salesUtils';
 
 // 숫자 입력 컴포넌트
@@ -183,7 +184,15 @@ export default function Home() {
   const [currentDate, setCurrentDateState] = useState(() => {
     try {
       const saved = localStorage.getItem('selectedDate');
-      if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) return saved;
+      if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+        // 일요일이면 토요일로 보정
+        const d = new Date(saved.replace(/-/g, '/'));
+        if (d.getDay() === 0) {
+          d.setDate(d.getDate() - 1);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        return saved;
+      }
     } catch {}
     return getTodayString();
   });
@@ -314,9 +323,7 @@ export default function Home() {
   };
 
   const moveDate = (days: number) => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + days);
-    setCurrentDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    setCurrentDate(moveDateSkipSunday(currentDate, days));
   };
 
   const selectedBranch = myBranches.find(b => b.id === selectedBranchId);

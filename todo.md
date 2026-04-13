@@ -310,3 +310,9 @@
 - [x] 4월 9일~12일 포스 시작금/마감금 정확한 값 파악 및 DB 보정 (10일 posStart=1,029,000/posEnd=939,000 / 12일 posStart=posEnd=939,000)
 - [x] 서버 save mutation에서 저장 후 이후 날짜들의 posStartAmount/posEndAmount 연쇄 재계산 로직 추가 (cascadeUpdatePosAmounts)
 - [x] 테스트 33개 전체 통과 확인
+
+## 일요일 영업 제외
+
+- [x] 테이블 기록 화면에서 날짜 이동 시 일요일 건너뛰기
+- [x] 매출 보고 화면에서 날짜 이동 시 일요일 건너뛰기
+- [x] 현재 날짜가 일요일이면 자동으로 전날(토요일)로 이동

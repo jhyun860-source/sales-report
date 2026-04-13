@@ -17,6 +17,8 @@ import { useStoreAuth } from '@/hooks/useStoreAuth';
 // 날짜 포맷
 function getTodayString() {
   const d = new Date();
+  // 일요일(0)이면 전날(토요일)로
+  if (d.getDay() === 0) d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -30,6 +32,8 @@ function formatDateDisplay(dateStr: string) {
 function moveDateBy(dateStr: string, days: number) {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
+  // 이동한 날짜가 일요일이면 같은 방향으로 한 칸 더 이동
+  if (d.getDay() === 0) d.setDate(d.getDate() + days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -146,7 +150,15 @@ export default function TableReport() {
   const [currentDate, setCurrentDateState] = useState(() => {
     try {
       const saved = localStorage.getItem('selectedDate');
-      if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) return saved;
+      if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+        // 일요일이면 토요일로 보정
+        const d = new Date(saved.replace(/-/g, '/'));
+        if (d.getDay() === 0) {
+          d.setDate(d.getDate() - 1);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        return saved;
+      }
     } catch {}
     return getTodayString();
   });

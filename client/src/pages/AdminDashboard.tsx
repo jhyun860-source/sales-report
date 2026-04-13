@@ -14,6 +14,8 @@ import { getTodayString, formatDateDisplay } from '@/lib/salesUtils';
 function moveDate(dateStr: string, days: number): string {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
+  // 이동한 날짜가 일요일이면 같은 방향으로 한 칸 더 이동
+  if (d.getDay() === 0) d.setDate(d.getDate() + days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 

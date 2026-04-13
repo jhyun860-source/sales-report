@@ -40,9 +40,31 @@ export function parseAmount(value: string | undefined | null): number {
   return cleaned === '' ? 0 : parseFloat(cleaned);
 }
 
-// 오늘 날짜 YYYY-MM-DD
+// 날짜 문자열 YYYY-MM-DD → Date 객체
+export function parseDateString(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// 일요일 여부 확인
+export function isSundayDate(dateStr: string): boolean {
+  return parseDateString(dateStr).getDay() === 0;
+}
+
+// 일요일을 건너뛴 날짜 이동 (days: +1 또는 -1)
+export function moveDateSkipSunday(dateStr: string, days: number): string {
+  const d = parseDateString(dateStr);
+  d.setDate(d.getDate() + days);
+  // 이동한 날짜가 일요일이면 같은 방향으로 한 칸 더 이동
+  if (d.getDay() === 0) d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 오늘 날짜 YYYY-MM-DD (일요일이면 토요일로)
 export function getTodayString(): string {
   const today = new Date();
+  // 일요일(0)이면 전날(토요일)로
+  if (today.getDay() === 0) today.setDate(today.getDate() - 1);
   const y = today.getFullYear();
   const m = String(today.getMonth() + 1).padStart(2, '0');
   const d = String(today.getDate()).padStart(2, '0');
