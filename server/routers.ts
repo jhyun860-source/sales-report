@@ -25,6 +25,7 @@ import {
   updateStoreAccount,
   getAllStoreAccounts,
   deleteStoreAccount,
+  cascadeUpdatePosAmounts,
 } from "./db";
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives } from "../drizzle/schema";
 import { eq, and, desc, like, sql } from "drizzle-orm";
@@ -415,6 +416,8 @@ export const appRouter = router({
           cashDeposit: input.cashDeposit ?? '0',
           expenses: input.expenses, submittedAt: new Date(),
         });
+        // 저장 후 이후 날짜들의 posStart/posEnd 연쇄 재계산
+        try { await cascadeUpdatePosAmounts(input.branchId, input.date); } catch {}
         const branch = await getBranchById(input.branchId);
         const branchName = branch?.name ?? '알 수 없는 지점';
         const fmt = (v: string) => { const n = Number((v||''). replace(/,/g,'')); return isNaN(n)||n===0?'—':`₩${n.toLocaleString('ko-KR')}`; };
@@ -551,6 +554,8 @@ export const appRouter = router({
           expenses: input.expenses,
           submittedBy: ctx.user.id, submittedAt: new Date(),
         });
+        // 저장 후 이후 날짜들의 posStart/posEnd 연쇄 재계산
+        try { await cascadeUpdatePosAmounts(input.branchId, input.date); } catch {}
         const branch = await getBranchById(input.branchId);
         const branchName = branch?.name ?? '알 수 없는 지점';
         const fmt = (v: string) => { const n = Number((v||''). replace(/,/g,'')); return isNaN(n)||n===0?'—':`₩${n.toLocaleString('ko-KR')}`; };

@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, lt } from "drizzle-orm";
+import { eq, and, gte, lte, desc, lt, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, branches, branchManagers, dailySalesRecords, pushSubscriptions, storeAccounts, type Branch, type BranchManager, type DailySalesRecord, type InsertBranch, type InsertBranchManager, type InsertDailySalesRecord, type InsertPushSubscription, type PushSubscription, type StoreAccount, type InsertStoreAccount } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -367,4 +367,47 @@ export async function deleteStoreAccount(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
   await db.delete(storeAccounts).where(eq(storeAccounts.id, id));
+}
+
+// 특정 날짜 이후의 동일 지점 기록들의 posStartAmount/posEndAmount를 연쇄 재계산
+// 저장된 날짜의 posEndAmount가 바뀌면 이후 날짜들의 posStart/posEnd도 연쇄 업데이트
+export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // fromDate 이후의 모든 기록을 날짜 오름차순으로 조회
+  const futureRecords = await db
+    .select()
+    .from(dailySalesRecords)
+    .where(and(eq(dailySalesRecords.branchId, branchId), gt(dailySalesRecords.date, fromDate)))
+    .orderBy(dailySalesRecords.date);
+
+  if (futureRecords.length === 0) return;
+
+  // fromDate 기록의 posEndAmount를 기준으로 연쇄 계산
+  let prevRecord = await getDailySalesRecord(branchId, fromDate);
+  if (!prevRecord) return;
+
+  for (const rec of futureRecords) {
+    const prevPosEnd: number = parseInt(prevRecord.posEndAmount || '0') || 0;
+    const dateObj = new Date(rec.date + 'T12:00:00');
+    const isSunday = dateObj.getDay() === 0;
+    const expenses = Array.isArray(rec.expenses) ? rec.expenses : [];
+    const expTotal = (expenses as Array<{ amount?: string }>).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
+    const cashDep = parseInt(rec.cashDeposit || '0') || 0;
+
+    const newPosStart: number = prevPosEnd;
+    const newPosEnd: number = isSunday ? newPosStart : newPosStart - expTotal + cashDep;
+
+    // 값이 달라진 경우에만 업데이트
+    if (String(newPosStart) !== rec.posStartAmount || String(newPosEnd) !== rec.posEndAmount) {
+      await db
+        .update(dailySalesRecords)
+        .set({ posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd), updatedAt: new Date() })
+        .where(eq(dailySalesRecords.id, rec.id));
+      prevRecord = { ...rec, posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd) };
+    } else {
+      prevRecord = rec;
+    }
+  }
 }
