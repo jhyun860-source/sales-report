@@ -321,3 +321,9 @@
 
 - [x] 관리자 대시보드에서 테이블 기록 조회 API 및 프론트 로직 확인 (adminDailyDetail에 tableReports/tableItems 누락)
 - [x] 테이블 기록 데이터가 관리자 화면에 표시되도록 수정 (지점별 카드에 테이블 기록 항목 표 추가)
+
+## 관리자 페이지 출근자 인센티브 데이터 표시
+
+- [x] staffIncentives 스키마 확인 (직원명/윉4추/병추/맥주병추/영업인센/근무시간)
+- [x] adminDailyDetail API에 staffIncentives 포함 (inArray 조회 추가)
+- [x] 관리자 대시보드 테이블 기록 섹션 아래 출근자 인센티브 표 추가 (직원/윉4추/병추/맥주/영업인센, 근무시간 표시)

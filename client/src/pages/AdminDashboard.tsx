@@ -176,7 +176,7 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {dailyDetail.map((item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null; tableReport: { id: number; teamCount: number; cashAmount: string; cardAmount: string; notes: string | null; items: { id: number; tableNumber: string; guestType: string; guestName: string | null; amount: string; paymentMethod: string; memo: string | null }[] } | null }) => {
+            {dailyDetail.map((item: { branch: { id: number; name: string }; record: { cash: string | null; card: string | null; cashTotal: string | null; cardTotal: string | null; expenses: unknown } | null; tableReport: { id: number; teamCount: number; cashAmount: string; cardAmount: string; notes: string | null; items: { id: number; tableNumber: string; guestType: string; guestName: string | null; amount: string; paymentMethod: string; memo: string | null }[]; incentives: { id: number; staffName: string; glassCount: number; bottleCount: number; beerBottleCount: number; salesIncentive: string; workStart: string | null; workEnd: string | null }[] } | null }) => {
               const branch = item.branch;
               const rec = item.record;
               const tr = item.tableReport;
@@ -274,6 +274,41 @@ export default function AdminDashboard() {
                       </table>
                       {tr!.notes && (
                         <div className="mt-1.5 text-xs" style={{ color: 'oklch(0.45 0.01 50)' }}>기타: {tr!.notes}</div>
+                      )}
+                      {/* 출근자 인센티브 섹션 */}
+                      {tr!.incentives && tr!.incentives.length > 0 && (
+                        <div className="mt-3">
+                          <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.35 0.01 50)' }}>■ 출근자 인센티브 ({tr!.incentives.length}명)</div>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                            <thead>
+                              <tr style={{ background: 'oklch(0.93 0.015 85)' }}>
+                                <th style={{ padding: '3px 6px', textAlign: 'left', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>직원</th>
+                                <th style={{ padding: '3px 6px', textAlign: 'right', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>잔추</th>
+                                <th style={{ padding: '3px 6px', textAlign: 'right', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>병추</th>
+                                <th style={{ padding: '3px 6px', textAlign: 'right', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>맥주</th>
+                                <th style={{ padding: '3px 6px', textAlign: 'right', borderBottom: '1px solid oklch(0.78 0.015 85)', color: 'oklch(0.35 0.01 50)', fontWeight: 600 }}>영업인센</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {tr!.incentives.map((inc, idx) => (
+                                <tr key={inc.id} style={{ background: idx % 2 === 0 ? 'transparent' : 'oklch(0.97 0.005 85)' }}>
+                                  <td style={{ padding: '3px 6px', color: 'oklch(0.25 0.01 50)', fontWeight: 600 }}>
+                                    {inc.staffName}
+                                    {(inc.workStart || inc.workEnd) && (
+                                      <span className="ml-1" style={{ fontWeight: 400, color: 'oklch(0.55 0.01 50)' }}>({inc.workStart || '?'}~{inc.workEnd || '?'})</span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '3px 6px', textAlign: 'right', color: 'oklch(0.25 0.01 50)' }}>{inc.glassCount > 0 ? inc.glassCount : '-'}</td>
+                                  <td style={{ padding: '3px 6px', textAlign: 'right', color: 'oklch(0.25 0.01 50)' }}>{inc.bottleCount > 0 ? inc.bottleCount : '-'}</td>
+                                  <td style={{ padding: '3px 6px', textAlign: 'right', color: 'oklch(0.25 0.01 50)' }}>{inc.beerBottleCount > 0 ? inc.beerBottleCount : '-'}</td>
+                                  <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: Number(inc.salesIncentive) > 0 ? 'oklch(0.45 0.18 25)' : 'oklch(0.55 0.01 50)' }}>
+                                    {Number(inc.salesIncentive) > 0 ? Number(inc.salesIncentive).toLocaleString('ko-KR') : '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
                     </div>
                   )}

@@ -450,8 +450,13 @@ export const appRouter = router({
         const records = await db.select().from(dailySalesRecords).where(eq(dailySalesRecords.date, input.date));
         // 테이블 기록도 함께 조회
         const tableReportRows = await db.select().from(tableReports).where(eq(tableReports.date, input.date));
-        const tableItemRows = tableReportRows.length > 0
-          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, tableReportRows.map(r => r.id)))
+        const reportIds = tableReportRows.map(r => r.id);
+        const tableItemRows = reportIds.length > 0
+          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds))
+          : [];
+        // 출근자 인센티브도 함께 조회
+        const incentiveRows = reportIds.length > 0
+          ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt)
           : [];
         return allBranches.map(branch => ({
           branch,
@@ -459,7 +464,11 @@ export const appRouter = router({
           tableReport: (() => {
             const tr = tableReportRows.find(r => r.branchId === branch.id);
             if (!tr) return null;
-            return { ...tr, items: tableItemRows.filter(i => i.tableReportId === tr.id) };
+            return {
+              ...tr,
+              items: tableItemRows.filter(i => i.tableReportId === tr.id),
+              incentives: incentiveRows.filter(i => i.tableReportId === tr.id),
+            };
           })(),
         }));
       }),
