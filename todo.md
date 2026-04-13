@@ -352,3 +352,13 @@
 - [x] DB 마이그레이션 (pnpm db:push)
 - [x] TableReport.tsx에 직원/아르바 토글 버튼 추가, 직원만 -분/✓ 표시
 - [x] AdminDashboard.tsx에 staffType 포함 및 직원만 부족분 표시
+
+## 직원 근무시간 7시간 기준 차이 표시
+
+- [ ] TableReport.tsx: 직원 선택 시 근무시간을 +몇분/-몇분/✓로 표시 (7시간=420분 기준)
+- [ ] AdminDashboard.tsx: 동일하게 직원 근무시간 차이 표시
+
+## 직원 근무시간 7시간 기준 차이 표시
+
+- [x] TableReport.tsx: 직원 선택 시 근무시간을 +몇분/-몇분/✓로 표시 (7시간=420분 기준, 아르바이트는 실제 시간 표시)
+- [x] AdminDashboard.tsx: 동일하게 직원 근무시간 차이 표시

@@ -296,22 +296,31 @@ export default function AdminDashboard() {
                                     {inc.staffName}
                                     {(inc.workStart || inc.workEnd) && (() => {
                                       const timeStr = `(${inc.workStart || '?'}~${inc.workEnd || '?'})`;
-                                      let shortageEl = null;
-                                      if (inc.workStart && inc.workEnd && inc.staffType === 'staff') {
+                                      let badgeEl = null;
+                                      if (inc.workStart && inc.workEnd) {
                                         const [sh, sm] = inc.workStart.split(':').map(Number);
                                         const [eh, em] = inc.workEnd.split(':').map(Number);
                                         let startMin = sh * 60 + sm;
                                         let endMin = eh * 60 + em;
                                         if (endMin <= startMin) endMin += 24 * 60;
                                         const diff = endMin - startMin;
-                                        const shortage = 420 - diff;
-                                        if (shortage > 0) {
-                                          shortageEl = <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 700, background: 'oklch(0.55 0.2 25)', color: 'white', borderRadius: 3, padding: '1px 5px' }}>-{shortage}분</span>;
+                                        if (inc.staffType === 'parttime') {
+                                          const h = Math.floor(diff / 60);
+                                          const m = diff % 60;
+                                          const label = `${h > 0 ? `${h}시간` : ''}${m > 0 ? `${m}분` : h === 0 ? '0분' : ''}`;
+                                          badgeEl = <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 700, background: 'oklch(0.45 0.18 25)', color: 'white', borderRadius: 3, padding: '1px 5px' }}>{label}</span>;
                                         } else {
-                                          shortageEl = <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 700, background: 'oklch(0.45 0.15 150)', color: 'white', borderRadius: 3, padding: '1px 5px' }}>✓</span>;
+                                          const diffFromStd = diff - 420;
+                                          const absH = Math.floor(Math.abs(diffFromStd) / 60);
+                                          const absM = Math.abs(diffFromStd) % 60;
+                                          const label = diffFromStd === 0 ? '✓'
+                                            : diffFromStd > 0 ? `+${absH > 0 ? `${absH}시간` : ''}${absM > 0 ? `${absM}분` : ''}`
+                                            : `-${absH > 0 ? `${absH}시간` : ''}${absM > 0 ? `${absM}분` : ''}`;
+                                          const bg = diffFromStd >= 0 ? 'oklch(0.45 0.15 150)' : 'oklch(0.55 0.2 25)';
+                                          badgeEl = <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 700, background: bg, color: 'white', borderRadius: 3, padding: '1px 5px' }}>{label}</span>;
                                         }
                                       }
-                                      return <><span className="ml-1" style={{ fontWeight: 400, color: 'oklch(0.55 0.01 50)' }}>{timeStr}</span>{shortageEl}</>;
+                                      return <><span className="ml-1" style={{ fontWeight: 400, color: 'oklch(0.55 0.01 50)' }}>{timeStr}</span>{badgeEl}</>;
                                     })()}
                                   </td>
                                   <td style={{ padding: '3px 6px', textAlign: 'right', color: 'oklch(0.25 0.01 50)' }}>{inc.glassCount > 0 ? inc.glassCount : '-'}</td>

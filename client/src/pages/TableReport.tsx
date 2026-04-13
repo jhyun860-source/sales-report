@@ -801,21 +801,30 @@ export default function TableReport() {
                       const diff = endMin - startMin;
                       const hours = Math.floor(diff / 60);
                       const mins = diff % 60;
-                      const STANDARD_MINUTES = 420; // 오후 8시 ~ 새벽 3시 = 7시간
-                      const shortage = STANDARD_MINUTES - diff;
+                      const STANDARD_MINUTES = 420; // 7시간 기준
+                      const diffFromStandard = diff - STANDARD_MINUTES; // 양수=초과, 음수=부족
+                      const absDiffHours = Math.floor(Math.abs(diffFromStandard) / 60);
+                      const absDiffMins = Math.abs(diffFromStandard) % 60;
+                      const diffLabel = diffFromStandard === 0
+                        ? '✓'
+                        : diffFromStandard > 0
+                          ? `+${absDiffHours > 0 ? `${absDiffHours}시간` : ''}${absDiffMins > 0 ? `${absDiffMins}분` : ''}`
+                          : `-${absDiffHours > 0 ? `${absDiffHours}시간` : ''}${absDiffMins > 0 ? `${absDiffMins}분` : ''}`;
+                      const diffColor = diffFromStandard === 0
+                        ? 'oklch(0.45 0.15 150)'
+                        : diffFromStandard > 0
+                          ? 'oklch(0.45 0.15 150)'
+                          : 'oklch(0.55 0.2 25)';
                       return (
                         <>
-                          <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: PRIMARY, color: 'white' }}>
-                            {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
-                          </span>
-                          {inc.staffType === 'staff' && shortage > 0 && (
-                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-0.5" style={{ background: 'oklch(0.55 0.2 25)', color: 'white' }}>
-                              -{shortage}분
+                          {inc.staffType === 'parttime' && (
+                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: PRIMARY, color: 'white' }}>
+                              {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
                             </span>
                           )}
-                          {inc.staffType === 'staff' && shortage <= 0 && (
-                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-0.5" style={{ background: 'oklch(0.45 0.15 150)', color: 'white' }}>
-                              ✓
+                          {inc.staffType === 'staff' && (
+                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: diffColor, color: 'white' }}>
+                              {diffLabel}
                             </span>
                           )}
                         </>
