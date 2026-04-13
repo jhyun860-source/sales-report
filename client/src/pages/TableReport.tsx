@@ -788,10 +788,24 @@ export default function TableReport() {
                       const diff = endMin - startMin;
                       const hours = Math.floor(diff / 60);
                       const mins = diff % 60;
+                      const STANDARD_MINUTES = 420; // 오후 8시 ~ 새벽 3시 = 7시간
+                      const shortage = STANDARD_MINUTES - diff;
                       return (
-                        <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: PRIMARY, color: 'white' }}>
-                          {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
-                        </span>
+                        <>
+                          <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: PRIMARY, color: 'white' }}>
+                            {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
+                          </span>
+                          {shortage > 0 && (
+                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-0.5" style={{ background: 'oklch(0.55 0.2 25)', color: 'white' }}>
+                              -{shortage}분
+                            </span>
+                          )}
+                          {shortage <= 0 && (
+                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-0.5" style={{ background: 'oklch(0.45 0.15 150)', color: 'white' }}>
+                              ✓
+                            </span>
+                          )}
+                        </>
                       );
                     })()}
                   </div>

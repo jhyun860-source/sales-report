@@ -294,9 +294,25 @@ export default function AdminDashboard() {
                                 <tr key={inc.id} style={{ background: idx % 2 === 0 ? 'transparent' : 'oklch(0.97 0.005 85)' }}>
                                   <td style={{ padding: '3px 6px', color: 'oklch(0.25 0.01 50)', fontWeight: 600 }}>
                                     {inc.staffName}
-                                    {(inc.workStart || inc.workEnd) && (
-                                      <span className="ml-1" style={{ fontWeight: 400, color: 'oklch(0.55 0.01 50)' }}>({inc.workStart || '?'}~{inc.workEnd || '?'})</span>
-                                    )}
+                                    {(inc.workStart || inc.workEnd) && (() => {
+                                      const timeStr = `(${inc.workStart || '?'}~${inc.workEnd || '?'})`;
+                                      let shortageEl = null;
+                                      if (inc.workStart && inc.workEnd) {
+                                        const [sh, sm] = inc.workStart.split(':').map(Number);
+                                        const [eh, em] = inc.workEnd.split(':').map(Number);
+                                        let startMin = sh * 60 + sm;
+                                        let endMin = eh * 60 + em;
+                                        if (endMin <= startMin) endMin += 24 * 60;
+                                        const diff = endMin - startMin;
+                                        const shortage = 420 - diff;
+                                        if (shortage > 0) {
+                                          shortageEl = <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 700, background: 'oklch(0.55 0.2 25)', color: 'white', borderRadius: 3, padding: '1px 5px' }}>-{shortage}분</span>;
+                                        } else {
+                                          shortageEl = <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 700, background: 'oklch(0.45 0.15 150)', color: 'white', borderRadius: 3, padding: '1px 5px' }}>✓</span>;
+                                        }
+                                      }
+                                      return <><span className="ml-1" style={{ fontWeight: 400, color: 'oklch(0.55 0.01 50)' }}>{timeStr}</span>{shortageEl}</>;
+                                    })()}
                                   </td>
                                   <td style={{ padding: '3px 6px', textAlign: 'right', color: 'oklch(0.25 0.01 50)' }}>{inc.glassCount > 0 ? inc.glassCount : '-'}</td>
                                   <td style={{ padding: '3px 6px', textAlign: 'right', color: 'oklch(0.25 0.01 50)' }}>{inc.bottleCount > 0 ? inc.bottleCount : '-'}</td>

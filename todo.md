@@ -339,3 +339,9 @@
 
 - [x] Home.tsx save mutation onSuccess에서 서버 데이터 refetch/invalidate 추가 (refetchRecord + refetchPrevRecord)
 - [x] 저장 후 cashTotal/cardTotal/posStartAmount/posEndAmount가 새로고침 없이 즉시 반영
+
+## 선릉점 4월 1일 → 삼성점 4월 1일 데이터 이동 및 근무시간 체크 기능
+
+- [x] 선를점 4월 1일 데이터(dailySalesRecords, tableReports) 삼성점(branchId=3)으로 이동 (tableItems/staffIncentives는 tableReportId로 연결되어 자동 이동)
+- [x] 출근자 인센티브 화면에 오후 8시~새벽 3시(420분) 기준 부족분(-분) 표시 기능 추가 (모든 지점 적용)
+- [x] 관리자 화면에도 근무시간 부족분 표시 추가
