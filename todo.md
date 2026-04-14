@@ -528,3 +528,10 @@
 - [x] mergeItems 서버 프로시저 반환값 확인 (정상)
 - [x] 클라이언트 응답 처리 로직 확인 - stale closure 버그 발견
 - [x] 근본 원인 수정: useEffect 제거, handleMerge에 직접 인자 전달, onClick에서 confirm+호출 일체화
+
+## 형광펜 패턴 자동 학습 (앱 로드 시)
+
+- [x] 서버: getHighlightPatterns 프로시저 추가 (90일치 메모 200건 분석, 노란/분홍 패턴 추출)
+- [x] 프론트엔드: TableReport 로드 시 getHighlightPatterns 호출 후 localStorage 캐시 (1시간 TTL)
+- [x] 프론트엔드: analyzeOrderMemo 호출 시 캐시된 패턴 함께 전달 (서버 재조회 생략)
+- [x] 서버: analyzeOrderMemo에서 클라이언트 전달 패턴 우선 사용 (preloaded 있으면 DB 재조회 생략)

@@ -1373,6 +1373,80 @@ export const appRouter = router({
         return { stats: result, weekLabels: allWeekLabels };
       }),
 
+    // 지점 메모에서 형광펜 패턴 추출 (앱 로드 시 사전 학습용)
+    getHighlightPatterns: publicProcedure
+      .input(z.object({
+        branchId: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+        const account = await getStoreAccountById(payload.accountId);
+        const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
+
+        let yellowKeywords: string[] = [];
+        let pinkKeywords: string[] = [];
+        let recentMemoExamples: string[] = [];
+
+        if (effectiveBranchId) {
+          try {
+            const db = await getDb();
+            if (db) {
+              const cutoffDate = new Date();
+              cutoffDate.setDate(cutoffDate.getDate() - 90); // 90일치 학습
+              const cutoff = cutoffDate.toISOString().slice(0, 10);
+              const recentItems = await db
+                .select({ memo: tableItems.memo })
+                .from(tableItems)
+                .innerJoin(tableReports, eq(tableItems.tableReportId, tableReports.id))
+                .where(
+                  and(
+                    eq(tableReports.branchId, effectiveBranchId),
+                    sql`${tableReports.date} >= ${cutoff}`,
+                    sql`${tableItems.memo} IS NOT NULL`,
+                    sql`${tableItems.memo} != ''`,
+                  )
+                )
+                .orderBy(desc(tableReports.date))
+                .limit(200);
+
+              const yellowSet = new Set<string>();
+              const pinkSet = new Set<string>();
+              for (const row of recentItems) {
+                const memo = row.memo ?? '';
+                const yMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*224,\s*102\)[^>]*>([\s\S]*?)<\/mark>/g));
+                for (const m of yMatches) {
+                  const text = m[1].replace(/<[^>]+>/g, '').trim();
+                  if (text && text.length > 0 && text.length < 30) yellowSet.add(text);
+                }
+                const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+                for (const m of pMatches) {
+                  const text = m[1].replace(/<[^>]+>/g, '').trim();
+                  const parts = text.split(/[,，]/).map((p: string) => p.trim()).filter((p: string) => p.length > 0 && p.length < 15);
+                  for (const p of parts) {
+                    const nameMatch = p.match(/^([가-힣a-zA-Z]+)\d*$/);
+                    if (nameMatch) pinkSet.add(nameMatch[1]);
+                    else if (/^[가-힣a-zA-Z]{1,6}$/.test(p)) pinkSet.add(p);
+                  }
+                }
+                if (recentMemoExamples.length < 10) {
+                  const cleanMemo = memo.replace(/<[^>]+>/g, '').trim();
+                  if (cleanMemo) recentMemoExamples.push(cleanMemo);
+                }
+              }
+              const YELLOW_BLACKLIST = ['무제한', '연장', '기본', '추가', '서비스', '포장', '테이블', '룸'];
+              yellowKeywords = Array.from(yellowSet)
+                .filter(kw => !YELLOW_BLACKLIST.some(bl => kw.includes(bl)))
+                .slice(0, 50);
+              pinkKeywords = Array.from(pinkSet).slice(0, 50);
+            }
+          } catch (e) {
+            console.error('[getHighlightPatterns] 오류:', e);
+          }
+        }
+        return { yellowKeywords, pinkKeywords, recentMemoExamples, branchId: effectiveBranchId };
+      }),
+
     // 포스기 주문내역 사진에서 주문메모 텍스트 자동 추출 (이전 기록 참고 형광펜 + 금액 계산)
     analyzeOrderMemo: publicProcedure
       .input(z.object({
@@ -1380,6 +1454,10 @@ export const appRouter = router({
         mimeType: z.string().default('image/jpeg'),
         branchId: z.number().optional(),
         date: z.string().optional(),
+        // 클라이언트에서 사전 로드된 패턴 (있으면 DB 재조회 생략)
+        preloadedYellow: z.array(z.string()).optional(),
+        preloadedPink: z.array(z.string()).optional(),
+        preloadedExamples: z.array(z.string()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
@@ -1392,14 +1470,16 @@ export const appRouter = router({
         const fileKey = `order-memo-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
 
-        // 이전 기록에서 형광펜 패턴 추출
+        // 클라이언트에서 사전 로드된 패턴이 있으면 우선 사용 (DB 재조회 생략)
         const account = await getStoreAccountById(payload.accountId);
         const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
-        let yellowKeywords: string[] = []; // 노란 형광펜 (주류/특이 메뉴)
-        let pinkKeywords: string[] = [];   // 분홍 형광펜 (직원명)
-        let recentMemoExamples: string[] = [];
+        let yellowKeywords: string[] = input.preloadedYellow ?? [];
+        let pinkKeywords: string[] = input.preloadedPink ?? [];
+        let recentMemoExamples: string[] = input.preloadedExamples ?? [];
 
-        if (effectiveBranchId) {
+        // preloaded 패턴이 없을 때만 DB 재조회 (사전 로드 시 생략으로 성능 개선)
+        const hasPreloaded = (input.preloadedYellow?.length ?? 0) > 0 || (input.preloadedPink?.length ?? 0) > 0;
+        if (effectiveBranchId && !hasPreloaded) {
           try {
             const db = await getDb();
             if (db) {

@@ -273,6 +273,46 @@ export default function TableReport() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportData, currentDate, dataUpdatedAt]); // currentDate는 loadedDateRef로 체크하지만 의존성에도 포함하여 날짜 변경 시 실행 보장
 
+  // 형광펜 패턴 자동 학습 - 앱 로드 시 이전 메모에서 패턴 추출 후 localStorage 캐시
+  const effectiveBranchId = urlBranchId ?? account?.branchId ?? undefined;
+  const highlightCacheKey = `highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
+
+  // localStorage에서 캐시된 패턴 초기 로드
+  const [highlightPatterns, setHighlightPatterns] = useState<{
+    yellowKeywords: string[];
+    pinkKeywords: string[];
+    recentMemoExamples: string[];
+    cachedAt: number;
+  } | null>(() => {
+    try {
+      const raw = localStorage.getItem(highlightCacheKey);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  });
+
+  // 서버에서 패턴 조회 (account 로드 후 실행, 캐시가 1시간 이내면 재조회 생략)
+  const shouldFetchPatterns = !!account && !!effectiveBranchId && (
+    !highlightPatterns || Date.now() - highlightPatterns.cachedAt > 60 * 60 * 1000
+  );
+  const { data: fetchedPatterns } = trpc.tableReport.getHighlightPatterns.useQuery(
+    { branchId: effectiveBranchId },
+    { enabled: shouldFetchPatterns, staleTime: Infinity, refetchOnWindowFocus: false }
+  );
+
+  // 서버에서 패턴 받으면 localStorage에 캐시
+  useEffect(() => {
+    if (!fetchedPatterns) return;
+    const cached = {
+      yellowKeywords: fetchedPatterns.yellowKeywords,
+      pinkKeywords: fetchedPatterns.pinkKeywords,
+      recentMemoExamples: fetchedPatterns.recentMemoExamples,
+      cachedAt: Date.now(),
+    };
+    setHighlightPatterns(cached);
+    try { localStorage.setItem(highlightCacheKey, JSON.stringify(cached)); } catch {}
+  }, [fetchedPatterns, highlightCacheKey]);
+
   // tRPC mutations
   const batchSave = trpc.tableReport.batchSave.useMutation();
   const deleteItem = trpc.tableReport.deleteItem.useMutation();
@@ -456,6 +496,10 @@ export default function TableReport() {
         mimeType: file.type || 'image/jpeg',
         branchId: urlBranchId ?? account?.branchId ?? undefined,
         date: currentDate,
+        // 캐시된 패턴 전달 (DB 재조회 생략으로 속도 개선)
+        preloadedYellow: highlightPatterns?.yellowKeywords,
+        preloadedPink: highlightPatterns?.pinkKeywords,
+        preloadedExamples: highlightPatterns?.recentMemoExamples,
       });
       if (memo) {
         updateItemField(localId, 'memo', memo);
