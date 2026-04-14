@@ -535,3 +535,10 @@
 - [x] 프론트엔드: TableReport 로드 시 getHighlightPatterns 호출 후 localStorage 캐시 (1시간 TTL)
 - [x] 프론트엔드: analyzeOrderMemo 호출 시 캐시된 패턴 함께 전달 (서버 재조회 생략)
 - [x] 서버: analyzeOrderMemo에서 클라이언트 전달 패턴 우선 사용 (preloaded 있으면 DB 재조회 생략)
+
+## 직원 인센티브 통계 - 아르바이트 주간 근무시간 표시
+
+- [ ] StaffIncentiveStats.tsx- [x] StaffIncentiveStats.tsx 및 staffIncentiveStats 라우터 구조 파악
+- [x] DB에서 아르바이트 staffType='parttime' 필드 확인
+- [x] 서버: 이미 아르바이트 주간 근무시간 집계 중 (수정 불필요)
+- [x] 프론트엔드: staffType !== 'parttime' 조건 제거 → 아르바이트도 주간 근무시간 표시

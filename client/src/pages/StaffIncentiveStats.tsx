@@ -276,8 +276,8 @@ export default function StaffIncentiveStats() {
                       );
                     })()}
 
-                    {/* 주간 근무시간 테이블 (직원만 표시) */}
-                    {row.staffType !== 'parttime' && weekLabels.length > 0 && (
+                    {/* 주간 근무시간 테이블 (직원 + 아르바이트 모두 표시) */}
+                    {weekLabels.length > 0 && (
                       <div style={{ borderBottom: `1px solid ${BORDER}` }}>
                         <div className="px-4 py-2 text-xs font-semibold" style={{ color: MUTED, background: 'oklch(0.97 0.006 85)' }}>
                           주간 근무시간
