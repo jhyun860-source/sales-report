@@ -538,7 +538,11 @@
 
 ## 직원 인센티브 통계 - 아르바이트 주간 근무시간 표시
 
-- [ ] StaffIncentiveStats.tsx- [x] StaffIncentiveStats.tsx 및 staffIncentiveStats 라우터 구조 파악
+- [x] StaffIncentiveStats.tsx 및 staffIncentiveStats 라우터 구조 파악
 - [x] DB에서 아르바이트 staffType='parttime' 필드 확인
 - [x] 서버: 이미 아르바이트 주간 근무시간 집계 중 (수정 불필요)
 - [x] 프론트엔드: staffType !== 'parttime' 조건 제거 → 아르바이트도 주간 근무시간 표시
+## 직원 인센티브 통계 버그 수정 (4/14)
+
+- [x] 주간 근무시간 정렬 뒤죽박죽 - allWeekLabels 날짜 기준 정렬 수정 (find 기반 정렬로 교체)
+- [x] 문정1호점 이번주 기록 누락 원인 파악 (데이터 입력 누락, 버그 아님)

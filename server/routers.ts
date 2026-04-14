@@ -1337,8 +1337,17 @@ export const appRouter = router({
         const BOTTLE_PRICE = 10000;
         const BEER_PRICE = 3000;
 
-        // 주간 목록 (해당 월에 등장하는 주간들)
-        const allWeekLabels = Array.from(new Set(detailRows.map(r => getWeekLabel(r.date)))).sort();
+        // 주간 목록 (해당 월에 등장하는 주간들) - 날짜 기준 정렬
+        // weekLabel은 'M/D~M/D' 형식이라 문자열 정렬 시 뒤죽박죽이 됨
+        // 대신 각 주의 실제 시작 날짜(ms)를 기준으로 정렬
+        const weekLabelSet = new Set(detailRows.map(r => getWeekLabel(r.date)));
+        const allWeekLabels = Array.from(weekLabelSet).sort((a, b) => {
+          // 각 라벨에서 시작 날짜를 역산: baseMondayOfMonth + weekNum * 7일
+          // 라벨을 생성한 날짜들 중 해당 라벨을 가진 첫 번째 날짜로 비교
+          const dateA = detailRows.find(r => getWeekLabel(r.date) === a)?.date ?? '';
+          const dateB = detailRows.find(r => getWeekLabel(r.date) === b)?.date ?? '';
+          return dateA.localeCompare(dateB);
+        });
 
         // 최종 결과 조합
         const result = rows.map(row => {
