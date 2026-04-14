@@ -1371,7 +1371,11 @@ export const appRouter = router({
                   if (cleanMemo) recentMemoExamples.push(cleanMemo);
                 }
               }
-              yellowKeywords = Array.from(yellowSet).slice(0, 30);
+              // 무제한, 연장 등 일반 텍스트는 노란 형광펜 키워드에서 제외
+              const YELLOW_BLACKLIST = ['무제한', '연장', '기본', '추가', '서비스', '포장', '테이블', '룸'];
+              yellowKeywords = Array.from(yellowSet)
+                .filter(kw => !YELLOW_BLACKLIST.some(bl => kw.includes(bl)))
+                .slice(0, 30);
               pinkKeywords = Array.from(pinkSet).slice(0, 30);
             }
           } catch (e) {
@@ -1435,7 +1439,8 @@ ${pinkGuide}
      수량 괄호까지 포함해서 형광펜 적용 (예: <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">히비키(1)</mark>)
    - 직원명(호스티스/스텝): 분홍 형광펜 (수량 괄호 포함)
      (예: <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>)
-   - 일반 텍스트(무제한, 연장 등)는 형광펜 없이 그대로
+   - 절대 형광펜 금지 항목: 무제한, 연장, 기본, 추가, 서비스, 포장, 테이블, 룸 등 일반 서비스 텍스트
+     ("무제한"은 절대로 노란 형광펜을 적용하지 말 것)
 
    예시 출력: 무제한2, 연장1, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">모엣(1)</mark>, <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>
 
