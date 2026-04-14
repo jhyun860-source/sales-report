@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { toast } from 'sonner';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2, Users, Wine, Camera } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2, Users, Wine, Camera, Merge } from 'lucide-react';
 import { MemoEditor } from '@/components/MemoEditor';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
@@ -284,6 +284,71 @@ export default function TableReport() {
   // 카메라 입력 ref (localId별)
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const pendingAnalyzeLocalIdRef = useRef<string | null>(null);
+
+  // 합치기 모달 상태
+  const [mergeTargetLocalId, setMergeTargetLocalId] = useState<string | null>(null); // 합칠 기준 항목
+  const [mergeSourceLocalId, setMergeSourceLocalId] = useState<string | null>(null); // 합쳐질 항목
+  const mergeItemsMutation = trpc.tableReport.mergeItems.useMutation();
+
+  // mergeSourceLocalId가 설정되면 확인 후 합치기 실행
+  useEffect(() => {
+    if (!mergeSourceLocalId || !mergeTargetLocalId) return;
+    const target = items.find(it => it.localId === mergeTargetLocalId);
+    const source = items.find(it => it.localId === mergeSourceLocalId);
+    if (!target || !source) return;
+    const targetLabel = target.tableNumber || `#${items.indexOf(target) + 1}`;
+    const sourceLabel = source.tableNumber || `#${items.indexOf(source) + 1}`;
+    const targetAmt = Number(target.amount || 0).toLocaleString('ko-KR');
+    const sourceAmt = Number(source.amount || 0).toLocaleString('ko-KR');
+    const mergedAmt = (Number(target.amount || 0) + Number(source.amount || 0)).toLocaleString('ko-KR');
+    const confirmed = window.confirm(
+      `[${targetLabel}] + [${sourceLabel}] 합치기\n\n` +
+      `• [${targetLabel}] 금액: \u20a9${targetAmt}\n` +
+      `• [${sourceLabel}] 금액: \u20a9${sourceAmt}\n` +
+      `→ 합산 금액: \u20a9${mergedAmt}\n\n` +
+      `메모도 합쳐집니다. [${sourceLabel}] 항목은 삭제됩니다.\n\n계속하시겠습니까?`
+    );
+    if (confirmed) {
+      handleMerge();
+    } else {
+      setMergeSourceLocalId(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mergeSourceLocalId]);
+
+  // 합치기 실행
+  const handleMerge = async () => {
+    if (!mergeTargetLocalId || !mergeSourceLocalId || !reportId) return;
+    const target = items.find(it => it.localId === mergeTargetLocalId);
+    const source = items.find(it => it.localId === mergeSourceLocalId);
+    if (!target?.id || !source?.id) {
+      toast.error('저장된 항목만 합칠 수 있습니다. 먼저 저장해 주세요.');
+      return;
+    }
+    try {
+      const result = await mergeItemsMutation.mutateAsync({
+        targetItemId: target.id,
+        sourceItemId: source.id,
+        tableReportId: reportId,
+        date: currentDate,
+      });
+      // 로컬 상태 업데이트: target 금액/메모 갱신, source 제거
+      setItems(prev => {
+        const next = prev
+          .map(it => it.localId === mergeTargetLocalId
+            ? { ...it, amount: result.mergedAmount, memo: result.mergedMemo ?? '' }
+            : it
+          )
+          .filter(it => it.localId !== mergeSourceLocalId);
+        return next.length === 0 ? [emptyItem()] : next;
+      });
+      setMergeTargetLocalId(null);
+      setMergeSourceLocalId(null);
+      toast.success('합치기 완료! 금액이 합산되었습니다.');
+    } catch (e: any) {
+      toast.error('합치기 실패: ' + (e?.message ?? '알 수 없는 오류'));
+    }
+  };
 
   // 저장 함수 - batchSave 단일 호출로 모든 항목 한 번에 저장
   const handleSave = useCallback(async () => {
@@ -611,6 +676,32 @@ export default function TableReport() {
                       </button>
                     ))}
                   </div>
+                  {/* 합치기 버튼: 이 항목을 합치기 대상으로 선택 */}
+                  <button
+                    onClick={() => {
+                      if (mergeTargetLocalId === item.localId) {
+                        // 이미 대상으로 선택된 경우 취소
+                        setMergeTargetLocalId(null);
+                        setMergeSourceLocalId(null);
+                      } else if (mergeTargetLocalId && mergeTargetLocalId !== item.localId) {
+                        // 대상이 이미 선택된 상태에서 다른 항목 누르면 합치기 실행
+                        setMergeSourceLocalId(item.localId);
+                      } else {
+                        // 첫 번째 선택
+                        setMergeTargetLocalId(item.localId);
+                        setMergeSourceLocalId(null);
+                        toast('합치기: 이 항목에 합쳐넣을 다른 항목의 합치기 버튼을 누르세요', { duration: 2500 });
+                      }
+                    }}
+                    className="p-1 flex-shrink-0 transition-colors"
+                    style={{
+                      color: mergeTargetLocalId === item.localId ? PRIMARY : MUTED,
+                      opacity: mergeTargetLocalId === item.localId ? 1 : 0.5,
+                    }}
+                    title="합치기"
+                  >
+                    <Merge size={13} />
+                  </button>
                   <button onClick={() => removeItem(item)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
                   </button>

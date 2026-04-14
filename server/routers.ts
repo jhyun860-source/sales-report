@@ -919,6 +919,87 @@ export const appRouter = router({
         await db.delete(tableItems).where(eq(tableItems.id, input.id));
         return { success: true };
       }),
+    // 두 테이블 항목 합치기 (분할 결제 대응)
+    // targetItemId: 남길 테이블 항목 ID, sourceItemId: 합쳐지고 삭제될 테이블 항목 ID
+    mergeItems: publicProcedure
+      .input(z.object({
+        targetItemId: z.number(), // 남길 항목
+        sourceItemId: z.number(), // 합쳐지고 삭제될 항목
+        tableReportId: z.number(), // 소속 tableReport ID (누적금 재계산용)
+        date: z.string(),          // YYYY-MM-DD (누적금 재계산용)
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+        const account = await getStoreAccountById(payload.accountId);
+        if (!account) throw new TRPCError({ code: 'FORBIDDEN' });
+
+        // 두 항목 조회
+        const [target] = await db.select().from(tableItems).where(eq(tableItems.id, input.targetItemId)).limit(1);
+        const [source] = await db.select().from(tableItems).where(eq(tableItems.id, input.sourceItemId)).limit(1);
+        if (!target || !source) throw new TRPCError({ code: 'NOT_FOUND', message: '항목을 찾을 수 없습니다' });
+        if (target.tableReportId !== source.tableReportId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: '같은 날짜의 항목만 합칠 수 있습니다' });
+        }
+
+        // 금액 합산
+        const mergedAmount = String(Number(target.amount || 0) + Number(source.amount || 0));
+
+        // 메모 합치기: 두 메모를 줄바꿈으로 연결 (빈 메모는 제외)
+        const targetMemo = (target.memo ?? '').trim();
+        const sourceMemo = (source.memo ?? '').trim();
+        let mergedMemo: string | null = null;
+        if (targetMemo && sourceMemo) {
+          mergedMemo = targetMemo + '<br>' + sourceMemo;
+        } else if (targetMemo) {
+          mergedMemo = targetMemo;
+        } else if (sourceMemo) {
+          mergedMemo = sourceMemo;
+        }
+
+        // target 항목 업데이트 (금액 합산, 메모 합치기)
+        await db.update(tableItems).set({
+          amount: mergedAmount,
+          memo: mergedMemo,
+        }).where(eq(tableItems.id, input.targetItemId));
+
+        // source 항목 삭제
+        await db.delete(tableItems).where(eq(tableItems.id, input.sourceItemId));
+
+        // tableReport 현금/카드 합산 재계산
+        const effectiveBranchId = account.branchId ?? null;
+        if (effectiveBranchId) {
+          const allItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, input.tableReportId));
+          const cashSum = allItems.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
+          const cardSum = allItems.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
+          await db.update(tableReports).set({
+            cashAmount: String(cashSum),
+            cardAmount: String(cardSum),
+          }).where(eq(tableReports.id, input.tableReportId));
+          // dailySalesRecords 자동 반영 + 누적금 재계산
+          const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
+          const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
+          const { cashTotal, cardTotal } = await computeCumulativesForDate(effectiveBranchId, input.date, prevRec ?? null, cashSum, cardSum);
+          await upsertDailySalesRecord({
+            branchId: effectiveBranchId,
+            date: input.date,
+            posStartAmount: existingSales?.posStartAmount ?? '0',
+            cash: String(cashSum),
+            card: String(cardSum),
+            cashTotal: String(cashTotal),
+            cardTotal: String(cardTotal),
+            posEndAmount: existingSales?.posEndAmount ?? '0',
+            expenses: (existingSales?.expenses as any) ?? [],
+            submittedAt: new Date(),
+          });
+          try { await cascadeUpdateCumulativeAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[mergeItems cascade 오류]', e); }
+        }
+
+        return { success: true, mergedAmount, mergedMemo };
+      }),
+
     // 직원 인센티브 추가
     addIncentive: publicProcedure
       .input(z.object({
