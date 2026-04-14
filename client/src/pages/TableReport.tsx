@@ -290,39 +290,15 @@ export default function TableReport() {
   const [mergeSourceLocalId, setMergeSourceLocalId] = useState<string | null>(null); // 합쳐질 항목
   const mergeItemsMutation = trpc.tableReport.mergeItems.useMutation();
 
-  // mergeSourceLocalId가 설정되면 확인 후 합치기 실행
-  useEffect(() => {
-    if (!mergeSourceLocalId || !mergeTargetLocalId) return;
-    const target = items.find(it => it.localId === mergeTargetLocalId);
-    const source = items.find(it => it.localId === mergeSourceLocalId);
-    if (!target || !source) return;
-    const targetLabel = target.tableNumber || `#${items.indexOf(target) + 1}`;
-    const sourceLabel = source.tableNumber || `#${items.indexOf(source) + 1}`;
-    const targetAmt = Number(target.amount || 0).toLocaleString('ko-KR');
-    const sourceAmt = Number(source.amount || 0).toLocaleString('ko-KR');
-    const mergedAmt = (Number(target.amount || 0) + Number(source.amount || 0)).toLocaleString('ko-KR');
-    const confirmed = window.confirm(
-      `[${targetLabel}] + [${sourceLabel}] 합치기\n\n` +
-      `• [${targetLabel}] 금액: \u20a9${targetAmt}\n` +
-      `• [${sourceLabel}] 금액: \u20a9${sourceAmt}\n` +
-      `→ 합산 금액: \u20a9${mergedAmt}\n\n` +
-      `메모도 합쳐집니다. [${sourceLabel}] 항목은 삭제됩니다.\n\n계속하시겠습니까?`
-    );
-    if (confirmed) {
-      handleMerge();
-    } else {
-      setMergeSourceLocalId(null);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mergeSourceLocalId]);
-
-  // 합치기 실행
-  const handleMerge = async () => {
-    if (!mergeTargetLocalId || !mergeSourceLocalId || !reportId) return;
-    const target = items.find(it => it.localId === mergeTargetLocalId);
-    const source = items.find(it => it.localId === mergeSourceLocalId);
+  // 합치기 실행 - targetLocalId와 sourceLocalId를 직접 인자로 받아 stale closure 방지
+  const handleMerge = async (targetLocalId: string, sourceLocalId: string) => {
+    if (!reportId) return;
+    const target = items.find(it => it.localId === targetLocalId);
+    const source = items.find(it => it.localId === sourceLocalId);
     if (!target?.id || !source?.id) {
       toast.error('저장된 항목만 합칠 수 있습니다. 먼저 저장해 주세요.');
+      setMergeTargetLocalId(null);
+      setMergeSourceLocalId(null);
       return;
     }
     try {
@@ -335,11 +311,11 @@ export default function TableReport() {
       // 로컬 상태 업데이트: target 금액/메모 갱신, source 제거
       setItems(prev => {
         const next = prev
-          .map(it => it.localId === mergeTargetLocalId
+          .map(it => it.localId === targetLocalId
             ? { ...it, amount: result.mergedAmount, memo: result.mergedMemo ?? '' }
             : it
           )
-          .filter(it => it.localId !== mergeSourceLocalId);
+          .filter(it => it.localId !== sourceLocalId);
         return next.length === 0 ? [emptyItem()] : next;
       });
       setMergeTargetLocalId(null);
@@ -347,6 +323,8 @@ export default function TableReport() {
       toast.success('합치기 완료! 금액이 합산되었습니다.');
     } catch (e: any) {
       toast.error('합치기 실패: ' + (e?.message ?? '알 수 없는 오류'));
+      setMergeTargetLocalId(null);
+      setMergeSourceLocalId(null);
     }
   };
 
@@ -684,8 +662,30 @@ export default function TableReport() {
                         setMergeTargetLocalId(null);
                         setMergeSourceLocalId(null);
                       } else if (mergeTargetLocalId && mergeTargetLocalId !== item.localId) {
-                        // 대상이 이미 선택된 상태에서 다른 항목 누르면 합치기 실행
-                        setMergeSourceLocalId(item.localId);
+                        // 대상이 이미 선택된 상태에서 다른 항목 누르면 확인 후 합치기 실행
+                        const tLocalId = mergeTargetLocalId;
+                        const sLocalId = item.localId;
+                        const tItem = items.find(it => it.localId === tLocalId);
+                        const sItem = items.find(it => it.localId === sLocalId);
+                        if (!tItem || !sItem) return;
+                        const tLabel = tItem.tableNumber || `#${items.indexOf(tItem) + 1}`;
+                        const sLabel = sItem.tableNumber || `#${items.indexOf(sItem) + 1}`;
+                        const tAmt = Number(tItem.amount || 0).toLocaleString('ko-KR');
+                        const sAmt = Number(sItem.amount || 0).toLocaleString('ko-KR');
+                        const mAmt = (Number(tItem.amount || 0) + Number(sItem.amount || 0)).toLocaleString('ko-KR');
+                        const ok = window.confirm(
+                          `[${tLabel}] + [${sLabel}] 합치기\n\n` +
+                          `• [${tLabel}] 금액: \u20a9${tAmt}\n` +
+                          `• [${sLabel}] 금액: \u20a9${sAmt}\n` +
+                          `→ 합산 금액: \u20a9${mAmt}\n\n` +
+                          `메모도 합쳐집니다. [${sLabel}] 항목은 삭제됩니다.\n\n계속하시겠습니까?`
+                        );
+                        if (ok) {
+                          handleMerge(tLocalId, sLocalId);
+                        } else {
+                          setMergeTargetLocalId(null);
+                          setMergeSourceLocalId(null);
+                        }
                       } else {
                         // 첫 번째 선택
                         setMergeTargetLocalId(item.localId);
