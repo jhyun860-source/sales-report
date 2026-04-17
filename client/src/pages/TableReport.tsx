@@ -1063,6 +1063,84 @@ export default function TableReport() {
           </div>
         </div>
 
+        {/* ── 아르바이트 근무시간 + 추가판매 요약 ── */}
+        {(() => {
+          // 아르바이트 총 근무시간 계산
+          const parttimeMinutes = incentives
+            .filter(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd)
+            .reduce((sum, inc) => {
+              const [sh, sm] = inc.workStart.split(':').map(Number);
+              const [eh, em] = inc.workEnd.split(':').map(Number);
+              let startMin = sh * 60 + sm;
+              let endMin = eh * 60 + em;
+              if (endMin <= startMin) endMin += 24 * 60;
+              return sum + (endMin - startMin);
+            }, 0);
+          const ptHours = Math.floor(parttimeMinutes / 60);
+          const ptMins = parttimeMinutes % 60;
+
+          // 전체(직원+아르바이트) 추가판매 합산
+          const totalGlass = incentives.reduce((s, inc) => s + (inc.glassCount || 0), 0);
+          const totalBottle = incentives.reduce((s, inc) => s + (inc.bottleCount || 0), 0);
+          const totalBeer = incentives.reduce((s, inc) => s + (inc.beerBottleCount || 0), 0);
+
+          const hasParttime = incentives.some(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd);
+          const hasAdds = totalGlass > 0 || totalBottle > 0 || totalBeer > 0;
+
+          if (!hasParttime && !hasAdds) return null;
+
+          return (
+            <div className="rounded-lg p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+              {/* 아르바이트 총 근무시간 */}
+              {hasParttime && (
+                <div className="mb-2">
+                  <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>아르바이트 총 근무시간</div>
+                  <div className="flex flex-wrap gap-2">
+                    {incentives
+                      .filter(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd)
+                      .map(inc => {
+                        const [sh, sm] = inc.workStart.split(':').map(Number);
+                        const [eh, em] = inc.workEnd.split(':').map(Number);
+                        let startMin = sh * 60 + sm;
+                        let endMin = eh * 60 + em;
+                        if (endMin <= startMin) endMin += 24 * 60;
+                        const diff = endMin - startMin;
+                        const h = Math.floor(diff / 60);
+                        const m = diff % 60;
+                        return (
+                          <span key={inc.localId} className="text-xs px-2 py-1 rounded" style={{ background: 'oklch(0.88 0.02 85)', color: TEXT }}>
+                            {inc.staffName || '이름없음'} {h > 0 ? `${h}시간` : ''}{m > 0 ? `${m}분` : h === 0 ? '0분' : ''}
+                          </span>
+                        );
+                      })}
+                    <span className="text-xs font-bold px-2 py-1 rounded" style={{ background: PRIMARY, color: 'white' }}>
+                      합계 {ptHours > 0 ? `${ptHours}시간` : ''}{ptMins > 0 ? `${ptMins}분` : ptHours === 0 ? '0분' : ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* 추가판매 총계 */}
+              {hasAdds && (
+                <div className={hasParttime ? 'pt-2 border-t' : ''} style={hasParttime ? { borderColor: BORDER } : {}}>
+                  <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>추가판매 총계 (전체)</div>
+                  <div className="flex gap-3">
+                    {totalGlass > 0 && (
+                      <span className="text-sm font-semibold" style={{ color: TEXT }}>잔추가 <span style={{ color: PRIMARY }}>{totalGlass}잔</span></span>
+                    )}
+                    {totalBottle > 0 && (
+                      <span className="text-sm font-semibold" style={{ color: TEXT }}>병추가 <span style={{ color: PRIMARY }}>{totalBottle}병</span></span>
+                    )}
+                    {totalBeer > 0 && (
+                      <span className="text-sm font-semibold" style={{ color: TEXT }}>맥주병추가 <span style={{ color: PRIMARY }}>{totalBeer}병</span></span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* 기타 사항 */}
         <div className="rounded-lg p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
           <div className="text-sm font-bold mb-2" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 기타 사항</div>
