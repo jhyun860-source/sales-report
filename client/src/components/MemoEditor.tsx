@@ -6,6 +6,7 @@
  * - 형광펜: 색상 선택 후 텍스트 드래그 → 즉시 적용
  * - 저장값: HTML 문자열 (mark 태그 포함)
  * - 한국어 IME 호환: compositionstart/end 이벤트로 조합 중 처리
+ * - 형광펜 개별 제거: 각 mark 태그 위에 X 버튼 표시 → 해당 mark만 제거 (텍스트 유지)
  */
 
 import { useRef, useState, useEffect, useCallback } from 'react';
@@ -151,6 +152,24 @@ export function MemoEditor({ value, onChange, placeholder = '주문 메모', tex
     applyHighlight(activeColor);
   }, [activeColor, applyHighlight]);
 
+  // 특정 mark 태그만 제거 (텍스트 내용은 유지)
+  const removeOneHighlight = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const btn = e.currentTarget as HTMLElement;
+    const mark = btn.closest('mark');
+    if (!mark || !divRef.current?.contains(mark)) return;
+    // mark 안의 텍스트 노드들을 mark 앞으로 이동 후 mark 제거
+    const parent = mark.parentNode;
+    if (parent) {
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+      parent.removeChild(mark);
+    }
+    const html = divRef.current.innerHTML;
+    lastHtmlRef.current = html;
+    onChange(html);
+  }, [onChange]);
+
   // 형광펜 전체 제거
   const removeAll = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -169,6 +188,84 @@ export function MemoEditor({ value, onChange, placeholder = '주문 메모', tex
     onChange(html);
     setActiveColor(null);
   }, [onChange]);
+
+  // contentEditable 내부 mark 태그에 X 버튼 주입
+  // (React 외부 DOM 조작 - mark 태그 안에 button을 직접 삽입)
+  const injectRemoveButtons = useCallback(() => {
+    if (!divRef.current) return;
+    const marks = divRef.current.querySelectorAll('mark');
+    marks.forEach(mark => {
+      // 이미 버튼이 있으면 건너뜀
+      if (mark.querySelector('.hl-remove-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'hl-remove-btn';
+      btn.type = 'button';
+      btn.contentEditable = 'false';
+      btn.textContent = '×';
+      btn.setAttribute('data-no-input', 'true');
+      Object.assign(btn.style, {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '13px',
+        height: '13px',
+        marginLeft: '1px',
+        fontSize: '10px',
+        lineHeight: '1',
+        background: 'rgba(0,0,0,0.18)',
+        color: '#333',
+        border: 'none',
+        borderRadius: '50%',
+        cursor: 'pointer',
+        padding: '0',
+        verticalAlign: 'middle',
+        flexShrink: '0',
+      });
+      mark.appendChild(btn);
+    });
+  }, []);
+
+  // mark 태그 X 버튼 클릭 이벤트를 이벤트 위임으로 처리
+  useEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.classList.contains('hl-remove-btn')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const mark = target.closest('mark');
+      if (!mark || !el.contains(mark)) return;
+      const parent = mark.parentNode;
+      if (parent) {
+        // X 버튼 자체는 제거 (텍스트가 아니므로)
+        target.remove();
+        // mark 안의 나머지 자식(텍스트)을 mark 앞으로 이동
+        while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+        parent.removeChild(mark);
+      }
+      const html = el.innerHTML;
+      lastHtmlRef.current = html;
+      onChange(html);
+    };
+
+    el.addEventListener('mousedown', handleClick);
+    return () => el.removeEventListener('mousedown', handleClick);
+  }, [onChange]);
+
+  // DOM 변경(입력/붙여넣기) 후 mark 버튼 재주입
+  useEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+    const observer = new MutationObserver(() => {
+      injectRemoveButtons();
+    });
+    observer.observe(el, { childList: true, subtree: true });
+    // 초기 주입
+    injectRemoveButtons();
+    return () => observer.disconnect();
+  }, [injectRemoveButtons]);
 
   const hasHighlight = value && (value.includes('<mark') || value.includes('mark'));
 
@@ -202,7 +299,7 @@ export function MemoEditor({ value, onChange, placeholder = '주문 메모', tex
             style={{ fontSize: '10px', padding: '1px 5px', background: '#eee', border: '1px solid #ccc', borderRadius: '3px', color: '#888', marginLeft: '2px' }}
             title="형광펜 모두 지우기"
           >
-            ✕
+            전체삭제
           </button>
         )}
       </div>
