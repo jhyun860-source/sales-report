@@ -24,10 +24,8 @@ const PRIMARY = 'oklch(0.45 0.18 25)';
 const ACCENT = 'oklch(0.55 0.15 150)'; // 초록 계열 (근무시간)
 const GOLD = 'oklch(0.6 0.12 80)'; // 금색 계열 (인센티브)
 
-function getPrevMonth(): string {
+function getCurrentMonth(): string {
   const d = new Date();
-  d.setDate(1);
-  d.setMonth(d.getMonth() - 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
@@ -69,7 +67,7 @@ export default function StaffIncentiveStats() {
   const [, navigate] = useLocation();
   const search = useSearch();
   const { user: account, loading: authLoading } = useStoreAuth();
-  const [yearMonth, setYearMonth] = useState(getPrevMonth);
+  const [yearMonth, setYearMonth] = useState(getCurrentMonth);
 
   // URL 파라미터에서 branchId 읽기 (관리자가 지점 선택 후 이동 시 전달됨)
   const branchIdFromUrl = useMemo(() => {
@@ -166,7 +164,7 @@ export default function StaffIncentiveStats() {
             <div className="text-lg font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>
               {formatYearMonth(yearMonth)}
             </div>
-            {yearMonth === getPrevMonth() && (
+            {yearMonth === moveMonth(currentYearMonth, -1) && (
               <div className="text-xs mt-0.5" style={{ color: PRIMARY }}>전달</div>
             )}
             {yearMonth === currentYearMonth && (

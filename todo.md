@@ -560,3 +560,9 @@
 - [x] × 버튼 클릭 시 해당 mark만 제거, 텍스트 내용은 유지
 - [x] 전체 삭제 버튼 텍스트 "✕" → "전체삭제"로 변경 (기능 구분 명확화)
 - [x] tsc --noEmit 오류 0개, vitest 42개 전체 통과
+
+## 인센티브 통계 기본 월 수정
+
+- [x] StaffIncentiveStats.tsx: 기본 월을 전달(getPrevMonth) → 현재 달(getCurrentMonth)로 변경
+- [x] getPrevMonth 잔여 참조 제거 (moveMonth(currentYearMonth, -1)로 교체)
+- [x] tsc --noEmit 오류 0개 확인
