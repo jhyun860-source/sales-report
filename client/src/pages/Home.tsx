@@ -236,6 +236,12 @@ export default function Home() {
     { enabled: !!selectedBranchId && !!user }
   );
 
+  // 테이블 기록 조회 (불일치 감지용)
+  const { data: tableReportData } = trpc.tableReport.getByDate.useQuery(
+    { date: currentDate, branchId: selectedBranchId ?? undefined },
+    { enabled: !!selectedBranchId && !!user }
+  );
+
   useEffect(() => {
     if (serverRecord) {
       setRecord({
@@ -266,6 +272,12 @@ export default function Home() {
   const todayCash = parseAmount(record.cash);
   const todayCard = parseAmount(record.card);
   const dailyTotal = todayCash + todayCard;
+
+  // 테이블 기록 합계
+  const tableReportCash = tableReportData ? Number(tableReportData.cashAmount || 0) : 0;
+  const tableReportCard = tableReportData ? Number(tableReportData.cardAmount || 0) : 0;
+  const tableReportTotal = tableReportCash + tableReportCard;
+  const isMismatch = tableReportTotal > 0 && dailyTotal !== tableReportTotal;
   const expenseTotal = calcExpenseTotal(record.expenses);
   const autoCalculatedCashTotal = previousCashTotal + todayCash;
   const autoCalculatedCardTotal = previousCardTotal + todayCard;
@@ -278,6 +290,22 @@ export default function Home() {
     setRecord(prev => ({ ...prev, ...patch }));
     setSaved(false);
   }, []);
+
+  // 테이블 기록 금액으로 자동 채우기
+  const fillFromTableReport = useCallback(() => {
+    if (!tableReportData) {
+      toast.info('테이블 기록이 없습니다');
+      return;
+    }
+    const cashAmount = Number(tableReportData.cashAmount || 0);
+    const cardAmount = Number(tableReportData.cardAmount || 0);
+    if (cashAmount === 0 && cardAmount === 0) {
+      toast.info('테이블 기록에 항목이 없습니다');
+      return;
+    }
+    updateRecord({ cash: String(cashAmount), card: String(cardAmount) });
+    toast.success(`테이블 기록으로 동기화됨 (현금 ₩${cashAmount.toLocaleString('ko-KR')} / 카드 ₩${cardAmount.toLocaleString('ko-KR')})`, { duration: 2000 });
+  }, [tableReportData, updateRecord]);
 
   const updateExpense = useCallback((id: string, field: keyof ExpenseItem, value: string) => {
     setRecord(prev => ({
@@ -553,8 +581,23 @@ export default function Home() {
       </header>
 
       {/* ── 메인 콘텐츠 ── */}
-      <main className="max-w-lg mx-auto px-4 py-4 pb-28">
-
+      <main className="max-w-lg mx-auto px-4 py-5 pb-24">
+        {/* 테이블 기록 불일치 경고 */}
+        {isMismatch && (
+          <div className="mb-4 p-3 rounded" style={{ background: 'oklch(0.95 0.15 25)', border: '1px solid oklch(0.45 0.18 25)' }}>
+            <div className="text-sm font-semibold" style={{ color: 'oklch(0.45 0.18 25)' }}>⚠️ 테이블 기록과 불일치</div>
+            <div className="text-xs mt-1" style={{ color: 'oklch(0.45 0.18 25)' }}>
+              매출보고: ₩{dailyTotal.toLocaleString('ko-KR')} vs 테이블기록: ₩{tableReportTotal.toLocaleString('ko-KR')}
+            </div>
+            <button
+              onClick={fillFromTableReport}
+              className="mt-2 text-xs px-2 py-1 rounded"
+              style={{ background: 'oklch(0.45 0.18 25)', color: 'white' }}
+            >
+              테이블 기록으로 동기화
+            </button>
+          </div>
+        )}
         {/* 날짜 네비게이터 */}
         <DateNavigator
           currentDate={currentDate}

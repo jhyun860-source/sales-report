@@ -566,3 +566,11 @@
 - [x] StaffIncentiveStats.tsx: 기본 월을 전달(getPrevMonth) → 현재 달(getCurrentMonth)로 변경
 - [x] getPrevMonth 잔여 참조 제거 (moveMonth(currentYearMonth, -1)로 교체)
 - [x] tsc --noEmit 오류 0개 확인
+
+## 매출보고 ↔ 테이블 기록 금액 동기화 기능 추가
+
+- [x] Home.tsx: 테이블 기록(tableReport) 데이터 조회 추가
+- [x] Home.tsx: 매출보고와 테이블 기록 금액 불일치 감지 로직 추가
+- [x] Home.tsx: 불일치 시 경고 메시지 표시 (빨간색 배경)
+- [x] Home.tsx: "테이블 기록으로 동기화" 버튼 추가 (원클릭 동기화)
+- [x] tsc --noEmit 오류 0개 확인
