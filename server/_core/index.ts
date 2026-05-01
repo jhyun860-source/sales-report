@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { checkAndResetMonthlyAmounts } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -28,6 +29,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // 서버 시작 시 매월 1일 누적금액 리셋 체크
+  await checkAndResetMonthlyAmounts();
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads

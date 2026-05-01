@@ -475,6 +475,58 @@ export async function computeCumulativesForDate(
   return { cashTotal: baseCashTotal + todayCash, cardTotal: baseCardTotal + todayCard };
 }
 
+/**
+ * 매월 1일 자동 리셋 체크
+ * 서버 시작 시 호출되어 오늘이 매월 1일이면 모든 지점의 누적금액을 리셋
+ */
+export async function checkAndResetMonthlyAmounts(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const today = new Date();
+  const isFirstOfMonth = today.getDate() === 1;
+
+  if (!isFirstOfMonth) return;
+
+  console.log('[DB] 매월 1일 누적금액 리셋 시작...');
+
+  try {
+    // 모든 지점 조회
+    const allBranches = await db.select().from(branches);
+
+    for (const branch of allBranches) {
+      // 해당 지점의 모든 기록 조회
+      const allRecords = await db
+        .select()
+        .from(dailySalesRecords)
+        .where(eq(dailySalesRecords.branchId, branch.id))
+        .orderBy(dailySalesRecords.date);
+
+      // 각 레코드의 누적금 재계산
+      for (const rec of allRecords) {
+        const todayCash = parseInt(rec.cash || '0') || 0;
+        const todayCard = parseInt(rec.card || '0') || 0;
+
+        const { cashTotal: newCashTotal, cardTotal: newCardTotal } = await computeCumulativesForDate(
+          branch.id, rec.date, null, todayCash, todayCard
+        );
+
+        // 값이 달라진 경우에만 업데이트
+        if (String(newCashTotal) !== rec.cashTotal || String(newCardTotal) !== rec.cardTotal) {
+          await db
+            .update(dailySalesRecords)
+            .set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: new Date() })
+            .where(eq(dailySalesRecords.id, rec.id));
+        }
+      }
+    }
+
+    console.log('[DB] 매월 1일 누적금액 리셋 완료');
+  } catch (error) {
+    console.error('[DB] 매월 1일 누적금액 리셋 오류:', error);
+  }
+}
+
 // 특정 날짜 이후의 동일 지점 기록들의 cashTotal/cardTotal을 연쇄 재계산
 // computeCumulativesForDate(전체 스캔 방식)를 각 레코드에 적용해 항상 정확한 값을 보장
 export async function cascadeUpdateCumulativeAmounts(branchId: number, fromDate: string): Promise<void> {

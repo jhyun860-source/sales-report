@@ -574,3 +574,11 @@
 - [x] Home.tsx: 불일치 시 경고 메시지 표시 (빨간색 배경)
 - [x] Home.tsx: "테이블 기록으로 동기화" 버튼 추가 (원클릭 동기화)
 - [x] tsc --noEmit 오류 0개 확인
+
+
+## 5월 1일 누적금액 리셋 실패 긴급 수정
+
+- [x] 스케줄 작업이 작동하지 않음 - 5월 1일인데 누적금액이 리셋되지 않음 (현금누적 7,868,000, 카드누적 102,408,000)
+- [x] 서버 시작 시 자동으로 리셋 체크하는 로직 추가 (스케줄 대신)
+- [x] server/db.ts에 checkAndResetMonthlyAmounts() 함수 추가
+- [x] server/_core/index.ts에서 서버 시작 시 checkAndResetMonthlyAmounts() 자동 호출
