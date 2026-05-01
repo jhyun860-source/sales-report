@@ -245,7 +245,7 @@ export default function Home() {
   useEffect(() => {
     if (serverRecord) {
       setRecord({
-        posStartAmount: serverRecord.posStartAmount?.toString() || autoCalculatedPosStartAmount.toString(),
+        posStartAmount: serverRecord.posStartAmount?.toString() || '',
         cash: serverRecord.cash?.toString() || '',
         card: serverRecord.card?.toString() || '',
         cashDeposit: serverRecord.cashDeposit?.toString() || '',
@@ -254,10 +254,7 @@ export default function Home() {
           : [{ id: `exp_${Date.now()}`, description: '', amount: '' }],
       });
     } else {
-      setRecord({
-        ...createEmptyLocalRecord(),
-        posStartAmount: autoCalculatedPosStartAmount.toString(),
-      });
+      setRecord(createEmptyLocalRecord());
     }
     setSaved(false);
   }, [serverRecord, currentDate, selectedBranchId]);
@@ -280,8 +277,7 @@ export default function Home() {
   const tableReportCash = tableReportData ? Number(tableReportData.cashAmount || 0) : 0;
   const tableReportCard = tableReportData ? Number(tableReportData.cardAmount || 0) : 0;
   const tableReportTotal = tableReportCash + tableReportCard;
-  // 테이블 기록이 있고, 사용자가 매출보고에 입력한 금액이 있을 때만 불일치 체크
-  const isMismatch = tableReportTotal > 0 && dailyTotal > 0 && dailyTotal !== tableReportTotal;
+  const isMismatch = tableReportTotal > 0 && dailyTotal !== tableReportTotal;
   const expenseTotal = calcExpenseTotal(record.expenses);
   const autoCalculatedCashTotal = previousCashTotal + todayCash;
   const autoCalculatedCardTotal = previousCardTotal + todayCard;
