@@ -279,7 +279,7 @@ export default function Home() {
   const tableReportCash = tableReportData ? Number(tableReportData.cashAmount || 0) : 0;
   const tableReportCard = tableReportData ? Number(tableReportData.cardAmount || 0) : 0;
   const tableReportTotal = tableReportCash + tableReportCard;
-  const isMismatch = tableReportTotal > 0 && dailyTotal !== tableReportTotal;
+  // 불일치 경고 제거됨
   const expenseTotal = calcExpenseTotal(record.expenses);
   const autoCalculatedCashTotal = previousCashTotal + todayCash;
   const autoCalculatedCardTotal = previousCardTotal + todayCard;
@@ -607,21 +607,7 @@ export default function Home() {
       {/* ── 메인 콘텐츠 ── */}
       <main className="max-w-lg mx-auto px-4 py-5 pb-24">
         {/* 테이블 기록 불일치 경고 */}
-        {isMismatch && (
-          <div className="mb-4 p-3 rounded" style={{ background: 'oklch(0.95 0.15 25)', border: '1px solid oklch(0.45 0.18 25)' }}>
-            <div className="text-sm font-semibold" style={{ color: 'oklch(0.45 0.18 25)' }}>⚠️ 테이블 기록과 불일치</div>
-            <div className="text-xs mt-1" style={{ color: 'oklch(0.45 0.18 25)' }}>
-              매출보고: ₩{dailyTotal.toLocaleString('ko-KR')} vs 테이블기록: ₩{tableReportTotal.toLocaleString('ko-KR')}
-            </div>
-            <button
-              onClick={fillFromTableReport}
-              className="mt-2 text-xs px-2 py-1 rounded"
-              style={{ background: 'oklch(0.45 0.18 25)', color: 'white' }}
-            >
-              테이블 기록으로 동기화
-            </button>
-          </div>
-        )}
+        {/* 불일치 경고 제거 - 날짜 넘김 시마다 반복되는 버그 해결 */}
         {/* 날짜 네비게이터 */}
         <DateNavigator
           currentDate={currentDate}
