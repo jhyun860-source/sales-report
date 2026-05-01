@@ -265,8 +265,10 @@ export default function Home() {
     { enabled: !!selectedBranchId && !!user }
   );
 
-  const previousCashTotal = prevRecord ? Number(prevRecord.cashTotal || 0) : 0;
-  const previousCardTotal = prevRecord ? Number(prevRecord.cardTotal || 0) : 0;
+  // 월초(1일)이면 이전날 누적금액을 무시하고 0부터 시작
+  const isFirstOfMonth = currentDate.endsWith('-01');
+  const previousCashTotal = isFirstOfMonth ? 0 : (prevRecord ? Number(prevRecord.cashTotal || 0) : 0);
+  const previousCardTotal = isFirstOfMonth ? 0 : (prevRecord ? Number(prevRecord.cardTotal || 0) : 0);
   const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
 
   const todayCash = parseAmount(record.cash);
