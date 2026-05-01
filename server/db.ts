@@ -548,11 +548,16 @@ export async function manualResetCumulativeAmounts(branchId?: number): Promise<{
       branchesToReset = await db.select().from(branches);
     }
 
+    // 현재 월의 1일 날짜 계산 (YYYY-MM-01 형식)
+    const now = new Date();
+    const currentMonthFirstDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
     for (const branch of branchesToReset) {
+      // 현재 월의 1일 이후의 기록만 리셋 (전달 기록은 보존)
       const allRecords = await db
         .select()
         .from(dailySalesRecords)
-        .where(eq(dailySalesRecords.branchId, branch.id))
+        .where(and(eq(dailySalesRecords.branchId, branch.id), gte(dailySalesRecords.date, currentMonthFirstDay)))
         .orderBy(dailySalesRecords.date);
 
       for (const rec of allRecords) {
@@ -573,8 +578,8 @@ export async function manualResetCumulativeAmounts(branchId?: number): Promise<{
     }
 
     const message = branchId 
-      ? `지점 ID ${branchId} 누적금액 리셋 완료`
-      : `모든 지점 누적금액 리셋 완료`;
+      ? `지점 ID ${branchId} 누적금액 리셋 완료 (${currentMonthFirstDay} 이후만 리셋)`
+      : `모든 지점 누적금액 리셋 완료 (${currentMonthFirstDay} 이후만 리셋)`;
     
     console.log(`[DB] ${message}`);
     return { success: true, message };
