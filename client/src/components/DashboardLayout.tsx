@@ -21,11 +21,22 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, RotateCcw } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Page 1", path: "/" },
@@ -114,6 +125,22 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const resetMutation = trpc.system.resetCumulativeAmounts.useMutation();
+
+  const handleResetCumulativeAmounts = async () => {
+    try {
+      const result = await resetMutation.mutateAsync({});
+      if (result.success) {
+        toast.success(result.message);
+        setShowResetDialog(false);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error('리셋 중 오류가 발생했습니다');
+    }
+  };
 
   useEffect(() => {
     if (isCollapsed) {
@@ -221,6 +248,15 @@ function DashboardLayoutContent({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                {user?.role === 'admin' && (
+                  <DropdownMenuItem
+                    onClick={() => setShowResetDialog(true)}
+                    className="cursor-pointer text-amber-600 focus:text-amber-600"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    <span>누적금액 리셋</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
@@ -259,6 +295,27 @@ function DashboardLayoutContent({
         )}
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
+
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>누적금액 리셋</AlertDialogTitle>
+            <AlertDialogDescription>
+              모든 지점의 누적금액(현금누적, 카드누적)을 리셋하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetCumulativeAmounts}
+              disabled={resetMutation.isPending}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {resetMutation.isPending ? '리셋 중...' : '리셋'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

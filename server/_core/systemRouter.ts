@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { notifyOwner } from "./notification";
 import { adminProcedure, publicProcedure, router } from "./trpc";
+import { manualResetCumulativeAmounts } from "../db";
 
 export const systemRouter = router({
   health: publicProcedure
@@ -25,5 +26,16 @@ export const systemRouter = router({
       return {
         success: delivered,
       } as const;
+    }),
+
+  resetCumulativeAmounts: adminProcedure
+    .input(
+      z.object({
+        branchId: z.number().optional(),
+      }).optional()
+    )
+    .mutation(async ({ input }) => {
+      const result = await manualResetCumulativeAmounts(input?.branchId);
+      return result;
     }),
 });

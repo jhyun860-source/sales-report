@@ -527,6 +527,64 @@ export async function checkAndResetMonthlyAmounts(): Promise<void> {
   }
 }
 
+/**
+ * 수동 누적금액 리셋 (관리자 기능)
+ * 특정 지점 또는 모든 지점의 누적금액을 즉시 리셋
+ */
+export async function manualResetCumulativeAmounts(branchId?: number): Promise<{ success: boolean; message: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, message: '데이터베이스 연결 실패' };
+
+  try {
+    let branchesToReset = [];
+
+    if (branchId) {
+      const branch = await db.select().from(branches).where(eq(branches.id, branchId));
+      if (branch.length === 0) {
+        return { success: false, message: '지점을 찾을 수 없습니다' };
+      }
+      branchesToReset = branch;
+    } else {
+      branchesToReset = await db.select().from(branches);
+    }
+
+    for (const branch of branchesToReset) {
+      const allRecords = await db
+        .select()
+        .from(dailySalesRecords)
+        .where(eq(dailySalesRecords.branchId, branch.id))
+        .orderBy(dailySalesRecords.date);
+
+      for (const rec of allRecords) {
+        const todayCash = parseInt(rec.cash || '0') || 0;
+        const todayCard = parseInt(rec.card || '0') || 0;
+
+        const { cashTotal: newCashTotal, cardTotal: newCardTotal } = await computeCumulativesForDate(
+          branch.id, rec.date, null, todayCash, todayCard
+        );
+
+        if (String(newCashTotal) !== rec.cashTotal || String(newCardTotal) !== rec.cardTotal) {
+          await db
+            .update(dailySalesRecords)
+            .set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: new Date() })
+            .where(eq(dailySalesRecords.id, rec.id));
+        }
+      }
+    }
+
+    const message = branchId 
+      ? `지점 ID ${branchId} 누적금액 리셋 완료`
+      : `모든 지점 누적금액 리셋 완료`;
+    
+    console.log(`[DB] ${message}`);
+    return { success: true, message };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : '알 수 없는 오류';
+    console.error('[DB] 수동 리셋 오류:', error);
+    return { success: false, message: `리셋 실패: ${errorMsg}` };
+  }
+}
+
 // 특정 날짜 이후의 동일 지점 기록들의 cashTotal/cardTotal을 연쇄 재계산
 // computeCumulativesForDate(전체 스캔 방식)를 각 레코드에 적용해 항상 정확한 값을 보장
 export async function cascadeUpdateCumulativeAmounts(branchId: number, fromDate: string): Promise<void> {

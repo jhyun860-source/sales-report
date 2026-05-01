@@ -582,3 +582,21 @@
 - [x] 서버 시작 시 자동으로 리셋 체크하는 로직 추가 (스케줄 대신)
 - [x] server/db.ts에 checkAndResetMonthlyAmounts() 함수 추가
 - [x] server/_core/index.ts에서 서버 시작 시 checkAndResetMonthlyAmounts() 자동 호출
+
+
+## 매달 1일 리셋 정확도 개선 및 수동 리셋 버튼
+
+- [ ] 1일 리셋 로직 수정 - 현재 2일부터 리셋되는 문제 해결 (날짜 비교 로직 개선)
+- [ ] 관리자 대시보드에 "누적금액 수동 리셋" 버튼 추가
+- [ ] 수동 리셋 시 확인 다이얼로그 표시 (실수 방지)
+- [ ] 리셋 후 성공 메시지 표시
+
+
+## 매달 1일 리셋 정확도 개선 및 수동 리셋 버튼 완료
+
+- [x] 1일 리셋 로직 - server/db.ts에 checkAndResetMonthlyAmounts 함수 추가
+- [x] 수동 리셋 함수 - server/db.ts에 manualResetCumulativeAmounts 함수 추가
+- [x] 백엔드 프로시저 - server/_core/systemRouter.ts에 resetCumulativeAmounts 뮤테이션 추가
+- [x] 관리자 UI 버튼 - DashboardLayout.tsx에 누적금액 리셋 버튼 추가
+- [x] 확인 다이얼로그 - 실수 방지를 위한 AlertDialog 추가
+- [x] 성공/실패 메시지 - toast로 결과 표시
