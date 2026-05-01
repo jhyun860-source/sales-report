@@ -459,9 +459,9 @@ export async function computeCumulativesForDate(
     const rDateObj = new Date(r.date + 'T12:00:00');
     const rIsSunday = rDateObj.getDay() === 0;
     if (r.date === monthStart) {
-      // 1일은 리셋: 당일 매출만
-      baseCashTotal = rIsSunday ? 0 : (parseInt(r.cash || '0') || 0);
-      baseCardTotal = rIsSunday ? 0 : (parseInt(r.card || '0') || 0);
+      // 1일은 리셋: 당일 매출만 (일요일이어도 당일 매출로 설정)
+      baseCashTotal = parseInt(r.cash || '0') || 0;
+      baseCardTotal = parseInt(r.card || '0') || 0;
     } else if (!rIsSunday) {
       baseCashTotal += parseInt(r.cash || '0') || 0;
       baseCardTotal += parseInt(r.card || '0') || 0;
