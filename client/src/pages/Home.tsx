@@ -11,7 +11,7 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2 } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import {
   type ExpenseItem,
@@ -540,6 +540,28 @@ export default function Home() {
             <BarChart2 size={14} />
             인센
           </button>
+
+          {/* 누적금액 리셋 버튼 (관리자만) */}
+          {user.role === 'admin' && (
+            <button
+              onClick={() => {
+                if (confirm('누적금액을 리셋하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                  // 리셋 로직 추가 예정
+                  toast.info('리셋 기능은 준비 중입니다');
+                }
+              }}
+              className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
+              style={{
+                background: 'oklch(0.92 0.015 85)',
+                color: 'oklch(0.45 0.18 25)',
+                borderColor: 'oklch(0.78 0.012 85)',
+              }}
+              title="누적금액 리셋"
+            >
+              <RotateCcw size={14} />
+              리셋
+            </button>
+          )}
 
           {/* 기록 버튼 */}
           <button
