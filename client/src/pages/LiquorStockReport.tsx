@@ -25,7 +25,7 @@ type EntryRow = {
   itemSearch: string;
 };
 
-const CATEGORY_ORDER = ["위스키", "리큐르", "맥주", "기타"];
+const CATEGORY_ORDER = ["위스키", "리큐르", "맥주"];
 const LIQUEUR_NAMES = new Set([
   "바톤 보드카",
   "바톤 진",
@@ -63,7 +63,7 @@ const BEER_NAMES = new Set([
   "기네스",
   "생맥주 1통",
 ]);
-const categoryOf = (item: any): string => {
+const categoryOf = (item: any): "위스키" | "리큐르" | "맥주" => {
   const name = String(item?.name ?? "").trim();
   const category = String(item?.category ?? "").trim();
   if (BEER_NAMES.has(name) || category.includes("맥주")) return "맥주";
@@ -75,7 +75,7 @@ const categoryOf = (item: any): string => {
     category.includes("보드카")
   )
     return "리큐르";
-  if (category) return category;
+  // 꼬냑/샴페인/데킬라/기타 주류는 별도 카테고리로 쪼개지 않고 위스키 목록에 포함한다.
   return "위스키";
 };
 const groupItemsByCategory = (list: any[]) => {
@@ -121,6 +121,8 @@ export default function LiquorStockReport() {
     "home",
   );
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<"위스키" | "리큐르" | "맥주">("위스키");
+  const [sortMode, setSortMode] = useState<"stockDesc" | "stockAsc" | "nameAsc" | "nameDesc">("stockDesc");
   const [movementType, setMovementType] = useState<MovementType>("OUT");
   const [entryRows, setEntryRows] = useState<EntryRow[]>([
     { liquorItemId: "", quantity: "", memo: "", itemSearch: "" },
@@ -193,19 +195,28 @@ export default function LiquorStockReport() {
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        !q ||
-        item.name.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q),
-    );
-  }, [items, search]);
+    return [...items]
+      .filter((item) => categoryOf(item) === activeCategory)
+      .filter(
+        (item) =>
+          !q ||
+          String(item.name).toLowerCase().includes(q) ||
+          String(item.category ?? "").toLowerCase().includes(q),
+      )
+      .sort((a, b) => {
+        const aStock = stockByItem.get(a.id) ?? 0;
+        const bStock = stockByItem.get(b.id) ?? 0;
+        if (sortMode === "stockDesc") return bStock - aStock || String(a.name).localeCompare(String(b.name), "ko");
+        if (sortMode === "stockAsc") return aStock - bStock || String(a.name).localeCompare(String(b.name), "ko");
+        if (sortMode === "nameDesc") return String(b.name).localeCompare(String(a.name), "ko");
+        return String(a.name).localeCompare(String(b.name), "ko");
+      });
+  }, [items, search, activeCategory, sortMode, stockByItem]);
 
   const groupedFilteredItems = useMemo(
-    () => groupItemsByCategory(filteredItems),
-    [filteredItems],
+    () => [[activeCategory, filteredItems]] as [string, any[]][],
+    [activeCategory, filteredItems],
   );
-  const groupedAllItems = useMemo(() => groupItemsByCategory(items), [items]);
 
   const getEntryMatches = (query: string) => {
     const q = query.trim().toLowerCase();
@@ -395,6 +406,8 @@ export default function LiquorStockReport() {
                   className="flex-1 outline-none text-base"
                 />
               </div>
+              <CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+              <SortSelect sortMode={sortMode} setSortMode={setSortMode} />
               <div className="max-h-72 overflow-y-auto space-y-4">
                 {groupedFilteredItems.map(([category, categoryItems]) => (
                   <div key={category}>
@@ -490,6 +503,14 @@ export default function LiquorStockReport() {
                           className="h-11 px-3 rounded-xl border border-slate-200 text-right bg-white"
                         />
                       </div>
+                      {movementType === "ADJUST" && (
+                        <textarea
+                          value={row.memo}
+                          onChange={(e) => updateEntryRow(idx, { memo: e.target.value })}
+                          placeholder="조정 메모 (예: 실재고 보정, 파손, 분실 등)"
+                          className="mt-2 w-full min-h-[70px] px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+                        />
+                      )}
                       {(row.itemSearch || !row.liquorItemId) && (
                         <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-slate-100 bg-white">
                           {entryMatches.length === 0 && (
@@ -565,10 +586,12 @@ export default function LiquorStockReport() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="제품 이름, 카테고리 검색"
+                placeholder="제품 이름 검색"
                 className="bg-transparent outline-none flex-1"
               />
             </div>
+            <CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+            <SortSelect sortMode={sortMode} setSortMode={setSortMode} />
             <div className="space-y-5">
               {groupedFilteredItems.map(([category, categoryItems]) => (
                 <div key={category}>
@@ -653,6 +676,17 @@ export default function LiquorStockReport() {
             )}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
               <div className="text-xl font-black mb-3">현재 재고 보정</div>
+              <div className="flex items-center gap-2 mb-3 bg-slate-100 rounded-xl px-3 h-11">
+                <Search size={18} className="text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="제품 이름 검색"
+                  className="bg-transparent outline-none flex-1"
+                />
+              </div>
+              <CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+              <SortSelect sortMode={sortMode} setSortMode={setSortMode} />
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {groupedFilteredItems.map(([category, categoryItems]) => (
                   <div key={category}>
@@ -679,8 +713,8 @@ export default function LiquorStockReport() {
                           {isAdmin ? (
                             <input
                               value={
-                                stockEdit?.itemId === item.id && stockEdit
-                                  ? stockEdit.value
+                                stockEdit?.itemId === item.id
+                                  ? (stockEdit?.value ?? "")
                                   : String(stockByItem.get(item.id) ?? 0)
                               }
                               onChange={(e) =>
@@ -710,11 +744,11 @@ export default function LiquorStockReport() {
                                   branchId,
                                   liquorItemId: item.id,
                                   currentStock: Number(
-                                    stockEdit?.itemId === item.id && stockEdit
-                                      ? stockEdit.value
+                                    stockEdit?.itemId === item.id
+                                      ? (stockEdit?.value ?? "")
                                       : (stockByItem.get(item.id) ?? 0),
                                   ),
-                                })
+                                });
                               }}
                               className="h-10 px-3 rounded-xl bg-slate-900 text-white text-sm"
                             >
@@ -751,6 +785,54 @@ export default function LiquorStockReport() {
   );
 }
 
+function CategoryTabs({
+  activeCategory,
+  setActiveCategory,
+}: {
+  activeCategory: "위스키" | "리큐르" | "맥주";
+  setActiveCategory: (category: "위스키" | "리큐르" | "맥주") => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2 mb-3">
+      {CATEGORY_ORDER.map((category) => (
+        <button
+          key={category}
+          type="button"
+          onClick={() => setActiveCategory(category as "위스키" | "리큐르" | "맥주")}
+          className={`h-10 rounded-xl text-sm font-black border ${
+            activeCategory === category
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-slate-600 border-slate-200"
+          }`}
+        >
+          {category}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SortSelect({
+  sortMode,
+  setSortMode,
+}: {
+  sortMode: "stockDesc" | "stockAsc" | "nameAsc" | "nameDesc";
+  setSortMode: (mode: "stockDesc" | "stockAsc" | "nameAsc" | "nameDesc") => void;
+}) {
+  return (
+    <select
+      value={sortMode}
+      onChange={(e) => setSortMode(e.target.value as "stockDesc" | "stockAsc" | "nameAsc" | "nameDesc")}
+      className="w-full h-10 mb-3 px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700"
+    >
+      <option value="stockDesc">재고 많은순</option>
+      <option value="stockAsc">재고 적은순</option>
+      <option value="nameAsc">이름 오름차순</option>
+      <option value="nameDesc">이름 내림차순</option>
+    </select>
+  );
+}
+
 function BranchOutDetails({
   movements,
   isAdmin,
@@ -759,69 +841,105 @@ function BranchOutDetails({
   isAdmin: boolean;
 }) {
   if (!movements || movements.length === 0) return null;
-  const grouped = movements.reduce<Record<string, any[]>>((acc, m) => {
-    const key = m.branchName || "지점";
-    (acc[key] ||= []).push(m);
+
+  const groupedByBranch = movements.reduce<Record<string, Record<string, any[]>>>((acc, m) => {
+    const branchKey = m.branchName || "지점";
+    const dateKey = m.date || "날짜 없음";
+    (acc[branchKey] ||= {});
+    (acc[branchKey][dateKey] ||= []).push(m);
     return acc;
   }, {});
-  const branchNames = Object.keys(grouped).sort();
+
+  const branchNames = Object.keys(groupedByBranch).sort((a, b) => a.localeCompare(b, "ko"));
 
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-      <div className="text-xl font-black mb-3">지점별 출고 내역</div>
-      <div className="space-y-5">
+      <div className="text-xl font-black mb-3">날짜별 출고 내역</div>
+      <div className="space-y-6">
         {branchNames.map((branchName) => {
-          const rows = grouped[branchName];
-          const totalQty = rows.reduce(
+          const dateMap = groupedByBranch[branchName];
+          const branchRows = Object.values(dateMap).flat();
+          const branchTotalQty = branchRows.reduce(
             (sum, m) => sum + Math.abs(Number(m.quantity || 0)),
             0,
           );
-          const totalCost = rows.reduce(
+          const branchTotalCost = branchRows.reduce(
             (sum, m) => sum + Number(m.totalCost || 0),
             0,
           );
+          const dates = Object.keys(dateMap).sort((a, b) => b.localeCompare(a));
+
           return (
             <div
               key={branchName}
-              className="border-t border-slate-100 pt-3 first:border-t-0 first:pt-0"
+              className="border-t border-slate-100 pt-4 first:border-t-0 first:pt-0"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-black">{branchName}</div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="font-black text-lg">{branchName}</div>
                 <div className="text-sm text-slate-500">
-                  총 {qty(totalQty)}병
+                  총 {qty(branchTotalQty)}병
                 </div>
               </div>
-              <div className="space-y-2">
-                {rows.map((m, idx) => (
-                  <div
-                    key={`${m.id ?? idx}-${idx}`}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <div className="min-w-0 pr-3">
-                      <div className="font-semibold truncate">{m.itemName}</div>
-                      {m.memo && (
-                        <div className="text-xs text-slate-400 truncate">
-                          {m.memo}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-black text-red-500">
-                        -{qty(Math.abs(Number(m.quantity || 0)))}병
+
+              <div className="space-y-4">
+                {dates.map((date) => {
+                  const rows = dateMap[date];
+                  const dayTotalQty = rows.reduce(
+                    (sum, m) => sum + Math.abs(Number(m.quantity || 0)),
+                    0,
+                  );
+                  const dayTotalCost = rows.reduce(
+                    (sum, m) => sum + Number(m.totalCost || 0),
+                    0,
+                  );
+                  return (
+                    <div key={`${branchName}-${date}`} className="rounded-2xl bg-slate-50 border border-slate-100 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-black text-slate-800">{date}</div>
+                        <div className="text-xs text-slate-500">{qty(dayTotalQty)}병 출고</div>
+                      </div>
+                      <div className="space-y-2">
+                        {rows.map((m, idx) => (
+                          <div
+                            key={`${m.id ?? idx}-${idx}`}
+                            className="flex items-center justify-between text-sm"
+                          >
+                            <div className="min-w-0 pr-3">
+                              <div className="font-semibold truncate">{m.itemName}</div>
+                              {m.memo && (
+                                <div className="text-xs text-slate-400 truncate">
+                                  {m.memo}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-black text-red-500">
+                                -{qty(Math.abs(Number(m.quantity || 0)))}병
+                              </div>
+                              {isAdmin && (
+                                <div className="text-xs text-slate-500">
+                                  {won(Number(m.totalCost || 0))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                       {isAdmin && (
-                        <div className="text-xs text-slate-500">
-                          {won(Number(m.totalCost || 0))}
+                        <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between text-xs">
+                          <span className="text-slate-500">날짜별 출고 원가</span>
+                          <span className="font-black">{won(dayTotalCost)}</span>
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
               {isAdmin && (
                 <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between text-sm">
-                  <span className="text-slate-500">출고 원가 합계</span>
-                  <span className="font-black">{won(totalCost)}</span>
+                  <span className="text-slate-500">지점 출고 원가 합계</span>
+                  <span className="font-black">{won(branchTotalCost)}</span>
                 </div>
               )}
             </div>
@@ -887,6 +1005,11 @@ function HistoryList({
                       {m.branchName}
                       {isAdmin ? ` · ${won(Number(m.totalCost || 0))}` : ""}
                     </div>
+                    {m.memo && (
+                      <div className="text-xs text-slate-400 mt-1 max-w-[220px] truncate">
+                        메모: {m.memo}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div
