@@ -277,6 +277,67 @@ export default function TableReport() {
   const effectiveBranchId = urlBranchId ?? account?.branchId ?? undefined;
   const highlightCacheKey = `highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
 
+  // [수정] 사용자 학습형 형광펜 제외 단어 저장 키
+  //   - 사용자가 자동 형광펜을 지운 단어를 누적 카운트하여,
+  //     일정 횟수(EXCLUDE_THRESHOLD 이상) 제거되면 다음 분석부터 자동 제외하는 학습형 로직.
+  const highlightExcludeKey = `excluded_highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
+
+  type HighlightExcludes = {
+    yellow: Record<string, number>; // 단어 -> 사용자가 mark를 지운 횟수
+    pink: Record<string, number>;
+    updatedAt: number;
+  };
+
+  const loadHighlightExcludes = (): HighlightExcludes => {
+    try {
+      const raw = localStorage.getItem(highlightExcludeKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          yellow: parsed.yellow ?? {},
+          pink: parsed.pink ?? {},
+          updatedAt: parsed.updatedAt ?? 0,
+        };
+      }
+    } catch {}
+    return { yellow: {}, pink: {}, updatedAt: 0 };
+  };
+
+  const saveHighlightExcludes = (next: HighlightExcludes) => {
+    try {
+      localStorage.setItem(highlightExcludeKey, JSON.stringify(next));
+    } catch {}
+  };
+
+  // 학습 임계값: 1이면 한 번 지우면 즉시 제외, 2이면 두 번 이상 지웠을 때 제외
+  const EXCLUDE_THRESHOLD = 1;
+
+  const isExcluded = (excludes: HighlightExcludes, color: 'yellow' | 'pink', word: string): boolean => {
+    const map = color === 'yellow' ? excludes.yellow : excludes.pink;
+    return (map[word] ?? 0) >= EXCLUDE_THRESHOLD;
+  };
+
+  const filterByExcludes = (
+    list: string[] | undefined,
+    color: 'yellow' | 'pink',
+    excludes: HighlightExcludes,
+  ): string[] => {
+    if (!list || list.length === 0) return [];
+    return list.filter(w => !isExcluded(excludes, color, w));
+  };
+
+  // 메모 HTML에서 색깔별 mark 텍스트 추출 (yellow / pink)
+  const extractMarkedTexts = (html: string): { yellow: string[]; pink: string[] } => {
+    const yellow: string[] = [];
+    const pink: string[] = [];
+    if (!html) return { yellow, pink };
+    const yMatches = Array.from(html.matchAll(/<mark[^>]*rgb\(255,\s*224,\s*102\)[^>]*>([\s\S]*?)<\/mark>/g));
+    for (const m of yMatches) yellow.push(m[1].replace(/<[^>]+>/g, '').trim());
+    const pMatches = Array.from(html.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+    for (const m of pMatches) pink.push(m[1].replace(/<[^>]+>/g, '').trim());
+    return { yellow, pink };
+  };
+
   // localStorage에서 캐시된 패턴 초기 로드
   const [highlightPatterns, setHighlightPatterns] = useState<{
     yellowKeywords: string[];
@@ -290,6 +351,73 @@ export default function TableReport() {
     } catch {}
     return null;
   });
+
+  // [학습 함수] 분석된 keyword 중, 메모 HTML에 "단어 경계가 보존된 평문"으로는 존재하나
+  // mark 태그로는 적용되어 있지 않은 단어를 "사용자가 mark를 지운 단어"로 보고 카운트 +1.
+  // ※ highlightPatterns state 선언 이후에 정의하여 TDZ/no-use-before-define 회피.
+  //
+  // [오학습 방지 - 단어 경계 검사]
+  //   - 단순 includes(kw)는 "추가" 키워드가 "병추가" 안에 포함된 경우에도 매칭되어
+  //     잘못된 제외 학습이 발생할 수 있다.
+  //   - 본 구현은 다음 규칙으로 부분문자열 오학습을 줄인다.
+  //       1) 정규식 escape 후 단어 발생 위치를 직접 스캔
+  //       2) kw 길이가 매우 짧을 때(<= 1자)는 학습 대상에서 제외
+  //       3) kw 양쪽 인접 문자가 "한글/영문/숫자/괄호열기" 이면 다른 단어의 일부로 보고 무시
+  //          (예: "추가"의 앞에 "병"이 있으면 → "병추가"이므로 학습 안 함)
+  //       4) mark 태그 안의 텍스트(marked) 내에 kw 가 포함되어 있으면 사용자가 형광펜을 유지한 것
+  const learnHighlightExcludesFromMemo = (memoHtml: string) => {
+    if (!memoHtml) return;
+    const patterns = highlightPatterns;
+    if (!patterns) return;
+    const { yellow: markedYellow, pink: markedPink } = extractMarkedTexts(memoHtml);
+    const cleanText = memoHtml.replace(/<[^>]+>/g, '');
+    const next = loadHighlightExcludes();
+
+    // 단어 일부로 붙어있으면 안 되는 인접 문자 패턴
+    //   한글(가-힣), 영문(a-zA-Z), 숫자(0-9), 괄호 열기 — kw 앞뒤에 이런 문자가 붙어있으면 단어의 일부로 본다.
+    const ADJACENT_BAD = /[\uAC00-\uD7A3A-Za-z0-9(]/;
+    const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // 단어 경계 기반 평문 발생 검사
+    const hasPlainOccurrence = (kw: string): boolean => {
+      if (!kw || kw.length <= 1) return false; // 너무 짧은 단어는 stricter — 학습 대상 제외
+      const re = new RegExp(escapeRegExp(kw), 'g');
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(cleanText)) !== null) {
+        const before = m.index > 0 ? cleanText[m.index - 1] : '';
+        const after = m.index + kw.length < cleanText.length ? cleanText[m.index + kw.length] : '';
+        const beforeBad = before && ADJACENT_BAD.test(before);
+        const afterBad = after && ADJACENT_BAD.test(after);
+        if (!beforeBad && !afterBad) return true; // 양쪽 모두 단어 경계로 둘러싸여 있음
+      }
+      return false;
+    };
+
+    const containsAsPlain = (kw: string, marked: string[]): boolean => {
+      if (!hasPlainOccurrence(kw)) return false;
+      // mark 태그 안에 그 단어가 포함되어 있으면 사용자가 형광펜을 유지한 것
+      const inMark = marked.some(m => m.includes(kw));
+      return !inMark;
+    };
+
+    let changed = false;
+    for (const kw of patterns.yellowKeywords ?? []) {
+      if (containsAsPlain(kw, markedYellow)) {
+        next.yellow[kw] = (next.yellow[kw] ?? 0) + 1;
+        changed = true;
+      }
+    }
+    for (const kw of patterns.pinkKeywords ?? []) {
+      if (containsAsPlain(kw, markedPink)) {
+        next.pink[kw] = (next.pink[kw] ?? 0) + 1;
+        changed = true;
+      }
+    }
+    if (changed) {
+      next.updatedAt = Date.now();
+      saveHighlightExcludes(next);
+    }
+  };
 
   // 서버에서 패턴 조회 (account 로드 후 실행, 캐시가 1시간 이내면 재조회 생략)
   const shouldFetchPatterns = !!account && !!effectiveBranchId && (
@@ -374,6 +502,19 @@ export default function TableReport() {
     if (isSaving) return; // 중복 저장 방지
     setIsSaving(true);
     // 저장 중에는 loadedDateRef를 건드리지 않음 → useEffect가 중간에 상태를 덮어쓰지 않도록 방지
+
+    // [수정] 형광펜 학습:
+    //   저장 시점의 모든 메모를 보고 사용자가 mark를 지운 단어를 학습한다.
+    //   같은 단어를 평문으로 두면 횟수가 누적되어 EXCLUDE_THRESHOLD 이상이 되면
+    //   이후 분석에서 자동 제외된다. 학습 실패는 저장 자체에 영향을 주지 않는다.
+    try {
+      for (const it of items) {
+        if (it.memo) learnHighlightExcludesFromMemo(it.memo);
+      }
+    } catch (e) {
+      console.warn('[highlight-excludes] 학습 실패:', e);
+    }
+
     try {
       const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap } = await batchSave.mutateAsync({
         date: currentDate,
@@ -491,15 +632,32 @@ export default function TableReport() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+      // [수정] 사용자 학습형 형광펜 제외 단어를 사전 필터링하여 서버에 전송
+      //   - 사용자가 자동 형광펜을 지운 단어(localStorage 학습값)를
+      //     preloadedYellow/preloadedPink 에서 미리 제거한다.
+      //   - 서버 측에서도 한 번 더 제거하도록 excludedYellow/excludedPink 도 함께 보낸다.
+      const learnedExcludes = loadHighlightExcludes();
+      const filteredYellow = filterByExcludes(highlightPatterns?.yellowKeywords, 'yellow', learnedExcludes);
+      const filteredPink = filterByExcludes(highlightPatterns?.pinkKeywords, 'pink', learnedExcludes);
+      const excludedYellowWords = Object.entries(learnedExcludes.yellow)
+        .filter(([, c]) => c >= EXCLUDE_THRESHOLD)
+        .map(([w]) => w);
+      const excludedPinkWords = Object.entries(learnedExcludes.pink)
+        .filter(([, c]) => c >= EXCLUDE_THRESHOLD)
+        .map(([w]) => w);
+
       const { memo, amount } = await analyzeOrderMemo.mutateAsync({
         imageBase64: base64,
         mimeType: file.type || 'image/jpeg',
         branchId: urlBranchId ?? account?.branchId ?? undefined,
         date: currentDate,
-        // 캐시된 패턴 전달 (DB 재조회 생략으로 속도 개선)
-        preloadedYellow: highlightPatterns?.yellowKeywords,
-        preloadedPink: highlightPatterns?.pinkKeywords,
+        // 캐시된 패턴 전달 (DB 재조회 생략으로 속도 개선) - 사용자 제외 단어 필터링 적용
+        preloadedYellow: filteredYellow,
+        preloadedPink: filteredPink,
         preloadedExamples: highlightPatterns?.recentMemoExamples,
+        // [추가] 사용자 학습형 제외 단어 (서버 측 LLM 프롬프트에 절대 금지 단어로 전달)
+        excludedYellow: excludedYellowWords,
+        excludedPink: excludedPinkWords,
       });
       if (memo) {
         updateItemField(localId, 'memo', memo);

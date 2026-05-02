@@ -1467,6 +1467,11 @@ export const appRouter = router({
         preloadedYellow: z.array(z.string()).optional(),
         preloadedPink: z.array(z.string()).optional(),
         preloadedExamples: z.array(z.string()).optional(),
+        // [추가] 사용자 학습형 형광펜 제외 단어
+        //   - 클라이언트에서 사용자가 mark를 지운 횟수를 누적하여 임계값을 넘은 단어 목록.
+        //   - 서버 단에서 keyword 후보 및 LLM 프롬프트의 절대 형광펜 금지 항목에 포함시킨다.
+        excludedYellow: z.array(z.string()).optional(),
+        excludedPink: z.array(z.string()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
@@ -1485,6 +1490,10 @@ export const appRouter = router({
         let yellowKeywords: string[] = input.preloadedYellow ?? [];
         let pinkKeywords: string[] = input.preloadedPink ?? [];
         let recentMemoExamples: string[] = input.preloadedExamples ?? [];
+
+        // [추가] 학습형 제외 단어 정규화
+        const excludedYellowSet = new Set((input.excludedYellow ?? []).map(s => s.trim()).filter(Boolean));
+        const excludedPinkSet = new Set((input.excludedPink ?? []).map(s => s.trim()).filter(Boolean));
 
         // preloaded 패턴이 없을 때만 DB 재조회 (사전 로드 시 생략으로 성능 개선)
         const hasPreloaded = (input.preloadedYellow?.length ?? 0) > 0 || (input.preloadedPink?.length ?? 0) > 0;
@@ -1553,6 +1562,32 @@ export const appRouter = router({
           }
         }
 
+        // [보강] 사용자 학습형 제외 단어를 keyword 후보에서 제거
+        //   - 완전일치(has)뿐 아니라 부분일치(includes) 도 함께 적용한다.
+        //   - 예: "무제한"이 제외 단어라면 "무제한 이벤트", "무제한2" 같은 후보도 같이 제거.
+        //   - 사용자 입력은 비어있는 문자열을 제외하고 trim 후 사용한다.
+        const excludedYellowList = Array.from(excludedYellowSet).filter(w => w.length > 0);
+        const excludedPinkList = Array.from(excludedPinkSet).filter(w => w.length > 0);
+        const matchesAnyExcluded = (kw: string, list: string[]) =>
+          list.some(ex => ex.length > 0 && (kw === ex || kw.includes(ex)));
+
+        if (excludedYellowList.length > 0) {
+          yellowKeywords = yellowKeywords.filter(kw => !matchesAnyExcluded(kw, excludedYellowList));
+        }
+        if (excludedPinkList.length > 0) {
+          pinkKeywords = pinkKeywords.filter(kw => !matchesAnyExcluded(kw, excludedPinkList));
+        }
+
+        // [추가] LLM에게 절대 형광펜 금지로 알려줄 사용자 학습형 제외 단어 안내문
+        const userExcludedYellowList = Array.from(excludedYellowSet);
+        const userExcludedPinkList = Array.from(excludedPinkSet);
+        const userExcludeNote = (userExcludedYellowList.length + userExcludedPinkList.length) > 0
+          ? `\n\n[사용자 학습형 형광펜 절대 금지 단어]\n` +
+            (userExcludedYellowList.length > 0 ? `- 노란 형광펜 금지: ${userExcludedYellowList.join(', ')}\n` : '') +
+            (userExcludedPinkList.length > 0 ? `- 분홍 형광펜 금지: ${userExcludedPinkList.join(', ')}\n` : '') +
+            `위 단어들은 사용자가 반복적으로 형광펜을 제거한 단어이므로 절대로 mark 태그를 적용하지 말 것.`
+          : '';
+
         // 형광펜 가이드 프롬프트 구성
         const yellowGuide = yellowKeywords.length > 0
           ? `노란 형광펜(<mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">텍스트</mark>): 주류/샴페인/위스키/특이 메뉴. 이전 기록에서 노란 형광펜이 적용된 키워드 예시: ${yellowKeywords.join(', ')}`
@@ -1579,7 +1614,7 @@ export const appRouter = router({
 
 형광펜 규칙:
 ${yellowGuide}
-${pinkGuide}
+${pinkGuide}${userExcludeNote}
 
 금액 계산 규칙:
 - 이미지에 표시된 총 결제금액을 그대로 사용 (있는 경우)
@@ -1646,8 +1681,33 @@ ${pinkGuide}
         if (!rawContent) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI 분석 결과를 받지 못했습니다' });
         const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
         const result = JSON.parse(content);
+
+        // [4차 방어] LLM 응답 memo 후처리:
+        //   - LLM이 프롬프트 지시를 무시하고 excluded 단어에 mark 태그를 붙였을 경우를 대비,
+        //     서버에서 mark 태그를 강제로 제거(언래핑)한다.
+        //   - 노란/분홍 mark 태그 각각에 대해, 내부 텍스트가 excluded 단어를 포함하면
+        //     <mark ...>...</mark> → 내부 텍스트만 남긴다.
+        const stripMarksContaining = (
+          html: string,
+          markPattern: RegExp,
+          excludedList: string[],
+        ): string => {
+          if (!html || excludedList.length === 0) return html;
+          return html.replace(markPattern, (full, inner: string) => {
+            const innerText = String(inner).replace(/<[^>]+>/g, '');
+            const hit = excludedList.some(ex => ex.length > 0 && innerText.includes(ex));
+            return hit ? inner : full; // 적중 시 mark 언래핑, 아니면 그대로
+          });
+        };
+
+        let memoOut = (result.memo as string) || '';
+        const yellowMarkRe = /<mark[^>]*rgb\(255,\s*224,\s*102\)[^>]*>([\s\S]*?)<\/mark>/g;
+        const pinkMarkRe = /<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g;
+        memoOut = stripMarksContaining(memoOut, yellowMarkRe, excludedYellowList);
+        memoOut = stripMarksContaining(memoOut, pinkMarkRe, excludedPinkList);
+
         return {
-          memo: (result.memo as string) || '',
+          memo: memoOut,
           amount: typeof result.amount === 'number' && result.amount > 0 ? String(result.amount) : '',
           confidence: (result.confidence as string) || 'low',
         };

@@ -7,7 +7,11 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { checkAndResetMonthlyAmounts } from "../db";
+// [수정] 서버 시작 시 자동 월초 리셋은 운영 방식과 맞지 않아 비활성화한다.
+// 운영팀은 새벽에 전날 매출을 입력하므로 "현재시간"이 아닌 "selectedDate" 기준으로
+// 누적이 계산되어야 한다. computeCumulativesForDate()가 selectedDate 기준 월별 합산을
+// 책임지므로 서버 부팅 시 자동 리셋은 더 이상 필요 없다.
+// import { checkAndResetMonthlyAmounts } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -29,8 +33,14 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
-  // 서버 시작 시 매월 1일 누적금액 리셋 체크
-  await checkAndResetMonthlyAmounts();
+  // [수정] 서버 시작 시 자동 누적 리셋 호출 제거.
+  //   - 기존: await checkAndResetMonthlyAmounts();
+  //   - 이유: "현재시간 1일 00시" 기준으로 모든 지점 누적을 일괄 재계산하면
+  //           새벽에 전날(전월 말일) 매출을 입력하기 전에 리셋이 돌아 전월 마감
+  //           누적이 사라지거나, 운영 의도와 다른 리셋이 발생할 수 있음.
+  //   - 대안: computeCumulativesForDate()가 selectedDate가 속한 월의 1일~selectedDate
+  //           직전까지만 SQL로 합산하여 항상 selectedDate 기준의 누적을 계산한다.
+  //           수동 리셋이 필요한 경우 systemRouter.manualResetCumulativeAmounts 사용.
 
   const app = express();
   const server = createServer(app);

@@ -181,29 +181,102 @@ function InputRow({
 export default function Home() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading, logout } = useStoreAuth();
-  const [currentDate, setCurrentDateState] = useState(() => {
+
+  // [수정] 날짜 자동 전환 정책
+  //   - localStorage 키
+  //       'selectedDate'              : YYYY-MM-DD (사용자가 마지막으로 본 날짜)
+  //       'selectedDate_userPickedAt' : 사용자가 setCurrentDate() 호출 시점의 timestamp(ms)
+  //   - 진입/포커스 복귀 시 결정 로직 (resolveInitialDate)
+  //       1) 저장값이 오늘 영업일과 같으면 → 그대로 사용
+  //       2) 저장값이 오늘 영업일과 다른데, 마지막 사용자 선택 시각이
+  //          "오늘 자정(00:00) 이전"이면 → 자동으로 오늘 영업일로 갱신
+  //          (= 어제 켜둔 채 하루를 넘긴 케이스)
+  //       3) 마지막 사용자 선택 시각이 "오늘 자정 이후"이면
+  //          → 사용자가 오늘 일부러 과거 날짜를 조회 중인 것이므로 강제 이동하지 않음
+  const todayBusinessDayString = (): string => getTodayString();
+
+  const todayMidnightTs = (): number => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  };
+
+  const resolveInitialDate = (): string => {
     try {
       const saved = localStorage.getItem('selectedDate');
+      const pickedAtRaw = localStorage.getItem('selectedDate_userPickedAt');
+      const pickedAt = pickedAtRaw ? parseInt(pickedAtRaw, 10) : 0;
+      const todayBiz = todayBusinessDayString();
+
       if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
         // 일요일이면 토요일로 보정
         const d = new Date(saved.replace(/-/g, '/'));
+        let normalized = saved;
         if (d.getDay() === 0) {
           d.setDate(d.getDate() - 1);
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          normalized = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
-        return saved;
+        if (normalized === todayBiz) return normalized;
+        // 저장값 ≠ 오늘 영업일
+        // 사용자가 오늘 자정 이후 명시적으로 선택했다면 그 의도를 존중
+        if (pickedAt && pickedAt >= todayMidnightTs()) {
+          return normalized;
+        }
+        // 그 외(어제 이전 선택분이 남아있는 케이스)는 오늘 영업일로 자동 갱신
+        return todayBiz;
       }
     } catch {}
-    return getTodayString();
-  });
+    return todayBusinessDayString();
+  };
+
+  const [currentDate, setCurrentDateState] = useState<string>(resolveInitialDate);
 
   const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
     setCurrentDateState(prev => {
       const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
-      try { localStorage.setItem('selectedDate', next); } catch {}
+      try {
+        localStorage.setItem('selectedDate', next);
+        // 사용자 의도적 선택 시각 기록 (수동/자동 구분에 사용)
+        localStorage.setItem('selectedDate_userPickedAt', String(Date.now()));
+      } catch {}
       return next;
     });
   };
+
+  // [수정] 앱 포커스 복귀/visibilitychange 시 영업일 자동 갱신
+  //   - 사용자가 오늘 자정 이후 명시적으로 과거 날짜를 선택해 보고 있는 상태라면
+  //     강제 이동하지 않는다(과거 매출 조회 보호).
+  useEffect(() => {
+    const tryRollOverIfStale = () => {
+      try {
+        const todayBiz = todayBusinessDayString();
+        const pickedAtRaw = localStorage.getItem('selectedDate_userPickedAt');
+        const pickedAt = pickedAtRaw ? parseInt(pickedAtRaw, 10) : 0;
+        // 사용자가 오늘 자정 이후 직접 선택한 상태면 그대로 둠
+        if (pickedAt && pickedAt >= todayMidnightTs()) return;
+        // 그 외에는 currentDate가 오늘 영업일과 다르면 오늘로 자동 갱신
+        setCurrentDateState(prev => {
+          if (prev === todayBiz) return prev;
+          try {
+            localStorage.setItem('selectedDate', todayBiz);
+            // 자동 갱신은 "사용자 의도적 선택"이 아니므로 userPickedAt 갱신하지 않음
+          } catch {}
+          return todayBiz;
+        });
+      } catch {}
+    };
+    const onFocus = () => tryRollOverIfStale();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') tryRollOverIfStale();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const myBranches = user?.role === 'admin'
     ? (user.allBranches ?? [])
     : user?.branch ? [user.branch] : [];
