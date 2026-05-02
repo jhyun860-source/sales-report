@@ -976,6 +976,61 @@ export const appRouter = router({
         return { branches: allBranches, items: activeItems.map(i => ({ ...i, unitCost: Number(i.unitCost || 0) })), inventories, movements, branchSummaries, totals };
       }),
 
+    history: publicProcedure
+      .input(z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+        branchId: z.number().optional(),
+        keyword: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const account = await requireStoreAccount(ctx);
+        const db = await getDb();
+        if (!db) return { movements: [] };
+        await ensureLiquorSeeded(db);
+
+        const allBranches = account.role === 'admin'
+          ? await db.select().from(branches).orderBy(branches.name)
+          : (account.branchId ? await db.select().from(branches).where(eq(branches.id, account.branchId)) : []);
+        const allowedBranchIds = allBranches.map(b => b.id);
+        const selectedBranchIds = account.role === 'admin' && input.branchId
+          ? allowedBranchIds.filter(id => id === input.branchId)
+          : allowedBranchIds;
+        if (selectedBranchIds.length === 0) return { movements: [] };
+
+        const itemRows = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
+        const itemById = new Map(itemRows.map(i => [i.id, i]));
+        const branchById = new Map(allBranches.map(b => [b.id, b]));
+
+        const movementRows = await db.select().from(liquorStockMovements)
+          .where(and(
+            inArray(liquorStockMovements.branchId, selectedBranchIds),
+            gte(liquorStockMovements.date, input.startDate),
+            lte(liquorStockMovements.date, input.endDate),
+          ))
+          .orderBy(desc(liquorStockMovements.date), desc(liquorStockMovements.createdAt));
+
+        const keyword = (input.keyword || '').trim().toLowerCase();
+        const movements = movementRows
+          .map(m => {
+            const item = itemById.get(m.liquorItemId);
+            const branch = branchById.get(m.branchId);
+            return {
+              ...m,
+              quantity: Number(m.quantity || 0),
+              unitCost: Number(m.unitCost || 0),
+              totalCost: Number(m.totalCost || 0),
+              itemName: item?.name ?? '삭제된 품목',
+              category: item?.category ?? '기타',
+              branchName: branch?.name ?? '',
+            };
+          })
+          .filter(m => !keyword || String(m.itemName).toLowerCase().includes(keyword));
+
+        return { movements };
+      }),
+
+
     upsertItem: publicProcedure
       .input(z.object({ id: z.number().optional(), name: z.string().min(1), category: z.string().min(1).default('기타'), unitCost: z.number().min(0), isActive: z.boolean().default(true) }))
       .mutation(async ({ ctx, input }) => {
