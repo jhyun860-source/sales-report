@@ -252,3 +252,71 @@ export const staffIncentivesRelations = relations(staffIncentives, ({ one }) => 
     references: [tableReports.id],
   }),
 }));
+
+/**
+ * 주류 품목 마스터
+ * 관리자가 주류명/카테고리/단가를 관리한다.
+ */
+export const liquorItems = mysqlTable("liquorItems", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 150 }).notNull(),
+  category: varchar("category", { length: 50 }).default("기타").notNull(),
+  unitCost: decimal("unitCost", { precision: 15, scale: 0 }).default("0").notNull(),
+  isActive: int("isActive").default(1).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LiquorItem = typeof liquorItems.$inferSelect;
+export type InsertLiquorItem = typeof liquorItems.$inferInsert;
+
+/**
+ * 지점별 주류 현재 재고
+ */
+export const liquorInventories = mysqlTable("liquorInventories", {
+  id: int("id").autoincrement().primaryKey(),
+  branchId: int("branchId").notNull(),
+  liquorItemId: int("liquorItemId").notNull(),
+  currentStock: decimal("currentStock", { precision: 12, scale: 2 }).default("0").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LiquorInventory = typeof liquorInventories.$inferSelect;
+export type InsertLiquorInventory = typeof liquorInventories.$inferInsert;
+
+/**
+ * 주류 입고/출고/조정 히스토리
+ */
+export const liquorStockMovements = mysqlTable("liquorStockMovements", {
+  id: int("id").autoincrement().primaryKey(),
+  branchId: int("branchId").notNull(),
+  liquorItemId: int("liquorItemId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  type: mysqlEnum("type", ["IN", "OUT", "ADJUST"]).notNull(),
+  quantity: decimal("quantity", { precision: 12, scale: 2 }).default("0").notNull(),
+  unitCost: decimal("unitCost", { precision: 15, scale: 0 }).default("0").notNull(),
+  totalCost: decimal("totalCost", { precision: 15, scale: 0 }).default("0").notNull(),
+  memo: text("memo"),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LiquorStockMovement = typeof liquorStockMovements.$inferSelect;
+export type InsertLiquorStockMovement = typeof liquorStockMovements.$inferInsert;
+
+export const liquorItemsRelations = relations(liquorItems, ({ many }) => ({
+  inventories: many(liquorInventories),
+  movements: many(liquorStockMovements),
+}));
+
+export const liquorInventoriesRelations = relations(liquorInventories, ({ one }) => ({
+  branch: one(branches, { fields: [liquorInventories.branchId], references: [branches.id] }),
+  item: one(liquorItems, { fields: [liquorInventories.liquorItemId], references: [liquorItems.id] }),
+}));
+
+export const liquorStockMovementsRelations = relations(liquorStockMovements, ({ one }) => ({
+  branch: one(branches, { fields: [liquorStockMovements.branchId], references: [branches.id] }),
+  item: one(liquorItems, { fields: [liquorStockMovements.liquorItemId], references: [liquorItems.id] }),
+}));

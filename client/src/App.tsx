@@ -11,6 +11,7 @@ import AdminManage from "./pages/AdminManage";
 import Login from "./pages/Login";
 import TableReport from "./pages/TableReport";
 import StaffIncentiveStats from "./pages/StaffIncentiveStats";
+import LiquorStockReport from "./pages/LiquorStockReport";
 import { UpdateBanner } from "./components/UpdateBanner";
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -23,6 +24,7 @@ function Router() {
       <Route path={"/admin/manage"} component={AdminManage} />
       <Route path={"/table-report"} component={TableReport} />
       <Route path={"/staff-incentive"} component={StaffIncentiveStats} />
+      <Route path={"/liquor-stock"} component={LiquorStockReport} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

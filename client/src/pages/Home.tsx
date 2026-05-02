@@ -11,7 +11,7 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw, Package } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import {
   type ExpenseItem,
@@ -598,6 +598,22 @@ export default function Home() {
           >
             <ClipboardList size={14} />
             테이블
+          </button>
+
+
+
+          {/* 주류 출고현황 버튼 */}
+          <button
+            onClick={() => navigate(`/liquor-stock?date=${currentDate}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`)}
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
+            style={{
+              background: 'oklch(0.92 0.015 85)',
+              color: 'oklch(0.25 0.01 50)',
+              borderColor: 'oklch(0.78 0.012 85)',
+            }}
+          >
+            <Package size={14} />
+            주류
           </button>
 
           {/* 인센티브 통계 버튼 */}
