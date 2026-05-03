@@ -675,3 +675,12 @@
 - [x] TypeScript 타입 체크 통과
 - [x] vitest 42개 테스트 전체 통과
 - [x] 기존 재고 수량 무손상 (단가/카테고리/삭제 처리만 보정)
+
+## 제품 삭제 기능 수정 (deleteItem refetch)
+
+- [x] deleteItem 후 overview 캐시 무효화 문제 해결
+- [x] overview.refetch() 명시적 호출 추가
+- [x] 삭제된 제품이 UI에서 즉시 사라지도록 수정
+- [x] pnpm build 성공 (오류 없음)
+- [x] TypeScript 타입 체크 통과
+- [x] vitest 42개 테스트 전체 통과

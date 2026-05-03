@@ -138,8 +138,9 @@ export default function LiquorStockReport() {
   });
 
   const deleteItem = trpc.liquor.deleteItem.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       utils.liquor.overview.invalidate();
+      await overview.refetch();
       utils.liquor.history.invalidate();
       setSelectedItem(null);
       setProductEditorOpen(false);
