@@ -72,6 +72,7 @@ export default function LiquorStockReport() {
   const [activeCategory, setActiveCategory] = useState<LiquorCategory>("위스키");
   const [sortMode, setSortMode] = useState<"stockDesc" | "stockAsc" | "nameAsc" | "nameDesc">("stockDesc");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [locallyHiddenItemIds, setLocallyHiddenItemIds] = useState<Set<number>>(() => new Set());
   const [productEditorOpen, setProductEditorOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", category: "위스키", unitCost: "", initialStock: "" });
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
@@ -93,12 +94,12 @@ export default function LiquorStockReport() {
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
 
   const overview = trpc.liquor.overview.useQuery(
-    { date, branchId: effectiveBranchId, includeInactive: isAdmin },
+    { date, branchId: effectiveBranchId, includeInactive: false },
     { enabled: !!user, retry: false },
   );
 
   const historyQuery = trpc.liquor.history.useQuery(
-    { startDate: historyStart, endDate: historyEnd, branchId: effectiveBranchId, keyword: historySearch.trim() || undefined },
+    { startDate: historyStart, endDate: historyEnd, branchId: effectiveBranchId, keyword: historySearch.trim() || undefined, type: historyType === "ALL" ? undefined : historyType },
     { enabled: !!user && tab === "history", retry: false },
   );
 
@@ -138,13 +139,11 @@ export default function LiquorStockReport() {
   });
 
   const deleteItem = trpc.liquor.deleteItem.useMutation({
-    onSuccess: async () => {
+    onSuccess: () => {
       utils.liquor.overview.invalidate();
-      await overview.refetch();
       utils.liquor.history.invalidate();
       setSelectedItem(null);
       setProductEditorOpen(false);
-      toast.success(isAdmin ? "제품이 삭제되었습니다" : "이 지점 제품 목록에서 숨김 처리되었습니다");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -171,7 +170,7 @@ export default function LiquorStockReport() {
 
   const data = overview.data;
   const branches = data?.branches ?? [];
-  const items = data?.items ?? [];
+  const items = useMemo(() => (data?.items ?? []).filter((item: any) => !locallyHiddenItemIds.has(Number(item.id))), [data?.items, locallyHiddenItemIds]);
   const inventories = data?.inventories ?? [];
   const movements = data?.movements ?? [];
   const selectedBranch = branches.find((b: any) => b.id === effectiveBranchId) ?? branches[0];
@@ -247,9 +246,39 @@ export default function LiquorStockReport() {
   };
 
   const handleDeleteProduct = (item: any) => {
-    const message = isAdmin ? `${item.name} 제품을 전체 지점에서 비활성화할까요?` : `${item.name} 제품을 현재 지점 목록에서 숨길까요?`;
+    const itemId = Number(item?.id);
+    if (!itemId) return;
+    const message = isAdmin ? `${item.name} 제품을 전체 목록에서 삭제할까요?` : `${item.name} 제품을 현재 지점 목록에서 삭제할까요?`;
     if (!window.confirm(message)) return;
-    deleteItem.mutate({ id: item.id, branchId: effectiveBranchId });
+
+    // 서버 응답/캐시 갱신을 기다리지 않고 즉시 현재 화면 목록에서 제거한다.
+    setLocallyHiddenItemIds((prev) => {
+      const next = new Set(prev);
+      next.add(itemId);
+      return next;
+    });
+    setSelectedItem(null);
+    setProductEditorOpen(false);
+    setCart((prev) => prev.filter((row) => row.liquorItemId !== itemId));
+
+    deleteItem.mutate(
+      { id: itemId, branchId: effectiveBranchId },
+      {
+        onError: (e) => {
+          setLocallyHiddenItemIds((prev) => {
+            const next = new Set(prev);
+            next.delete(itemId);
+            return next;
+          });
+          toast.error(e.message || "제품 삭제에 실패했습니다");
+        },
+        onSuccess: () => {
+          utils.liquor.overview.invalidate();
+          utils.liquor.history.invalidate();
+          toast.success(isAdmin ? "제품이 목록에서 삭제되었습니다" : "현재 지점 목록에서 삭제되었습니다");
+        },
+      }
+    );
   };
 
   const changeCartQty = (itemId: number, delta: number) => {
