@@ -98,7 +98,7 @@ export default function LiquorStockReport() {
   );
 
   const historyQuery = trpc.liquor.history.useQuery(
-    { startDate: historyStart, endDate: historyEnd, branchId: effectiveBranchId, keyword: historySearch.trim() || undefined, type: historyType === "ALL" ? undefined : historyType },
+    { startDate: historyStart, endDate: historyEnd, branchId: effectiveBranchId, keyword: historySearch.trim() || undefined },
     { enabled: !!user && tab === "history", retry: false },
   );
 

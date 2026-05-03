@@ -79,7 +79,7 @@ const DEFAULT_LIQUOR_ITEMS: Array<{ name: string; unitCost: number; category: st
   { name: '조니워커 블루 (700ml)', unitCost: 300000, category: '위스키' },
   { name: '맥켈란 12y (700ml)', unitCost: 110000, category: '위스키' },
   { name: '맥켈란 15y (700ml)', unitCost: 220000, category: '위스키' },
-  { name: '맥켈란 18y (700ml)', unitCost: 800000, category: '위스키' },
+  { name: '맥켈란 18y (700ml)', unitCost: 450000, category: '위스키' },
   { name: '올드캐슬', unitCost: 20000, category: '위스키' },
   { name: '칼라일 (700ml)', unitCost: 20000, category: '위스키' },
   { name: '캔터키 (700ml)', unitCost: 20000, category: '위스키' },
@@ -94,9 +94,10 @@ const DEFAULT_LIQUOR_ITEMS: Array<{ name: string; unitCost: number; category: st
   { name: '멈 그랑꼬르동 로제', unitCost: 92000, category: '샴페인' },
   { name: '모엣샹동', unitCost: 74000, category: '샴페인' },
   { name: '모엣샹동 로제', unitCost: 92000, category: '샴페인' },
+  { name: '모엣샹동 매그넘', unitCost: 170000, category: '샴페인' },
   { name: '돔페리뇽', unitCost: 360000, category: '샴페인' },
   { name: '돔페리뇽 빈티지', unitCost: 450000, category: '샴페인' },
-  { name: '아르망디', unitCost: 1000000, category: '샴페인' },
+  { name: '아르망디', unitCost: 650000, category: '샴페인' },
   { name: '헤네시 x.o', unitCost: 360000, category: '꼬냑' },
   { name: '헤네시 v.s.o.p (500ml)', unitCost: 90000, category: '꼬냑' },
   { name: '레미마틴 v.s.o.p', unitCost: 110000, category: '꼬냑' },
@@ -111,6 +112,8 @@ const DEFAULT_LIQUOR_ITEMS: Array<{ name: string; unitCost: number; category: st
   { name: '맥코넬스', unitCost: 85000, category: '위스키' },
   { name: '얼리타임즈', unitCost: 30000, category: '위스키' },
   { name: '히비키 하모니', unitCost: 300000, category: '위스키' },
+  { name: '야마자키', unitCost: 500000, category: '위스키' },
+  { name: '아줄 레포사도 (데킬라)', unitCost: 400000, category: '위스키' },
   { name: '바톤 보드카', unitCost: 7000, category: '보드카/진/럼' },
   { name: '바톤 진', unitCost: 7000, category: '보드카/진/럼' },
   { name: '럼', unitCost: 8000, category: '보드카/진/럼' },
@@ -135,11 +138,12 @@ const DEFAULT_LIQUOR_ITEMS: Array<{ name: string; unitCost: number; category: st
   { name: '블루큐라소', unitCost: 22000, category: '리큐르/시럽' },
   { name: '라임주스', unitCost: 20000, category: '리큐르/시럽' },
   { name: '피나믹스', unitCost: 20000, category: '리큐르/시럽' },
+  { name: '론디아즈', unitCost: 30000, category: '리큐르/시럽' },
   { name: '카프리', unitCost: 1700, category: '맥주' },
   { name: '호가든', unitCost: 2200, category: '맥주' },
   { name: '하이네켄', unitCost: 3300, category: '맥주' },
   { name: '코로나', unitCost: 2450, category: '맥주' },
-  { name: '기네스', unitCost: 4300, category: '맥주' },
+  { name: '기네스', unitCost: 4600, category: '맥주' },
   { name: '생맥주 1통', unitCost: 100000, category: '맥주' },
 ];
 
@@ -2421,7 +2425,7 @@ const BOXHERO_BRANCH_STOCKS: Record<string, Array<{ name: string; quantity: numb
 };
 
 const BOXHERO_CATEGORY_FALLBACK: Record<string, string> = {
-  '샴페인': '위스키',
+  '샴페인': '샴페인',
   '꼬냑': '위스키',
   '데킬라': '위스키',
   '보드카/진/럼': '리큐르/시럽',
@@ -2432,6 +2436,12 @@ const BOXHERO_CATEGORY_FALLBACK: Record<string, string> = {
 const BOXHERO_ITEM_ALIASES: Record<string, string> = {
   '1800아네호데킬라': '1800 아네호',
   '아네호1800': '1800 아네호',
+  '아즐레포사도데킬라': '아줄 레포사도 (데킬라)',
+  '아줄레포사도데킬라': '아줄 레포사도 (데킬라)',
+  '아줄레포사도': '아줄 레포사도 (데킬라)',
+  '아즐레포사도': '아줄 레포사도 (데킬라)',
+  '클라세아줄레포사도': '아줄 레포사도 (데킬라)',
+  '아줄데킬라': '아줄 레포사도 (데킬라)',
   '호세꾸엘보1800아네호': '1800 아네호',
   '글렌리벳12y': '글렌리벳 12y (700ml)',
   '글랜리벳12y700ml': '글렌리벳 12y (700ml)',
@@ -2495,6 +2505,8 @@ const BOXHERO_ITEM_ALIASES: Record<string, string> = {
   '미스터보스턴': '미스터보스턴 버번 1L',
   '미스터보스턴버번': '미스터보스턴 버번 1L',
   '미스터보스턴버번1l': '미스터보스턴 버번 1L',
+  '론디아즈럼': '론디아즈',
+  '야마자키dr': '야마자키',
   '스틸브룩': '스틸브룩 디럭스',
   '스틸브룩디럭스': '스틸브룩 디럭스',
   '시바스리갈12y700ml': '시바스리갈 12y',
@@ -2505,6 +2517,10 @@ const BOXHERO_ITEM_ALIASES: Record<string, string> = {
   '히비키': '히비키 하모니',
   '코쿤': '코쿤위스키 (2.7L)',
   '코쿤위스키': '코쿤위스키 (2.7L)',
+  '칼라일': '칼라일 (700ml)',
+  '캔터키': '캔터키 (700ml)',
+  '모엣샹동매그넘': '모엣샹동 매그넘',
+  '모엣샹동메그넘': '모엣샹동 매그넘',
   '코쿤무제한': '코쿤위스키 (2.7L)',
   '탈리스만무제한': '탈리스만',
   '벨즈무제한': '벨즈',
@@ -2611,8 +2627,56 @@ function getCanonicalLiquorName(rawName: string): string {
 function getSeedCategory(rawCategory: string): string {
   const mapped = BOXHERO_CATEGORY_FALLBACK[rawCategory] || rawCategory || '위스키';
   if (mapped === '맥주') return '맥주';
+  if (mapped === '샴페인') return '샴페인';
   if (mapped.includes('리큐르') || mapped.includes('시럽')) return '리큐르/시럽';
   return '위스키';
+}
+
+const LIQUOR_UNIT_COST_SYNC_VERSION = 'liquor-unit-cost-2026-05-04-v2';
+
+function buildLiquorDefaultMetaMap() {
+  const metaByKey = new Map<string, { unitCost: number; category: string; canonicalName: string }>();
+  for (const item of DEFAULT_LIQUOR_ITEMS) {
+    metaByKey.set(normalizeLiquorSeedKey(item.name), {
+      unitCost: item.unitCost,
+      category: getSeedCategory(item.category),
+      canonicalName: item.name,
+    });
+  }
+  for (const [aliasKey, canonicalName] of Object.entries(BOXHERO_ITEM_ALIASES)) {
+    const meta = metaByKey.get(normalizeLiquorSeedKey(canonicalName));
+    if (meta) metaByKey.set(aliasKey, meta);
+  }
+  return metaByKey;
+}
+
+async function ensureLiquorUnitCostsSynced(db: Awaited<ReturnType<typeof getDb>>) {
+  if (!db) return;
+  await ensureLiquorTables(db);
+  const existingSync: any = await db.execute(sql`SELECT seedKey FROM liquorSeedMeta WHERE seedKey = ${LIQUOR_UNIT_COST_SYNC_VERSION} LIMIT 1`);
+  const syncRows = Array.isArray(existingSync) ? existingSync[0] : [];
+  if (Array.isArray(syncRows) && syncRows.length > 0) return;
+
+  const metaByKey = buildLiquorDefaultMetaMap();
+  const currentItems = await db.select().from(liquorItems);
+  for (const item of currentItems) {
+    const rawKey = normalizeLiquorSeedKey(item.name);
+    const canonicalName = getCanonicalLiquorName(item.name);
+    const canonicalKey = normalizeLiquorSeedKey(canonicalName);
+    const meta = metaByKey.get(rawKey) || metaByKey.get(canonicalKey);
+    if (!meta) continue;
+
+    const currentCost = Number(item.unitCost || 0);
+    const currentCategory = String(item.category || '');
+    if (currentCost !== meta.unitCost || currentCategory !== meta.category) {
+      await db.update(liquorItems)
+        .set({ unitCost: String(meta.unitCost), category: meta.category, updatedAt: new Date() })
+        .where(eq(liquorItems.id, item.id));
+    }
+  }
+
+  await db.execute(sql`INSERT IGNORE INTO liquorSeedMeta (seedKey) VALUES (${LIQUOR_UNIT_COST_SYNC_VERSION})`);
+  console.log(`[liquor-seed] 주류 기본 단가/카테고리 동기화 완료: ${LIQUOR_UNIT_COST_SYNC_VERSION}`);
 }
 
 async function ensureBoxHeroBranchStockSeeded(db: Awaited<ReturnType<typeof getDb>>) {
@@ -2629,7 +2693,7 @@ async function ensureBoxHeroBranchStockSeeded(db: Awaited<ReturnType<typeof getD
   for (const item of currentItems) {
     itemByKey.set(normalizeLiquorSeedKey(item.name), item);
   }
-  const defaultCostByKey = new Map(DEFAULT_LIQUOR_ITEMS.map(item => [normalizeLiquorSeedKey(item.name), item.unitCost]));
+  const defaultMetaByKey = buildLiquorDefaultMetaMap();
   let nextSortOrder = currentItems.length + 1;
 
   const getOrCreateItem = async (rawName: string, rawCategory: string) => {
@@ -2639,8 +2703,9 @@ async function ensureBoxHeroBranchStockSeeded(db: Awaited<ReturnType<typeof getD
     let item = itemByKey.get(canonicalKey) || itemByKey.get(rawKey);
     if (item) return item;
 
-    const unitCost = defaultCostByKey.get(canonicalKey) || defaultCostByKey.get(rawKey) || 0;
-    const category = getSeedCategory(rawCategory);
+    const defaultMeta = defaultMetaByKey.get(canonicalKey) || defaultMetaByKey.get(rawKey);
+    const unitCost = defaultMeta?.unitCost ?? 0;
+    const category = defaultMeta?.category ?? getSeedCategory(rawCategory);
     const result = await db.insert(liquorItems).values({
       name: canonicalName,
       category,
@@ -2704,6 +2769,7 @@ async function ensureLiquorSeeded(db: Awaited<ReturnType<typeof getDb>>) {
       sortOrder: idx,
     })));
   }
+  await ensureLiquorUnitCostsSynced(db);
   await ensureBoxHeroBranchStockSeeded(db);
 }
 
@@ -3453,8 +3519,8 @@ export const appRouter = router({
           return {
             ...m,
             quantity: Number(m.quantity || 0),
-            unitCost: Number(m.unitCost || item?.unitCost || 0),
-            totalCost: Number(m.totalCost || 0) || Math.abs(Number(m.quantity || 0)) * Number(m.unitCost || item?.unitCost || 0),
+            unitCost: Number(m.unitCost || 0),
+            totalCost: Number(m.totalCost || 0),
             itemName: item?.name ?? '삭제된 품목',
             category: item?.category ?? '기타',
             branchName: branch?.name ?? '',
@@ -3493,7 +3559,6 @@ export const appRouter = router({
         endDate: z.string(),
         branchId: z.number().optional(),
         keyword: z.string().optional(),
-        type: z.enum(['IN', 'OUT', 'ADJUST']).optional(),
       }))
       .query(async ({ ctx, input }) => {
         const account = await requireStoreAccount(ctx);
@@ -3514,15 +3579,12 @@ export const appRouter = router({
         const itemById = new Map(itemRows.map(i => [i.id, i]));
         const branchById = new Map(allBranches.map(b => [b.id, b]));
 
-        const historyConditions = [
-          inArray(liquorStockMovements.branchId, selectedBranchIds),
-          gte(liquorStockMovements.date, input.startDate),
-          lte(liquorStockMovements.date, input.endDate),
-        ];
-        if (input.type) historyConditions.push(eq(liquorStockMovements.type, input.type));
-
         const movementRows = await db.select().from(liquorStockMovements)
-          .where(and(...historyConditions))
+          .where(and(
+            inArray(liquorStockMovements.branchId, selectedBranchIds),
+            gte(liquorStockMovements.date, input.startDate),
+            lte(liquorStockMovements.date, input.endDate),
+          ))
           .orderBy(desc(liquorStockMovements.date), desc(liquorStockMovements.createdAt));
 
         const keyword = (input.keyword || '').trim().toLowerCase();
@@ -3533,8 +3595,8 @@ export const appRouter = router({
             return {
               ...m,
               quantity: Number(m.quantity || 0),
-              unitCost: Number(m.unitCost || item?.unitCost || 0),
-              totalCost: Number(m.totalCost || 0) || Math.abs(Number(m.quantity || 0)) * Number(m.unitCost || item?.unitCost || 0),
+              unitCost: Number(m.unitCost || 0),
+              totalCost: Number(m.totalCost || 0),
               itemName: item?.name ?? '삭제된 품목',
               category: item?.category ?? '기타',
               branchName: branch?.name ?? '',
@@ -3705,8 +3767,7 @@ export const appRouter = router({
         const newSignedQty = movement.type === 'OUT' ? -Math.abs(rawQty) : movement.type === 'IN' ? Math.abs(rawQty) : rawQty;
         const oldSignedQty = Number(movement.quantity || 0);
         const diff = newSignedQty - oldSignedQty;
-        const [itemForCost] = await db.select().from(liquorItems).where(eq(liquorItems.id, movement.liquorItemId)).limit(1);
-        const unitCost = Number(movement.unitCost || itemForCost?.unitCost || 0);
+        const unitCost = Number(movement.unitCost || 0);
         const totalCost = Math.abs(newSignedQty) * unitCost;
 
         await db.update(liquorStockMovements).set({
