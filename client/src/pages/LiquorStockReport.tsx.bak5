@@ -14,7 +14,6 @@ import {
   Search,
   Settings,
   SlidersHorizontal,
-  Trash2,
   X,
 } from "lucide-react";
 
@@ -91,10 +90,9 @@ export default function LiquorStockReport() {
   const [actionItem, setActionItem] = useState<any | null>(null);
   const [movementType, setMovementType] = useState<MovementType>("OUT");
   const [entryRows, setEntryRows] = useState<EntryRow[]>([{ liquorItemId: "", quantity: "", memo: "", itemSearch: "" }]);
-  const [newItem, setNewItem] = useState({ name: "", category: "위스키", unitCost: "", initialStock: "" });
+  const [newItem, setNewItem] = useState({ name: "", category: "위스키", unitCost: "" });
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [stockEdit, setStockEdit] = useState<{ itemId: number; value: string } | null>(null);
-  const [productEditorOpen, setProductEditorOpen] = useState(false);
 
   const [historyStart, setHistoryStart] = useState(date);
   const [historyEnd, setHistoryEnd] = useState(date);
@@ -117,9 +115,8 @@ export default function LiquorStockReport() {
     onSuccess: () => {
       utils.liquor.overview.invalidate();
       utils.liquor.history.invalidate();
-      setNewItem({ name: "", category: "위스키", unitCost: "", initialStock: "" });
+      setNewItem({ name: "", category: "위스키", unitCost: "" });
       setEditingItemId(null);
-      setProductEditorOpen(false);
       toast.success("주류 품목이 저장되었습니다");
     },
     onError: (e) => toast.error(e.message),
@@ -142,17 +139,6 @@ export default function LiquorStockReport() {
       utils.liquor.history.invalidate();
       setStockEdit(null);
       toast.success("현재 재고가 수정되었습니다");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const deleteItem = trpc.liquor.deleteItem.useMutation({
-    onSuccess: () => {
-      utils.liquor.overview.invalidate();
-      utils.liquor.history.invalidate();
-      setSelectedItem(null);
-      setProductEditorOpen(false);
-      toast.success(isAdmin ? "제품이 삭제되었습니다" : "이 지점 제품 목록에서 숨김 처리되었습니다");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -222,44 +208,7 @@ export default function LiquorStockReport() {
 
   const saveItem = () => {
     if (!newItem.name.trim()) return toast.error("주류명을 입력해주세요");
-    const branchId = effectiveBranchId;
-    if (!isAdmin && !branchId) return toast.error("지점을 선택해주세요");
-    if (isAdmin && !branchId && Number(newItem.initialStock || 0) !== 0) return toast.error("수량까지 넣으려면 먼저 지점을 선택해주세요");
-    upsertItem.mutate({
-      id: editingItemId || undefined,
-      name: newItem.name.trim(),
-      category: newItem.category.trim() || "위스키",
-      unitCost: isAdmin ? Number(newItem.unitCost || 0) : 0,
-      initialStock: Number(newItem.initialStock || 0),
-      branchId,
-      isActive: true,
-    });
-  };
-
-  const openNewProduct = () => {
-    setEditingItemId(null);
-    setNewItem({ name: "", category: activeCategory, unitCost: "", initialStock: "" });
-    setProductEditorOpen(true);
-  };
-
-  const openEditProduct = (item: any) => {
-    setEditingItemId(item.id);
-    setNewItem({
-      name: item.name,
-      category: categoryOf(item),
-      unitCost: String(item.unitCost || 0),
-      initialStock: String(stockByItem.get(item.id) ?? 0),
-    });
-    setProductEditorOpen(true);
-  };
-
-  const handleDeleteProduct = (item: any) => {
-    if (!item) return;
-    const message = isAdmin
-      ? `${item.name} 제품을 전체 지점에서 비활성화할까요?`
-      : `${item.name} 제품을 현재 지점 목록에서 숨길까요?`;
-    if (!window.confirm(message)) return;
-    deleteItem.mutate({ id: item.id, branchId: effectiveBranchId });
+    upsertItem.mutate({ id: editingItemId || undefined, name: newItem.name.trim(), category: newItem.category.trim() || "기타", unitCost: Number(newItem.unitCost || 0), isActive: true });
   };
 
   const totalStock = data?.totals.stock ?? 0;
@@ -276,7 +225,7 @@ export default function LiquorStockReport() {
           <div className="flex items-center justify-between px-4 h-14">
             <button onClick={() => setSelectedItem(null)} className="p-2 -ml-2 rounded-full hover:bg-slate-100"><ArrowLeft size={22} /></button>
             <div className="font-bold text-lg">제품 정보</div>
-            <button onClick={() => openEditProduct(selectedItem)} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>
+            <button className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>
           </div>
         </div>
         <div className="max-w-3xl mx-auto">
@@ -293,10 +242,6 @@ export default function LiquorStockReport() {
             <InfoRow label="현재 재고" value={`${qty(stockByItem.get(selectedItem.id) ?? 0)}병`} valueClass="text-blue-600 font-black text-2xl" />
             <InfoRow label="분류" value={categoryOf(selectedItem)} />
           </div>
-          <div className="bg-white mt-3 p-4 rounded-2xl mx-4 border border-slate-100 shadow-sm">
-            <button onClick={() => openEditProduct(selectedItem)} className="w-full h-12 rounded-xl bg-slate-900 text-white font-black flex items-center justify-center gap-2"><Settings size={18}/>제품 설정/수정</button>
-            <button onClick={() => handleDeleteProduct(selectedItem)} className="w-full h-12 mt-2 rounded-xl bg-red-50 text-red-600 font-black flex items-center justify-center gap-2"><Trash2 size={18}/>{isAdmin ? "제품 삭제" : "내 지점에서 숨김"}</button>
-          </div>
           <div className="fixed left-0 right-0 bottom-0 z-30 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
             <div className="grid grid-cols-3 gap-2">
               <button onClick={() => openAction(selectedItem, "IN")} className="h-12 rounded-2xl bg-emerald-50 text-emerald-700 font-black flex items-center justify-center gap-1"><ArrowDownToLine size={18}/>입고</button>
@@ -305,7 +250,6 @@ export default function LiquorStockReport() {
             </div>
           </div>
         </div>
-        {productEditorOpen && <ProductEditorModal isAdmin={isAdmin} newItem={newItem} setNewItem={setNewItem} editingItemId={editingItemId} saveItem={saveItem} close={() => setProductEditorOpen(false)} pending={upsertItem.isPending} />}
         {actionItem && <ActionSheet item={actionItem} movementType={movementType} setMovementType={setMovementType} entryRows={entryRows} updateEntryRow={updateEntryRow} submitMovement={() => submitMovement(actionItem)} close={() => setActionItem(null)} isSaving={recordMovement.isPending} />}
       </div>
     );
@@ -352,10 +296,7 @@ export default function LiquorStockReport() {
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-3">
               <div className="text-xl font-black">제품 검색</div>
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-slate-500">{filteredItems.length}개</div>
-                <button onClick={openNewProduct} className="h-9 px-3 rounded-xl bg-blue-600 text-white text-sm font-black flex items-center gap-1"><Plus size={16}/>제품 추가</button>
-              </div>
+              <div className="text-sm text-slate-500">{filteredItems.length}개</div>
             </div>
             <div className="flex items-center gap-2 mb-3 bg-slate-100 rounded-xl px-3 h-11"><Search size={18} className="text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="제품 이름 검색" className="bg-transparent outline-none flex-1" />{search && <button type="button" onClick={() => setSearch("")} className="w-7 h-7 rounded-full bg-slate-300/70 text-slate-600 flex items-center justify-center hover:bg-slate-400/70"><X size={16}/></button>}</div>
             <CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
@@ -390,11 +331,10 @@ export default function LiquorStockReport() {
         )}
 
         {tab === "admin" && (
-          <AdminPanel isAdmin={isAdmin} newItem={newItem} setNewItem={setNewItem} editingItemId={editingItemId} saveItem={saveItem} upsertPending={upsertItem.isPending} search={search} setSearch={setSearch} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortMode={sortMode} setSortMode={setSortMode} filteredItems={filteredItems} stockByItem={stockByItem} stockEdit={stockEdit} setStockEdit={setStockEdit} setStock={(item: typeof filteredItems[0], value: string | number) => setStock.mutate({ branchId: effectiveBranchId ?? branches[0]?.id, liquorItemId: item.id, currentStock: Number(value || 0), memo: "관리자 재고 보정" })} setEditingItem={(item: typeof filteredItems[0]) => { setEditingItemId(item.id); setNewItem({ name: item.name, category: categoryOf(item), unitCost: String(item.unitCost || 0), initialStock: String(stockByItem.get(item.id) ?? 0) }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+          <AdminPanel isAdmin={isAdmin} newItem={newItem} setNewItem={setNewItem} editingItemId={editingItemId} saveItem={saveItem} upsertPending={upsertItem.isPending} search={search} setSearch={setSearch} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortMode={sortMode} setSortMode={setSortMode} filteredItems={filteredItems} stockByItem={stockByItem} stockEdit={stockEdit} setStockEdit={setStockEdit} setStock={(item: typeof filteredItems[0], value: string | number) => setStock.mutate({ branchId: effectiveBranchId ?? branches[0]?.id, liquorItemId: item.id, currentStock: Number(value || 0), memo: "관리자 재고 보정" })} setEditingItem={(item: typeof filteredItems[0]) => { setEditingItemId(item.id); setNewItem({ name: item.name, category: categoryOf(item), unitCost: String(item.unitCost || 0) }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
         )}
       </div>
-      {productEditorOpen && <ProductEditorModal isAdmin={isAdmin} newItem={newItem} setNewItem={setNewItem} editingItemId={editingItemId} saveItem={saveItem} close={() => setProductEditorOpen(false)} pending={upsertItem.isPending} />}
-        {actionItem && <ActionSheet item={actionItem} movementType={movementType} setMovementType={setMovementType} entryRows={entryRows} updateEntryRow={updateEntryRow} submitMovement={() => submitMovement(actionItem)} close={() => setActionItem(null)} isSaving={recordMovement.isPending} />}
+      {actionItem && <ActionSheet item={actionItem} movementType={movementType} setMovementType={setMovementType} entryRows={entryRows} updateEntryRow={updateEntryRow} submitMovement={() => submitMovement(actionItem)} close={() => setActionItem(null)} isSaving={recordMovement.isPending} />}
     </div>
   );
 }
@@ -415,65 +355,25 @@ function SortSelect({ sortMode, setSortMode }: { sortMode: "stockDesc" | "stockA
   return <select value={sortMode} onChange={(e) => setSortMode(e.target.value as any)} className="w-full h-10 mb-3 px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700"><option value="stockDesc">재고 많은순</option><option value="stockAsc">재고 적은순</option><option value="nameAsc">이름 오름차순</option><option value="nameDesc">이름 내림차순</option></select>;
 }
 
-function ProductEditorModal({ isAdmin, newItem, setNewItem, editingItemId, saveItem, close, pending }: any) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/45 flex items-end justify-center">
-      <div className="w-full max-w-md bg-white rounded-t-3xl px-4 pt-4 pb-6 shadow-2xl overflow-hidden">
-        <div className="w-14 h-1.5 rounded-full bg-slate-300 mx-auto mb-5" />
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-2xl font-black">{editingItemId ? "제품 수정" : "제품 추가"}</div>
-          <button onClick={close} className="p-2 rounded-full bg-slate-100"><X size={20}/></button>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <div className="text-xs font-bold text-slate-500 mb-1">제품명</div>
-            <input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="예: 글렌리벳 12y" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="text-xs font-bold text-slate-500 mb-1">카테고리</div>
-              <select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="w-full h-12 px-3 rounded-xl border border-slate-200 bg-white outline-none">
-                {CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-500 mb-1">현재 수량</div>
-              <input value={newItem.initialStock} onChange={(e) => setNewItem((v: any) => ({ ...v, initialStock: e.target.value.replace(/[^0-9.-]/g, "") }))} inputMode="decimal" placeholder="0" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none text-right" />
-            </div>
-          </div>
-          {isAdmin && (
-            <div>
-              <div className="text-xs font-bold text-slate-500 mb-1">원가/단가</div>
-              <input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} inputMode="numeric" placeholder="관리자만 입력" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none text-right" />
-            </div>
-          )}
-          {!isAdmin && <div className="text-xs text-slate-400 leading-5">지점 계정은 제품명, 카테고리, 현재 수량만 등록할 수 있습니다. 원가/단가는 관리자만 관리합니다.</div>}
-          <button onClick={saveItem} disabled={pending} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-50">{pending ? "저장 중..." : editingItemId ? "수정 저장" : "제품 추가"}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ActionSheet({ item, movementType, setMovementType, entryRows, updateEntryRow, submitMovement, close, isSaving }: any) {
   const row = entryRows[0] ?? { quantity: "", memo: "" };
   const label = movementType === "OUT" ? "출고" : movementType === "IN" ? "입고" : "조정";
   const accent = movementType === "OUT" ? "red" : movementType === "IN" ? "emerald" : "slate";
   return (
     <div className="fixed inset-0 z-50 bg-black/45 flex items-end justify-center">
-      <div className="w-full max-w-md bg-white rounded-t-3xl px-4 pt-4 pb-6 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-3xl bg-white rounded-t-3xl p-5 shadow-2xl">
         <div className="w-14 h-1.5 rounded-full bg-slate-300 mx-auto mb-5" />
-        <div className="flex items-center justify-between mb-4 gap-3"><div className="text-xl font-black truncate">{label} 수량 입력</div><button onClick={close} className="p-2 rounded-full bg-slate-100 shrink-0"><X size={20}/></button></div>
+        <div className="flex items-center justify-between mb-4"><div className="text-2xl font-black">{label} 수량 입력</div><button onClick={close} className="p-2 rounded-full bg-slate-100"><X size={20}/></button></div>
         <div className="text-center text-slate-500 mb-5">{item.name}</div>
         <div className="grid grid-cols-3 gap-2 mb-4">
           <button onClick={() => setMovementType("IN")} className={`h-11 rounded-xl font-black ${movementType === "IN" ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-500"}`}>입고</button>
           <button onClick={() => setMovementType("OUT")} className={`h-11 rounded-xl font-black ${movementType === "OUT" ? "bg-red-50 text-red-600" : "bg-slate-50 text-slate-500"}`}>출고</button>
           <button onClick={() => setMovementType("ADJUST")} className={`h-11 rounded-xl font-black ${movementType === "ADJUST" ? "bg-slate-200 text-slate-700" : "bg-slate-50 text-slate-500"}`}>조정</button>
         </div>
-        <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2 mb-4 w-full max-w-full overflow-hidden">
-          <button onClick={() => { const curr = Number(row.quantity || 0); updateEntryRow(0, { quantity: String(Math.max(0, curr - 1)) }); }} className={`h-12 w-11 rounded-xl font-black text-xl shrink-0 bg-${accent}-50 text-${accent}-600`}>−</button>
-          <input value={row.quantity} onChange={(e) => updateEntryRow(0, { quantity: e.target.value.replace(/[^0-9.-]/g, "") })} inputMode="decimal" placeholder="수량" className={`min-w-0 w-full h-12 text-center text-xl font-black rounded-2xl border border-${accent}-100 bg-slate-50 outline-none`} />
-          <button onClick={() => { const curr = Number(row.quantity || 0); updateEntryRow(0, { quantity: String(curr + 1) }); }} className={`h-12 w-11 rounded-xl font-black text-xl shrink-0 bg-${accent}-50 text-${accent}-600`}>+</button>
+        <div className="flex items-center gap-2 mb-4">
+          <button onClick={() => { const curr = Number(row.quantity || 0); updateEntryRow(0, { quantity: String(Math.max(0, curr - 1)) }); }} className={`h-14 w-14 rounded-xl font-black text-xl bg-${accent}-50 text-${accent}-600`}>−</button>
+          <input value={row.quantity} onChange={(e) => updateEntryRow(0, { quantity: e.target.value.replace(/[^0-9.-]/g, "") })} inputMode="decimal" placeholder="수량" className={`flex-1 h-14 text-center text-2xl font-black rounded-2xl border border-${accent}-100 bg-slate-50 outline-none`} />
+          <button onClick={() => { const curr = Number(row.quantity || 0); updateEntryRow(0, { quantity: String(curr + 1) }); }} className={`h-14 w-14 rounded-xl font-black text-xl bg-${accent}-50 text-${accent}-600`}>+</button>
         </div>
         {movementType === "ADJUST" && <textarea value={row.memo} onChange={(e) => updateEntryRow(0, { memo: e.target.value })} placeholder="조정 메모 (예: 실재고 보정, 파손, 분실 등)" className="mt-3 w-full min-h-[80px] px-3 py-3 rounded-2xl border border-slate-200 bg-white text-sm outline-none resize-none" />}
         <button disabled={isSaving} onClick={submitMovement} className="mt-4 w-full h-13 rounded-2xl bg-blue-600 text-white font-black text-lg">적용</button>

@@ -552,14 +552,14 @@ export default function Home() {
         </div>
 
         {/* 2줄: 액션 버튼들 */}
-        <div className="flex flex-wrap items-center gap-1.5 px-4 pb-2.5 overflow-visible">
+        <div className="flex items-center gap-1.5 px-4 pb-2.5">
           {/* 알림 토글 */}
           {isSupported && (
             <button
               onClick={isSubscribed ? unsubscribe : subscribe}
               disabled={pushLoading}
               title={isSubscribed ? '알림 끄기' : '알림 켜기'}
-              className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg border transition-colors flex-shrink-0"
+              className="flex items-center justify-center w-9 h-9 rounded-lg border transition-colors flex-shrink-0"
               style={{
                 background: isSubscribed ? 'oklch(0.45 0.18 25)' : 'oklch(0.92 0.015 85)',
                 color: isSubscribed ? 'white' : 'oklch(0.45 0.01 50)',
@@ -574,7 +574,7 @@ export default function Home() {
           {user.role === 'admin' && (
             <button
               onClick={() => navigate('/admin')}
-              className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+              className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
               style={{
                 background: 'oklch(0.92 0.015 85)',
                 color: 'oklch(0.25 0.01 50)',
@@ -589,7 +589,7 @@ export default function Home() {
           {/* 테이블 기록 버튼 */}
           <button
             onClick={() => navigate(`/table-report${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
-            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
             style={{
               background: 'oklch(0.92 0.015 85)',
               color: 'oklch(0.25 0.01 50)',
@@ -605,7 +605,7 @@ export default function Home() {
           {/* 주류 출고현황 버튼 */}
           <button
             onClick={() => navigate(`/liquor-stock?date=${currentDate}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`)}
-            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
             style={{
               background: 'oklch(0.92 0.015 85)',
               color: 'oklch(0.25 0.01 50)',
@@ -619,7 +619,7 @@ export default function Home() {
           {/* 인센티브 통계 버튼 */}
           <button
             onClick={() => navigate(`/staff-incentive${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
-            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
             style={{
               background: 'oklch(0.92 0.015 85)',
               color: 'oklch(0.25 0.01 50)',
@@ -639,7 +639,7 @@ export default function Home() {
                   toast.info('리셋 기능은 준비 중입니다');
                 }
               }}
-              className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+              className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
               style={{
                 background: 'oklch(0.92 0.015 85)',
                 color: 'oklch(0.45 0.18 25)',
@@ -655,7 +655,7 @@ export default function Home() {
           {/* 기록 버튼 */}
           <button
             onClick={() => navigate('/history')}
-            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border transition-colors flex-shrink-0"
             style={{
               background: 'oklch(0.92 0.015 85)',
               color: 'oklch(0.25 0.01 50)',
@@ -670,7 +670,7 @@ export default function Home() {
           <button
             onClick={handleSave}
             disabled={saveMutation.isPending}
-            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-60 flex-shrink-0"
+            className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-60 flex-shrink-0"
             style={{ background: 'oklch(0.45 0.18 25)' }}
           >
             <Save size={14} />
@@ -681,7 +681,7 @@ export default function Home() {
           <button
             onClick={logout}
             title="로그아웃"
-            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg border transition-colors flex-shrink-0"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border transition-colors flex-shrink-0 ml-auto"
             style={{
               background: 'oklch(0.92 0.015 85)',
               color: 'oklch(0.5 0.01 50)',
