@@ -3453,8 +3453,8 @@ export const appRouter = router({
           return {
             ...m,
             quantity: Number(m.quantity || 0),
-            unitCost: Number(m.unitCost || 0),
-            totalCost: Number(m.totalCost || 0),
+            unitCost: Number(m.unitCost || item?.unitCost || 0),
+            totalCost: Number(m.totalCost || 0) || Math.abs(Number(m.quantity || 0)) * Number(m.unitCost || item?.unitCost || 0),
             itemName: item?.name ?? '삭제된 품목',
             category: item?.category ?? '기타',
             branchName: branch?.name ?? '',
@@ -3493,6 +3493,7 @@ export const appRouter = router({
         endDate: z.string(),
         branchId: z.number().optional(),
         keyword: z.string().optional(),
+        type: z.enum(['IN', 'OUT', 'ADJUST']).optional(),
       }))
       .query(async ({ ctx, input }) => {
         const account = await requireStoreAccount(ctx);
@@ -3513,12 +3514,15 @@ export const appRouter = router({
         const itemById = new Map(itemRows.map(i => [i.id, i]));
         const branchById = new Map(allBranches.map(b => [b.id, b]));
 
+        const historyConditions = [
+          inArray(liquorStockMovements.branchId, selectedBranchIds),
+          gte(liquorStockMovements.date, input.startDate),
+          lte(liquorStockMovements.date, input.endDate),
+        ];
+        if (input.type) historyConditions.push(eq(liquorStockMovements.type, input.type));
+
         const movementRows = await db.select().from(liquorStockMovements)
-          .where(and(
-            inArray(liquorStockMovements.branchId, selectedBranchIds),
-            gte(liquorStockMovements.date, input.startDate),
-            lte(liquorStockMovements.date, input.endDate),
-          ))
+          .where(and(...historyConditions))
           .orderBy(desc(liquorStockMovements.date), desc(liquorStockMovements.createdAt));
 
         const keyword = (input.keyword || '').trim().toLowerCase();
@@ -3529,8 +3533,8 @@ export const appRouter = router({
             return {
               ...m,
               quantity: Number(m.quantity || 0),
-              unitCost: Number(m.unitCost || 0),
-              totalCost: Number(m.totalCost || 0),
+              unitCost: Number(m.unitCost || item?.unitCost || 0),
+              totalCost: Number(m.totalCost || 0) || Math.abs(Number(m.quantity || 0)) * Number(m.unitCost || item?.unitCost || 0),
               itemName: item?.name ?? '삭제된 품목',
               category: item?.category ?? '기타',
               branchName: branch?.name ?? '',
@@ -3701,7 +3705,8 @@ export const appRouter = router({
         const newSignedQty = movement.type === 'OUT' ? -Math.abs(rawQty) : movement.type === 'IN' ? Math.abs(rawQty) : rawQty;
         const oldSignedQty = Number(movement.quantity || 0);
         const diff = newSignedQty - oldSignedQty;
-        const unitCost = Number(movement.unitCost || 0);
+        const [itemForCost] = await db.select().from(liquorItems).where(eq(liquorItems.id, movement.liquorItemId)).limit(1);
+        const unitCost = Number(movement.unitCost || itemForCost?.unitCost || 0);
         const totalCost = Math.abs(newSignedQty) * unitCost;
 
         await db.update(liquorStockMovements).set({

@@ -83,10 +83,9 @@ export default function LiquorStockReport() {
   const [cart, setCart] = useState<CartRow[]>([]);
   const [actionMemo, setActionMemo] = useState("");
 
-  const [historyStart, setHistoryStart] = useState("2000-01-01");
-  const [historyEnd, setHistoryEnd] = useState(todayString());
+  const [historyStart, setHistoryStart] = useState(date);
+  const [historyEnd, setHistoryEnd] = useState(date);
   const [historySearch, setHistorySearch] = useState("");
-  const [historyType, setHistoryType] = useState<"ALL" | MovementType>("ALL");
   const [editingMovement, setEditingMovement] = useState<any | null>(null);
 
   const isAdmin = user?.role === "admin";
@@ -98,7 +97,7 @@ export default function LiquorStockReport() {
   );
 
   const historyQuery = trpc.liquor.history.useQuery(
-    { startDate: historyStart, endDate: historyEnd, branchId: effectiveBranchId, keyword: historySearch.trim() || undefined, type: historyType === "ALL" ? undefined : historyType },
+    { startDate: historyStart, endDate: historyEnd, branchId: effectiveBranchId, keyword: historySearch.trim() || undefined },
     { enabled: !!user && tab === "history", retry: false },
   );
 
@@ -412,8 +411,6 @@ export default function LiquorStockReport() {
             setHistoryEnd={setHistoryEnd}
             historySearch={historySearch}
             setHistorySearch={setHistorySearch}
-            historyType={historyType}
-            setHistoryType={setHistoryType}
             movements={visibleMovements}
             isAdmin={isAdmin}
             loading={historyQuery.isLoading}
@@ -635,182 +632,39 @@ function InfoRow({ label, value, valueClass = "font-bold" }: any) {
   );
 }
 
-function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, onEditMovement, onDeleteMovement }: any) {
-  const [filterOpen, setFilterOpen] = useState(false);
-  const hasFilter = historyType !== "ALL" || historySearch.trim() || historyStart !== "2000-01-01" || historyEnd !== todayString();
-  return <div className="space-y-4">
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
-      <div>
-        <div className="text-xl font-black">히스토리</div>
-        <div className="text-xs text-slate-400 mt-1">최근 입고/출고/조정 내역이 날짜별로 표시됩니다</div>
-      </div>
-      <button onClick={() => setFilterOpen(true)} className={`h-10 px-4 rounded-xl font-black flex items-center gap-2 ${hasFilter ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700"}`}>
-        <SlidersHorizontal size={17}/>필터
-      </button>
-    </div>
-    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement}/>
-    {filterOpen && <HistoryFilterModal
-      close={() => setFilterOpen(false)}
-      reset={() => { setHistoryType("ALL"); setHistoryStart("2000-01-01"); setHistoryEnd(todayString()); setHistorySearch(""); }}
-      historyType={historyType}
-      setHistoryType={setHistoryType}
-      historyStart={historyStart}
-      setHistoryStart={setHistoryStart}
-      historyEnd={historyEnd}
-      setHistoryEnd={setHistoryEnd}
-      historySearch={historySearch}
-      setHistorySearch={setHistorySearch}
-    />}
-  </div>;
+function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, movements, isAdmin, loading, onEditMovement, onDeleteMovement }: any) {
+  return <div className="space-y-4"><div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="grid grid-cols-2 gap-2 mb-3"><input type="date" value={historyStart} onChange={(e) => setHistoryStart(e.target.value)} className="h-11 px-3 rounded-xl border border-slate-200 font-bold"/><input type="date" value={historyEnd} onChange={(e) => setHistoryEnd(e.target.value)} className="h-11 px-3 rounded-xl border border-slate-200 font-bold"/></div><SearchInput value={historySearch} onChange={setHistorySearch} placeholder="제품명으로 히스토리 검색" /></div><HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement}/></div>;
 }
-
-function HistoryFilterModal({ close, reset, historyType, setHistoryType, historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch }: any) {
-  const typeTabs: Array<["ALL" | MovementType, string]> = [["ALL", "전체"], ["IN", "입고"], ["OUT", "출고"], ["ADJUST", "조정"]];
-  return <div className="fixed inset-0 z-50 bg-white text-slate-950 flex flex-col">
-    <div className="h-14 px-4 border-b border-slate-200 flex items-center justify-between shrink-0">
-      <button onClick={close} className="p-2 -ml-2 rounded-full"><X size={24}/></button>
-      <div className="text-xl font-black">필터</div>
-      <button onClick={reset} className="font-bold text-slate-700">초기화</button>
-    </div>
-    <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8">
-      <section>
-        <div className="text-2xl font-black mb-4">거래 종류</div>
-        <div className="grid grid-cols-4 border border-blue-600 rounded-lg overflow-hidden">
-          {typeTabs.map(([key, label]) => <button key={key} onClick={() => setHistoryType(key)} className={`h-12 font-bold border-r border-blue-600 last:border-r-0 ${historyType === key ? "bg-blue-600 text-white" : "bg-white text-blue-600"}`}>{label}</button>)}
-        </div>
-      </section>
-      <section>
-        <div className="text-2xl font-black mb-4">기간</div>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <input type="date" value={historyStart === "2000-01-01" ? "" : historyStart} onChange={(e) => setHistoryStart(e.target.value || "2000-01-01")} className="h-14 px-4 rounded-xl bg-white border border-slate-200 shadow-sm font-bold" />
-          <span className="font-black text-slate-400">-</span>
-          <input type="date" value={historyEnd} onChange={(e) => setHistoryEnd(e.target.value || todayString())} className="h-14 px-4 rounded-xl bg-white border border-slate-200 shadow-sm font-bold" />
-        </div>
-      </section>
-      <section>
-        <div className="text-2xl font-black mb-4">제품</div>
-        <SearchInput value={historySearch} onChange={setHistorySearch} placeholder="제품명 검색" />
-      </section>
-    </div>
-    <div className="p-5 border-t border-slate-100 shrink-0">
-      <button onClick={close} className="w-full h-14 rounded-2xl bg-blue-600 text-white text-lg font-black">필터 적용</button>
-    </div>
-  </div>;
-}
-
-function movementBatchKey(m: any): string {
-  const created = String(m.createdAt || "").slice(0, 16);
-  return `${m.date}|${m.type}|${m.branchId}|${m.createdBy || ""}|${m.memo || ""}|${created}`;
-}
-
 function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMovement }: { movements: any[]; isAdmin: boolean; loading?: boolean; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void }) {
-  const [detailGroup, setDetailGroup] = useState<any[] | null>(null);
   if (loading) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">히스토리 불러오는 중...</div>;
-
-  const byDate = movements.reduce<Record<string, Record<string, any[]>>>((acc, m) => {
-    const date = m.date;
-    const key = movementBatchKey(m);
-    (acc[date] ||= {});
-    (acc[date][key] ||= []).push(m);
-    return acc;
-  }, {});
-  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+  const grouped = movements.reduce<Record<string, any[]>>((acc, m) => { (acc[m.date] ||= []).push(m); return acc; }, {});
+  const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   if (dates.length === 0) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">조건에 맞는 입고/출고 내역이 없습니다</div>;
-
-  return <div className="space-y-7">
-    {dates.map((date) => {
-      const groups = Object.values(byDate[date]).sort((a, b) => String(b[0]?.createdAt || "").localeCompare(String(a[0]?.createdAt || "")));
-      return <div key={date}>
-        <div className="text-slate-500 font-bold text-lg mb-3 px-1">{formatKoreanDate(date)}</div>
-        <div className="space-y-4">
-          {groups.map((group) => <HistoryBatchCard key={movementBatchKey(group[0])} group={group} isAdmin={isAdmin} onClick={() => setDetailGroup(group)} />)}
-        </div>
-      </div>;
-    })}
-    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => setDetailGroup(null)} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} />}
-  </div>;
-}
-
-function HistoryBatchCard({ group, isAdmin, onClick }: { group: any[]; isAdmin: boolean; onClick: () => void }) {
-  const first = group[0];
-  const type = first.type;
-  const totalQty = group.reduce((sum, m) => sum + Number(m.quantity || 0), 0);
-  const totalAbsQty = group.reduce((sum, m) => sum + Math.abs(Number(m.quantity || 0)), 0);
-  const totalCost = group.reduce((sum, m) => sum + Math.abs(Number(m.totalCost || 0)), 0);
-  const itemCount = group.length;
-  const label = type === "OUT" ? "출고" : type === "IN" ? "입고" : "조정";
-  const color = type === "OUT" ? "text-red-500" : type === "IN" ? "text-emerald-600" : "text-slate-700";
-  return <button onClick={onClick} className="w-full text-left bg-white rounded-3xl p-4 shadow-sm border border-slate-100 flex items-start justify-between gap-3 active:scale-[0.99] transition">
-    <div className="flex items-start gap-3 min-w-0">
-      <MovementIcon type={type}/>
-      <div className="min-w-0">
-        <div className={`font-black text-2xl ${color}`}>{label}</div>
-        <div className="text-lg font-black text-slate-900 mt-2">{first.branchName || "기본 위치"}</div>
-        <div className="text-lg font-black text-slate-900 mt-2">{itemCount}품목 / {totalQty > 0 ? "+" : ""}{qty(totalQty)}개</div>
-        <div className="text-lg text-slate-500 mt-2 truncate max-w-[240px]">{first.itemName}</div>
-        {isAdmin && type === "OUT" && <div className="text-sm font-bold text-slate-500 mt-2">출고 원가 {won(totalCost)}</div>}
-      </div>
-    </div>
-    <div className={`text-xl font-black shrink-0 ${color}`}>{type === "OUT" ? "-" : type === "IN" ? "+" : ""}{qty(totalAbsQty)}</div>
-  </button>;
-}
-
-function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMovement }: any) {
-  const first = group[0];
-  const type = first.type;
-  const label = type === "OUT" ? "출고" : type === "IN" ? "입고" : "조정";
-  const color = type === "OUT" ? "text-red-500" : type === "IN" ? "text-emerald-600" : "text-slate-700";
-  const totalQty = group.reduce((sum: number, m: any) => sum + Number(m.quantity || 0), 0);
-  const totalCost = group.reduce((sum: number, m: any) => sum + Math.abs(Number(m.totalCost || 0)), 0);
-  return <div className="fixed inset-0 z-50 bg-white text-slate-950 overflow-y-auto">
-    <Header title="상세 내역" back={close} right={<span/>}/>
-    <div className="max-w-3xl mx-auto p-5 pb-20">
-      <div className={`text-4xl font-black ${color}`}>{label}</div>
-      <div className={`h-1 rounded-full mt-5 ${type === "OUT" ? "bg-red-400" : type === "IN" ? "bg-emerald-500" : "bg-slate-400"}`} />
-      <div className="bg-white mt-4 divide-y divide-slate-100 border-b border-slate-100">
-        <InfoRow label="위치" value={first.branchName || "기본 위치"}/>
-        <InfoRow label={`${label}일`} value={formatKoreanDateTime(first.date, first.createdAt)}/>
-        <InfoRow label="합계" value={`${group.length}품목 / ${totalQty > 0 ? "+" : ""}${qty(totalQty)}개`}/>
-        {isAdmin && type === "OUT" && <InfoRow label="출고 원가" value={won(totalCost)} valueClass="font-black text-red-500"/>}
-      </div>
-      <div className="mt-5 space-y-4">
-        {group.map((m: any) => <div key={m.id} className="flex items-center justify-between gap-3 py-3 border-b border-slate-100">
-          <div className="w-14 h-14 rounded-xl bg-slate-200 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="text-xl font-black truncate">{m.itemName}</div>
-            <div className="text-sm text-slate-500 mt-1">0 | 0 | {categoryOf(m)}</div>
-            {m.memo && <div className="text-sm text-slate-400 mt-1 truncate">메모: {m.memo}</div>}
-            {isAdmin && type === "OUT" && <div className="text-xs text-slate-400 mt-1">원가 {won(Math.abs(Number(m.totalCost || 0)))}</div>}
+  return <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+    <div className="flex items-center gap-2 text-xl font-black mb-4"><ClipboardList size={22}/>히스토리</div>
+    {dates.map((date) => <div key={date} className="mb-6">
+      <div className="text-slate-500 font-semibold mb-3">{date}</div>
+      <div className="space-y-4">
+        {grouped[date].map((m) => <div key={m.id} className="flex items-start justify-between gap-3 rounded-2xl bg-slate-50 p-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <MovementIcon type={m.type}/>
+            <div className="min-w-0 flex-1">
+              <div className={`font-black text-xl ${m.type === "OUT" ? "text-red-500" : m.type === "IN" ? "text-emerald-600" : "text-slate-700"}`}>{m.type === "OUT" ? "출고" : m.type === "IN" ? "입고" : "조정"}</div>
+              <div className="text-lg font-bold text-slate-900 mt-1 truncate">{m.itemName}</div>
+              <div className="text-xs text-slate-400">{m.branchName}{isAdmin ? ` · ${won(Number(m.totalCost || 0))}` : ""}</div>
+              {m.memo && <div className="text-xs text-slate-400 mt-1 max-w-[220px] truncate">메모: {m.memo}</div>}
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => onEditMovement?.(m)} className="h-8 px-3 rounded-lg bg-white border border-slate-200 text-xs font-black text-slate-600">수정</button>
+                <button onClick={() => onDeleteMovement?.(m)} className="h-8 px-3 rounded-lg bg-red-50 text-red-500 text-xs font-black">삭제</button>
+              </div>
+            </div>
           </div>
-          <div className={`text-xl font-black shrink-0 ${color}`}>{Number(m.quantity) > 0 ? "+" : ""}{qty(Number(m.quantity || 0))}</div>
-          <div className="flex flex-col gap-1 shrink-0">
-            <button onClick={() => onEditMovement?.(m)} className="h-8 px-2 rounded-lg bg-slate-100 text-xs font-black">수정</button>
-            <button onClick={() => onDeleteMovement?.(m)} className="h-8 px-2 rounded-lg bg-red-50 text-red-500 text-xs font-black">삭제</button>
-          </div>
+          <div className={`font-black text-xl shrink-0 ${m.type === "OUT" ? "text-red-500" : m.type === "IN" ? "text-emerald-600" : "text-slate-600"}`}>{m.quantity > 0 ? "+" : ""}{qty(Number(m.quantity || 0))}</div>
         </div>)}
       </div>
-      <div className="mt-8 text-xl text-slate-400">메모</div>
-      {first.memo && <div className="mt-3 text-slate-700">{first.memo}</div>}
-    </div>
+    </div>)}
   </div>;
 }
-
-function formatKoreanDate(date: string) {
-  const [y, m, d] = String(date).split("-");
-  if (!y || !m || !d) return date;
-  return `${Number(y)}년 ${Number(m)}월 ${Number(d)}일`;
-}
-
-function formatKoreanDateTime(date: string, createdAt?: string) {
-  if (!createdAt) return formatKoreanDate(date);
-  const dt = new Date(createdAt);
-  if (Number.isNaN(dt.getTime())) return formatKoreanDate(date);
-  const ampm = dt.getHours() < 12 ? "오전" : "오후";
-  const h = dt.getHours() % 12 || 12;
-  const min = String(dt.getMinutes()).padStart(2, "0");
-  return `${formatKoreanDate(date)} ${ampm} ${h}:${min}`;
-}
-
 function MovementIcon({ type }: { type: string }) {
   if (type === "OUT") return <div className="mt-1 text-red-500"><ArrowUpFromLine size={24}/></div>;
   if (type === "IN") return <div className="mt-1 text-emerald-600"><ArrowDownToLine size={24}/></div>;
