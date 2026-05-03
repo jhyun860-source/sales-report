@@ -309,16 +309,29 @@ export default function LiquorStockReport() {
 
   if (selectedItem) {
     return (
-      <ProductDetail
-        item={selectedItem}
-        back={() => setSelectedItem(null)}
-        selectedBranch={selectedBranch}
-        stock={stockByItem.get(selectedItem.id) ?? 0}
-        isAdmin={isAdmin}
-        openEdit={() => openEditProduct(selectedItem)}
-        deleteProduct={() => handleDeleteProduct(selectedItem)}
-        openAction={(type: 'add' | 'edit' | 'delete' | 'stock') => openAction(type, selectedItem)}
-      />
+      <>
+        <ProductDetail
+          item={selectedItem}
+          back={() => setSelectedItem(null)}
+          selectedBranch={selectedBranch}
+          stock={stockByItem.get(selectedItem.id) ?? 0}
+          isAdmin={isAdmin}
+          openEdit={() => openEditProduct(selectedItem)}
+          deleteProduct={() => handleDeleteProduct(selectedItem)}
+          openAction={(type: MovementType) => openAction(type, selectedItem)}
+        />
+        {productEditorOpen && (
+          <ProductEditorModal
+            isAdmin={isAdmin}
+            newItem={newItem}
+            setNewItem={setNewItem}
+            editingItemId={editingItemId}
+            saveItem={saveItem}
+            close={() => setProductEditorOpen(false)}
+            pending={upsertItem.isPending}
+          />
+        )}
+      </>
     );
   }
 
@@ -481,7 +494,70 @@ function SortSelect({ sortMode, setSortMode }: any) {
 function TransactionScreen(props: any) {
   const { mode, setMode, close, date, setDate, selectedBranch, branches, isAdmin, effectiveBranchId, setSelectedBranchId, search, setSearch, category, setCategory, items, stockByItem, getCartQty, changeCartQty, setCartQty, previewStock, cart, cartItemName, memo, setMemo, submitCart, isSaving } = props;
   const title = mode === "OUT" ? "출고" : mode === "IN" ? "입고" : "조정";
-  return <div className="min-h-screen bg-white text-slate-950 pb-28"><Header title={title} back={close} right={null}/><div className="max-w-3xl mx-auto px-4 py-5 space-y-4"><div className={`text-4xl font-black ${mode === "OUT" ? "text-red-500" : mode === "IN" ? "text-emerald-600" : "text-slate-700"}`}>{title}</div><div className={`h-1 rounded-full ${mode === "OUT" ? "bg-red-400" : mode === "IN" ? "bg-emerald-500" : "bg-slate-400"}`} /><div className="bg-white divide-y divide-slate-100 border-y border-slate-100"><InfoRow label="날짜" value={<input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="text-right outline-none font-bold" />} /><InfoRow label="위치" value={isAdmin ? <select value={effectiveBranchId ?? ""} onChange={(e) => setSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="text-right outline-none font-bold bg-white"><option value="">지점 선택</option>{branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}</select> : selectedBranch?.name ?? "기본 위치"} /><InfoRow label="제품" value={`${cart.length}품목 / ${qty(cart.reduce((s: number, r: CartRow) => s + Math.abs(Number(r.quantity || 0)), 0))}개`} /><InfoRow label="메모" value={<input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="작성" className="text-right outline-none font-bold min-w-0" />} /></div><div className="bg-slate-50 rounded-2xl p-3 border border-slate-100"><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색" /><CategoryTabs activeCategory={category} setActiveCategory={setCategory} /><div className="max-h-[42vh] overflow-y-auto divide-y divide-slate-100 bg-white rounded-xl border border-slate-100">{items.map((item: any) => { const inCart = getCartQty(item.id); const current = stockByItem.get(item.id) ?? 0; const after = previewStock(item); return <div key={item.id} className="px-3 py-3"><div className="flex items-center justify-between gap-2"><div className="min-w-0"><div className="font-black truncate">{item.name}</div><div className="text-xs text-slate-500">현재 {qty(current)} → <span className={after < current ? "text-red-500 font-black" : after > current ? "text-emerald-600 font-black" : "text-slate-500"}>{qty(after)}</span></div></div><div className="flex items-center gap-2"><button onClick={() => changeCartQty(item.id, -1)} className="w-9 h-9 rounded-full bg-slate-100 font-black text-xl">−</button><input value={inCart || ""} onChange={(e) => setCartQty(item.id, Number(e.target.value.replace(/[^0-9.-]/g, "") || 0))} inputMode="decimal" placeholder="0" className="w-12 h-9 text-center rounded-lg border border-slate-200 font-black"/><button onClick={() => changeCartQty(item.id, 1)} className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 font-black text-xl">+</button></div></div></div>; })}</div></div><CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} /><div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto"><button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 완료`}</button></div></div></div>;
+  const accentClass = mode === "OUT" ? "text-red-500" : mode === "IN" ? "text-emerald-600" : "text-slate-700";
+  const lineClass = mode === "OUT" ? "bg-red-400" : mode === "IN" ? "bg-emerald-500" : "bg-slate-400";
+
+  return (
+    <div className="min-h-screen bg-white text-slate-950 pb-28">
+      <Header title={title} back={close} right={null}/>
+      <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
+        <div className={`text-4xl font-black ${accentClass}`}>{title}</div>
+        <div className={`h-1 rounded-full ${lineClass}`} />
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <InfoRow
+            label="날짜"
+            value={<input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full text-right outline-none font-black bg-transparent" />}
+          />
+          <InfoRow
+            label="위치"
+            value={isAdmin ? (
+              <select value={effectiveBranchId ?? ""} onChange={(e) => setSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="w-full text-right outline-none font-black bg-white">
+                <option value="">지점 선택</option>
+                {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            ) : selectedBranch?.name ?? "기본 위치"}
+          />
+          <InfoRow label="제품" value={`${cart.length}품목 / ${qty(cart.reduce((sum: number, row: CartRow) => sum + Math.abs(Number(row.quantity || 0)), 0))}개`} />
+          <InfoRow
+            label="메모"
+            value={<input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="작성" className="w-full text-right outline-none font-black bg-transparent" />}
+          />
+        </div>
+
+        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+          <SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색" />
+          <CategoryTabs activeCategory={category} setActiveCategory={setCategory} />
+          <div className="max-h-[42vh] overflow-y-auto divide-y divide-slate-100 bg-white rounded-xl border border-slate-100">
+            {items.map((item: any) => {
+              const inCart = getCartQty(item.id);
+              const current = stockByItem.get(item.id) ?? 0;
+              const after = previewStock(item);
+              return (
+                <div key={item.id} className="px-3 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-black truncate">{item.name}</div>
+                      <div className="text-xs text-slate-500">현재 {qty(current)} → <span className={after < current ? "text-red-500 font-black" : after > current ? "text-emerald-600 font-black" : "text-slate-500"}>{qty(after)}</span></div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => changeCartQty(item.id, -1)} className="w-9 h-9 rounded-full bg-slate-100 font-black text-xl">−</button>
+                      <input value={inCart || ""} onChange={(e) => setCartQty(item.id, Number(e.target.value.replace(/[^0-9.-]/g, "") || 0))} inputMode="decimal" placeholder="0" className="w-12 h-9 text-center rounded-lg border border-slate-200 font-black"/>
+                      <button onClick={() => changeCartQty(item.id, 1)} className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 font-black text-xl">+</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} />
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
+          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 완료`}</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function CartSummary({ mode, cart, cartItemName, changeCartQty }: any) {
@@ -495,7 +571,12 @@ function ProductDetail({ item, back, selectedBranch, stock, isAdmin, openEdit, d
 }
 
 function InfoRow({ label, value, valueClass = "font-bold" }: any) {
-  return <div className="flex items-center justify-between gap-4 min-h-[64px] px-4"><div className="text-slate-500 font-semibold">{label}</div><div className={`text-right ${valueClass}`}>{value}</div></div>;
+  return (
+    <div className="flex items-center gap-4 min-h-[64px] px-4 border-b border-slate-100 last:border-b-0">
+      <div className="w-20 shrink-0 whitespace-nowrap text-slate-500 font-bold tracking-tight">{label}</div>
+      <div className={`flex-1 min-w-0 text-right break-keep ${valueClass}`}>{value}</div>
+    </div>
+  );
 }
 
 function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, movements, isAdmin, loading }: any) {

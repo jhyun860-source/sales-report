@@ -543,12 +543,35 @@ export default function Home() {
               </span>
             )}
           </div>
-          {saved && (
-            <span className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: 'oklch(0.42 0.15 150)' }}>
-              <CheckCircle2 size={13} />
-              저장됨
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {saved && (
+              <span className="hidden xs:flex items-center gap-1 text-xs" style={{ color: 'oklch(0.42 0.15 150)' }}>
+                <CheckCircle2 size={13} />
+                저장됨
+              </span>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+              className="flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-bold text-white transition-colors active:scale-95 disabled:opacity-60"
+              style={{ background: 'oklch(0.45 0.18 25)' }}
+            >
+              <Save size={14} />
+              {saveMutation.isPending ? '저장 중' : '저장'}
+            </button>
+            <button
+              onClick={logout}
+              title="로그아웃"
+              className="flex items-center justify-center w-8 h-8 rounded-lg border transition-colors"
+              style={{
+                background: 'oklch(0.92 0.015 85)',
+                color: 'oklch(0.5 0.01 50)',
+                borderColor: 'oklch(0.78 0.012 85)',
+              }}
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
 
         {/* 2줄: 액션 버튼들 */}
@@ -666,30 +689,6 @@ export default function Home() {
             기록
           </button>
 
-          {/* 저장 버튼 */}
-          <button
-            onClick={handleSave}
-            disabled={saveMutation.isPending}
-            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-60 flex-shrink-0"
-            style={{ background: 'oklch(0.45 0.18 25)' }}
-          >
-            <Save size={14} />
-            {saveMutation.isPending ? '저장 중' : '저장'}
-          </button>
-
-          {/* 로그아웃 아이콘 버튼 */}
-          <button
-            onClick={logout}
-            title="로그아웃"
-            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg border transition-colors flex-shrink-0"
-            style={{
-              background: 'oklch(0.92 0.015 85)',
-              color: 'oklch(0.5 0.01 50)',
-              borderColor: 'oklch(0.78 0.012 85)',
-            }}
-          >
-            <LogOut size={15} />
-          </button>
         </div>
       </header>
 
