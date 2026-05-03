@@ -86,6 +86,7 @@ export default function LiquorStockReport() {
   const [historyStart, setHistoryStart] = useState(date);
   const [historyEnd, setHistoryEnd] = useState(date);
   const [historySearch, setHistorySearch] = useState("");
+  const [editingMovement, setEditingMovement] = useState<any | null>(null);
 
   const isAdmin = user?.role === "admin";
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
@@ -142,6 +143,26 @@ export default function LiquorStockReport() {
       setSelectedItem(null);
       setProductEditorOpen(false);
       toast.success(isAdmin ? "제품이 삭제되었습니다" : "이 지점 제품 목록에서 숨김 처리되었습니다");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+
+  const updateMovement = trpc.liquor.updateMovement.useMutation({
+    onSuccess: () => {
+      utils.liquor.overview.invalidate();
+      utils.liquor.history.invalidate();
+      setEditingMovement(null);
+      toast.success("히스토리가 수정되었습니다");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteMovement = trpc.liquor.deleteMovement.useMutation({
+    onSuccess: () => {
+      utils.liquor.overview.invalidate();
+      utils.liquor.history.invalidate();
+      toast.success("히스토리가 삭제되었습니다");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -245,6 +266,11 @@ export default function LiquorStockReport() {
     });
   };
 
+
+  const removeCartItem = (itemId: number) => {
+    setCart((prev) => prev.filter((row) => row.liquorItemId !== itemId));
+  };
+
   const getCartQty = (itemId: number) => cart.find((row) => row.liquorItemId === itemId)?.quantity ?? 0;
   const cartItemName = (itemId: number) => items.find((item) => item.id === itemId)?.name ?? "삭제된 품목";
 
@@ -299,6 +325,7 @@ export default function LiquorStockReport() {
         previewStock={previewStock}
         cart={cart}
         cartItemName={cartItemName}
+        removeCartItem={removeCartItem}
         memo={actionMemo}
         setMemo={setActionMemo}
         submitCart={submitCart}
@@ -387,6 +414,11 @@ export default function LiquorStockReport() {
             movements={visibleMovements}
             isAdmin={isAdmin}
             loading={historyQuery.isLoading}
+            onEditMovement={setEditingMovement}
+            onDeleteMovement={(movement: any) => {
+              if (!window.confirm(`${movement.itemName} 히스토리를 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return;
+              deleteMovement.mutate({ id: movement.id });
+            }}
           />
         )}
 
@@ -418,6 +450,14 @@ export default function LiquorStockReport() {
         )}
       </div>
       {productEditorOpen && <ProductEditorModal isAdmin={isAdmin} newItem={newItem} setNewItem={setNewItem} editingItemId={editingItemId} saveItem={saveItem} close={() => setProductEditorOpen(false)} pending={upsertItem.isPending} />}
+      {editingMovement && (
+        <MovementEditorModal
+          movement={editingMovement}
+          close={() => setEditingMovement(null)}
+          pending={updateMovement.isPending}
+          save={(payload: any) => updateMovement.mutate(payload)}
+        />
+      )}
     </div>
   );
 }
@@ -492,7 +532,7 @@ function SortSelect({ sortMode, setSortMode }: any) {
 }
 
 function TransactionScreen(props: any) {
-  const { mode, setMode, close, date, setDate, selectedBranch, branches, isAdmin, effectiveBranchId, setSelectedBranchId, search, setSearch, category, setCategory, items, stockByItem, getCartQty, changeCartQty, setCartQty, previewStock, cart, cartItemName, memo, setMemo, submitCart, isSaving } = props;
+  const { mode, setMode, close, date, setDate, selectedBranch, branches, isAdmin, effectiveBranchId, setSelectedBranchId, search, setSearch, category, setCategory, items, stockByItem, getCartQty, changeCartQty, setCartQty, previewStock, cart, cartItemName, removeCartItem, memo, setMemo, submitCart, isSaving } = props;
   const title = mode === "OUT" ? "출고" : mode === "IN" ? "입고" : "조정";
   const accentClass = mode === "OUT" ? "text-red-500" : mode === "IN" ? "text-emerald-600" : "text-slate-700";
   const lineClass = mode === "OUT" ? "bg-red-400" : mode === "IN" ? "bg-emerald-500" : "bg-slate-400";
@@ -551,7 +591,7 @@ function TransactionScreen(props: any) {
             })}
           </div>
         </div>
-        <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} />
+        <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} removeCartItem={removeCartItem} />
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
           <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 완료`}</button>
         </div>
@@ -560,10 +600,23 @@ function TransactionScreen(props: any) {
   );
 }
 
-function CartSummary({ mode, cart, cartItemName, changeCartQty }: any) {
+function CartSummary({ mode, cart, cartItemName, changeCartQty, removeCartItem }: any) {
   if (cart.length === 0) return <div className="bg-white rounded-2xl p-6 text-center text-slate-400 border border-slate-100">제품을 담으면 여기에 한 번에 표시됩니다</div>;
   const title = mode === "OUT" ? "출고 장바구니" : mode === "IN" ? "입고 장바구니" : "조정 장바구니";
-  return <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm"><div className="font-black text-xl mb-3">{title}</div><div className="space-y-2">{cart.map((row: CartRow) => <div key={row.liquorItemId} className="flex items-center justify-between gap-3"><div className="font-bold truncate">{cartItemName(row.liquorItemId)}</div><div className="flex items-center gap-2"><button onClick={() => changeCartQty(row.liquorItemId, -1)} className="w-8 h-8 rounded-full bg-slate-100 font-black">−</button><div className="w-12 text-center font-black">{qty(row.quantity)}병</div><button onClick={() => changeCartQty(row.liquorItemId, 1)} className="w-8 h-8 rounded-full bg-slate-100 font-black">+</button></div></div>)}</div></div>;
+  return <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+    <div className="font-black text-xl mb-3">{title}</div>
+    <div className="space-y-2">
+      {cart.map((row: CartRow) => <div key={row.liquorItemId} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+        <div className="font-bold truncate flex-1">{cartItemName(row.liquorItemId)}</div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => changeCartQty(row.liquorItemId, -1)} className="w-8 h-8 rounded-full bg-white border border-slate-200 font-black">−</button>
+          <div className="w-12 text-center font-black">{qty(row.quantity)}병</div>
+          <button onClick={() => changeCartQty(row.liquorItemId, 1)} className="w-8 h-8 rounded-full bg-white border border-slate-200 font-black">+</button>
+          <button onClick={() => removeCartItem(row.liquorItemId)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center" title="장바구니에서 삭제"><X size={16}/></button>
+        </div>
+      </div>)}
+    </div>
+  </div>;
 }
 
 function ProductDetail({ item, back, selectedBranch, stock, isAdmin, openEdit, deleteProduct, openAction }: any) {
@@ -579,15 +632,38 @@ function InfoRow({ label, value, valueClass = "font-bold" }: any) {
   );
 }
 
-function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, movements, isAdmin, loading }: any) {
-  return <div className="space-y-4"><div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="grid grid-cols-2 gap-2 mb-3"><input type="date" value={historyStart} onChange={(e) => setHistoryStart(e.target.value)} className="h-11 px-3 rounded-xl border border-slate-200 font-bold"/><input type="date" value={historyEnd} onChange={(e) => setHistoryEnd(e.target.value)} className="h-11 px-3 rounded-xl border border-slate-200 font-bold"/></div><SearchInput value={historySearch} onChange={setHistorySearch} placeholder="제품명으로 히스토리 검색" /></div><HistoryList movements={movements} isAdmin={isAdmin} loading={loading}/></div>;
+function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, movements, isAdmin, loading, onEditMovement, onDeleteMovement }: any) {
+  return <div className="space-y-4"><div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="grid grid-cols-2 gap-2 mb-3"><input type="date" value={historyStart} onChange={(e) => setHistoryStart(e.target.value)} className="h-11 px-3 rounded-xl border border-slate-200 font-bold"/><input type="date" value={historyEnd} onChange={(e) => setHistoryEnd(e.target.value)} className="h-11 px-3 rounded-xl border border-slate-200 font-bold"/></div><SearchInput value={historySearch} onChange={setHistorySearch} placeholder="제품명으로 히스토리 검색" /></div><HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement}/></div>;
 }
-function HistoryList({ movements, isAdmin, loading }: { movements: any[]; isAdmin: boolean; loading?: boolean }) {
+function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMovement }: { movements: any[]; isAdmin: boolean; loading?: boolean; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void }) {
   if (loading) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">히스토리 불러오는 중...</div>;
   const grouped = movements.reduce<Record<string, any[]>>((acc, m) => { (acc[m.date] ||= []).push(m); return acc; }, {});
   const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   if (dates.length === 0) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">조건에 맞는 입고/출고 내역이 없습니다</div>;
-  return <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="flex items-center gap-2 text-xl font-black mb-4"><ClipboardList size={22}/>히스토리</div>{dates.map((date) => <div key={date} className="mb-6"><div className="text-slate-500 font-semibold mb-3">{date}</div><div className="space-y-4">{grouped[date].map((m) => <div key={m.id} className="flex items-center justify-between"><div className="flex items-start gap-3"><MovementIcon type={m.type}/><div><div className={`font-black text-xl ${m.type === "OUT" ? "text-red-500" : m.type === "IN" ? "text-emerald-600" : "text-slate-700"}`}>{m.type === "OUT" ? "출고" : m.type === "IN" ? "입고" : "조정"}</div><div className="text-lg font-bold text-slate-900 mt-1">{m.itemName}</div><div className="text-xs text-slate-400">{m.branchName}{isAdmin ? ` · ${won(Number(m.totalCost || 0))}` : ""}</div>{m.memo && <div className="text-xs text-slate-400 mt-1 max-w-[220px] truncate">메모: {m.memo}</div>}</div></div><div className={`font-black text-xl ${m.type === "OUT" ? "text-red-500" : m.type === "IN" ? "text-emerald-600" : "text-slate-600"}`}>{m.quantity > 0 ? "+" : ""}{qty(Number(m.quantity || 0))}</div></div>)}</div></div>)}</div>;
+  return <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+    <div className="flex items-center gap-2 text-xl font-black mb-4"><ClipboardList size={22}/>히스토리</div>
+    {dates.map((date) => <div key={date} className="mb-6">
+      <div className="text-slate-500 font-semibold mb-3">{date}</div>
+      <div className="space-y-4">
+        {grouped[date].map((m) => <div key={m.id} className="flex items-start justify-between gap-3 rounded-2xl bg-slate-50 p-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <MovementIcon type={m.type}/>
+            <div className="min-w-0 flex-1">
+              <div className={`font-black text-xl ${m.type === "OUT" ? "text-red-500" : m.type === "IN" ? "text-emerald-600" : "text-slate-700"}`}>{m.type === "OUT" ? "출고" : m.type === "IN" ? "입고" : "조정"}</div>
+              <div className="text-lg font-bold text-slate-900 mt-1 truncate">{m.itemName}</div>
+              <div className="text-xs text-slate-400">{m.branchName}{isAdmin ? ` · ${won(Number(m.totalCost || 0))}` : ""}</div>
+              {m.memo && <div className="text-xs text-slate-400 mt-1 max-w-[220px] truncate">메모: {m.memo}</div>}
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => onEditMovement?.(m)} className="h-8 px-3 rounded-lg bg-white border border-slate-200 text-xs font-black text-slate-600">수정</button>
+                <button onClick={() => onDeleteMovement?.(m)} className="h-8 px-3 rounded-lg bg-red-50 text-red-500 text-xs font-black">삭제</button>
+              </div>
+            </div>
+          </div>
+          <div className={`font-black text-xl shrink-0 ${m.type === "OUT" ? "text-red-500" : m.type === "IN" ? "text-emerald-600" : "text-slate-600"}`}>{m.quantity > 0 ? "+" : ""}{qty(Number(m.quantity || 0))}</div>
+        </div>)}
+      </div>
+    </div>)}
+  </div>;
 }
 function MovementIcon({ type }: { type: string }) {
   if (type === "OUT") return <div className="mt-1 text-red-500"><ArrowUpFromLine size={24}/></div>;
@@ -597,6 +673,41 @@ function MovementIcon({ type }: { type: string }) {
 
 function ProductEditorModal({ isAdmin, newItem, setNewItem, editingItemId, saveItem, close, pending }: any) {
   return <div className="fixed inset-0 z-50 bg-black/45 flex items-end justify-center"><div className="w-full max-w-md bg-white rounded-t-3xl p-5 shadow-2xl"><div className="flex items-center justify-between mb-4"><div className="text-xl font-black">{editingItemId ? "제품 수정" : "제품 추가"}</div><button onClick={close} className="p-2 rounded-full bg-slate-100"><X size={20}/></button></div><div className="space-y-3"><div><div className="text-xs font-bold text-slate-500 mb-1">제품명</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="예: 글렌리벳 12y" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none"/></div><div className="grid grid-cols-2 gap-2"><div><div className="text-xs font-bold text-slate-500 mb-1">카테고리</div><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="w-full h-12 px-3 rounded-xl border border-slate-200 bg-white outline-none">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select></div><div><div className="text-xs font-bold text-slate-500 mb-1">현재 수량</div><input value={newItem.initialStock} onChange={(e) => setNewItem((v: any) => ({ ...v, initialStock: e.target.value.replace(/[^0-9.-]/g, "") }))} inputMode="decimal" placeholder="0" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none text-right"/></div></div>{isAdmin && <div><div className="text-xs font-bold text-slate-500 mb-1">원가/단가</div><input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} inputMode="numeric" placeholder="관리자만 입력" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none text-right"/></div>}{!isAdmin && <div className="text-xs text-slate-400 leading-5">지점 계정은 제품명, 카테고리, 현재 수량만 등록할 수 있습니다. 원가/단가는 관리자만 관리합니다.</div>}<button onClick={saveItem} disabled={pending} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-50">{pending ? "저장 중..." : editingItemId ? "수정 저장" : "제품 추가"}</button></div></div></div>;
+}
+
+function MovementEditorModal({ movement, close, save, pending }: any) {
+  const [editDate, setEditDate] = useState(movement.date || todayString());
+  const [editQty, setEditQty] = useState(String(Math.abs(Number(movement.quantity || 0))));
+  const [editMemo, setEditMemo] = useState(movement.memo || "");
+  const typeLabel = movement.type === "OUT" ? "출고" : movement.type === "IN" ? "입고" : "조정";
+  return <div className="fixed inset-0 z-50 bg-black/45 flex items-end justify-center">
+    <div className="w-full max-w-md bg-white rounded-t-3xl p-5 shadow-2xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-xl font-black">히스토리 수정</div>
+        <button onClick={close} className="p-2 rounded-full bg-slate-100"><X size={20}/></button>
+      </div>
+      <div className="space-y-3">
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <div className="text-sm text-slate-500 font-bold">{typeLabel}</div>
+          <div className="text-lg font-black truncate">{movement.itemName}</div>
+        </div>
+        <div>
+          <div className="text-xs font-bold text-slate-500 mb-1">날짜</div>
+          <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none" />
+        </div>
+        <div>
+          <div className="text-xs font-bold text-slate-500 mb-1">수량</div>
+          <input value={editQty} onChange={(e) => setEditQty(e.target.value.replace(/[^0-9.-]/g, ""))} inputMode="decimal" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none text-right font-black" />
+          <div className="text-xs text-slate-400 mt-1">출고/입고는 양수로 입력하면 자동으로 방향이 반영됩니다.</div>
+        </div>
+        <div>
+          <div className="text-xs font-bold text-slate-500 mb-1">메모</div>
+          <input value={editMemo} onChange={(e) => setEditMemo(e.target.value)} placeholder="메모" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none" />
+        </div>
+        <button onClick={() => save({ id: movement.id, date: editDate, quantity: Number(editQty || 0), memo: editMemo || undefined })} disabled={pending} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-50">{pending ? "저장 중..." : "수정 저장"}</button>
+      </div>
+    </div>
+  </div>;
 }
 
 function AdminPanel(props: any) {
