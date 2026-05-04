@@ -11,10 +11,16 @@ const BRANCHES = [
 
 const ACCOUNTS = [
   { loginId: 's1', password: '1234', displayName: '선릉점 점장', branchCode: 'seolleung', role: 'user' },
-  { loginId: 'd1', password: '1224', displayName: '대치점 점장', branchCode: 'daechi', role: 'user' },
+  { loginId: 'd1', password: '1234', displayName: '대치점 점장', branchCode: 'daechi', role: 'user' },
   { loginId: 's2', password: '1234', displayName: '삼성점 점장', branchCode: 'samsung', role: 'user' },
-  { loginId: 'm1', password: '1234', displayName: '문정1호점 점장', branchCode: 'munjeong1', role: 'user' },
-  { loginId: 'm2', password: '1234', displayName: '문정2호점 점장', branchCode: 'munjeong2', role: 'user' },
+  { loginId: 'm1', password: '1234', displayName: '문정1호점 점장', branchCode: 'munjeong1', role: 'admin' },
+  { loginId: 'm2', password: '1234', displayName: '문정2호점 점장', branchCode: 'munjeong2', role: 'admin' },
+  // 직원 계정 추가
+  { loginId: 's3', password: '1234', displayName: '선릉점 직원', branchCode: 'seolleung', role: 'user' },
+  { loginId: 's4', password: '1234', displayName: '삼성점 직원', branchCode: 'samsung', role: 'user' },
+  { loginId: 'd2', password: '1234', displayName: '대치점 직원', branchCode: 'daechi', role: 'user' },
+  { loginId: 'm3', password: '1234', displayName: '문정1호점 직원', branchCode: 'munjeong1', role: 'user' },
+  { loginId: 'm4', password: '1234', displayName: '문정2호점 직원', branchCode: 'munjeong2', role: 'user' },
   { loginId: 'admin', password: 'admin1234', displayName: '관리자', branchCode: null, role: 'admin' },
 ];
 
@@ -70,10 +76,15 @@ async function seed() {
   console.log('지점        | 아이디 | 비밀번호');
   console.log('─────────────────────────────────────');
   console.log('선릉점      | s1     | 1234');
-  console.log('대치점      | d1     | 1224');
+  console.log('선릉점      | s3     | 1234 (직원)');
+  console.log('대치점      | d1     | 1234');
+  console.log('대치점      | d2     | 1234 (직원)');
   console.log('삼성점      | s2     | 1234');
+  console.log('삼성점      | s4     | 1234 (직원)');
   console.log('문정 1호점  | m1     | 1234');
+  console.log('문정 1호점  | m3     | 1234 (직원)');
   console.log('문정2호점   | m2     | 1234');
+  console.log('문정2호점   | m4     | 1234 (직원)');
   console.log('관리자      | admin  | admin1234');
   console.log('─────────────────────────────────────');
 
