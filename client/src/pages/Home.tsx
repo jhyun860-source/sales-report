@@ -295,8 +295,6 @@ export default function Home() {
   // 관리자만 localStorage의 선택 지점을 사용할 수 있어 계정 전환 시 지점 혼선이 나지 않습니다.
   const [_selectedBranchId, _setSelectedBranchId] = useState<number | null>(() => {
     if (user?.role !== 'admin') return null;
-    // 로그인 직후 user.branchId가 있으면 그것을 사용 (지점 혼선 방지)
-    if (user?.branchId) return user.branchId;
     const saved = localStorage.getItem('selectedBranchId');
     return saved ? parseInt(saved, 10) : null;
   });
@@ -305,8 +303,6 @@ export default function Home() {
   const selectedBranchId: number | null = (() => {
     if (myBranches.length === 0) return null;
     if (user?.role !== 'admin') return user?.branchId ?? myBranches[0].id;
-    // admin 계정: user.branchId가 있으면 우선 사용 (로그인 직후 지점 혼선 방지)
-    if (user?.branchId) return user.branchId;
     const isValid = myBranches.some(b => b.id === _selectedBranchId);
     return isValid ? _selectedBranchId : myBranches[0].id;
   })();
