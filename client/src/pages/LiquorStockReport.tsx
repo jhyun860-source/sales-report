@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   Trash2,
   LogOut,
+  Save,
   X,
 } from "lucide-react";
 
@@ -551,6 +552,12 @@ function HomePanel({ openNewProduct, openAction, setTab }: any) {
       <ActionMenuButton type="IN" label="입고하기" onClick={() => openAction("IN")} />
       <ActionMenuButton type="OUT" label="출고하기" onClick={() => openAction("OUT")} />
       <ActionMenuButton type="ADJUST" label="조정하기" onClick={() => openAction("ADJUST")} />
+      <div className="mt-4 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/70 p-4 text-center">
+        <div className="flex items-center justify-center gap-2 text-blue-700 font-black text-lg">
+          <Save size={22} />저장하기
+        </div>
+        <div className="text-xs text-blue-500 mt-1 font-bold">입고하기/출고하기/조정하기 선택 후 맨밑에서 저장합니다</div>
+      </div>
     </div>
   </div>;
 }
@@ -637,25 +644,32 @@ function TransactionScreen(props: any) {
         <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} removeCartItem={removeCartItem} />
 
         {/*
-          주류 출고현황의 입고/출고/조정 화면 맨밑에 항상 보이는 저장 버튼입니다.
-          일부 모바일/Preview 환경에서 fixed 하단 버튼이 가려지는 문제가 있어,
-          실제 화면 흐름의 맨 아래에도 같은 저장 동작 버튼을 한 번 더 노출합니다.
+          입고/출고/조정 화면 본문 맨밑 저장하기 버튼입니다.
+          fixed footer가 모바일/Preview에서 가려져도 이 버튼은 실제 페이지 맨밑에 항상 보입니다.
         */}
-        <div className="pb-4">
-          <button
-            onClick={submitCart}
-            disabled={isSaving || cart.length === 0}
-            className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg shadow-sm disabled:opacity-40"
-          >
-            {isSaving ? "저장 중..." : "저장하기"}
-          </button>
-          {cart.length === 0 && <div className="text-center text-xs text-slate-400 mt-2">제품 수량을 입력하면 저장할 수 있습니다</div>}
-        </div>
+        <BottomSaveButton submitCart={submitCart} isSaving={isSaving} disabled={cart.length === 0} />
 
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
-          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : "저장하기"}</button>
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto z-40">
+          <BottomSaveButton submitCart={submitCart} isSaving={isSaving} disabled={cart.length === 0} compact />
         </div>
       </div>
+    </div>
+  );
+}
+
+function BottomSaveButton({ submitCart, isSaving, disabled, compact }: any) {
+  return (
+    <div className={compact ? "" : "pt-2 pb-8"}>
+      <button
+        type="button"
+        onClick={submitCart}
+        disabled={isSaving || disabled}
+        className="w-full h-16 rounded-2xl bg-blue-600 text-white font-black text-xl shadow-lg disabled:opacity-40 flex items-center justify-center gap-2"
+      >
+        <Save size={24} />
+        {isSaving ? "저장 중..." : "저장하기"}
+      </button>
+      {disabled && !compact && <div className="text-center text-xs text-slate-400 mt-2">제품 수량을 입력하면 저장하기 버튼을 사용할 수 있습니다</div>}
     </div>
   );
 }
