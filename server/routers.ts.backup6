@@ -16,7 +16,6 @@ import {
   getBranchById,
   getDailySalesRecord,
   getPrevDailySalesRecord,
-  getPrevDailySalesRecordWithPosEnd,
   getDailySalesRecordsByDateRange,
   upsertDailySalesRecord,
   getDb,
@@ -3059,29 +3058,7 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
-        const record = await getDailySalesRecord(input.branchId, input.date);
-        if (!record) return null;
-        const posStart = parseInt(record.posStartAmount || '0') || 0;
-        const posEnd = parseInt(record.posEndAmount || '0') || 0;
-        // 기존 레코드가 있는데 POS 시작금/마감금이 0이면, 이전 유효 마감금으로 화면 표시값 보정
-        // 테이블 기록 자동반영 등이 POS를 0으로 만든 경우 다음날 시작금 끊김 방지
-        if (posStart <= 0 && posEnd <= 0) {
-          const prevPosRecord = await getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
-          const fallbackStart = parseInt(prevPosRecord?.posEndAmount || '0') || 0;
-          if (fallbackStart > 0) {
-            const expenses = Array.isArray(record.expenses) ? record.expenses : [];
-            const expenseTotal = (expenses as Array<{ amount?: string }>).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
-            const cashDepositVal = parseInt(record.cashDeposit || '0') || 0;
-            const dateObj = new Date(input.date + 'T12:00:00');
-            const isSunday = dateObj.getDay() === 0;
-            return {
-              ...record,
-              posStartAmount: String(fallbackStart),
-              posEndAmount: String(isSunday ? fallbackStart : fallbackStart - expenseTotal + cashDepositVal),
-            };
-          }
-        }
-        return record;
+        return getDailySalesRecord(input.branchId, input.date);
       }),
     getPrevRecord: publicProcedure
       .input(z.object({ branchId: z.number(), date: z.string() }))
@@ -3094,7 +3071,7 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
         // input.date 이전의 가장 최근 기록을 반환 (하루 전 고정 조회 아님)
-        return getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
+        return getPrevDailySalesRecord(input.branchId, input.date);
       }),
     getRecords: publicProcedure
       .input(z.object({ branchId: z.number(), startDate: z.string(), endDate: z.string() }))
@@ -3134,10 +3111,11 @@ export const appRouter = router({
           input.branchId, input.date, prevRec ?? null, todayCash, todayCard
         );
         // posEndAmount 서버 재계산
-        const prevPosRecord = await getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
-        const fallbackPosStart = parseInt(prevPosRecord?.posEndAmount || '0') || 0;
-        const inputPosStart = parseInt(input.posStartAmount || '0') || 0;
-        const posStartVal = inputPosStart > 0 ? inputPosStart : fallbackPosStart;
+        // POS 시작금은 입력값이 비어 있거나 0이면 이전 영업일 POS 마감금으로 자동 이월한다.
+        // 프론트 표시가 늦게 갱신되어 0이 넘어와도 서버에서 한 번 더 보정한다.
+        const requestedPosStart = parseInt(input.posStartAmount || '0') || 0;
+        const carriedPosStart = prevRec ? (parseInt(prevRec.posEndAmount || '0') || 0) : 0;
+        const posStartVal = requestedPosStart > 0 ? requestedPosStart : carriedPosStart;
         const expenseTotal = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
         const cashDepositVal = parseInt(input.cashDeposit || '0') || 0;
         const computedPosEnd = isSunday ? posStartVal : posStartVal - expenseTotal + cashDepositVal;
@@ -3377,10 +3355,10 @@ export const appRouter = router({
           input.branchId, input.date, prevRec2 ?? null, todayCash2, todayCard2
         );
         // posEndAmount 서버 재계산
-        const prevPosRecord2 = await getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
-        const fallbackPosStart2 = parseInt(prevPosRecord2?.posEndAmount || '0') || 0;
-        const inputPosStart2 = parseInt(input.posStartAmount || '0') || 0;
-        const posStartVal2 = inputPosStart2 > 0 ? inputPosStart2 : fallbackPosStart2;
+        // POS 시작금은 입력값이 비어 있거나 0이면 이전 영업일 POS 마감금으로 자동 이월한다.
+        const requestedPosStart2 = parseInt(input.posStartAmount || '0') || 0;
+        const carriedPosStart2 = prevRec2 ? (parseInt(prevRec2.posEndAmount || '0') || 0) : 0;
+        const posStartVal2 = requestedPosStart2 > 0 ? requestedPosStart2 : carriedPosStart2;
         const expenseTotal2 = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
         const cashDepositVal2 = parseInt(input.cashDeposit || '0') || 0;
         const computedPosEnd2 = isSunday2 ? posStartVal2 : posStartVal2 - expenseTotal2 + cashDepositVal2;
@@ -3988,12 +3966,12 @@ export const appRouter = router({
         await upsertDailySalesRecord({
           branchId: effectiveBranchId,
           date: input.date,
-          posStartAmount: existingSales?.posStartAmount ?? String(parseInt((await getPrevDailySalesRecordWithPosEnd(effectiveBranchId, input.date))?.posEndAmount || '0') || 0),
+          posStartAmount: existingSales?.posStartAmount ?? '0',
           cash: String(cashSum),
           card: String(cardSum),
           cashTotal: String(computedCashTotal2),
           cardTotal: String(computedCardTotal2),
-          posEndAmount: existingSales?.posEndAmount ?? String(parseInt((await getPrevDailySalesRecordWithPosEnd(effectiveBranchId, input.date))?.posEndAmount || '0') || 0),
+          posEndAmount: existingSales?.posEndAmount ?? '0',
           expenses: (existingSales?.expenses as any) ?? [],
           submittedAt: new Date(),
         });
@@ -4130,12 +4108,12 @@ export const appRouter = router({
           await upsertDailySalesRecord({
             branchId: effectiveBranchId,
             date: input.date,
-            posStartAmount: existingSales?.posStartAmount ?? String(parseInt((await getPrevDailySalesRecordWithPosEnd(effectiveBranchId, input.date))?.posEndAmount || '0') || 0),
+            posStartAmount: existingSales?.posStartAmount ?? '0',
             cash: String(cashSum),
             card: String(cardSum),
             cashTotal: String(cashTotal),
             cardTotal: String(cardTotal),
-            posEndAmount: existingSales?.posEndAmount ?? String(parseInt((await getPrevDailySalesRecordWithPosEnd(effectiveBranchId, input.date))?.posEndAmount || '0') || 0),
+            posEndAmount: existingSales?.posEndAmount ?? '0',
             expenses: (existingSales?.expenses as any) ?? [],
             submittedAt: new Date(),
           });
@@ -4347,12 +4325,12 @@ export const appRouter = router({
         await upsertDailySalesRecord({
           branchId: effectiveBranchId,
           date: input.date,
-          posStartAmount: existingSales?.posStartAmount ?? String(parseInt((await getPrevDailySalesRecordWithPosEnd(effectiveBranchId, input.date))?.posEndAmount || '0') || 0),
+          posStartAmount: existingSales?.posStartAmount ?? '0',
           cash: String(cashSum),
           card: String(cardSum),
           cashTotal: String(computedCashTotal),
           cardTotal: String(computedCardTotal),
-          posEndAmount: existingSales?.posEndAmount ?? String(parseInt((await getPrevDailySalesRecordWithPosEnd(effectiveBranchId, input.date))?.posEndAmount || '0') || 0),
+          posEndAmount: existingSales?.posEndAmount ?? '0',
           expenses: (existingSales?.expenses as any) ?? [],
           submittedAt: new Date(),
         });
