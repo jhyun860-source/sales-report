@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -79,9 +79,6 @@ export default function LiquorStockReport() {
   const [newItem, setNewItem] = useState({ name: "", category: "위스키", unitCost: "", initialStock: "" });
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [stockEdit, setStockEdit] = useState<{ itemId: number; value: string } | null>(null);
-  const lastListScrollYRef = useRef(0);
-  const pushedActionHistoryRef = useRef(false);
-  const pushedProductHistoryRef = useRef(false);
 
   const [actionMode, setActionMode] = useState<MovementType | null>(null);
   const [actionSearch, setActionSearch] = useState("");
@@ -116,53 +113,6 @@ export default function LiquorStockReport() {
     navigate("/login");
   };
 
-  const restoreLiquorScroll = () => {
-    const y = lastListScrollYRef.current || Number(sessionStorage.getItem("liquorLastScrollY") || 0);
-    window.setTimeout(() => window.scrollTo({ top: y, behavior: "auto" }), 0);
-  };
-
-  const pushLiquorInternalHistory = (screen: "action" | "product") => {
-    if (typeof window === "undefined") return;
-    const stateKey = screen === "action" ? "liquorAction" : "liquorProduct";
-    window.history.pushState({ ...(window.history.state || {}), [stateKey]: true }, "", window.location.href);
-    if (screen === "action") pushedActionHistoryRef.current = true;
-    if (screen === "product") pushedProductHistoryRef.current = true;
-  };
-
-  const closeActionScreen = () => {
-    setActionMode(null);
-    setCart([]);
-    setActionMemo("");
-    setActionSearch("");
-    pushedActionHistoryRef.current = false;
-  };
-
-  const closeProductDetail = () => {
-    setSelectedItem(null);
-    setProductEditorOpen(false);
-    pushedProductHistoryRef.current = false;
-    restoreLiquorScroll();
-  };
-
-  useEffect(() => {
-    const onPopState = () => {
-      if (productEditorOpen) {
-        setProductEditorOpen(false);
-        return;
-      }
-      if (actionMode) {
-        closeActionScreen();
-        return;
-      }
-      if (selectedItem) {
-        closeProductDetail();
-        return;
-      }
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, [actionMode, selectedItem, productEditorOpen]);
-
   const overview = trpc.liquor.overview.useQuery(
     { date, branchId: effectiveBranchId, includeInactive: false },
     { enabled: !!user, retry: false },
@@ -180,7 +130,6 @@ export default function LiquorStockReport() {
       setNewItem({ name: "", category: "위스키", unitCost: "", initialStock: "" });
       setEditingItemId(null);
       setProductEditorOpen(false);
-      if (editingItemId) restoreLiquorScroll();
       toast.success("주류 품목이 저장되었습니다");
     },
     onError: (e) => toast.error(e.message),
@@ -194,7 +143,6 @@ export default function LiquorStockReport() {
       setActionMemo("");
       setActionSearch("");
       setActionMode(null);
-      pushedActionHistoryRef.current = false;
       toast.success("입고/출고 내역이 저장되었습니다");
     },
     onError: (e) => toast.error(e.message),
@@ -278,22 +226,11 @@ export default function LiquorStockReport() {
   const totalOutCost = data?.totals.outCost ?? 0;
 
   const openAction = (type: MovementType, item?: any) => {
-    lastListScrollYRef.current = window.scrollY || 0;
-    sessionStorage.setItem("liquorLastScrollY", String(lastListScrollYRef.current));
     setActionMode(type);
     setActionSearch("");
     setActionCategory(item ? categoryOf(item) : activeCategory);
     setCart(item ? [{ liquorItemId: item.id, quantity: 1 }] : []);
     setActionMemo("");
-    if (!pushedActionHistoryRef.current) pushLiquorInternalHistory("action");
-  };
-
-  const openProductDetail = (item: any) => {
-    lastListScrollYRef.current = window.scrollY || 0;
-    sessionStorage.setItem("liquorLastScrollY", String(lastListScrollYRef.current));
-    sessionStorage.setItem("liquorLastItemId", String(item.id));
-    setSelectedItem(item);
-    if (!pushedProductHistoryRef.current) pushLiquorInternalHistory("product");
   };
 
   const saveItem = () => {
@@ -391,10 +328,7 @@ export default function LiquorStockReport() {
       <TransactionScreen
         mode={actionMode}
         setMode={setActionMode}
-        close={() => {
-          if (pushedActionHistoryRef.current) window.history.back();
-          else closeActionScreen();
-        }}
+        close={() => setActionMode(null)}
         date={date}
         setDate={setDate}
         selectedBranch={selectedBranch}
@@ -429,10 +363,7 @@ export default function LiquorStockReport() {
       <>
         <ProductDetail
           item={selectedItem}
-          back={() => {
-            if (pushedProductHistoryRef.current) window.history.back();
-            else closeProductDetail();
-          }}
+          back={() => setSelectedItem(null)}
           selectedBranch={selectedBranch}
           stock={stockByItem.get(selectedItem.id) ?? 0}
           isAdmin={isAdmin}
@@ -504,7 +435,7 @@ export default function LiquorStockReport() {
             stockByItem={stockByItem}
             isAdmin={isAdmin}
             openNewProduct={openNewProduct}
-            openItem={openProductDetail}
+            openItem={setSelectedItem}
           />
         )}
 

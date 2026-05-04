@@ -3549,10 +3549,7 @@ export const appRouter = router({
             createdByRole: creator?.role ?? '',
           };
         });
-        const activeItemIds = new Set(activeItems.map((i: any) => Number(i.id)));
-        const inventories = inventoryRows
-          .filter(inv => activeItemIds.has(Number(inv.liquorItemId)))
-          .map(inv => ({ ...inv, currentStock: Number(inv.currentStock || 0) }));
+        const inventories = inventoryRows.map(inv => ({ ...inv, currentStock: Number(inv.currentStock || 0) }));
 
         const branchSummaries = selectedBranchIds.map(branchId => {
           const branch = branchById.get(branchId);
