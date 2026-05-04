@@ -113,7 +113,7 @@ export default function LiquorStockReport() {
   };
 
   const overview = trpc.liquor.overview.useQuery(
-    { date, branchId: effectiveBranchId, includeInactive: isAdmin },
+    { date, branchId: effectiveBranchId, includeInactive: false },
     { enabled: !!user, retry: false },
   );
 
@@ -484,6 +484,7 @@ export default function LiquorStockReport() {
               setStock.mutate({ branchId, liquorItemId: item.id, currentStock: Number(value || 0) });
             }}
             setEditingItem={openEditProduct}
+            deleteProduct={handleDeleteProduct}
             canModifyLiquor={canModifyLiquor}
           />
         )}
@@ -530,10 +531,10 @@ function SummaryMetric({ value, label, small }: { value: string; label: string; 
 }
 
 function NavTabs({ tab, setTab, isAdmin, isStaffOnly }: any) {
-  const tabs = isStaffOnly
-    ? [["home", "홈"], ["items", "제품"], ["admin", "재고"]]
-    : [["home", "홈"], ["items", "제품"], ["history", "히스토리"], ["admin", isAdmin ? "관리" : "재고"]];
-  return <div className={`grid ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-4"} bg-white rounded-2xl p-1 shadow-sm border border-slate-100`}>{tabs.map(([key, label]) => <button key={key} onClick={() => setTab(key as any)} className={`h-10 rounded-xl text-sm font-black ${tab === key ? "bg-blue-600 text-white" : "text-slate-500"}`}>{label}</button>)}</div>;
+  // 직원 전용 계정도 매니저와 동일하게 히스토리를 볼 수 있게 한다.
+  // 단, 이 페이지 자체가 주류 전용이므로 매출/정산/인센 메뉴는 노출되지 않는다.
+  const tabs = [["home", "홈"], ["items", "제품"], ["history", "히스토리"], ["admin", isAdmin ? "관리" : "재고"]];
+  return <div className="grid grid-cols-4 bg-white rounded-2xl p-1 shadow-sm border border-slate-100">{tabs.map(([key, label]) => <button key={key} onClick={() => setTab(key as any)} className={`h-10 rounded-xl text-sm font-black ${tab === key ? "bg-blue-600 text-white" : "text-slate-500"}`}>{label}</button>)}</div>;
 }
 
 function HomePanel({ openNewProduct, openAction, setTab }: any) {
@@ -904,6 +905,6 @@ function MovementEditorModal({ movement, close, save, pending }: any) {
 }
 
 function AdminPanel(props: any) {
-  const { isAdmin, canModifyLiquor, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem } = props;
-  return <div className="space-y-4">{canModifyLiquor && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select>{isAdmin && <input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/>}</div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{canModifyLiquor ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{canModifyLiquor && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}{canModifyLiquor && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100"><Edit3 size={16}/></button>}</div>)}</div></div></div>;
+  const { isAdmin, canModifyLiquor, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem, deleteProduct } = props;
+  return <div className="space-y-4">{canModifyLiquor && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select>{isAdmin && <input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/>}</div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{canModifyLiquor ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{canModifyLiquor && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}{canModifyLiquor && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100" title="제품 수정"><Edit3 size={16}/></button>}{canModifyLiquor && <button onClick={() => deleteProduct(item)} className="h-10 px-2 rounded-xl bg-red-50 text-red-600" title="제품 삭제"><Trash2 size={16}/></button>}</div>)}</div></div></div>;
 }

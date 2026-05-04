@@ -3733,7 +3733,11 @@ export const appRouter = router({
         if (!db) return { success: false };
         await ensureLiquorSeeded(db);
         if (account.role === 'admin') {
+          // 전체 삭제는 과거 입출고 히스토리를 보존하기 위해 물리 삭제 대신 비활성화한다.
+          // 단, 화면/재고에는 즉시 사라지도록 관련 지점 숨김/재고도 같이 정리한다.
           await db.update(liquorItems).set({ isActive: 0 }).where(eq(liquorItems.id, input.id));
+          await db.execute(sql`DELETE FROM liquorHiddenItems WHERE liquorItemId = ${input.id}`);
+          await db.update(liquorInventories).set({ currentStock: '0' }).where(eq(liquorInventories.liquorItemId, input.id));
           return { success: true, mode: 'global' as const };
         }
         const branchId = account.branchId;
