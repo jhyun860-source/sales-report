@@ -3111,17 +3111,13 @@ export const appRouter = router({
           input.branchId, input.date, prevRec ?? null, todayCash, todayCard
         );
         // posEndAmount 서버 재계산
-        // POS 시작금은 입력값이 비어 있거나 0이면 이전 영업일 POS 마감금으로 자동 이월한다.
-        // 프론트 표시가 늦게 갱신되어 0이 넘어와도 서버에서 한 번 더 보정한다.
-        const requestedPosStart = parseInt(input.posStartAmount || '0') || 0;
-        const carriedPosStart = prevRec ? (parseInt(prevRec.posEndAmount || '0') || 0) : 0;
-        const posStartVal = requestedPosStart > 0 ? requestedPosStart : carriedPosStart;
+        const posStartVal = parseInt(input.posStartAmount || '0') || 0;
         const expenseTotal = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
         const cashDepositVal = parseInt(input.cashDeposit || '0') || 0;
         const computedPosEnd = isSunday ? posStartVal : posStartVal - expenseTotal + cashDepositVal;
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
-          posStartAmount: String(posStartVal), cash: input.cash, card: input.card,
+          posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
           cashTotal: String(computedCashTotal), cardTotal: String(computedCardTotal),
           posEndAmount: String(computedPosEnd),
           cashDeposit: input.cashDeposit ?? '0',
@@ -3355,16 +3351,13 @@ export const appRouter = router({
           input.branchId, input.date, prevRec2 ?? null, todayCash2, todayCard2
         );
         // posEndAmount 서버 재계산
-        // POS 시작금은 입력값이 비어 있거나 0이면 이전 영업일 POS 마감금으로 자동 이월한다.
-        const requestedPosStart2 = parseInt(input.posStartAmount || '0') || 0;
-        const carriedPosStart2 = prevRec2 ? (parseInt(prevRec2.posEndAmount || '0') || 0) : 0;
-        const posStartVal2 = requestedPosStart2 > 0 ? requestedPosStart2 : carriedPosStart2;
+        const posStartVal2 = parseInt(input.posStartAmount || '0') || 0;
         const expenseTotal2 = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
         const cashDepositVal2 = parseInt(input.cashDeposit || '0') || 0;
         const computedPosEnd2 = isSunday2 ? posStartVal2 : posStartVal2 - expenseTotal2 + cashDepositVal2;
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
-          posStartAmount: String(posStartVal2), cash: input.cash, card: input.card,
+          posStartAmount: input.posStartAmount, cash: input.cash, card: input.card,
           cashTotal: String(computedCashTotal2), cardTotal: String(computedCardTotal2),
           posEndAmount: String(computedPosEnd2),
           cashDeposit: input.cashDeposit ?? '0',

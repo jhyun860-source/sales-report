@@ -393,24 +393,6 @@ export default function Home() {
   const cashDepositValue = parseAmount(record.cashDeposit);
   const autoCalculatedPosEndAmount = posStartAmountValue - expenseTotal + cashDepositValue;
 
-  // 전날 POS 마감금 → 다음날 POS 시작금 자동 이월
-  // 새 날짜에 아직 매출보고가 없거나 POS 시작금이 비어 있으면,
-  // 이전 영업일의 posEndAmount를 실제 입력값으로 채워서 화면/저장값이 0으로 남지 않게 한다.
-  useEffect(() => {
-    const carryOver = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
-    if (carryOver <= 0) return;
-
-    const savedStart = serverRecord ? Number(serverRecord.posStartAmount || 0) : 0;
-    // 이미 서버에 0이 아닌 POS 시작금이 저장된 날짜는 사용자가 저장한 값을 존중한다.
-    if (serverRecord && savedStart > 0) return;
-
-    setRecord(prev => {
-      const currentStart = parseAmount(prev.posStartAmount);
-      if (currentStart > 0) return prev;
-      return { ...prev, posStartAmount: String(carryOver) };
-    });
-  }, [prevRecord, serverRecord, currentDate, selectedBranchId]);
-
   const updateRecord = useCallback((patch: Partial<LocalRecord>) => {
     setRecord(prev => ({ ...prev, ...patch }));
     setSaved(false);
