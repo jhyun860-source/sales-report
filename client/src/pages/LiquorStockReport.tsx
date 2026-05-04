@@ -158,14 +158,32 @@ export default function LiquorStockReport() {
   });
 
   const deleteItem = trpc.liquor.deleteItem.useMutation({
-    onSuccess: () => {
-      utils.liquor.overview.invalidate();
-      utils.liquor.history.invalidate();
+    onMutate: async (variables) => {
+      // 삭제 버튼을 누르면 관리자 v1/매니저/직원 화면에서 바로 사라지게 먼저 캐시를 갱신한다.
+      await utils.liquor.overview.cancel({ date, branchId: effectiveBranchId, includeInactive: false });
+      const previousOverview = utils.liquor.overview.getData({ date, branchId: effectiveBranchId, includeInactive: false });
+      utils.liquor.overview.setData({ date, branchId: effectiveBranchId, includeInactive: false }, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: (old.items ?? []).filter((item: any) => Number(item.id) !== Number(variables.id)),
+          inventories: (old.inventories ?? []).filter((inv: any) => Number(inv.liquorItemId) !== Number(variables.id)),
+        };
+      });
+      return { previousOverview };
+    },
+    onSuccess: async () => {
+      await Promise.all([utils.liquor.overview.invalidate(), utils.liquor.history.invalidate()]);
       setSelectedItem(null);
       setProductEditorOpen(false);
       toast.success(isAdmin ? "제품이 삭제되었습니다" : "이 지점 제품 목록에서 숨김 처리되었습니다");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e, _variables, context) => {
+      if (context?.previousOverview) {
+        utils.liquor.overview.setData({ date, branchId: effectiveBranchId, includeInactive: false }, context.previousOverview as any);
+      }
+      toast.error(e.message);
+    },
   });
 
 
@@ -636,7 +654,7 @@ function TransactionScreen(props: any) {
         </div>
         <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} removeCartItem={removeCartItem} />
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
-          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 완료`}</button>
+          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 저장하기`}</button>
         </div>
       </div>
     </div>
@@ -906,5 +924,5 @@ function MovementEditorModal({ movement, close, save, pending }: any) {
 
 function AdminPanel(props: any) {
   const { isAdmin, canModifyLiquor, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem, deleteProduct } = props;
-  return <div className="space-y-4">{canModifyLiquor && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select>{isAdmin && <input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/>}</div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{canModifyLiquor ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{canModifyLiquor && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}{canModifyLiquor && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100" title="제품 수정"><Edit3 size={16}/></button>}{canModifyLiquor && <button onClick={() => deleteProduct(item)} className="h-10 px-2 rounded-xl bg-red-50 text-red-600" title="제품 삭제"><Trash2 size={16}/></button>}</div>)}</div></div></div>;
+  return <div className="space-y-4">{canModifyLiquor && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select>{isAdmin && <input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/>}</div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{canModifyLiquor ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{canModifyLiquor && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장하기</button>}{canModifyLiquor && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100" title="제품 수정"><Edit3 size={16}/></button>}{canModifyLiquor && <button onClick={() => deleteProduct(item)} className="h-10 px-2 rounded-xl bg-red-50 text-red-600" title="제품 삭제"><Trash2 size={16}/></button>}</div>)}</div></div></div>;
 }
