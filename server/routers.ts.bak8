@@ -3755,24 +3755,39 @@ export const appRouter = router({
         return { success: true };
       }),
 
+
+    updateMovementBatchDate: publicProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1), date: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const account = await requireStoreAccount(ctx);
+        const db = await getDb();
+        if (!db) return { success: false };
+        await ensureLiquorSeeded(db);
+
+        const movementRows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
+        if (movementRows.length === 0) throw new TRPCError({ code: 'NOT_FOUND', message: '수정할 히스토리 내역이 없습니다' });
+        if (account.role !== 'admin' && movementRows.some(m => m.branchId !== account.branchId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 내역만 수정할 수 있습니다' });
+        }
+        await db.update(liquorStockMovements).set({ date: input.date, updatedAt: new Date() }).where(inArray(liquorStockMovements.id, input.ids));
+        return { success: true, count: movementRows.length };
+      }),
+
     deleteMovementBatch: publicProcedure
       .input(z.object({ ids: z.array(z.number()).min(1) }))
       .mutation(async ({ ctx, input }) => {
         const account = await requireStoreAccount(ctx);
         const db = await getDb();
-        if (!db) return { success: false, deleted: 0 };
+        if (!db) return { success: false };
         await ensureLiquorSeeded(db);
 
-        const uniqueIds = Array.from(new Set(input.ids));
-        let deleted = 0;
+        const movementRows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
+        if (movementRows.length === 0) throw new TRPCError({ code: 'NOT_FOUND', message: '삭제할 히스토리 내역이 없습니다' });
+        if (account.role !== 'admin' && movementRows.some(m => m.branchId !== account.branchId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 내역만 삭제할 수 있습니다' });
+        }
 
-        for (const id of uniqueIds) {
-          const [movement] = await db.select().from(liquorStockMovements).where(eq(liquorStockMovements.id, id)).limit(1);
-          if (!movement) continue;
-          if (account.role !== 'admin' && account.branchId !== movement.branchId) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 내역만 삭제할 수 있습니다' });
-          }
-
+        for (const movement of movementRows) {
           const signedQty = Number(movement.quantity || 0);
           const [existing] = await db.select().from(liquorInventories)
             .where(and(eq(liquorInventories.branchId, movement.branchId), eq(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
@@ -3780,11 +3795,9 @@ export const appRouter = router({
             const nextStock = Number(existing.currentStock || 0) - signedQty;
             await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
           }
-          await db.delete(liquorStockMovements).where(eq(liquorStockMovements.id, id));
-          deleted += 1;
         }
-
-        return { success: true, deleted };
+        await db.delete(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
+        return { success: true, count: movementRows.length };
       }),
 
     setStock: publicProcedure
