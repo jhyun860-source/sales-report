@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -46,21 +46,6 @@ function getQueryParam(name: string) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
-const ADMIN_BRANCH_STORAGE_KEY = "liquor_admin_selected_branch_id";
-
-function getStoredAdminBranchId(): number | undefined {
-  if (typeof window === "undefined") return undefined;
-  const raw = localStorage.getItem(ADMIN_BRANCH_STORAGE_KEY);
-  const parsed = raw ? Number(raw) : NaN;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-}
-
-function saveStoredAdminBranchId(branchId?: number) {
-  if (typeof window === "undefined") return;
-  if (branchId) localStorage.setItem(ADMIN_BRANCH_STORAGE_KEY, String(branchId));
-  else localStorage.removeItem(ADMIN_BRANCH_STORAGE_KEY);
-}
-
 function categoryOf(item: any): LiquorCategory {
   const name = String(item?.name ?? "").trim();
   const category = String(item?.category ?? "").trim();
@@ -81,16 +66,13 @@ export default function LiquorStockReport() {
   const initialDate = getQueryParam("date") || localStorage.getItem("selectedDate") || todayString();
 
   const [date, setDate] = useState(initialDate);
-  const [selectedBranchId, setSelectedBranchIdState] = useState<number | undefined>(initialBranch ? Number(initialBranch) : getStoredAdminBranchId());
-  const setSelectedBranchId = (branchId: number | undefined) => {
-    setSelectedBranchIdState(branchId);
-    saveStoredAdminBranchId(branchId);
-  };
+  const [selectedBranchId, setSelectedBranchId] = useState<number | undefined>(initialBranch ? Number(initialBranch) : undefined);
   const [tab, setTab] = useState<"home" | "items" | "history" | "admin">("home");
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<LiquorCategory>("위스키");
   const [sortMode, setSortMode] = useState<"stockDesc" | "stockAsc" | "nameAsc" | "nameDesc">("stockDesc");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [locallyHiddenItemIds, setLocallyHiddenItemIds] = useState<Set<number>>(() => new Set());
   const [productEditorOpen, setProductEditorOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", category: "위스키", unitCost: "", initialStock: "" });
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
@@ -112,7 +94,7 @@ export default function LiquorStockReport() {
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
 
   const overview = trpc.liquor.overview.useQuery(
-    { date, branchId: effectiveBranchId, includeInactive: isAdmin },
+    { date, branchId: effectiveBranchId, includeInactive: false },
     { enabled: !!user, retry: false },
   );
 
@@ -162,7 +144,6 @@ export default function LiquorStockReport() {
       utils.liquor.history.invalidate();
       setSelectedItem(null);
       setProductEditorOpen(false);
-      toast.success(isAdmin ? "제품이 삭제되었습니다" : "이 지점 제품 목록에서 숨김 처리되었습니다");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -187,32 +168,9 @@ export default function LiquorStockReport() {
     onError: (e) => toast.error(e.message),
   });
 
-  const updateMovementBatchDate = trpc.liquor.updateMovementBatchDate.useMutation({
-    onSuccess: () => {
-      utils.liquor.overview.invalidate();
-      utils.liquor.history.invalidate();
-      toast.success("히스토리 날짜가 수정되었습니다");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const deleteMovementBatch = trpc.liquor.deleteMovementBatch.useMutation({
-    onSuccess: () => {
-      utils.liquor.overview.invalidate();
-      utils.liquor.history.invalidate();
-      toast.success("히스토리 전체가 삭제되었습니다");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
   const data = overview.data;
   const branches = data?.branches ?? [];
-  useEffect(() => {
-    if (!isAdmin || selectedBranchId || branches.length === 0) return;
-    const stored = getStoredAdminBranchId();
-    if (stored && branches.some((b: any) => b.id === stored)) setSelectedBranchId(stored);
-  }, [isAdmin, selectedBranchId, branches.length]);
-  const items = data?.items ?? [];
+  const items = useMemo(() => (data?.items ?? []).filter((item: any) => !locallyHiddenItemIds.has(Number(item.id))), [data?.items, locallyHiddenItemIds]);
   const inventories = data?.inventories ?? [];
   const movements = data?.movements ?? [];
   const selectedBranch = branches.find((b: any) => b.id === effectiveBranchId) ?? branches[0];
@@ -288,9 +246,39 @@ export default function LiquorStockReport() {
   };
 
   const handleDeleteProduct = (item: any) => {
-    const message = isAdmin ? `${item.name} 제품을 전체 지점에서 비활성화할까요?` : `${item.name} 제품을 현재 지점 목록에서 숨길까요?`;
+    const itemId = Number(item?.id);
+    if (!itemId) return;
+    const message = isAdmin ? `${item.name} 제품을 전체 목록에서 삭제할까요?` : `${item.name} 제품을 현재 지점 목록에서 삭제할까요?`;
     if (!window.confirm(message)) return;
-    deleteItem.mutate({ id: item.id, branchId: effectiveBranchId });
+
+    // 서버 응답/캐시 갱신을 기다리지 않고 즉시 현재 화면 목록에서 제거한다.
+    setLocallyHiddenItemIds((prev) => {
+      const next = new Set(prev);
+      next.add(itemId);
+      return next;
+    });
+    setSelectedItem(null);
+    setProductEditorOpen(false);
+    setCart((prev) => prev.filter((row) => row.liquorItemId !== itemId));
+
+    deleteItem.mutate(
+      { id: itemId, branchId: effectiveBranchId },
+      {
+        onError: (e) => {
+          setLocallyHiddenItemIds((prev) => {
+            const next = new Set(prev);
+            next.delete(itemId);
+            return next;
+          });
+          toast.error(e.message || "제품 삭제에 실패했습니다");
+        },
+        onSuccess: () => {
+          utils.liquor.overview.invalidate();
+          utils.liquor.history.invalidate();
+          toast.success(isAdmin ? "제품이 목록에서 삭제되었습니다" : "현재 지점 목록에서 삭제되었습니다");
+        },
+      }
+    );
   };
 
   const changeCartQty = (itemId: number, delta: number) => {
@@ -464,8 +452,6 @@ export default function LiquorStockReport() {
               if (!window.confirm(`${movement.itemName} 히스토리를 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return;
               deleteMovement.mutate({ id: movement.id });
             }}
-            onUpdateGroupDate={(ids: number[], newDate: string) => updateMovementBatchDate.mutate({ ids, date: newDate })}
-            onDeleteGroup={(ids: number[]) => deleteMovementBatch.mutate({ ids })}
           />
         )}
 
@@ -679,7 +665,7 @@ function InfoRow({ label, value, valueClass = "font-bold" }: any) {
   );
 }
 
-function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, onEditMovement, onDeleteMovement, onUpdateGroupDate, onDeleteGroup }: any) {
+function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, onEditMovement, onDeleteMovement }: any) {
   const [filterOpen, setFilterOpen] = useState(false);
   const hasFilter = historyType !== "ALL" || historySearch.trim() || historyStart !== "2000-01-01" || historyEnd !== todayString();
   return <div className="space-y-4">
@@ -692,7 +678,7 @@ function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd
         <SlidersHorizontal size={17}/>필터
       </button>
     </div>
-    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} onUpdateGroupDate={onUpdateGroupDate} onDeleteGroup={onDeleteGroup}/>
+    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement}/>
     {filterOpen && <HistoryFilterModal
       close={() => setFilterOpen(false)}
       reset={() => { setHistoryType("ALL"); setHistoryStart("2000-01-01"); setHistoryEnd(todayString()); setHistorySearch(""); }}
@@ -747,7 +733,7 @@ function movementBatchKey(m: any): string {
   return `${m.date}|${m.type}|${m.branchId}|${m.createdBy || ""}|${m.memo || ""}|${created}`;
 }
 
-function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMovement, onUpdateGroupDate, onDeleteGroup }: { movements: any[]; isAdmin: boolean; loading?: boolean; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void; onUpdateGroupDate?: (ids: number[], newDate: string) => void; onDeleteGroup?: (ids: number[]) => void }) {
+function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMovement }: { movements: any[]; isAdmin: boolean; loading?: boolean; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void }) {
   const [detailGroup, setDetailGroup] = useState<any[] | null>(null);
   if (loading) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">히스토리 불러오는 중...</div>;
 
@@ -771,7 +757,7 @@ function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMove
         </div>
       </div>;
     })}
-    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => setDetailGroup(null)} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} onUpdateGroupDate={onUpdateGroupDate} onDeleteGroup={onDeleteGroup} />}
+    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => setDetailGroup(null)} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} />}
   </div>;
 }
 
@@ -799,25 +785,13 @@ function HistoryBatchCard({ group, isAdmin, onClick }: { group: any[]; isAdmin: 
   </button>;
 }
 
-function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMovement, onUpdateGroupDate, onDeleteGroup }: any) {
+function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMovement }: any) {
   const first = group[0];
   const type = first.type;
   const label = type === "OUT" ? "출고" : type === "IN" ? "입고" : "조정";
   const color = type === "OUT" ? "text-red-500" : type === "IN" ? "text-emerald-600" : "text-slate-700";
   const totalQty = group.reduce((sum: number, m: any) => sum + Number(m.quantity || 0), 0);
   const totalCost = group.reduce((sum: number, m: any) => sum + Math.abs(Number(m.totalCost || 0)), 0);
-  const [batchDate, setBatchDate] = useState(first.date || todayString());
-  const groupIds = group.map((m: any) => Number(m.id)).filter(Boolean);
-  const handleGroupDateSave = () => {
-    if (!batchDate) return;
-    onUpdateGroupDate?.(groupIds, batchDate);
-    close();
-  };
-  const handleGroupDelete = () => {
-    if (!window.confirm(`${formatKoreanDate(first.date)} ${label} 전체 기록을 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return;
-    onDeleteGroup?.(groupIds);
-    close();
-  };
   return <div className="fixed inset-0 z-50 bg-white text-slate-950 overflow-y-auto">
     <Header title="상세 내역" back={close} right={<span/>}/>
     <div className="max-w-3xl mx-auto p-5 pb-20">
@@ -828,14 +802,6 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
         <InfoRow label={`${label}일`} value={formatKoreanDateTime(first.date, first.createdAt)}/>
         <InfoRow label="합계" value={`${group.length}품목 / ${totalQty > 0 ? "+" : ""}${qty(totalQty)}개`}/>
         {isAdmin && type === "OUT" && <InfoRow label="출고 원가" value={won(totalCost)} valueClass="font-black text-red-500"/>}
-      </div>
-      <div className="mt-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
-        <div className="text-sm font-black text-slate-500 mb-2">전체 기록 관리</div>
-        <div className="flex gap-2">
-          <input type="date" value={batchDate} onChange={(e) => setBatchDate(e.target.value)} className="flex-1 h-11 px-3 rounded-xl border border-slate-200 bg-white font-bold" />
-          <button onClick={handleGroupDateSave} className="h-11 px-4 rounded-xl bg-blue-600 text-white font-black">날짜 수정</button>
-        </div>
-        <button onClick={handleGroupDelete} className="w-full h-11 mt-2 rounded-xl bg-red-50 text-red-600 font-black">전체 삭제</button>
       </div>
       <div className="mt-5 space-y-4">
         {group.map((m: any) => <div key={m.id} className="flex items-center justify-between gap-3 py-3 border-b border-slate-100">
