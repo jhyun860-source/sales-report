@@ -3566,9 +3566,11 @@ export const appRouter = router({
           ? input.branchId
           : account.branchId;
 
-        // 기존 품목 수정은 관리자만 허용. 지점은 신규 품목 등록만 가능.
+        // 기존 품목 수정은 관리자 및 지정된 직원 계정만 허용
+        // 지정된 계정: m1, m2, d1, s1, s2, m3, m4, d2, s3, s4
+        const allowedEditAccounts = ['m1', 'm2', 'd1', 's1', 's2', 'm3', 'm4', 'd2', 's3', 's4'];
         if (input.id) {
-          if (account.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '기존 품목 수정은 관리자만 가능합니다' });
+          if (account.role !== 'admin' && !allowedEditAccounts.includes(account.loginId)) throw new TRPCError({ code: 'FORBIDDEN', message: '기존 품목 수정은 관리자 및 지정된 계정만 가능합니다' });
           await db.update(liquorItems).set({
             name: input.name,
             category: input.category,
@@ -3591,8 +3593,8 @@ export const appRouter = router({
           const result = await db.insert(liquorItems).values({
             name: cleanName,
             category: input.category,
-            // 지점 계정은 원가를 볼 수 없으므로 신규 등록 단가는 0원. 관리자는 입력 단가 사용.
-            unitCost: String(account.role === 'admin' ? (input.unitCost || 0) : 0),
+            // 지점 계정은 원가를 볼 수 없으므로 신규 등록 단가는 0원. 관리자 및 지정된 직원 계정은 입력 단가 사용.
+            unitCost: String((account.role === 'admin' || allowedEditAccounts.includes(account.loginId)) ? (input.unitCost || 0) : 0),
             isActive: 1,
             sortOrder: 9999,
           });
@@ -3617,7 +3619,7 @@ export const appRouter = router({
           else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: itemId, currentStock: String(initialStock) });
           const diff = initialStock - prevStock;
           if (diff !== 0) {
-            const unitCost = account.role === 'admin' ? Number(input.unitCost || sameName?.unitCost || 0) : 0;
+            const unitCost = (account.role === 'admin' || allowedEditAccounts.includes(account.loginId)) ? Number(input.unitCost || sameName?.unitCost || 0) : 0;
             await db.insert(liquorStockMovements).values({
               branchId: effectiveBranchId,
               liquorItemId: itemId,

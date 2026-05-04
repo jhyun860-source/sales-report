@@ -724,3 +724,11 @@
 - [x] TypeScript 타입 체크 통과
 - [x] vitest 42개 테스트 전체 통과
 - [x] DB 데이터 무손상 (소스코드만 교체)
+
+
+## 직원용 주류 조회 계정 추가 및 권한 수정 (employee-accounts-liquor-permissions-v1)
+- [x] Home.tsx: 직원 계정(user role)은 주류관리만 보이도록 (테이블/인센/관리 숨김)
+- [x] server/routers.ts: 제품 수정 권한 확대 (m1, m2, d1, s1, s2, m3, m4, d2, s3, s4 모두 가능)
+- [ ] DB 계정 추가: s3, s4, d2, m3, m4 (비밀번호 1234)
+- [ ] DB 기존 계정 비밀번호 통일: m1, m2, d1, s1, s2 (비밀번호 1234)
+- [ ] 각 계정 로그인 테스트 및 메뉴 확인

@@ -609,7 +609,8 @@ export default function Home() {
             </button>
           )}
 
-          {/* 테이블 기록 버튼 */}
+          {/* 테이블 기록 버튼 (관리자만) */}
+          {user.role === 'admin' && (
           <button
             onClick={() => navigate(`/table-report${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
             className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
@@ -622,8 +623,7 @@ export default function Home() {
             <ClipboardList size={14} />
             테이블
           </button>
-
-
+          )}
 
           {/* 주류 출고현황 버튼 */}
           <button
@@ -639,7 +639,8 @@ export default function Home() {
             주류
           </button>
 
-          {/* 인센티브 통계 버튼 */}
+          {/* 인센티브 통계 버튼 (관리자만) */}
+          {user.role === 'admin' && (
           <button
             onClick={() => navigate(`/staff-incentive${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
             className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
@@ -652,6 +653,7 @@ export default function Home() {
             <BarChart2 size={14} />
             인센
           </button>
+          )}
 
           {/* 누적금액 리셋 버튼 (관리자만) */}
           {user.role === 'admin' && (
