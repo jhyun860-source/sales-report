@@ -4042,7 +4042,6 @@ export const appRouter = router({
         sourceItemId: z.number(), // 합쳐지고 삭제될 항목
         tableReportId: z.number(), // 소속 tableReport ID (누적금 재계산용)
         date: z.string(),          // YYYY-MM-DD (누적금 재계산용)
-        branchId: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -4085,7 +4084,7 @@ export const appRouter = router({
         await db.delete(tableItems).where(eq(tableItems.id, input.sourceItemId));
 
         // tableReport 현금/카드 합산 재계산
-        const effectiveBranchId = account.role === 'admin' ? (input.branchId ?? account.branchId ?? null) : (account.branchId ?? null);
+        const effectiveBranchId = account.branchId ?? null;
         if (effectiveBranchId) {
           const allItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, input.tableReportId));
           const cashSum = allItems.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);

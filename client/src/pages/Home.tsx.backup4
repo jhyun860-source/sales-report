@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation, useSearch } from 'wouter';
+import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
@@ -287,14 +287,6 @@ export default function Home() {
     }
   }, [authLoading, user, navigate]);
 
-  const search = useSearch();
-  const urlBranchId = (() => {
-    const params = new URLSearchParams(search);
-    const raw = params.get('branchId');
-    const parsed = raw ? parseInt(raw, 10) : NaN;
-    return Number.isFinite(parsed) ? parsed : null;
-  })();
-
   const myBranches = user?.role === 'admin'
     ? (user.allBranches ?? [])
     : user?.branch ? [user.branch] : [];
@@ -302,29 +294,18 @@ export default function Home() {
   // selectedBranchId: 일반 계정은 무조건 자기 지점만 사용합니다.
   // 관리자만 localStorage의 선택 지점을 사용할 수 있어 계정 전환 시 지점 혼선이 나지 않습니다.
   const [_selectedBranchId, _setSelectedBranchId] = useState<number | null>(() => {
+    if (user?.role !== 'admin') return null;
     const saved = localStorage.getItem('selectedBranchId');
-    const parsed = saved ? parseInt(saved, 10) : NaN;
-    return Number.isFinite(parsed) ? parsed : null;
+    return saved ? parseInt(saved, 10) : null;
   });
 
   // myBranches가 있을 때 유효한 branchId 결정 (렌더링마다 계산)
-  // 관리자: URL branchId → localStorage 선택값 → 첫 지점 순서로 유지
-  // 매니저/직원: localStorage에 남은 다른 지점값을 무시하고 계정 지점으로 고정
   const selectedBranchId: number | null = (() => {
     if (myBranches.length === 0) return null;
     if (user?.role !== 'admin') return user?.branchId ?? myBranches[0].id;
-    if (urlBranchId && myBranches.some(b => b.id === urlBranchId)) return urlBranchId;
     const isValid = myBranches.some(b => b.id === _selectedBranchId);
     return isValid ? _selectedBranchId : myBranches[0].id;
   })();
-
-  useEffect(() => {
-    if (!user || !selectedBranchId) return;
-    try {
-      // 새로고침/페이지 이동 후에도 현재 지점을 유지하고, 계정 전환 시 stale 지점값 방지
-      localStorage.setItem('selectedBranchId', String(selectedBranchId));
-    } catch {}
-  }, [user?.loginId, user?.role, selectedBranchId]);
 
   const setSelectedBranchId = (id: number) => {
     if (user?.role !== 'admin') return;

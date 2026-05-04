@@ -197,27 +197,13 @@ export default function TableReport() {
   const urlBranchId = (() => {
     const params = new URLSearchParams(search);
     const v = params.get('branchId');
-    const parsed = v ? parseInt(v, 10) : NaN;
-    return Number.isFinite(parsed) ? parsed : undefined;
+    return v ? parseInt(v, 10) : undefined;
   })();
-  const storedBranchId = (() => {
-    try {
-      const saved = localStorage.getItem('selectedBranchId');
-      const parsed = saved ? parseInt(saved, 10) : NaN;
-      return Number.isFinite(parsed) ? parsed : undefined;
-    } catch { return undefined; }
-  })();
-  const effectiveBranchId = urlBranchId ?? (account?.role === 'admin' ? storedBranchId : account?.branchId) ?? undefined;
-
-  useEffect(() => {
-    if (!effectiveBranchId) return;
-    try { localStorage.setItem('selectedBranchId', String(effectiveBranchId)); } catch {}
-  }, [effectiveBranchId]);
 
   // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
   const { data: reportData, dataUpdatedAt } = trpc.tableReport.getByDate.useQuery(
-    { date: currentDate, branchId: effectiveBranchId },
-    { enabled: !!account && !!effectiveBranchId, staleTime: Infinity, refetchOnWindowFocus: false }
+    { date: currentDate, branchId: urlBranchId },
+    { enabled: !!account, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
   // 서버 데이터 → 로컬 상태 동기화
@@ -288,6 +274,7 @@ export default function TableReport() {
   }, [reportData, currentDate, dataUpdatedAt]); // currentDate는 loadedDateRef로 체크하지만 의존성에도 포함하여 날짜 변경 시 실행 보장
 
   // 형광펜 패턴 자동 학습 - 앱 로드 시 이전 메모에서 패턴 추출 후 localStorage 캐시
+  const effectiveBranchId = urlBranchId ?? account?.branchId ?? undefined;
   const highlightCacheKey = `highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
 
   // [수정] 사용자 학습형 형광펜 제외 단어 저장 키
@@ -455,7 +442,6 @@ export default function TableReport() {
   }, [fetchedPatterns, highlightCacheKey]);
 
   // tRPC mutations
-  const utils = trpc.useUtils();
   const batchSave = trpc.tableReport.batchSave.useMutation();
   const deleteItem = trpc.tableReport.deleteItem.useMutation();
   const deleteIncentive = trpc.tableReport.deleteIncentive.useMutation();
@@ -474,33 +460,27 @@ export default function TableReport() {
 
   // 합치기 실행 - targetLocalId와 sourceLocalId를 직접 인자로 받아 stale closure 방지
   const handleMerge = async (targetLocalId: string, sourceLocalId: string) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
+    if (!reportId) return;
     const target = items.find(it => it.localId === targetLocalId);
     const source = items.find(it => it.localId === sourceLocalId);
-    if (!target || !source || targetLocalId === sourceLocalId) {
-      toast.error('합칠 항목을 다시 선택해주세요.');
+    if (!target?.id || !source?.id) {
+      toast.error('저장된 항목만 합칠 수 있습니다. 먼저 저장해 주세요.');
       setMergeTargetLocalId(null);
       setMergeSourceLocalId(null);
       return;
     }
-
-    const mergeMemo = (a?: string | null, b?: string | null) => {
-      const left = (a ?? '').trim();
-      const right = (b ?? '').trim();
-      if (left && right) return `${left}<br>${right}`;
-      return left || right || '';
-    };
-    const mergedAmountLocal = String((Number(target.amount || 0) || 0) + (Number(source.amount || 0) || 0));
-    const mergedMemoLocal = mergeMemo(target.memo, source.memo);
-
-    const applyLocalMerge = (amount: string, memo: string) => {
+    try {
+      const result = await mergeItemsMutation.mutateAsync({
+        targetItemId: target.id,
+        sourceItemId: source.id,
+        tableReportId: reportId,
+        date: currentDate,
+      });
+      // 로컬 상태 업데이트: target 금액/메모 갱신, source 제거
       setItems(prev => {
         const next = prev
           .map(it => it.localId === targetLocalId
-            ? { ...it, amount, memo }
+            ? { ...it, amount: result.mergedAmount, memo: result.mergedMemo ?? '' }
             : it
           )
           .filter(it => it.localId !== sourceLocalId);
@@ -508,28 +488,7 @@ export default function TableReport() {
       });
       setMergeTargetLocalId(null);
       setMergeSourceLocalId(null);
-      setSaved(false);
-      loadedDateRef.current = currentDate;
-    };
-
-    // 아직 저장 전인 신규 항목도 화면에서 먼저 정확히 합쳐지게 처리
-    if (!target.id || !source.id || !reportId) {
-      applyLocalMerge(mergedAmountLocal, mergedMemoLocal);
-      toast.success('합치기 완료! 저장하기를 누르면 서버에 반영됩니다.');
-      return;
-    }
-
-    try {
-      const result = await mergeItemsMutation.mutateAsync({
-        targetItemId: target.id,
-        sourceItemId: source.id,
-        tableReportId: reportId,
-        date: currentDate,
-        branchId: effectiveBranchId,
-      });
-      applyLocalMerge(result.mergedAmount, result.mergedMemo ?? '');
-      await utils.tableReport.getByDate.invalidate({ date: currentDate, branchId: effectiveBranchId });
-      toast.success('합치기 완료! 금액과 메모가 합산되었습니다.');
+      toast.success('합치기 완료! 금액이 합산되었습니다.');
     } catch (e: any) {
       toast.error('합치기 실패: ' + (e?.message ?? '알 수 없는 오류'));
       setMergeTargetLocalId(null);
@@ -561,7 +520,7 @@ export default function TableReport() {
         date: currentDate,
         teamCount,
         notes,
-        branchId: effectiveBranchId,
+        branchId: urlBranchId,
         items: items.map((it, i) => ({
           id: it.id,
           localId: it.localId,
@@ -690,7 +649,7 @@ export default function TableReport() {
       const { memo, amount } = await analyzeOrderMemo.mutateAsync({
         imageBase64: base64,
         mimeType: file.type || 'image/jpeg',
-        branchId: effectiveBranchId,
+        branchId: urlBranchId ?? account?.branchId ?? undefined,
         date: currentDate,
         // 캐시된 패턴 전달 (DB 재조회 생략으로 속도 개선) - 사용자 제외 단어 필터링 적용
         preloadedYellow: filteredYellow,
