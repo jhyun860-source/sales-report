@@ -158,14 +158,32 @@ export default function LiquorStockReport() {
   });
 
   const deleteItem = trpc.liquor.deleteItem.useMutation({
-    onSuccess: () => {
-      utils.liquor.overview.invalidate();
-      utils.liquor.history.invalidate();
+    onMutate: async (variables) => {
+      // 삭제 버튼을 누르면 관리자 v1/매니저/직원 화면에서 바로 사라지게 먼저 캐시를 갱신한다.
+      await utils.liquor.overview.cancel({ date, branchId: effectiveBranchId, includeInactive: false });
+      const previousOverview = utils.liquor.overview.getData({ date, branchId: effectiveBranchId, includeInactive: false });
+      utils.liquor.overview.setData({ date, branchId: effectiveBranchId, includeInactive: false }, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: (old.items ?? []).filter((item: any) => Number(item.id) !== Number(variables.id)),
+          inventories: (old.inventories ?? []).filter((inv: any) => Number(inv.liquorItemId) !== Number(variables.id)),
+        };
+      });
+      return { previousOverview };
+    },
+    onSuccess: async () => {
+      await Promise.all([utils.liquor.overview.invalidate(), utils.liquor.history.invalidate()]);
       setSelectedItem(null);
       setProductEditorOpen(false);
       toast.success(isAdmin ? "제품이 삭제되었습니다" : "이 지점 제품 목록에서 숨김 처리되었습니다");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e, _variables, context) => {
+      if (context?.previousOverview) {
+        utils.liquor.overview.setData({ date, branchId: effectiveBranchId, includeInactive: false }, context.previousOverview as any);
+      }
+      toast.error(e.message);
+    },
   });
 
 
@@ -636,7 +654,7 @@ function TransactionScreen(props: any) {
         </div>
         <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} removeCartItem={removeCartItem} />
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
-          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : "저장하기"}</button>
+          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 저장하기`}</button>
         </div>
       </div>
     </div>
