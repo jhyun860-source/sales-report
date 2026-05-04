@@ -3501,9 +3501,12 @@ export const appRouter = router({
 
         const itemById = new Map(itemRows.map(i => [i.id, i]));
         const branchById = new Map(allBranches.map(b => [b.id, b]));
+        const creatorRows = await db.select().from(storeAccounts);
+        const creatorById = new Map(creatorRows.map((a: any) => [Number(a.id), a]));
         const movements = movementRows.map(m => {
           const item = itemById.get(m.liquorItemId);
           const branch = branchById.get(m.branchId);
+          const creator = m.createdBy ? creatorById.get(Number(m.createdBy)) : null;
           return {
             ...m,
             quantity: Number(m.quantity || 0),
@@ -3512,6 +3515,9 @@ export const appRouter = router({
             itemName: item?.name ?? '삭제된 품목',
             category: item?.category ?? '기타',
             branchName: branch?.name ?? '',
+            createdByLoginId: creator?.loginId ?? '',
+            createdByDisplayName: creator?.displayName ?? '',
+            createdByRole: creator?.role ?? '',
           };
         });
         const inventories = inventoryRows.map(inv => ({ ...inv, currentStock: Number(inv.currentStock || 0) }));
@@ -3567,6 +3573,8 @@ export const appRouter = router({
         const itemRows = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
         const itemById = new Map(itemRows.map(i => [i.id, i]));
         const branchById = new Map(allBranches.map(b => [b.id, b]));
+        const creatorRows = await db.select().from(storeAccounts);
+        const creatorById = new Map(creatorRows.map((a: any) => [Number(a.id), a]));
 
         const historyConditions = [
           inArray(liquorStockMovements.branchId, selectedBranchIds),
@@ -3584,6 +3592,7 @@ export const appRouter = router({
           .map(m => {
             const item = itemById.get(m.liquorItemId);
             const branch = branchById.get(m.branchId);
+            const creator = m.createdBy ? creatorById.get(Number(m.createdBy)) : null;
             return {
               ...m,
               quantity: Number(m.quantity || 0),
@@ -3592,6 +3601,9 @@ export const appRouter = router({
               itemName: item?.name ?? '삭제된 품목',
               category: item?.category ?? '기타',
               branchName: branch?.name ?? '',
+              createdByLoginId: creator?.loginId ?? '',
+              createdByDisplayName: creator?.displayName ?? '',
+              createdByRole: creator?.role ?? '',
             };
           })
           .filter(m => !keyword || String(m.itemName).toLowerCase().includes(keyword));
@@ -3639,8 +3651,26 @@ export const appRouter = router({
           if (effectiveBranchId && input.initialStock !== undefined) {
             const [existingInventory] = await db.select().from(liquorInventories)
               .where(and(eq(liquorInventories.branchId, effectiveBranchId), eq(liquorInventories.liquorItemId, input.id))).limit(1);
-            if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(input.initialStock) }).where(eq(liquorInventories.id, existingInventory.id));
-            else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(input.initialStock) });
+            const prevStock = Number(existingInventory?.currentStock || 0);
+            const nextStock = Number(input.initialStock || 0);
+            const diff = nextStock - prevStock;
+            if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existingInventory.id));
+            else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
+            if (diff !== 0) {
+              const [stockItem] = await db.select().from(liquorItems).where(eq(liquorItems.id, input.id)).limit(1);
+              const unitCost = Number(stockItem?.unitCost || 0);
+              await db.insert(liquorStockMovements).values({
+                branchId: effectiveBranchId,
+                liquorItemId: input.id,
+                date: new Date().toISOString().slice(0, 10),
+                type: 'ADJUST',
+                quantity: String(diff),
+                unitCost: String(unitCost),
+                totalCost: String(Math.abs(diff) * unitCost),
+                memo: `재고수정: ${prevStock}개 → ${nextStock}개 (${diff > 0 ? '+' : ''}${diff})`,
+                createdBy: account.id,
+              });
+            }
           }
           return { success: true, id: input.id };
         }
@@ -3833,7 +3863,7 @@ export const appRouter = router({
         else await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
         if (diff !== 0) {
           const unitCost = Number(item.unitCost || 0);
-          await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: new Date().toISOString().slice(0, 10), type: 'ADJUST', quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || '관리자 재고 직접 수정', createdBy: account.id });
+          await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: new Date().toISOString().slice(0, 10), type: 'ADJUST', quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || `재고수정: ${prevStock}개 → ${input.currentStock}개 (${diff > 0 ? '+' : ''}${diff})`, createdBy: account.id });
         }
         return { success: true };
       }),

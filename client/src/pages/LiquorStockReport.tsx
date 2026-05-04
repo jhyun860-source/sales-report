@@ -17,6 +17,7 @@ import {
   Settings,
   SlidersHorizontal,
   Trash2,
+  LogOut,
   X,
 } from "lucide-react";
 
@@ -61,7 +62,7 @@ function categoryOf(item: any): LiquorCategory {
 
 export default function LiquorStockReport() {
   const [, navigate] = useLocation();
-  const { user, loading } = useStoreAuth();
+  const { user, loading, logout } = useStoreAuth();
   const utils = trpc.useUtils();
   const initialBranch = getQueryParam("branchId");
   const initialDate = getQueryParam("date") || localStorage.getItem("selectedDate") || todayString();
@@ -94,6 +95,22 @@ export default function LiquorStockReport() {
   const isStaffOnly = isStaffLiquorOnly(user?.loginId);
   const canModifyLiquor = canEditLiquor(user?.loginId, user?.role);
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
+
+  const handleStaffLogout = () => {
+    // 서버 쿠키 로그아웃 + 프론트에 남아 있을 수 있는 지점/계정 캐시를 같이 제거
+    try {
+      localStorage.removeItem("store_token");
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("user");
+      localStorage.removeItem("auth");
+      localStorage.removeItem("role");
+      localStorage.removeItem("branch");
+      localStorage.removeItem("branchCode");
+      sessionStorage.clear();
+    } catch {}
+    logout();
+    navigate("/login");
+  };
 
   const overview = trpc.liquor.overview.useQuery(
     { date, branchId: effectiveBranchId, includeInactive: isAdmin },
@@ -370,7 +387,19 @@ export default function LiquorStockReport() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 pb-24">
-      <Header title="주류 출고현황" back={() => navigate("/")} right={<button onClick={() => setTab(isAdmin ? "admin" : "items")} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>} />
+      <Header
+        title="주류 출고현황"
+        back={() => navigate("/")}
+        right={
+          isStaffOnly ? (
+            <button onClick={handleStaffLogout} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-1">
+              <LogOut size={16} />로그아웃
+            </button>
+          ) : (
+            <button onClick={() => setTab(isAdmin ? "admin" : "items")} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>
+          )
+        }
+      />
       <div className="px-4 pt-4 space-y-4 max-w-3xl mx-auto">
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold" />
@@ -452,7 +481,7 @@ export default function LiquorStockReport() {
               const branchId = effectiveBranchId;
               if (!branchId) return toast.error("지점을 선택해주세요");
               if (!canModifyLiquor) return toast.error("재고 수정 권한이 없습니다");
-              setStock.mutate({ branchId, liquorItemId: item.id, currentStock: Number(value || 0), memo: isAdmin ? "관리자 재고 보정" : "지점 재고 보정" });
+              setStock.mutate({ branchId, liquorItemId: item.id, currentStock: Number(value || 0) });
             }}
             setEditingItem={openEditProduct}
             canModifyLiquor={canModifyLiquor}
@@ -482,7 +511,7 @@ function sortItems(a: any, b: any, sortMode: string, stockByItem: Map<number, nu
 }
 
 function Header({ title, back, right }: { title: string; back: () => void; right?: ReactNode }) {
-  return <div className="sticky top-0 z-20 bg-white border-b border-slate-200"><div className="flex items-center justify-between px-4 h-14"><button onClick={back} className="p-2 -ml-2 rounded-full hover:bg-slate-100"><ArrowLeft size={22} /></button><div className="font-black text-lg">{title}</div><div className="w-10 flex justify-end">{right}</div></div></div>;
+  return <div className="sticky top-0 z-20 bg-white border-b border-slate-200"><div className="flex items-center justify-between px-4 h-14"><button onClick={back} className="p-2 -ml-2 rounded-full hover:bg-slate-100"><ArrowLeft size={22} /></button><div className="font-black text-lg truncate px-2">{title}</div><div className="min-w-10 flex justify-end">{right}</div></div></div>;
 }
 
 function LoadingState() {
@@ -780,6 +809,7 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
       <div className="bg-white mt-4 divide-y divide-slate-100 border-b border-slate-100">
         <InfoRow label="위치" value={first.branchName || "기본 위치"}/>
         <InfoRow label={`${label}일`} value={formatKoreanDateTime(first.date, first.createdAt)}/>
+        <InfoRow label="수정/처리자" value={formatMovementCreator(first)}/>
         <InfoRow label="합계" value={`${group.length}품목 / ${totalQty > 0 ? "+" : ""}${qty(totalQty)}개`}/>
         {isAdmin && type === "OUT" && <InfoRow label="출고 원가" value={won(totalCost)} valueClass="font-black text-red-500"/>}
       </div>
@@ -789,6 +819,7 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
           <div className="flex-1 min-w-0">
             <div className="text-xl font-black truncate">{m.itemName}</div>
             <div className="text-sm text-slate-500 mt-1">0 | 0 | {categoryOf(m)}</div>
+            <div className="text-sm text-slate-400 mt-1 truncate">처리자: {formatMovementCreator(m)}</div>
             {m.memo && <div className="text-sm text-slate-400 mt-1 truncate">메모: {m.memo}</div>}
             {isAdmin && type === "OUT" && <div className="text-xs text-slate-400 mt-1">원가 {won(Math.abs(Number(m.totalCost || 0)))}</div>}
           </div>
@@ -803,6 +834,12 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
       {first.memo && <div className="mt-3 text-slate-700">{first.memo}</div>}
     </div>
   </div>;
+}
+
+function formatMovementCreator(movement: any) {
+  const name = movement?.createdByLoginId || movement?.createdByDisplayName || movement?.creatorLoginId || movement?.creatorName;
+  const role = movement?.createdByRole === "admin" ? "관리자" : "직원/매니저";
+  return name ? `${name} / ${role}` : "기록 없음";
 }
 
 function formatKoreanDate(date: string) {
