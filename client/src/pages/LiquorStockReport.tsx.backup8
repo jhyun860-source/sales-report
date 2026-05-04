@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useStoreAuth } from "@/hooks/useStoreAuth";
+import { canEditLiquor, getAccountBranchLabel, isStaffLiquorOnly } from "@/lib/accountAccess";
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -16,6 +17,8 @@ import {
   Settings,
   SlidersHorizontal,
   Trash2,
+  LogOut,
+  Save,
   X,
 } from "lucide-react";
 
@@ -60,7 +63,7 @@ function categoryOf(item: any): LiquorCategory {
 
 export default function LiquorStockReport() {
   const [, navigate] = useLocation();
-  const { user, loading } = useStoreAuth();
+  const { user, loading, logout } = useStoreAuth();
   const utils = trpc.useUtils();
   const initialBranch = getQueryParam("branchId");
   const initialDate = getQueryParam("date") || localStorage.getItem("selectedDate") || todayString();
@@ -72,11 +75,13 @@ export default function LiquorStockReport() {
   const [activeCategory, setActiveCategory] = useState<LiquorCategory>("위스키");
   const [sortMode, setSortMode] = useState<"stockDesc" | "stockAsc" | "nameAsc" | "nameDesc">("stockDesc");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [returnToItemId, setReturnToItemId] = useState<number | null>(null);
   const [productEditorOpen, setProductEditorOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", category: "위스키", unitCost: "", initialStock: "" });
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [stockEdit, setStockEdit] = useState<{ itemId: number; value: string } | null>(null);
+  const lastListScrollYRef = useRef(0);
+  const pushedActionHistoryRef = useRef(false);
+  const pushedProductHistoryRef = useRef(false);
 
   const [actionMode, setActionMode] = useState<MovementType | null>(null);
   const [actionSearch, setActionSearch] = useState("");
@@ -91,10 +96,75 @@ export default function LiquorStockReport() {
   const [editingMovement, setEditingMovement] = useState<any | null>(null);
 
   const isAdmin = user?.role === "admin";
+  const isStaffOnly = isStaffLiquorOnly(user?.loginId);
+  const canModifyLiquor = canEditLiquor(user?.loginId, user?.role);
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
 
+  const handleStaffLogout = () => {
+    // 서버 쿠키 로그아웃 + 프론트에 남아 있을 수 있는 지점/계정 캐시를 같이 제거
+    try {
+      localStorage.removeItem("store_token");
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("user");
+      localStorage.removeItem("auth");
+      localStorage.removeItem("role");
+      localStorage.removeItem("branch");
+      localStorage.removeItem("branchCode");
+      sessionStorage.clear();
+    } catch {}
+    logout();
+    navigate("/login");
+  };
+
+  const restoreLiquorScroll = () => {
+    const y = lastListScrollYRef.current || Number(sessionStorage.getItem("liquorLastScrollY") || 0);
+    window.setTimeout(() => window.scrollTo({ top: y, behavior: "auto" }), 0);
+  };
+
+  const pushLiquorInternalHistory = (screen: "action" | "product") => {
+    if (typeof window === "undefined") return;
+    const stateKey = screen === "action" ? "liquorAction" : "liquorProduct";
+    window.history.pushState({ ...(window.history.state || {}), [stateKey]: true }, "", window.location.href);
+    if (screen === "action") pushedActionHistoryRef.current = true;
+    if (screen === "product") pushedProductHistoryRef.current = true;
+  };
+
+  const closeActionScreen = () => {
+    setActionMode(null);
+    setCart([]);
+    setActionMemo("");
+    setActionSearch("");
+    pushedActionHistoryRef.current = false;
+  };
+
+  const closeProductDetail = () => {
+    setSelectedItem(null);
+    setProductEditorOpen(false);
+    pushedProductHistoryRef.current = false;
+    restoreLiquorScroll();
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (productEditorOpen) {
+        setProductEditorOpen(false);
+        return;
+      }
+      if (actionMode) {
+        closeActionScreen();
+        return;
+      }
+      if (selectedItem) {
+        closeProductDetail();
+        return;
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [actionMode, selectedItem, productEditorOpen]);
+
   const overview = trpc.liquor.overview.useQuery(
-    { date, branchId: effectiveBranchId, includeInactive: isAdmin },
+    { date, branchId: effectiveBranchId, includeInactive: false },
     { enabled: !!user, retry: false },
   );
 
@@ -110,6 +180,7 @@ export default function LiquorStockReport() {
       setNewItem({ name: "", category: "위스키", unitCost: "", initialStock: "" });
       setEditingItemId(null);
       setProductEditorOpen(false);
+      if (editingItemId) restoreLiquorScroll();
       toast.success("주류 품목이 저장되었습니다");
     },
     onError: (e) => toast.error(e.message),
@@ -123,6 +194,7 @@ export default function LiquorStockReport() {
       setActionMemo("");
       setActionSearch("");
       setActionMode(null);
+      pushedActionHistoryRef.current = false;
       toast.success("입고/출고 내역이 저장되었습니다");
     },
     onError: (e) => toast.error(e.message),
@@ -205,68 +277,29 @@ export default function LiquorStockReport() {
   const totalInQty = data?.totals.inQty ?? 0;
   const totalOutCost = data?.totals.outCost ?? 0;
 
-  const closeProductDetail = () => {
-    if (selectedItem?.id) setReturnToItemId(selectedItem.id);
-    setSelectedItem(null);
-    setTab("items");
-  };
-
-  const closeActionScreen = () => {
-    setActionMode(null);
-  };
-
-  // 모바일 기기/브라우저의 물리 뒤로가기 버튼도 웹앱 내부 뒤로가기와 동일하게 동작시킨다.
-  // 주류 화면 안에서 입고/출고/조정, 제품 상세, 탭 이동 중이면 매출보고(/)로 빠지지 않고 한 단계만 뒤로 간다.
-  useEffect(() => {
-    if (typeof window === "undefined" || !user) return;
-
-    const guardState = { ...(window.history.state || {}), liquorInternalBackGuard: true };
-    window.history.replaceState(guardState, "", window.location.href);
-    window.history.pushState(guardState, "", window.location.href);
-
-    const handlePopState = () => {
-      const hasInternalView = Boolean(productEditorOpen || actionMode || selectedItem || tab !== "home");
-      if (!hasInternalView) {
-        navigate("/");
-        return;
-      }
-
-      window.history.pushState(guardState, "", window.location.href);
-
-      if (productEditorOpen) {
-        setProductEditorOpen(false);
-        return;
-      }
-      if (actionMode) {
-        setActionMode(null);
-        return;
-      }
-      if (selectedItem) {
-        if (selectedItem.id) setReturnToItemId(selectedItem.id);
-        setSelectedItem(null);
-        setTab("items");
-        return;
-      }
-      if (tab !== "home") {
-        setTab("home");
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [user, navigate, productEditorOpen, actionMode, selectedItem, tab]);
-
   const openAction = (type: MovementType, item?: any) => {
+    lastListScrollYRef.current = window.scrollY || 0;
+    sessionStorage.setItem("liquorLastScrollY", String(lastListScrollYRef.current));
     setActionMode(type);
     setActionSearch("");
     setActionCategory(item ? categoryOf(item) : activeCategory);
     setCart(item ? [{ liquorItemId: item.id, quantity: 1 }] : []);
     setActionMemo("");
+    if (!pushedActionHistoryRef.current) pushLiquorInternalHistory("action");
+  };
+
+  const openProductDetail = (item: any) => {
+    lastListScrollYRef.current = window.scrollY || 0;
+    sessionStorage.setItem("liquorLastScrollY", String(lastListScrollYRef.current));
+    sessionStorage.setItem("liquorLastItemId", String(item.id));
+    setSelectedItem(item);
+    if (!pushedProductHistoryRef.current) pushLiquorInternalHistory("product");
   };
 
   const saveItem = () => {
     if (!newItem.name.trim()) return toast.error("주류명을 입력해주세요");
     const branchId = effectiveBranchId;
+    if (!canModifyLiquor) return toast.error("주류 수정 권한이 없습니다");
     if (!isAdmin && !branchId) return toast.error("지점을 선택해주세요");
     if (isAdmin && !branchId && Number(newItem.initialStock || 0) !== 0) return toast.error("수량까지 넣으려면 먼저 지점을 선택해주세요");
     upsertItem.mutate({
@@ -291,7 +324,7 @@ export default function LiquorStockReport() {
     setNewItem({
       name: item.name,
       category: categoryOf(item),
-      unitCost: String(item.unitCost || 0),
+      unitCost: isAdmin ? String(item.unitCost || 0) : "",
       initialStock: String(stockByItem.get(item.id) ?? 0),
     });
     setProductEditorOpen(true);
@@ -300,6 +333,7 @@ export default function LiquorStockReport() {
   const handleDeleteProduct = (item: any) => {
     const message = isAdmin ? `${item.name} 제품을 전체 지점에서 비활성화할까요?` : `${item.name} 제품을 현재 지점 목록에서 숨길까요?`;
     if (!window.confirm(message)) return;
+    if (!canModifyLiquor) return toast.error("주류 삭제 권한이 없습니다");
     deleteItem.mutate({ id: item.id, branchId: effectiveBranchId });
   };
 
@@ -357,7 +391,10 @@ export default function LiquorStockReport() {
       <TransactionScreen
         mode={actionMode}
         setMode={setActionMode}
-        close={closeActionScreen}
+        close={() => {
+          if (pushedActionHistoryRef.current) window.history.back();
+          else closeActionScreen();
+        }}
         date={date}
         setDate={setDate}
         selectedBranch={selectedBranch}
@@ -392,7 +429,10 @@ export default function LiquorStockReport() {
       <>
         <ProductDetail
           item={selectedItem}
-          back={closeProductDetail}
+          back={() => {
+            if (pushedProductHistoryRef.current) window.history.back();
+            else closeProductDetail();
+          }}
           selectedBranch={selectedBranch}
           stock={stockByItem.get(selectedItem.id) ?? 0}
           isAdmin={isAdmin}
@@ -417,7 +457,19 @@ export default function LiquorStockReport() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 pb-24">
-      <Header title="주류 출고현황" back={() => navigate("/")} right={<button onClick={() => setTab(isAdmin ? "admin" : "items")} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>} />
+      <Header
+        title="주류 출고현황"
+        back={() => navigate("/")}
+        right={
+          isStaffOnly ? (
+            <button onClick={handleStaffLogout} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-1">
+              <LogOut size={16} />로그아웃
+            </button>
+          ) : (
+            <button onClick={() => setTab(isAdmin ? "admin" : "items")} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>
+          )
+        }
+      />
       <div className="px-4 pt-4 space-y-4 max-w-3xl mx-auto">
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold" />
@@ -429,8 +481,8 @@ export default function LiquorStockReport() {
           )}
         </div>
 
-        <SummaryCard branchName={selectedBranch?.name ?? "전체"} date={date} totalStock={totalStock} totalInQty={totalInQty} totalOutQty={totalOutQty} totalOutCost={totalOutCost} isAdmin={isAdmin} />
-        <NavTabs tab={tab} setTab={setTab} isAdmin={isAdmin} />
+        <SummaryCard branchName={getAccountBranchLabel(user?.loginId) ?? selectedBranch?.name ?? "전체"} date={date} totalStock={totalStock} totalInQty={totalInQty} totalOutQty={totalOutQty} totalOutCost={totalOutCost} isAdmin={isAdmin} />
+        <NavTabs tab={tab} setTab={setTab} isAdmin={isAdmin} isStaffOnly={isStaffOnly} />
 
         {tab === "home" && (
           <HomePanel
@@ -452,9 +504,7 @@ export default function LiquorStockReport() {
             stockByItem={stockByItem}
             isAdmin={isAdmin}
             openNewProduct={openNewProduct}
-            openItem={(item: any) => setSelectedItem(item)}
-            focusItemId={returnToItemId}
-            clearFocusItem={() => setReturnToItemId(null)}
+            openItem={openProductDetail}
           />
         )}
 
@@ -500,9 +550,12 @@ export default function LiquorStockReport() {
             setStock={(item: any, value: string) => {
               const branchId = effectiveBranchId;
               if (!branchId) return toast.error("지점을 선택해주세요");
-              setStock.mutate({ branchId, liquorItemId: item.id, currentStock: Number(value || 0), memo: "관리자 재고 보정" });
+              if (!canModifyLiquor) return toast.error("재고 수정 권한이 없습니다");
+              setStock.mutate({ branchId, liquorItemId: item.id, currentStock: Number(value || 0) });
             }}
             setEditingItem={openEditProduct}
+            deleteProduct={handleDeleteProduct}
+            canModifyLiquor={canModifyLiquor}
           />
         )}
       </div>
@@ -529,7 +582,7 @@ function sortItems(a: any, b: any, sortMode: string, stockByItem: Map<number, nu
 }
 
 function Header({ title, back, right }: { title: string; back: () => void; right?: ReactNode }) {
-  return <div className="sticky top-0 z-20 bg-white border-b border-slate-200"><div className="flex items-center justify-between px-4 h-14"><button onClick={back} className="p-2 -ml-2 rounded-full hover:bg-slate-100"><ArrowLeft size={22} /></button><div className="font-black text-lg">{title}</div><div className="w-10 flex justify-end">{right}</div></div></div>;
+  return <div className="sticky top-0 z-20 bg-white border-b border-slate-200"><div className="flex items-center justify-between px-4 h-14"><button onClick={back} className="p-2 -ml-2 rounded-full hover:bg-slate-100"><ArrowLeft size={22} /></button><div className="font-black text-lg truncate px-2">{title}</div><div className="min-w-10 flex justify-end">{right}</div></div></div>;
 }
 
 function LoadingState() {
@@ -547,8 +600,11 @@ function SummaryMetric({ value, label, small }: { value: string; label: string; 
   return <div><div className={`font-black ${small ? "text-base" : "text-3xl"}`}>{value}</div><div className="text-xs opacity-70 mt-1">{label}</div></div>;
 }
 
-function NavTabs({ tab, setTab, isAdmin }: any) {
-  return <div className="grid grid-cols-4 bg-white rounded-2xl p-1 shadow-sm border border-slate-100">{[["home", "홈"], ["items", "제품"], ["history", "히스토리"], ["admin", isAdmin ? "관리" : "재고"]].map(([key, label]) => <button key={key} onClick={() => setTab(key)} className={`h-10 rounded-xl text-sm font-black ${tab === key ? "bg-blue-600 text-white" : "text-slate-500"}`}>{label}</button>)}</div>;
+function NavTabs({ tab, setTab, isAdmin, isStaffOnly }: any) {
+  // 직원 전용 계정도 매니저와 동일하게 히스토리를 볼 수 있게 한다.
+  // 단, 이 페이지 자체가 주류 전용이므로 매출/정산/인센 메뉴는 노출되지 않는다.
+  const tabs = [["home", "홈"], ["items", "제품"], ["history", "히스토리"], ["admin", isAdmin ? "관리" : "재고"]];
+  return <div className="grid grid-cols-4 bg-white rounded-2xl p-1 shadow-sm border border-slate-100">{tabs.map(([key, label]) => <button key={key} onClick={() => setTab(key as any)} className={`h-10 rounded-xl text-sm font-black ${tab === key ? "bg-blue-600 text-white" : "text-slate-500"}`}>{label}</button>)}</div>;
 }
 
 function HomePanel({ openNewProduct, openAction, setTab }: any) {
@@ -565,6 +621,16 @@ function HomePanel({ openNewProduct, openAction, setTab }: any) {
       <ActionMenuButton type="IN" label="입고하기" onClick={() => openAction("IN")} />
       <ActionMenuButton type="OUT" label="출고하기" onClick={() => openAction("OUT")} />
       <ActionMenuButton type="ADJUST" label="조정하기" onClick={() => openAction("ADJUST")} />
+      <button
+        type="button"
+        onClick={() => openAction("IN")}
+        className="mt-4 w-full rounded-2xl border-2 border-blue-200 bg-blue-600 p-4 text-center text-white shadow-sm active:scale-[0.99] transition flex flex-col items-center justify-center"
+      >
+        <span className="flex items-center justify-center gap-2 font-black text-lg">
+          <Save size={22} />저장하기
+        </span>
+        <span className="text-xs text-blue-100 mt-1 font-bold">입고/출고/조정 화면으로 이동해서 수량 입력 후 저장합니다</span>
+      </button>
     </div>
   </div>;
 }
@@ -572,27 +638,11 @@ function ActionMenuButton({ type, label, onClick }: { type: MovementType; label:
   return <button onClick={onClick} className="w-full flex items-center justify-between h-14"><span className="flex items-center gap-3 text-lg font-bold"><MovementIcon type={type} />{label}</span><span className="text-slate-400 text-2xl">›</span></button>;
 }
 
-function ItemsPanel({ search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, isAdmin, openNewProduct, openItem, focusItemId, clearFocusItem }: any) {
-  const listRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!focusItemId) return;
-    const frame = window.requestAnimationFrame(() => {
-      const target = listRef.current?.querySelector(`[data-liquor-item-id="${focusItemId}"]`) as HTMLElement | null;
-      if (target) {
-        target.scrollIntoView({ block: "center", behavior: "auto" });
-        target.classList.add("ring-2", "ring-blue-500", "ring-offset-2");
-        window.setTimeout(() => target.classList.remove("ring-2", "ring-blue-500", "ring-offset-2"), 1200);
-      }
-      clearFocusItem?.();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [focusItemId, filteredItems, clearFocusItem]);
-
-  return <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="flex items-center justify-between mb-3"><div className="text-xl font-black">제품 목록</div><button onClick={openNewProduct} className="h-9 px-3 rounded-xl bg-blue-600 text-white text-sm font-black flex items-center gap-1"><Plus size={16}/>제품 추가</button></div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색" /><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} /><SortSelect sortMode={sortMode} setSortMode={setSortMode} /><div ref={listRef} className="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden max-h-[60vh] overflow-y-auto">{filteredItems.map((item: any) => <ProductRow key={item.id} item={item} stock={stockByItem.get(item.id) ?? 0} isAdmin={isAdmin} onClick={() => openItem(item)} />)}</div></div>;
+function ItemsPanel({ search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, isAdmin, openNewProduct, openItem }: any) {
+  return <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="flex items-center justify-between mb-3"><div className="text-xl font-black">제품 목록</div><button onClick={openNewProduct} className="h-9 px-3 rounded-xl bg-blue-600 text-white text-sm font-black flex items-center gap-1"><Plus size={16}/>제품 추가</button></div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색" /><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} /><SortSelect sortMode={sortMode} setSortMode={setSortMode} /><div className="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden max-h-[60vh] overflow-y-auto">{filteredItems.map((item: any) => <ProductRow key={item.id} item={item} stock={stockByItem.get(item.id) ?? 0} isAdmin={isAdmin} onClick={() => openItem(item)} />)}</div></div>;
 }
 function ProductRow({ item, stock, isAdmin, onClick }: any) {
-  return <button data-liquor-item-id={item.id} onClick={onClick} className="w-full flex items-center justify-between py-4 px-3 bg-white text-left hover:bg-slate-50 transition"><div className="flex items-center gap-3 min-w-0"><div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center shrink-0"><Package className="text-slate-400" size={22}/></div><div className="min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div></div><div className="text-2xl font-black text-blue-600">{qty(stock)}</div></button>;
+  return <button onClick={onClick} className="w-full flex items-center justify-between py-4 px-3 bg-white text-left hover:bg-slate-50"><div className="flex items-center gap-3 min-w-0"><div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center shrink-0"><Package className="text-slate-400" size={22}/></div><div className="min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div></div><div className="text-2xl font-black text-blue-600">{qty(stock)}</div></button>;
 }
 function SearchInput({ value, onChange, placeholder }: any) {
   return <div className="flex items-center gap-2 mb-3 bg-slate-100 rounded-xl px-3 h-11"><Search size={18} className="text-slate-400"/><input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-transparent outline-none flex-1" />{value && <button type="button" onClick={() => onChange("")} className="w-7 h-7 rounded-full bg-slate-300/70 text-slate-600 flex items-center justify-center"><X size={16}/></button>}</div>;
@@ -665,10 +715,34 @@ function TransactionScreen(props: any) {
           </div>
         </div>
         <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} removeCartItem={removeCartItem} />
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
-          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 완료`}</button>
+
+        {/*
+          입고/출고/조정 화면 본문 맨밑 저장하기 버튼입니다.
+          fixed footer가 모바일/Preview에서 가려져도 이 버튼은 실제 페이지 맨밑에 항상 보입니다.
+        */}
+        <BottomSaveButton submitCart={submitCart} isSaving={isSaving} disabled={cart.length === 0} />
+
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto z-40">
+          <BottomSaveButton submitCart={submitCart} isSaving={isSaving} disabled={cart.length === 0} compact />
         </div>
       </div>
+    </div>
+  );
+}
+
+function BottomSaveButton({ submitCart, isSaving, disabled, compact }: any) {
+  return (
+    <div className={compact ? "" : "pt-2 pb-8"}>
+      <button
+        type="button"
+        onClick={submitCart}
+        disabled={isSaving || disabled}
+        className="w-full h-16 rounded-2xl bg-blue-600 text-white font-black text-xl shadow-lg disabled:opacity-40 flex items-center justify-center gap-2"
+      >
+        <Save size={24} />
+        {isSaving ? "저장 중..." : "저장하기"}
+      </button>
+      {disabled && !compact && <div className="text-center text-xs text-slate-400 mt-2">제품 수량을 입력하면 저장하기 버튼을 사용할 수 있습니다</div>}
     </div>
   );
 }
@@ -840,6 +914,7 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
       <div className="bg-white mt-4 divide-y divide-slate-100 border-b border-slate-100">
         <InfoRow label="위치" value={first.branchName || "기본 위치"}/>
         <InfoRow label={`${label}일`} value={formatKoreanDateTime(first.date, first.createdAt)}/>
+        <InfoRow label="수정/처리자" value={formatMovementCreator(first)}/>
         <InfoRow label="합계" value={`${group.length}품목 / ${totalQty > 0 ? "+" : ""}${qty(totalQty)}개`}/>
         {isAdmin && type === "OUT" && <InfoRow label="출고 원가" value={won(totalCost)} valueClass="font-black text-red-500"/>}
       </div>
@@ -849,6 +924,7 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
           <div className="flex-1 min-w-0">
             <div className="text-xl font-black truncate">{m.itemName}</div>
             <div className="text-sm text-slate-500 mt-1">0 | 0 | {categoryOf(m)}</div>
+            <div className="text-sm text-slate-400 mt-1 truncate">처리자: {formatMovementCreator(m)}</div>
             {m.memo && <div className="text-sm text-slate-400 mt-1 truncate">메모: {m.memo}</div>}
             {isAdmin && type === "OUT" && <div className="text-xs text-slate-400 mt-1">원가 {won(Math.abs(Number(m.totalCost || 0)))}</div>}
           </div>
@@ -863,6 +939,12 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
       {first.memo && <div className="mt-3 text-slate-700">{first.memo}</div>}
     </div>
   </div>;
+}
+
+function formatMovementCreator(movement: any) {
+  const name = movement?.createdByLoginId || movement?.createdByDisplayName || movement?.creatorLoginId || movement?.creatorName;
+  const role = movement?.createdByRole === "admin" ? "관리자" : "직원/매니저";
+  return name ? `${name} / ${role}` : "기록 없음";
 }
 
 function formatKoreanDate(date: string) {
@@ -927,6 +1009,6 @@ function MovementEditorModal({ movement, close, save, pending }: any) {
 }
 
 function AdminPanel(props: any) {
-  const { isAdmin, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem } = props;
-  return <div className="space-y-4">{isAdmin && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 단가 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select><input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/></div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{isAdmin ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{isAdmin && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}{isAdmin && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100"><Edit3 size={16}/></button>}</div>)}</div></div></div>;
+  const { isAdmin, canModifyLiquor, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem, deleteProduct } = props;
+  return <div className="space-y-4">{canModifyLiquor && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select>{isAdmin && <input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/>}</div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{canModifyLiquor ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{canModifyLiquor && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장하기</button>}{canModifyLiquor && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100" title="제품 수정"><Edit3 size={16}/></button>}{canModifyLiquor && <button onClick={() => deleteProduct(item)} className="h-10 px-2 rounded-xl bg-red-50 text-red-600" title="제품 삭제"><Trash2 size={16}/></button>}</div>)}</div></div></div>;
 }
