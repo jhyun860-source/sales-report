@@ -89,8 +89,6 @@ export default function LiquorStockReport() {
   const [historySearch, setHistorySearch] = useState("");
   const [historyType, setHistoryType] = useState<"ALL" | MovementType>("ALL");
   const [editingMovement, setEditingMovement] = useState<any | null>(null);
-  const [historyDetailOpen, setHistoryDetailOpen] = useState(false);
-  const [historyBackSignal, setHistoryBackSignal] = useState(0);
 
   const isAdmin = user?.role === "admin";
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
@@ -249,10 +247,6 @@ export default function LiquorStockReport() {
         setTab("items");
         return;
       }
-      if (tab === "history" && historyDetailOpen) {
-        setHistoryBackSignal((value) => value + 1);
-        return;
-      }
       if (tab !== "home") {
         setTab("home");
       }
@@ -260,7 +254,7 @@ export default function LiquorStockReport() {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [user, navigate, productEditorOpen, actionMode, selectedItem, tab, historyDetailOpen]);
+  }, [user, navigate, productEditorOpen, actionMode, selectedItem, tab]);
 
   const openAction = (type: MovementType, item?: any) => {
     setActionMode(type);
@@ -477,8 +471,6 @@ export default function LiquorStockReport() {
             movements={visibleMovements}
             isAdmin={isAdmin}
             loading={historyQuery.isLoading}
-            historyBackSignal={historyBackSignal}
-            onDetailOpenChange={setHistoryDetailOpen}
             onEditMovement={setEditingMovement}
             onDeleteMovement={(movement: any) => {
               if (!window.confirm(`${movement.itemName} 히스토리를 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return;
@@ -713,7 +705,7 @@ function InfoRow({ label, value, valueClass = "font-bold" }: any) {
   );
 }
 
-function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, historyBackSignal, onDetailOpenChange, onEditMovement, onDeleteMovement }: any) {
+function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, onEditMovement, onDeleteMovement }: any) {
   const [filterOpen, setFilterOpen] = useState(false);
   const hasFilter = historyType !== "ALL" || historySearch.trim() || historyStart !== "2000-01-01" || historyEnd !== todayString();
   return <div className="space-y-4">
@@ -726,7 +718,7 @@ function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd
         <SlidersHorizontal size={17}/>필터
       </button>
     </div>
-    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} historyBackSignal={historyBackSignal} onDetailOpenChange={onDetailOpenChange} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement}/>
+    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement}/>
     {filterOpen && <HistoryFilterModal
       close={() => setFilterOpen(false)}
       reset={() => { setHistoryType("ALL"); setHistoryStart("2000-01-01"); setHistoryEnd(todayString()); setHistorySearch(""); }}
@@ -781,15 +773,8 @@ function movementBatchKey(m: any): string {
   return `${m.date}|${m.type}|${m.branchId}|${m.createdBy || ""}|${m.memo || ""}|${created}`;
 }
 
-function HistoryList({ movements, isAdmin, loading, historyBackSignal, onDetailOpenChange, onEditMovement, onDeleteMovement }: { movements: any[]; isAdmin: boolean; loading?: boolean; historyBackSignal?: number; onDetailOpenChange?: (open: boolean) => void; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void }) {
+function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMovement }: { movements: any[]; isAdmin: boolean; loading?: boolean; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void }) {
   const [detailGroup, setDetailGroup] = useState<any[] | null>(null);
-
-  useEffect(() => {
-    if (historyBackSignal && detailGroup) {
-      setDetailGroup(null);
-      onDetailOpenChange?.(false);
-    }
-  }, [historyBackSignal]);
   if (loading) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">히스토리 불러오는 중...</div>;
 
   const byDate = movements.reduce<Record<string, Record<string, any[]>>>((acc, m) => {
@@ -808,11 +793,11 @@ function HistoryList({ movements, isAdmin, loading, historyBackSignal, onDetailO
       return <div key={date}>
         <div className="text-slate-500 font-bold text-lg mb-3 px-1">{formatKoreanDate(date)}</div>
         <div className="space-y-4">
-          {groups.map((group) => <HistoryBatchCard key={movementBatchKey(group[0])} group={group} isAdmin={isAdmin} onClick={() => { setDetailGroup(group); onDetailOpenChange?.(true); }} />)}
+          {groups.map((group) => <HistoryBatchCard key={movementBatchKey(group[0])} group={group} isAdmin={isAdmin} onClick={() => setDetailGroup(group)} />)}
         </div>
       </div>;
     })}
-    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => { setDetailGroup(null); onDetailOpenChange?.(false); }} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} />}
+    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => setDetailGroup(null)} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} />}
   </div>;
 }
 
