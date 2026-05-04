@@ -8,6 +8,7 @@ import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { isStaffLiquorOnly } from '@/lib/accountAccess';
 
 export default function Login() {
   const [, navigate] = useLocation();
@@ -28,14 +29,27 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const result = await loginMutation.mutateAsync({ loginId: loginId.trim(), password });
+      // 이전 계정의 토큰/지점 선택값이 남아 있으면 다른 지점으로 들어가는 혼선이 생길 수 있어 로그인 직전에 정리합니다.
+      localStorage.removeItem('store_token');
+      localStorage.removeItem('selectedBranchId');
+      await utils.auth.storeMe.invalidate();
+
+      const cleanLoginId = loginId.trim();
+      const result = await loginMutation.mutateAsync({ loginId: cleanLoginId, password });
       // localStorage에 토큰 저장 (모바일 Chrome 쿠키 차단 문제 해결)
       if (result.token) {
         localStorage.setItem('store_token', result.token);
       }
       // storeMe 캐시 무효화
       await utils.auth.storeMe.invalidate();
-      navigate('/');
+      const branchId = result.account?.branchId;
+      if (branchId) localStorage.setItem('selectedBranchId', String(branchId));
+
+      if (isStaffLiquorOnly(result.account?.loginId)) {
+        navigate(`/liquor-stock${branchId ? `?branchId=${branchId}` : ''}`);
+      } else {
+        navigate('/');
+      }
     } catch (error: any) {
       const msg = error?.message || '로그인에 실패했습니다';
       toast.error(msg);

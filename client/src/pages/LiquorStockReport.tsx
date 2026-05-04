@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useStoreAuth } from "@/hooks/useStoreAuth";
+import { canEditLiquor, getAccountBranchLabel, isStaffLiquorOnly } from "@/lib/accountAccess";
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -90,6 +91,8 @@ export default function LiquorStockReport() {
   const [editingMovement, setEditingMovement] = useState<any | null>(null);
 
   const isAdmin = user?.role === "admin";
+  const isStaffOnly = isStaffLiquorOnly(user?.loginId);
+  const canModifyLiquor = canEditLiquor(user?.loginId, user?.role);
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
 
   const overview = trpc.liquor.overview.useQuery(
@@ -168,15 +171,6 @@ export default function LiquorStockReport() {
     onError: (e) => toast.error(e.message),
   });
 
-  const deleteMovementBatch = trpc.liquor.deleteMovementBatch.useMutation({
-    onSuccess: () => {
-      utils.liquor.overview.invalidate();
-      utils.liquor.history.invalidate();
-      toast.success("해당 날짜의 히스토리 전체가 삭제되었습니다");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
   const data = overview.data;
   const branches = data?.branches ?? [];
   const items = data?.items ?? [];
@@ -224,6 +218,7 @@ export default function LiquorStockReport() {
   const saveItem = () => {
     if (!newItem.name.trim()) return toast.error("주류명을 입력해주세요");
     const branchId = effectiveBranchId;
+    if (!canModifyLiquor) return toast.error("주류 수정 권한이 없습니다");
     if (!isAdmin && !branchId) return toast.error("지점을 선택해주세요");
     if (isAdmin && !branchId && Number(newItem.initialStock || 0) !== 0) return toast.error("수량까지 넣으려면 먼저 지점을 선택해주세요");
     upsertItem.mutate({
@@ -248,7 +243,7 @@ export default function LiquorStockReport() {
     setNewItem({
       name: item.name,
       category: categoryOf(item),
-      unitCost: String(item.unitCost || 0),
+      unitCost: isAdmin ? String(item.unitCost || 0) : "",
       initialStock: String(stockByItem.get(item.id) ?? 0),
     });
     setProductEditorOpen(true);
@@ -257,6 +252,7 @@ export default function LiquorStockReport() {
   const handleDeleteProduct = (item: any) => {
     const message = isAdmin ? `${item.name} 제품을 전체 지점에서 비활성화할까요?` : `${item.name} 제품을 현재 지점 목록에서 숨길까요?`;
     if (!window.confirm(message)) return;
+    if (!canModifyLiquor) return toast.error("주류 삭제 권한이 없습니다");
     deleteItem.mutate({ id: item.id, branchId: effectiveBranchId });
   };
 
@@ -303,16 +299,6 @@ export default function LiquorStockReport() {
     }));
     if (rows.length === 0) return toast.error("제품을 1개 이상 담아주세요");
     recordMovement.mutate({ branchId, date, type: actionMode, items: rows, memo: actionMemo || undefined });
-  };
-
-
-  const handleDeleteMovementGroup = (group: any[]) => {
-    if (!group?.length) return;
-    const first = group[0];
-    const label = first.type === "OUT" ? "출고" : first.type === "IN" ? "입고" : "조정";
-    const message = `${formatKoreanDate(first.date)} ${label} 내역 ${group.length}품목을 전체 삭제할까요? 삭제하면 해당 수량만큼 재고도 원래대로 복구됩니다.`;
-    if (!window.confirm(message)) return;
-    deleteMovementBatch.mutate({ ids: group.map((m: any) => m.id) });
   };
 
   if (loading || overview.isLoading) return <LoadingState />;
@@ -396,8 +382,8 @@ export default function LiquorStockReport() {
           )}
         </div>
 
-        <SummaryCard branchName={selectedBranch?.name ?? "전체"} date={date} totalStock={totalStock} totalInQty={totalInQty} totalOutQty={totalOutQty} totalOutCost={totalOutCost} isAdmin={isAdmin} />
-        <NavTabs tab={tab} setTab={setTab} isAdmin={isAdmin} />
+        <SummaryCard branchName={getAccountBranchLabel(user?.loginId) ?? selectedBranch?.name ?? "전체"} date={date} totalStock={totalStock} totalInQty={totalInQty} totalOutQty={totalOutQty} totalOutCost={totalOutCost} isAdmin={isAdmin} />
+        <NavTabs tab={tab} setTab={setTab} isAdmin={isAdmin} isStaffOnly={isStaffOnly} />
 
         {tab === "home" && (
           <HomePanel
@@ -441,7 +427,6 @@ export default function LiquorStockReport() {
               if (!window.confirm(`${movement.itemName} 히스토리를 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return;
               deleteMovement.mutate({ id: movement.id });
             }}
-            onDeleteMovementGroup={handleDeleteMovementGroup}
           />
         )}
 
@@ -466,9 +451,11 @@ export default function LiquorStockReport() {
             setStock={(item: any, value: string) => {
               const branchId = effectiveBranchId;
               if (!branchId) return toast.error("지점을 선택해주세요");
-              setStock.mutate({ branchId, liquorItemId: item.id, currentStock: Number(value || 0), memo: "관리자 재고 보정" });
+              if (!canModifyLiquor) return toast.error("재고 수정 권한이 없습니다");
+              setStock.mutate({ branchId, liquorItemId: item.id, currentStock: Number(value || 0), memo: isAdmin ? "관리자 재고 보정" : "지점 재고 보정" });
             }}
             setEditingItem={openEditProduct}
+            canModifyLiquor={canModifyLiquor}
           />
         )}
       </div>
@@ -513,8 +500,11 @@ function SummaryMetric({ value, label, small }: { value: string; label: string; 
   return <div><div className={`font-black ${small ? "text-base" : "text-3xl"}`}>{value}</div><div className="text-xs opacity-70 mt-1">{label}</div></div>;
 }
 
-function NavTabs({ tab, setTab, isAdmin }: any) {
-  return <div className="grid grid-cols-4 bg-white rounded-2xl p-1 shadow-sm border border-slate-100">{[["home", "홈"], ["items", "제품"], ["history", "히스토리"], ["admin", isAdmin ? "관리" : "재고"]].map(([key, label]) => <button key={key} onClick={() => setTab(key)} className={`h-10 rounded-xl text-sm font-black ${tab === key ? "bg-blue-600 text-white" : "text-slate-500"}`}>{label}</button>)}</div>;
+function NavTabs({ tab, setTab, isAdmin, isStaffOnly }: any) {
+  const tabs = isStaffOnly
+    ? [["home", "홈"], ["items", "제품"], ["admin", "재고"]]
+    : [["home", "홈"], ["items", "제품"], ["history", "히스토리"], ["admin", isAdmin ? "관리" : "재고"]];
+  return <div className={`grid ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-4"} bg-white rounded-2xl p-1 shadow-sm border border-slate-100`}>{tabs.map(([key, label]) => <button key={key} onClick={() => setTab(key as any)} className={`h-10 rounded-xl text-sm font-black ${tab === key ? "bg-blue-600 text-white" : "text-slate-500"}`}>{label}</button>)}</div>;
 }
 
 function HomePanel({ openNewProduct, openAction, setTab }: any) {
@@ -655,7 +645,7 @@ function InfoRow({ label, value, valueClass = "font-bold" }: any) {
   );
 }
 
-function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, onEditMovement, onDeleteMovement, onDeleteMovementGroup }: any) {
+function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, onEditMovement, onDeleteMovement }: any) {
   const [filterOpen, setFilterOpen] = useState(false);
   const hasFilter = historyType !== "ALL" || historySearch.trim() || historyStart !== "2000-01-01" || historyEnd !== todayString();
   return <div className="space-y-4">
@@ -668,7 +658,7 @@ function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd
         <SlidersHorizontal size={17}/>필터
       </button>
     </div>
-    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} onDeleteMovementGroup={onDeleteMovementGroup}/>
+    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement}/>
     {filterOpen && <HistoryFilterModal
       close={() => setFilterOpen(false)}
       reset={() => { setHistoryType("ALL"); setHistoryStart("2000-01-01"); setHistoryEnd(todayString()); setHistorySearch(""); }}
@@ -723,7 +713,7 @@ function movementBatchKey(m: any): string {
   return `${m.date}|${m.type}|${m.branchId}|${m.createdBy || ""}|${m.memo || ""}|${created}`;
 }
 
-function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMovement, onDeleteMovementGroup }: { movements: any[]; isAdmin: boolean; loading?: boolean; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void; onDeleteMovementGroup?: (group: any[]) => void }) {
+function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMovement }: { movements: any[]; isAdmin: boolean; loading?: boolean; onEditMovement?: (m: any) => void; onDeleteMovement?: (m: any) => void }) {
   const [detailGroup, setDetailGroup] = useState<any[] | null>(null);
   if (loading) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">히스토리 불러오는 중...</div>;
 
@@ -747,7 +737,7 @@ function HistoryList({ movements, isAdmin, loading, onEditMovement, onDeleteMove
         </div>
       </div>;
     })}
-    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => setDetailGroup(null)} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} onDeleteMovementGroup={onDeleteMovementGroup} />}
+    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => setDetailGroup(null)} onEditMovement={onEditMovement} onDeleteMovement={onDeleteMovement} />}
   </div>;
 }
 
@@ -775,7 +765,7 @@ function HistoryBatchCard({ group, isAdmin, onClick }: { group: any[]; isAdmin: 
   </button>;
 }
 
-function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMovement, onDeleteMovementGroup }: any) {
+function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMovement }: any) {
   const first = group[0];
   const type = first.type;
   const label = type === "OUT" ? "출고" : type === "IN" ? "입고" : "조정";
@@ -792,12 +782,6 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onDeleteMove
         <InfoRow label={`${label}일`} value={formatKoreanDateTime(first.date, first.createdAt)}/>
         <InfoRow label="합계" value={`${group.length}품목 / ${totalQty > 0 ? "+" : ""}${qty(totalQty)}개`}/>
         {isAdmin && type === "OUT" && <InfoRow label="출고 원가" value={won(totalCost)} valueClass="font-black text-red-500"/>}
-      </div>
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        <button onClick={() => onDeleteMovementGroup?.(group)} className="h-12 rounded-2xl bg-red-50 text-red-600 font-black border border-red-100 flex items-center justify-center gap-2">
-          <Trash2 size={18}/>전체 삭제
-        </button>
-        <button onClick={close} className="h-12 rounded-2xl bg-slate-100 text-slate-700 font-black">목록으로</button>
       </div>
       <div className="mt-5 space-y-4">
         {group.map((m: any) => <div key={m.id} className="flex items-center justify-between gap-3 py-3 border-b border-slate-100">
@@ -883,6 +867,6 @@ function MovementEditorModal({ movement, close, save, pending }: any) {
 }
 
 function AdminPanel(props: any) {
-  const { isAdmin, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem } = props;
-  return <div className="space-y-4">{isAdmin && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 단가 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select><input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/></div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{isAdmin ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{isAdmin && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}{isAdmin && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100"><Edit3 size={16}/></button>}</div>)}</div></div></div>;
+  const { isAdmin, canModifyLiquor, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem } = props;
+  return <div className="space-y-4">{canModifyLiquor && <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">주류 등록 / 수정</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="주류명" className="w-full h-11 px-3 mb-2 rounded-xl border border-slate-200"/><div className="grid grid-cols-2 gap-2"><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="h-11 px-3 rounded-xl border border-slate-200 bg-white">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select>{isAdmin && <input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="단가" className="h-11 px-3 rounded-xl border border-slate-200 text-right"/>}</div><button onClick={saveItem} disabled={upsertPending} className="w-full h-11 mt-3 rounded-xl bg-blue-600 text-white font-bold">{editingItemId ? "수정 저장" : "제품 등록"}</button></div>}<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"><div className="text-xl font-black mb-3">현재 재고 보정</div><SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/><CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/><SortSelect sortMode={sortMode} setSortMode={setSortMode}/><div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">{filteredItems.map((item: any) => <div key={item.id} className="flex items-center gap-2 py-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>{canModifyLiquor ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}{canModifyLiquor && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}{canModifyLiquor && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100"><Edit3 size={16}/></button>}</div>)}</div></div></div>;
 }

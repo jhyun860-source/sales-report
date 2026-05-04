@@ -53,6 +53,57 @@ async function createStoreSessionToken(accountId: number, loginId: string, role:
     .sign(secret);
 }
 
+const CANONICAL_STORE_ACCOUNTS = [
+  { loginId: 's1', password: '1234', displayName: '선릉점 매니저', branchCode: 'seolleung', branchNames: ['선릉점'], role: 'user' },
+  { loginId: 's3', password: '1234', displayName: '선릉점 직원', branchCode: 'seolleung', branchNames: ['선릉점'], role: 'user' },
+  { loginId: 's2', password: '1234', displayName: '삼성점 매니저', branchCode: 'samsung', branchNames: ['삼성점'], role: 'user' },
+  { loginId: 's4', password: '1234', displayName: '삼성점 직원', branchCode: 'samsung', branchNames: ['삼성점'], role: 'user' },
+  { loginId: 'd1', password: '1234', displayName: '대치점 매니저', branchCode: 'daechi', branchNames: ['대치점'], role: 'user' },
+  { loginId: 'd2', password: '1234', displayName: '대치점 직원', branchCode: 'daechi', branchNames: ['대치점'], role: 'user' },
+  { loginId: 'm1', password: '1234', displayName: '문정1호점 매니저', branchCode: 'munjeong1', branchNames: ['문정1호점', '문정 1호점'], role: 'user' },
+  { loginId: 'm3', password: '1234', displayName: '문정1호점 직원', branchCode: 'munjeong1', branchNames: ['문정1호점', '문정 1호점'], role: 'user' },
+  { loginId: 'm2', password: '1234', displayName: '문정2호점 매니저', branchCode: 'munjeong2', branchNames: ['문정2호점'], role: 'user' },
+  { loginId: 'm4', password: '1234', displayName: '문정2호점 직원', branchCode: 'munjeong2', branchNames: ['문정2호점'], role: 'user' },
+] as const;
+
+let canonicalAccountsSynced = false;
+async function ensureCanonicalStoreAccounts() {
+  if (canonicalAccountsSynced) return;
+  const db = await getDb();
+  if (!db) return;
+  const allBranches = await db.select().from(branches);
+  const normalize = (value: string) => value.replace(/\s+/g, '').trim();
+  const branchByCode = new Map(allBranches.map((branch: any) => [branch.code, branch]));
+
+  for (const spec of CANONICAL_STORE_ACCOUNTS) {
+    let branch = branchByCode.get(spec.branchCode) as any;
+    if (!branch) {
+      branch = allBranches.find((row: any) => spec.branchNames.some(name => normalize(row.name) === normalize(name)));
+    }
+    if (!branch) continue;
+
+    const existing = await getStoreAccountByLoginId(spec.loginId);
+    const passwordHash = await bcrypt.hash(spec.password, 10);
+    if (existing) {
+      await updateStoreAccount(existing.id, {
+        passwordHash,
+        displayName: spec.displayName,
+        branchId: branch.id,
+        role: spec.role,
+      });
+    } else {
+      await createStoreAccount({
+        loginId: spec.loginId,
+        passwordHash,
+        displayName: spec.displayName,
+        branchId: branch.id,
+        role: spec.role,
+      });
+    }
+  }
+  canonicalAccountsSynced = true;
+}
+
 // 쿠키 또는 Authorization 헤더에서 storeAccount 페이로드 파싱 헬퍼
 const DEFAULT_LIQUOR_ITEMS: Array<{ name: string; unitCost: number; category: string }> = [
   { name: '발렌타인 17y (500ml)', unitCost: 114000, category: '위스키' },
@@ -2533,6 +2584,7 @@ const BOXHERO_ITEM_ALIASES: Record<string, string> = {
 async function requireStoreAccount(ctx: any) {
   const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
   if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+  await ensureCanonicalStoreAccounts();
   const account = await getStoreAccountById(payload.accountId);
   if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
   return account;
@@ -2751,6 +2803,7 @@ export const appRouter = router({
         password: z.string().min(1),
       }))
       .mutation(async ({ ctx, input }) => {
+        await ensureCanonicalStoreAccounts();
         const account = await getStoreAccountByLoginId(input.loginId);
         if (!account) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: '아이디 또는 비밀번호가 올바르지 않습니다' });
@@ -2789,6 +2842,7 @@ export const appRouter = router({
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
       if (!payload) return null;
 
+      await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountById(payload.accountId);
       if (!account) return null;
 
@@ -3566,17 +3620,22 @@ export const appRouter = router({
           ? input.branchId
           : account.branchId;
 
-        // 기존 품목 수정은 관리자 및 지정된 직원 계정만 허용
-        // 지정된 계정: m1, m2, d1, s1, s2, m3, m4, d2, s3, s4
-        const allowedEditAccounts = ['m1', 'm2', 'd1', 's1', 's2', 'm3', 'm4', 'd2', 's3', 's4'];
+        // 기존 품목 수정은 관리자만 허용. 지점은 신규 품목 등록만 가능.
         if (input.id) {
-          if (account.role !== 'admin' && !allowedEditAccounts.includes(account.loginId)) throw new TRPCError({ code: 'FORBIDDEN', message: '기존 품목 수정은 관리자 및 지정된 계정만 가능합니다' });
-          await db.update(liquorItems).set({
-            name: input.name,
-            category: input.category,
-            unitCost: String(input.unitCost || 0),
-            isActive: input.isActive ? 1 : 0,
-          }).where(eq(liquorItems.id, input.id));
+          if (account.role === 'admin') {
+            await db.update(liquorItems).set({
+              name: input.name,
+              category: input.category,
+              unitCost: String(input.unitCost || 0),
+              isActive: input.isActive ? 1 : 0,
+            }).where(eq(liquorItems.id, input.id));
+          } else {
+            await db.update(liquorItems).set({
+              name: input.name,
+              category: input.category,
+              isActive: input.isActive ? 1 : 0,
+            }).where(eq(liquorItems.id, input.id));
+          }
           if (effectiveBranchId && input.initialStock !== undefined) {
             const [existingInventory] = await db.select().from(liquorInventories)
               .where(and(eq(liquorInventories.branchId, effectiveBranchId), eq(liquorInventories.liquorItemId, input.id))).limit(1);
@@ -3593,8 +3652,8 @@ export const appRouter = router({
           const result = await db.insert(liquorItems).values({
             name: cleanName,
             category: input.category,
-            // 지점 계정은 원가를 볼 수 없으므로 신규 등록 단가는 0원. 관리자 및 지정된 직원 계정은 입력 단가 사용.
-            unitCost: String((account.role === 'admin' || allowedEditAccounts.includes(account.loginId)) ? (input.unitCost || 0) : 0),
+            // 지점 계정은 원가를 볼 수 없으므로 신규 등록 단가는 0원. 관리자는 입력 단가 사용.
+            unitCost: String(account.role === 'admin' ? (input.unitCost || 0) : 0),
             isActive: 1,
             sortOrder: 9999,
           });
@@ -3619,7 +3678,7 @@ export const appRouter = router({
           else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: itemId, currentStock: String(initialStock) });
           const diff = initialStock - prevStock;
           if (diff !== 0) {
-            const unitCost = (account.role === 'admin' || allowedEditAccounts.includes(account.loginId)) ? Number(input.unitCost || sameName?.unitCost || 0) : 0;
+            const unitCost = account.role === 'admin' ? Number(input.unitCost || sameName?.unitCost || 0) : 0;
             await db.insert(liquorStockMovements).values({
               branchId: effectiveBranchId,
               liquorItemId: itemId,
@@ -3757,43 +3816,11 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    deleteMovementBatch: publicProcedure
-      .input(z.object({ ids: z.array(z.number()).min(1) }))
-      .mutation(async ({ ctx, input }) => {
-        const account = await requireStoreAccount(ctx);
-        const db = await getDb();
-        if (!db) return { success: false, deleted: 0 };
-        await ensureLiquorSeeded(db);
-
-        const uniqueIds = Array.from(new Set(input.ids));
-        let deleted = 0;
-
-        for (const id of uniqueIds) {
-          const [movement] = await db.select().from(liquorStockMovements).where(eq(liquorStockMovements.id, id)).limit(1);
-          if (!movement) continue;
-          if (account.role !== 'admin' && account.branchId !== movement.branchId) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 내역만 삭제할 수 있습니다' });
-          }
-
-          const signedQty = Number(movement.quantity || 0);
-          const [existing] = await db.select().from(liquorInventories)
-            .where(and(eq(liquorInventories.branchId, movement.branchId), eq(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
-          if (existing) {
-            const nextStock = Number(existing.currentStock || 0) - signedQty;
-            await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
-          }
-          await db.delete(liquorStockMovements).where(eq(liquorStockMovements.id, id));
-          deleted += 1;
-        }
-
-        return { success: true, deleted };
-      }),
-
     setStock: publicProcedure
       .input(z.object({ branchId: z.number(), liquorItemId: z.number(), currentStock: z.number(), memo: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         const account = await requireStoreAccount(ctx);
-        if (account.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 재고를 직접 수정할 수 있습니다' });
+        if (account.role !== 'admin' && account.branchId !== input.branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 재고만 수정할 수 있습니다' });
         const db = await getDb();
         if (!db) return { success: false };
         await ensureLiquorSeeded(db);

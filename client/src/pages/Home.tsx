@@ -13,6 +13,7 @@ import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw, Package } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
+import { isStaffLiquorOnly } from '@/lib/accountAccess';
 import {
   type ExpenseItem,
   parseAmount,
@@ -181,6 +182,7 @@ function InputRow({
 export default function Home() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading, logout } = useStoreAuth();
+  const isStaffOnly = isStaffLiquorOnly(user?.loginId);
 
   // [수정] 날짜 자동 전환 정책
   //   - localStorage 키
@@ -277,13 +279,24 @@ export default function Home() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!authLoading && user && isStaffLiquorOnly(user.loginId)) {
+      const branchId = user.branchId ?? undefined;
+      navigate(`/liquor-stock${branchId ? `?branchId=${branchId}` : ''}`);
+    }
+  }, [authLoading, user, navigate]);
+
   const myBranches = user?.role === 'admin'
     ? (user.allBranches ?? [])
     : user?.branch ? [user.branch] : [];
 
-  // selectedBranchId: localStorage 저장값이 현재 계정 지점 목록에 있으면 사용,
-  // 없거나 null이면 첫 번째 지점 ID 사용 (user 로드 후 즉시 결정)
+  // selectedBranchId: 일반 계정은 무조건 자기 지점만 사용합니다.
+  // 관리자만 localStorage의 선택 지점을 사용할 수 있어 계정 전환 시 지점 혼선이 나지 않습니다.
   const [_selectedBranchId, _setSelectedBranchId] = useState<number | null>(() => {
+    if (user?.role !== 'admin') return null;
+    // 로그인 직후 user.branchId가 있으면 그것을 사용 (지점 혼선 방지)
+    if (user?.branchId) return user.branchId;
     const saved = localStorage.getItem('selectedBranchId');
     return saved ? parseInt(saved, 10) : null;
   });
@@ -291,11 +304,15 @@ export default function Home() {
   // myBranches가 있을 때 유효한 branchId 결정 (렌더링마다 계산)
   const selectedBranchId: number | null = (() => {
     if (myBranches.length === 0) return null;
+    if (user?.role !== 'admin') return user?.branchId ?? myBranches[0].id;
+    // admin 계정: user.branchId가 있으면 우선 사용 (로그인 직후 지점 혼선 방지)
+    if (user?.branchId) return user.branchId;
     const isValid = myBranches.some(b => b.id === _selectedBranchId);
     return isValid ? _selectedBranchId : myBranches[0].id;
   })();
 
   const setSelectedBranchId = (id: number) => {
+    if (user?.role !== 'admin') return;
     _setSelectedBranchId(id);
     try { localStorage.setItem('selectedBranchId', String(id)); } catch {}
   };
@@ -609,9 +626,8 @@ export default function Home() {
             </button>
           )}
 
-          {/* 테이블 기록 버튼 (관리자만) */}
-          {user.role === 'admin' && (
-          <button
+          {/* 테이블 기록 버튼 */}
+          {!isStaffOnly && <button
             onClick={() => navigate(`/table-report${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
             className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
             style={{
@@ -622,8 +638,9 @@ export default function Home() {
           >
             <ClipboardList size={14} />
             테이블
-          </button>
-          )}
+          </button>}
+
+
 
           {/* 주류 출고현황 버튼 */}
           <button
@@ -639,9 +656,8 @@ export default function Home() {
             주류
           </button>
 
-          {/* 인센티브 통계 버튼 (관리자만) */}
-          {user.role === 'admin' && (
-          <button
+          {/* 인센티브 통계 버튼 */}
+          {!isStaffOnly && <button
             onClick={() => navigate(`/staff-incentive${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
             className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
             style={{
@@ -652,8 +668,7 @@ export default function Home() {
           >
             <BarChart2 size={14} />
             인센
-          </button>
-          )}
+          </button>}
 
           {/* 누적금액 리셋 버튼 (관리자만) */}
           {user.role === 'admin' && (
@@ -678,7 +693,7 @@ export default function Home() {
           )}
 
           {/* 기록 버튼 */}
-          <button
+          {!isStaffOnly && <button
             onClick={() => navigate('/history')}
             className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
             style={{
@@ -689,7 +704,7 @@ export default function Home() {
           >
             <List size={14} />
             기록
-          </button>
+          </button>}
 
         </div>
       </header>
