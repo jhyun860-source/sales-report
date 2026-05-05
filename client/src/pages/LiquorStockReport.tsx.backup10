@@ -96,8 +96,8 @@ export default function LiquorStockReport() {
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
 
   const overview = trpc.liquor.overview.useQuery(
-    { date, branchId: effectiveBranchId, includeInactive: false },
-    { enabled: !!user, retry: false, staleTime: 30_000, refetchOnWindowFocus: false },
+    { date, branchId: effectiveBranchId, includeInactive: isAdmin },
+    { enabled: !!user, retry: false },
   );
 
   const historyQuery = trpc.liquor.history.useQuery(
@@ -141,31 +141,14 @@ export default function LiquorStockReport() {
   });
 
   const deleteItem = trpc.liquor.deleteItem.useMutation({
-    onMutate: async (vars) => {
-      await utils.liquor.overview.cancel();
-      const prev = utils.liquor.overview.getData({ date, branchId: effectiveBranchId, includeInactive: false });
-      utils.liquor.overview.setData({ date, branchId: effectiveBranchId, includeInactive: false }, (old: any) => {
-        if (!old) return old;
-        const deletedId = Number(vars.id);
-        const nextItems = (old.items ?? []).filter((item: any) => Number(item.id) !== deletedId);
-        const nextInventories = (old.inventories ?? []).filter((inv: any) => Number(inv.liquorItemId) !== deletedId);
-        const nextStock = nextInventories.reduce((sum: number, inv: any) => sum + Number(inv.currentStock || 0), 0);
-        return { ...old, items: nextItems, inventories: nextInventories, totals: { ...(old.totals ?? {}), stock: nextStock } };
-      });
-      return { prev };
-    },
     onSuccess: () => {
       utils.liquor.overview.invalidate();
       utils.liquor.history.invalidate();
       setSelectedItem(null);
       setProductEditorOpen(false);
-      setTab("items");
-      toast.success("제품이 완전히 삭제되었습니다");
+      toast.success(isAdmin ? "제품이 삭제되었습니다" : "이 지점 제품 목록에서 숨김 처리되었습니다");
     },
-    onError: (e, _vars, ctx) => {
-      if (ctx?.prev) utils.liquor.overview.setData({ date, branchId: effectiveBranchId, includeInactive: false }, ctx.prev as any);
-      toast.error(e.message);
-    },
+    onError: (e) => toast.error(e.message),
   });
 
 
@@ -321,13 +304,8 @@ export default function LiquorStockReport() {
   };
 
   const handleDeleteProduct = (item: any) => {
-    const message = `${item.name} 제품을 완전히 삭제할까요? 삭제하면 전 지점 제품 목록과 총재고에서 바로 빠집니다.`;
+    const message = isAdmin ? `${item.name} 제품을 전체 지점에서 비활성화할까요?` : `${item.name} 제품을 현재 지점 목록에서 숨길까요?`;
     if (!window.confirm(message)) return;
-    const currentIndex = filteredItems.findIndex((row: any) => Number(row.id) === Number(item.id));
-    const fallbackItem = currentIndex >= 0
-      ? (filteredItems[currentIndex + 1] ?? filteredItems[currentIndex - 1])
-      : null;
-    setReturnToItemId(fallbackItem?.id ?? null);
     deleteItem.mutate({ id: item.id, branchId: effectiveBranchId });
   };
 

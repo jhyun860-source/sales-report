@@ -3515,7 +3515,7 @@ export const appRouter = router({
         }
 
         const itemRows = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
-        let activeItems = itemRows.filter(i => Number(i.isActive) === 1);
+        let activeItems = input.includeInactive ? itemRows : itemRows.filter(i => Number(i.isActive) === 1);
         // 지점 계정에서 삭제한 품목은 해당 지점 화면에서만 숨김 처리
         if (account.role !== 'admin' && selectedBranchIds.length === 1) {
           const hiddenResult: any = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${selectedBranchIds[0]}`);
@@ -3764,13 +3764,21 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) return { success: false };
         await ensureLiquorSeeded(db);
-        // 제품 삭제는 더 이상 비활성화/지점 숨김 처리하지 않고 실제 삭제한다.
-        // 삭제 즉시 전 지점 제품 목록과 총재고에서 빠져야 하므로 재고/숨김/히스토리 참조를 먼저 정리한다.
-        await db.execute(sql`DELETE FROM liquorHiddenItems WHERE liquorItemId = ${input.id}`);
-        await db.delete(liquorInventories).where(eq(liquorInventories.liquorItemId, input.id));
-        await db.delete(liquorStockMovements).where(eq(liquorStockMovements.liquorItemId, input.id));
-        await db.delete(liquorItems).where(eq(liquorItems.id, input.id));
-        return { success: true, mode: 'deleted' as const };
+        if (account.role === 'admin') {
+          // 전체 삭제는 과거 입출고 히스토리를 보존하기 위해 물리 삭제 대신 비활성화한다.
+          // 단, 화면/재고에는 즉시 사라지도록 관련 지점 숨김/재고도 같이 정리한다.
+          await db.update(liquorItems).set({ isActive: 0 }).where(eq(liquorItems.id, input.id));
+          await db.execute(sql`DELETE FROM liquorHiddenItems WHERE liquorItemId = ${input.id}`);
+          await db.update(liquorInventories).set({ currentStock: '0' }).where(eq(liquorInventories.liquorItemId, input.id));
+          return { success: true, mode: 'global' as const };
+        }
+        const branchId = account.branchId;
+        if (!branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 권한이 없습니다' });
+        await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
+        const [existingInventory] = await db.select().from(liquorInventories)
+          .where(and(eq(liquorInventories.branchId, branchId), eq(liquorInventories.liquorItemId, input.id))).limit(1);
+        if (existingInventory) await db.update(liquorInventories).set({ currentStock: '0' }).where(eq(liquorInventories.id, existingInventory.id));
+        return { success: true, mode: 'branch' as const };
       }),
 
     recordMovement: publicProcedure
