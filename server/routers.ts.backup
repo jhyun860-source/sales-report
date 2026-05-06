@@ -3814,7 +3814,7 @@ export const appRouter = router({
 
 
     updateMovement: publicProcedure
-      .input(z.object({ id: z.number(), date: z.string(), type: z.enum(['IN', 'OUT', 'ADJUST']).optional(), quantity: z.number(), memo: z.string().optional() }))
+      .input(z.object({ id: z.number(), date: z.string(), type: z.enum(['IN', 'OUT', 'ADJUST']).optional(), quantity: z.number(), memo: z.string().optional(), mergeWithExisting: z.boolean().optional().default(false) }))
       .mutation(async ({ ctx, input }) => {
         const account = await requireStoreAccount(ctx);
         const db = await getDb();
@@ -3837,14 +3837,32 @@ export const appRouter = router({
         const unitCost = Number(movement.unitCost || itemForCost?.unitCost || 0);
         const totalCost = Math.abs(newSignedQty) * unitCost;
 
-        await db.update(liquorStockMovements).set({
+        let mergeCreatedAt: any = undefined;
+        let mergeMemo: string | null | undefined = undefined;
+        if (input.mergeWithExisting) {
+          const [target] = await db.select().from(liquorStockMovements).where(and(
+            eq(liquorStockMovements.branchId, movement.branchId),
+            eq(liquorStockMovements.date, input.date),
+            eq(liquorStockMovements.type, nextType),
+            sql`${liquorStockMovements.id} <> ${input.id}`
+          )).orderBy(desc(liquorStockMovements.createdAt)).limit(1);
+          if (target) {
+            mergeCreatedAt = target.createdAt;
+            mergeMemo = target.memo as any;
+          }
+        }
+
+        const updateValues: any = {
           date: input.date,
           type: nextType,
           quantity: String(newSignedQty),
           totalCost: String(totalCost),
-          memo: input.memo || null,
+          memo: input.memo || mergeMemo || null,
           updatedAt: new Date(),
-        }).where(eq(liquorStockMovements.id, input.id));
+        };
+        if (mergeCreatedAt) updateValues.createdAt = mergeCreatedAt;
+
+        await db.update(liquorStockMovements).set(updateValues).where(eq(liquorStockMovements.id, input.id));
 
         if (diff !== 0) {
           const [existing] = await db.select().from(liquorInventories)
@@ -3854,50 +3872,6 @@ export const appRouter = router({
             await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
           } else {
             await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
-          }
-        }
-        return { success: true };
-      }),
-
-    updateMovementGroup: publicProcedure
-      .input(z.object({ ids: z.array(z.number()).min(1), date: z.string(), type: z.enum(['IN', 'OUT', 'ADJUST']), memo: z.string().optional() }))
-      .mutation(async ({ ctx, input }) => {
-        const account = await requireStoreAccount(ctx);
-        const db = await getDb();
-        if (!db) return { success: false };
-        await ensureLiquorSeeded(db);
-
-        const rows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
-        if (rows.length === 0) throw new TRPCError({ code: 'NOT_FOUND', message: '히스토리 내역을 찾을 수 없습니다' });
-        if (account.role !== 'admin' && rows.some((m: any) => Number(m.branchId) !== Number(account.branchId))) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 내역만 수정할 수 있습니다' });
-        }
-
-        for (const movement of rows) {
-          const oldSignedQty = Number(movement.quantity || 0);
-          const baseQty = Math.abs(oldSignedQty);
-          const newSignedQty = input.type === 'OUT' ? -baseQty : input.type === 'IN' ? baseQty : oldSignedQty;
-          const diff = newSignedQty - oldSignedQty;
-          const totalCost = Math.abs(newSignedQty) * Number(movement.unitCost || 0);
-
-          await db.update(liquorStockMovements).set({
-            date: input.date,
-            type: input.type,
-            quantity: String(newSignedQty),
-            totalCost: String(totalCost),
-            memo: input.memo || null,
-            updatedAt: new Date(),
-          }).where(eq(liquorStockMovements.id, movement.id));
-
-          if (diff !== 0) {
-            const [existing] = await db.select().from(liquorInventories)
-              .where(and(eq(liquorInventories.branchId, movement.branchId), eq(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
-            if (existing) {
-              const nextStock = Number(existing.currentStock || 0) + diff;
-              await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
-            } else {
-              await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
-            }
           }
         }
         return { success: true };
