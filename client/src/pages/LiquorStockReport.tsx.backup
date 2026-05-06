@@ -118,8 +118,8 @@ export default function LiquorStockReport() {
   );
 
   const branchItemsQuery = trpc.liquor.branchItems.useQuery(
-    { branchId: effectiveBranchId },
-    { enabled: !!user && !!effectiveBranchId, retry: false, staleTime: 30_000 },
+    { branchId: effectiveBranchId ?? undefined },
+    { enabled: !!user, retry: false, staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
   );
 
   const upsertItem = trpc.liquor.upsertItem.useMutation({
@@ -213,10 +213,16 @@ export default function LiquorStockReport() {
     onSuccess: () => {
       utils.liquor.overview.invalidate();
       utils.liquor.history.invalidate();
+      utils.liquor.branchItems.invalidate();
       toast.success("히스토리에 품목이 추가되었습니다");
     },
     onError: (e) => toast.error(e.message),
   });
+
+  useEffect(() => {
+    if (!editingMovementGroup) return;
+    branchItemsQuery.refetch();
+  }, [editingMovementGroup, effectiveBranchId]);
 
   const data = overview.data;
   const branches = data?.branches ?? [];
@@ -239,10 +245,19 @@ export default function LiquorStockReport() {
       .sort((a, b) => sortItems(a, b, sortMode, stockByItem));
   }, [items, search, activeCategory, sortMode, stockByItem]);
 
+  const visibleMovements = historyQuery.data?.movements ?? movements;
+
   const historySelectableItems = useMemo(() => {
-    const source = (branchItemsQuery.data?.items?.length ? branchItemsQuery.data.items : items) ?? [];
+    const movementItems = (visibleMovements || [])
+      .filter((m: any) => m.liquorItemId && m.itemName)
+      .map((m: any) => ({ id: Number(m.liquorItemId), name: m.itemName, category: m.category ?? "위스키", isActive: 1 }));
+    const sources = [
+      ...(branchItemsQuery.data?.items ?? []),
+      ...(items ?? []),
+      ...movementItems,
+    ];
     const seen = new Set<number>();
-    return [...source]
+    return sources
       .filter((item: any) => {
         const id = Number(item.id);
         if (!id || seen.has(id)) return false;
@@ -250,7 +265,7 @@ export default function LiquorStockReport() {
         return Number(item.isActive ?? 1) !== 0;
       })
       .sort((a: any, b: any) => String(a.name).localeCompare(String(b.name), "ko"));
-  }, [branchItemsQuery.data?.items, items]);
+  }, [branchItemsQuery.data?.items, items, visibleMovements]);
 
   const actionItems = useMemo(() => {
     const q = actionSearch.trim().toLowerCase();
@@ -260,8 +275,6 @@ export default function LiquorStockReport() {
       .filter((item) => !q || String(item.name).toLowerCase().includes(q) || String(item.category ?? "").toLowerCase().includes(q))
       .sort((a, b) => sortItems(a, b, "nameAsc", stockByItem));
   }, [items, actionSearch, actionCategory, actionTargetItemId, stockByItem]);
-
-  const visibleMovements = historyQuery.data?.movements ?? movements;
 
   const totalStock = data?.totals.stock ?? 0;
   const totalOutQty = data?.totals.outQty ?? 0;
