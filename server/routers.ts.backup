@@ -3515,7 +3515,7 @@ export const appRouter = router({
         }
 
         const itemRows = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
-        let activeItems = input.includeInactive ? itemRows : itemRows.filter(i => Number(i.isActive) === 1);
+        let activeItems = itemRows.filter(i => Number(i.isActive) === 1);
         // 지점 계정에서 삭제한 품목은 해당 지점 화면에서만 숨김 처리
         if (account.role !== 'admin' && selectedBranchIds.length === 1) {
           const hiddenResult: any = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${selectedBranchIds[0]}`);
@@ -3764,21 +3764,13 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) return { success: false };
         await ensureLiquorSeeded(db);
-        if (account.role === 'admin') {
-          // 전체 삭제는 과거 입출고 히스토리를 보존하기 위해 물리 삭제 대신 비활성화한다.
-          // 단, 화면/재고에는 즉시 사라지도록 관련 지점 숨김/재고도 같이 정리한다.
-          await db.update(liquorItems).set({ isActive: 0 }).where(eq(liquorItems.id, input.id));
-          await db.execute(sql`DELETE FROM liquorHiddenItems WHERE liquorItemId = ${input.id}`);
-          await db.update(liquorInventories).set({ currentStock: '0' }).where(eq(liquorInventories.liquorItemId, input.id));
-          return { success: true, mode: 'global' as const };
-        }
-        const branchId = account.branchId;
-        if (!branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 권한이 없습니다' });
-        await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
-        const [existingInventory] = await db.select().from(liquorInventories)
-          .where(and(eq(liquorInventories.branchId, branchId), eq(liquorInventories.liquorItemId, input.id))).limit(1);
-        if (existingInventory) await db.update(liquorInventories).set({ currentStock: '0' }).where(eq(liquorInventories.id, existingInventory.id));
-        return { success: true, mode: 'branch' as const };
+        // 제품 삭제는 더 이상 비활성화/지점 숨김 처리하지 않고 실제 삭제한다.
+        // 삭제 즉시 전 지점 제품 목록과 총재고에서 빠져야 하므로 재고/숨김/히스토리 참조를 먼저 정리한다.
+        await db.execute(sql`DELETE FROM liquorHiddenItems WHERE liquorItemId = ${input.id}`);
+        await db.delete(liquorInventories).where(eq(liquorInventories.liquorItemId, input.id));
+        await db.delete(liquorStockMovements).where(eq(liquorStockMovements.liquorItemId, input.id));
+        await db.delete(liquorItems).where(eq(liquorItems.id, input.id));
+        return { success: true, mode: 'deleted' as const };
       }),
 
     recordMovement: publicProcedure
@@ -3814,7 +3806,7 @@ export const appRouter = router({
 
 
     updateMovement: publicProcedure
-      .input(z.object({ id: z.number(), date: z.string(), type: z.enum(['IN', 'OUT', 'ADJUST']).optional(), quantity: z.number(), memo: z.string().optional() }))
+      .input(z.object({ id: z.number(), date: z.string(), quantity: z.number(), memo: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         const account = await requireStoreAccount(ctx);
         const db = await getDb();
@@ -3829,8 +3821,7 @@ export const appRouter = router({
 
         const rawQty = Number(input.quantity || 0);
         if (!rawQty) throw new TRPCError({ code: 'BAD_REQUEST', message: '수량을 입력해주세요' });
-        const nextType = input.type || movement.type;
-        const newSignedQty = nextType === 'OUT' ? -Math.abs(rawQty) : nextType === 'IN' ? Math.abs(rawQty) : rawQty;
+        const newSignedQty = movement.type === 'OUT' ? -Math.abs(rawQty) : movement.type === 'IN' ? Math.abs(rawQty) : rawQty;
         const oldSignedQty = Number(movement.quantity || 0);
         const diff = newSignedQty - oldSignedQty;
         const [itemForCost] = await db.select().from(liquorItems).where(eq(liquorItems.id, movement.liquorItemId)).limit(1);
@@ -3839,7 +3830,6 @@ export const appRouter = router({
 
         await db.update(liquorStockMovements).set({
           date: input.date,
-          type: nextType,
           quantity: String(newSignedQty),
           totalCost: String(totalCost),
           memo: input.memo || null,
@@ -3854,50 +3844,6 @@ export const appRouter = router({
             await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
           } else {
             await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
-          }
-        }
-        return { success: true };
-      }),
-
-    updateMovementGroup: publicProcedure
-      .input(z.object({ ids: z.array(z.number()).min(1), date: z.string(), type: z.enum(['IN', 'OUT', 'ADJUST']), memo: z.string().optional() }))
-      .mutation(async ({ ctx, input }) => {
-        const account = await requireStoreAccount(ctx);
-        const db = await getDb();
-        if (!db) return { success: false };
-        await ensureLiquorSeeded(db);
-
-        const rows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
-        if (rows.length === 0) throw new TRPCError({ code: 'NOT_FOUND', message: '히스토리 내역을 찾을 수 없습니다' });
-        if (account.role !== 'admin' && rows.some((m: any) => Number(m.branchId) !== Number(account.branchId))) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 내역만 수정할 수 있습니다' });
-        }
-
-        for (const movement of rows) {
-          const oldSignedQty = Number(movement.quantity || 0);
-          const baseQty = Math.abs(oldSignedQty);
-          const newSignedQty = input.type === 'OUT' ? -baseQty : input.type === 'IN' ? baseQty : oldSignedQty;
-          const diff = newSignedQty - oldSignedQty;
-          const totalCost = Math.abs(newSignedQty) * Number(movement.unitCost || 0);
-
-          await db.update(liquorStockMovements).set({
-            date: input.date,
-            type: input.type,
-            quantity: String(newSignedQty),
-            totalCost: String(totalCost),
-            memo: input.memo || null,
-            updatedAt: new Date(),
-          }).where(eq(liquorStockMovements.id, movement.id));
-
-          if (diff !== 0) {
-            const [existing] = await db.select().from(liquorInventories)
-              .where(and(eq(liquorInventories.branchId, movement.branchId), eq(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
-            if (existing) {
-              const nextStock = Number(existing.currentStock || 0) + diff;
-              await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
-            } else {
-              await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
-            }
           }
         }
         return { success: true };
