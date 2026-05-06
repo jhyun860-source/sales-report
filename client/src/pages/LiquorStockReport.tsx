@@ -62,8 +62,8 @@ export default function LiquorStockReport() {
   const [, navigate] = useLocation();
   const { user, loading } = useStoreAuth();
   const utils = trpc.useUtils();
-  const initialBranch = getQueryParam("branchId");
-  const initialDate = getQueryParam("date") || localStorage.getItem("selectedDate") || todayString();
+  const initialBranch = getQueryParam("branchId") || localStorage.getItem("liquorSelectedBranchId");
+  const initialDate = getQueryParam("date") || todayString();
 
   const [date, setDate] = useState(initialDate);
   const [selectedBranchId, setSelectedBranchId] = useState<number | undefined>(initialBranch ? Number(initialBranch) : undefined);
@@ -83,6 +83,7 @@ export default function LiquorStockReport() {
   const [actionCategory, setActionCategory] = useState<LiquorCategory>("위스키");
   const [cart, setCart] = useState<CartRow[]>([]);
   const [actionMemo, setActionMemo] = useState("");
+  const [actionTargetItemId, setActionTargetItemId] = useState<number | null>(null);
 
   const [historyStart, setHistoryStart] = useState("2000-01-01");
   const [historyEnd, setHistoryEnd] = useState(todayString());
@@ -96,8 +97,13 @@ export default function LiquorStockReport() {
   const isAdmin = user?.role === "admin";
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
 
+  useEffect(() => {
+    if (!isAdmin || !selectedBranchId) return;
+    try { localStorage.setItem("liquorSelectedBranchId", String(selectedBranchId)); } catch {}
+  }, [isAdmin, selectedBranchId]);
+
   const overview = trpc.liquor.overview.useQuery(
-    { date, branchId: effectiveBranchId, includeInactive: isAdmin },
+    { date, branchId: effectiveBranchId, includeInactive: false },
     { enabled: !!user, retry: false },
   );
 
@@ -125,6 +131,7 @@ export default function LiquorStockReport() {
       setCart([]);
       setActionMemo("");
       setActionSearch("");
+      setActionTargetItemId(null);
       setActionMode(null);
       toast.success("입고/출고 내역이 저장되었습니다");
     },
@@ -182,6 +189,15 @@ export default function LiquorStockReport() {
     onError: (e) => toast.error(e.message),
   });
 
+  const addMovementToGroup = trpc.liquor.addMovementToGroup.useMutation({
+    onSuccess: () => {
+      utils.liquor.overview.invalidate();
+      utils.liquor.history.invalidate();
+      toast.success("히스토리에 품목이 추가되었습니다");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const data = overview.data;
   const branches = data?.branches ?? [];
   const items = data?.items ?? [];
@@ -206,10 +222,11 @@ export default function LiquorStockReport() {
   const actionItems = useMemo(() => {
     const q = actionSearch.trim().toLowerCase();
     return [...items]
+      .filter((item) => !actionTargetItemId || Number(item.id) === Number(actionTargetItemId))
       .filter((item) => categoryOf(item) === actionCategory)
       .filter((item) => !q || String(item.name).toLowerCase().includes(q) || String(item.category ?? "").toLowerCase().includes(q))
       .sort((a, b) => sortItems(a, b, "nameAsc", stockByItem));
-  }, [items, actionSearch, actionCategory, stockByItem]);
+  }, [items, actionSearch, actionCategory, actionTargetItemId, stockByItem]);
 
   const visibleMovements = historyQuery.data?.movements ?? movements;
 
@@ -225,6 +242,7 @@ export default function LiquorStockReport() {
   };
 
   const closeActionScreen = () => {
+    setActionTargetItemId(null);
     setActionMode(null);
   };
 
@@ -276,8 +294,9 @@ export default function LiquorStockReport() {
   const openAction = (type: MovementType, item?: any) => {
     setActionMode(type);
     setActionSearch("");
+    setActionTargetItemId(item?.id ? Number(item.id) : null);
     setActionCategory(item ? categoryOf(item) : activeCategory);
-    setCart(item ? [{ liquorItemId: item.id, quantity: 1 }] : []);
+    setCart(item ? [{ liquorItemId: item.id, quantity: type === "ADJUST" ? 0 : 1 }] : []);
     setActionMemo("");
   };
 
@@ -315,8 +334,10 @@ export default function LiquorStockReport() {
   };
 
   const handleDeleteProduct = (item: any) => {
-    const message = isAdmin ? `${item.name} 제품을 전체 지점에서 비활성화할까요?` : `${item.name} 제품을 현재 지점 목록에서 숨길까요?`;
+    const message = `${item.name} 제품을 현재 지점 목록에서 삭제할까요? 다른 지점에는 영향을 주지 않습니다.`;
+    if (!effectiveBranchId) return toast.error("먼저 지점을 선택해주세요");
     if (!window.confirm(message)) return;
+    setReturnToItemId(item.id);
     deleteItem.mutate({ id: item.id, branchId: effectiveBranchId });
   };
 
@@ -331,8 +352,9 @@ export default function LiquorStockReport() {
   const setCartQty = (itemId: number, value: number) => {
     setCart((prev) => {
       const found = prev.find((row) => row.liquorItemId === itemId);
-      if (!found) return value === 0 ? prev : [...prev, { liquorItemId: itemId, quantity: value }];
-      return prev.map((row) => row.liquorItemId === itemId ? { ...row, quantity: value } : row).filter((row) => row.quantity !== 0);
+      if (!found) return value === 0 && actionMode !== "ADJUST" ? prev : [...prev, { liquorItemId: itemId, quantity: value }];
+      const next = prev.map((row) => row.liquorItemId === itemId ? { ...row, quantity: value } : row);
+      return actionMode === "ADJUST" ? next : next.filter((row) => row.quantity !== 0);
     });
   };
 
@@ -356,11 +378,13 @@ export default function LiquorStockReport() {
     if (!actionMode) return;
     const branchId = effectiveBranchId;
     if (!branchId) return toast.error("지점을 선택해주세요");
-    const rows = cart.filter((row) => row.liquorItemId && Number(row.quantity) !== 0).map((row) => ({
-      liquorItemId: row.liquorItemId,
-      quantity: Number(row.quantity),
-      memo: row.memo || actionMemo || undefined,
-    }));
+    const rows = cart
+      .filter((row) => row.liquorItemId && (actionMode === "ADJUST" || Number(row.quantity) !== 0))
+      .map((row) => ({
+        liquorItemId: row.liquorItemId,
+        quantity: Number(row.quantity),
+        memo: row.memo || actionMemo || undefined,
+      }));
     if (rows.length === 0) return toast.error("제품을 1개 이상 담아주세요");
     recordMovement.mutate({ branchId, date, type: actionMode, items: rows, memo: actionMemo || undefined });
   };
@@ -683,7 +707,7 @@ function TransactionScreen(props: any) {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button onClick={() => changeCartQty(item.id, -1)} className="w-9 h-9 rounded-full bg-slate-100 font-black text-xl">−</button>
-                      <input value={inCart || ""} onChange={(e) => setCartQty(item.id, Number(e.target.value.replace(/[^0-9.-]/g, "") || 0))} inputMode="decimal" placeholder="0" className="w-12 h-9 text-center rounded-lg border border-slate-200 font-black"/>
+                      <input value={inCart === 0 ? "0" : inCart || ""} onChange={(e) => setCartQty(item.id, Number(e.target.value.replace(/[^0-9.-]/g, "") || 0))} inputMode="decimal" placeholder="0" className="w-12 h-9 text-center rounded-lg border border-slate-200 font-black"/>
                       <button onClick={() => changeCartQty(item.id, 1)} className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 font-black text-xl">+</button>
                     </div>
                   </div>
@@ -694,7 +718,7 @@ function TransactionScreen(props: any) {
         </div>
         <CartSummary mode={mode} cart={cart} cartItemName={cartItemName} changeCartQty={changeCartQty} removeCartItem={removeCartItem} />
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto">
-          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : `${title} 완료`}</button>
+          <button onClick={submitCart} disabled={isSaving || cart.length === 0} className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-40">{isSaving ? "저장 중..." : "저장하기"}</button>
         </div>
       </div>
     </div>
@@ -721,7 +745,7 @@ function CartSummary({ mode, cart, cartItemName, changeCartQty, removeCartItem }
 }
 
 function ProductDetail({ item, back, selectedBranch, stock, isAdmin, openEdit, deleteProduct, openAction }: any) {
-  return <div className="min-h-screen bg-slate-50 text-slate-950 pb-24"><Header title="제품 정보" back={back} right={<button onClick={openEdit} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22}/></button>} /><div className="max-w-3xl mx-auto"><div className="bg-white p-5 flex items-center gap-5 border-b border-slate-100"><div className="w-24 h-24 rounded-2xl bg-slate-200 flex items-center justify-center"><Package className="text-slate-400" size={36}/></div><div className="min-w-0"><div className="text-2xl font-black truncate">{item.name}</div><div className="text-sm text-slate-500 mt-2">{categoryOf(item)}</div>{isAdmin && <div className="text-sm text-slate-500 mt-1">단가 {won(Number(item.unitCost || 0))}</div>}</div></div><div className="bg-white mt-3 divide-y divide-slate-100"><InfoRow label="지점" value={selectedBranch?.name ?? "전체"}/><InfoRow label="현재 재고" value={`${qty(stock)}병`} valueClass="text-blue-600 font-black text-2xl"/><InfoRow label="분류" value={categoryOf(item)}/></div><div className="bg-white mt-3 p-4 rounded-2xl mx-4 border border-slate-100 shadow-sm"><button onClick={openEdit} className="w-full h-12 rounded-xl bg-slate-900 text-white font-black flex items-center justify-center gap-2"><Settings size={18}/>제품 설정/수정</button><button onClick={deleteProduct} className="w-full h-12 mt-2 rounded-xl bg-red-50 text-red-600 font-black flex items-center justify-center gap-2"><Trash2 size={18}/>{isAdmin ? "제품 삭제" : "내 지점에서 숨김"}</button></div><div className="fixed left-0 right-0 bottom-0 z-30 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto"><div className="grid grid-cols-3 gap-2"><button onClick={() => openAction("IN")} className="h-12 rounded-2xl bg-emerald-50 text-emerald-700 font-black flex items-center justify-center gap-1"><ArrowDownToLine size={18}/>입고</button><button onClick={() => openAction("OUT")} className="h-12 rounded-2xl bg-red-50 text-red-600 font-black flex items-center justify-center gap-1"><ArrowUpFromLine size={18}/>출고</button><button onClick={() => openAction("ADJUST")} className="h-12 rounded-2xl bg-slate-100 text-slate-700 font-black flex items-center justify-center gap-1"><SlidersHorizontal size={18}/>조정</button></div></div></div></div>;
+  return <div className="min-h-screen bg-slate-50 text-slate-950 pb-24"><Header title="제품 정보" back={back} right={<button onClick={openEdit} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22}/></button>} /><div className="max-w-3xl mx-auto"><div className="bg-white p-5 flex items-center gap-5 border-b border-slate-100"><div className="w-24 h-24 rounded-2xl bg-slate-200 flex items-center justify-center"><Package className="text-slate-400" size={36}/></div><div className="min-w-0"><div className="text-2xl font-black truncate">{item.name}</div><div className="text-sm text-slate-500 mt-2">{categoryOf(item)}</div>{isAdmin && <div className="text-sm text-slate-500 mt-1">단가 {won(Number(item.unitCost || 0))}</div>}</div></div><div className="bg-white mt-3 divide-y divide-slate-100"><InfoRow label="지점" value={selectedBranch?.name ?? "전체"}/><InfoRow label="현재 재고" value={`${qty(stock)}병`} valueClass="text-blue-600 font-black text-2xl"/><InfoRow label="분류" value={categoryOf(item)}/></div><div className="bg-white mt-3 p-4 rounded-2xl mx-4 border border-slate-100 shadow-sm"><button onClick={openEdit} className="w-full h-12 rounded-xl bg-slate-900 text-white font-black flex items-center justify-center gap-2"><Settings size={18}/>제품 설정/수정</button><button onClick={deleteProduct} className="w-full h-12 mt-2 rounded-xl bg-red-50 text-red-600 font-black flex items-center justify-center gap-2"><Trash2 size={18}/>제품 삭제</button></div><div className="fixed left-0 right-0 bottom-0 z-30 bg-white border-t border-slate-200 p-4 max-w-3xl mx-auto"><div className="grid grid-cols-3 gap-2"><button onClick={() => openAction("IN")} className="h-12 rounded-2xl bg-emerald-50 text-emerald-700 font-black flex items-center justify-center gap-1"><ArrowDownToLine size={18}/>입고</button><button onClick={() => openAction("OUT")} className="h-12 rounded-2xl bg-red-50 text-red-600 font-black flex items-center justify-center gap-1"><ArrowUpFromLine size={18}/>출고</button><button onClick={() => openAction("ADJUST")} className="h-12 rounded-2xl bg-slate-100 text-slate-700 font-black flex items-center justify-center gap-1"><SlidersHorizontal size={18}/>조정</button></div></div></div></div>;
 }
 
 function InfoRow({ label, value, valueClass = "font-bold" }: any) {
@@ -970,12 +994,15 @@ function MovementEditorModal({ movement, close, save, pending }: any) {
   </div>;
 }
 
-function MovementGroupEditorModal({ group, movements = [], close, save, pending }: any) {
+function MovementGroupEditorModal({ group, movements = [], items = [], close, save, addItem, pending }: any) {
   const first = group?.[0] || {};
   const originalDate = first.date || todayString();
   const [editDate, setEditDate] = useState(originalDate);
   const [editType, setEditType] = useState<MovementType>(first.type || "OUT");
   const [editMemo, setEditMemo] = useState(first.memo || "");
+  const [addItemId, setAddItemId] = useState<number | "">("");
+  const [addQty, setAddQty] = useState("");
+  const [addType, setAddType] = useState<MovementType>(first.type || "OUT");
   const typeLabel = editType === "OUT" ? "출고" : editType === "IN" ? "입고" : "조정";
   const totalQty = (group || []).reduce((sum: number, m: any) => sum + Math.abs(Number(m.quantity || 0)), 0);
   const saveGroup = () => {
@@ -1022,6 +1049,34 @@ function MovementGroupEditorModal({ group, movements = [], close, save, pending 
         <div>
           <div className="text-xs font-bold text-slate-500 mb-1">메모</div>
           <input value={editMemo} onChange={(e) => setEditMemo(e.target.value)} placeholder="메모" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none" />
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 p-3 bg-slate-50 space-y-2">
+          <div className="text-sm font-black text-slate-700">누락 품목 추가</div>
+          <select value={addItemId} onChange={(e) => setAddItemId(e.target.value ? Number(e.target.value) : "")} className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white outline-none font-bold">
+            <option value="">제품 선택</option>
+            {items.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <select value={addType} onChange={(e) => setAddType(e.target.value as MovementType)} className="h-11 px-3 rounded-xl border border-slate-200 bg-white outline-none font-bold">
+              <option value="OUT">출고</option>
+              <option value="IN">입고</option>
+              <option value="ADJUST">조정</option>
+            </select>
+            <input value={addQty} onChange={(e) => setAddQty(e.target.value.replace(/[^0-9.-]/g, ""))} inputMode="decimal" placeholder="수량" className="h-11 px-3 rounded-xl border border-slate-200 outline-none text-right font-black" />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!addItemId) return toast.error("추가할 제품을 선택해주세요");
+              if (addQty === "" || Number.isNaN(Number(addQty))) return toast.error("수량을 입력해주세요");
+              addItem?.({ groupIds: (group || []).map((m: any) => Number(m.id)), liquorItemId: Number(addItemId), quantity: Number(addQty || 0), type: addType, date: editDate, memo: editMemo || undefined });
+              setAddItemId("");
+              setAddQty("");
+            }}
+            disabled={pending}
+            className="w-full h-11 rounded-xl bg-slate-900 text-white font-black disabled:opacity-50"
+          >품목 추가 저장</button>
         </div>
         <button onClick={saveGroup} disabled={pending} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-50">{pending ? "저장 중..." : `${typeLabel} 수정 저장`}</button>
       </div>

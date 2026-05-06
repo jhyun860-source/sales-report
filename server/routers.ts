@@ -3516,8 +3516,8 @@ export const appRouter = router({
 
         const itemRows = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
         let activeItems = input.includeInactive ? itemRows : itemRows.filter(i => Number(i.isActive) === 1);
-        // 지점 계정에서 삭제한 품목은 해당 지점 화면에서만 숨김 처리
-        if (account.role !== 'admin' && selectedBranchIds.length === 1) {
+        // 선택 지점에서 삭제한 품목은 관리자/매니저/직원 모두 해당 지점 화면에서 숨김 처리
+        if (selectedBranchIds.length === 1) {
           const hiddenResult: any = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${selectedBranchIds[0]}`);
           const hiddenRows = Array.isArray(hiddenResult) ? hiddenResult[0] : [];
           const hiddenIds = new Set((Array.isArray(hiddenRows) ? hiddenRows : []).map((r: any) => Number(r.liquorItemId)));
@@ -3764,20 +3764,17 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) return { success: false };
         await ensureLiquorSeeded(db);
-        if (account.role === 'admin') {
-          // 전체 삭제는 과거 입출고 히스토리를 보존하기 위해 물리 삭제 대신 비활성화한다.
-          // 단, 화면/재고에는 즉시 사라지도록 관련 지점 숨김/재고도 같이 정리한다.
-          await db.update(liquorItems).set({ isActive: 0 }).where(eq(liquorItems.id, input.id));
-          await db.execute(sql`DELETE FROM liquorHiddenItems WHERE liquorItemId = ${input.id}`);
-          await db.update(liquorInventories).set({ currentStock: '0' }).where(eq(liquorInventories.liquorItemId, input.id));
-          return { success: true, mode: 'global' as const };
+
+        const branchId = account.role === 'admin' ? input.branchId : account.branchId;
+        if (!branchId) throw new TRPCError({ code: 'BAD_REQUEST', message: '삭제할 지점을 먼저 선택해주세요' });
+        if (account.role !== 'admin' && Number(account.branchId) !== Number(branchId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 품목만 삭제할 수 있습니다' });
         }
-        const branchId = account.branchId;
-        if (!branchId) throw new TRPCError({ code: 'FORBIDDEN', message: '지점 권한이 없습니다' });
+
+        // 제품 삭제는 전 지점 공통 마스터 삭제가 아니라 지점 단위 삭제입니다.
+        // 해당 지점에서는 목록/총재고에서 완전히 빠지도록 숨김 처리 + 재고 row 물리 삭제를 함께 수행합니다.
         await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
-        const [existingInventory] = await db.select().from(liquorInventories)
-          .where(and(eq(liquorInventories.branchId, branchId), eq(liquorInventories.liquorItemId, input.id))).limit(1);
-        if (existingInventory) await db.update(liquorInventories).set({ currentStock: '0' }).where(eq(liquorInventories.id, existingInventory.id));
+        await db.delete(liquorInventories).where(and(eq(liquorInventories.branchId, branchId), eq(liquorInventories.liquorItemId, input.id)));
         return { success: true, mode: 'branch' as const };
       }),
 
@@ -3796,7 +3793,7 @@ export const appRouter = router({
           const item = itemById.get(row.liquorItemId);
           if (!item) continue;
           const rawQty = Number(row.quantity || 0);
-          if (!rawQty) continue;
+          if (!rawQty && input.type !== 'ADJUST') continue;
           const unitCost = Number(item.unitCost || 0);
           const signedQty = input.type === 'OUT' ? -Math.abs(rawQty) : input.type === 'IN' ? Math.abs(rawQty) : rawQty;
           const totalCost = Math.abs(signedQty) * unitCost;
@@ -3828,8 +3825,8 @@ export const appRouter = router({
         }
 
         const rawQty = Number(input.quantity || 0);
-        if (!rawQty) throw new TRPCError({ code: 'BAD_REQUEST', message: '수량을 입력해주세요' });
         const nextType = input.type || movement.type;
+        if (!rawQty && nextType !== 'ADJUST') throw new TRPCError({ code: 'BAD_REQUEST', message: '수량을 입력해주세요' });
         const newSignedQty = nextType === 'OUT' ? -Math.abs(rawQty) : nextType === 'IN' ? Math.abs(rawQty) : rawQty;
         const oldSignedQty = Number(movement.quantity || 0);
         const diff = newSignedQty - oldSignedQty;
@@ -3927,6 +3924,55 @@ export const appRouter = router({
             }
           }
         }
+        return { success: true };
+      }),
+
+    addMovementToGroup: publicProcedure
+      .input(z.object({
+        groupIds: z.array(z.number()).min(1),
+        liquorItemId: z.number(),
+        quantity: z.number(),
+        type: z.enum(['IN', 'OUT', 'ADJUST']),
+        date: z.string(),
+        memo: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const account = await requireStoreAccount(ctx);
+        const db = await getDb();
+        if (!db) return { success: false };
+        await ensureLiquorSeeded(db);
+
+        const groupRows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.groupIds));
+        if (groupRows.length === 0) throw new TRPCError({ code: 'NOT_FOUND', message: '기준 히스토리를 찾을 수 없습니다' });
+        const base = groupRows[0];
+        if (account.role !== 'admin' && Number(account.branchId) !== Number(base.branchId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 내역만 수정할 수 있습니다' });
+        }
+        const [item] = await db.select().from(liquorItems).where(eq(liquorItems.id, input.liquorItemId)).limit(1);
+        if (!item) throw new TRPCError({ code: 'NOT_FOUND', message: '품목을 찾을 수 없습니다' });
+
+        const rawQty = Number(input.quantity || 0);
+        if (!rawQty && input.type !== 'ADJUST') throw new TRPCError({ code: 'BAD_REQUEST', message: '수량을 입력해주세요' });
+        const signedQty = input.type === 'OUT' ? -Math.abs(rawQty) : input.type === 'IN' ? Math.abs(rawQty) : rawQty;
+        const unitCost = Number(item.unitCost || 0);
+        const totalCost = Math.abs(signedQty) * unitCost;
+        await db.insert(liquorStockMovements).values({
+          branchId: base.branchId,
+          liquorItemId: input.liquorItemId,
+          date: input.date,
+          type: input.type,
+          quantity: String(signedQty),
+          unitCost: String(unitCost),
+          totalCost: String(totalCost),
+          memo: input.memo || base.memo || null,
+          createdBy: account.id,
+          createdAt: base.createdAt as any,
+        });
+        const [existing] = await db.select().from(liquorInventories)
+          .where(and(eq(liquorInventories.branchId, base.branchId), eq(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
+        const nextStock = Number(existing?.currentStock || 0) + signedQty;
+        if (existing) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
+        else await db.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
         return { success: true };
       }),
 
