@@ -36,6 +36,16 @@ import { storagePut } from "./storage";
 import { eq, and, desc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
+
+function formatKstDateString(date: Date): string {
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+}
+
+function todayKstString(): string {
+  return formatKstDateString(new Date());
+}
+
 // VAPID 설정
 if (ENV.vapidPublicKey && ENV.vapidPrivateKey) {
   webpush.setVapidDetails(
@@ -3495,6 +3505,42 @@ export const appRouter = router({
       }),
   }),
   liquor: router({
+    branchItems: publicProcedure
+      .input(z.object({ branchId: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        const account = await requireStoreAccount(ctx);
+        const db = await getDb();
+        if (!db) return { items: [] };
+        await ensureLiquorSeeded(db);
+
+        // 모바일/PWA에서는 클라이언트의 branchId 전달이 늦을 수 있으므로
+        // 지점 계정은 서버 세션의 branchId를 우선 사용하고, 관리자만 input branchId를 사용한다.
+        const effectiveBranchId = account.role === 'admin' ? input.branchId : account.branchId;
+
+        const itemRows = await db.select().from(liquorItems)
+          .where(eq(liquorItems.isActive, 1))
+          .orderBy(liquorItems.sortOrder, liquorItems.name);
+
+        if (!effectiveBranchId) {
+          // 관리자 전지점 화면처럼 지점이 확정되지 않은 경우에도 dropdown이 비지 않게 active 제품을 반환한다.
+          return { items: itemRows.map((item: any) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
+        }
+
+        const hiddenResult: any = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId}`);
+        const rawRows = Array.isArray(hiddenResult)
+          ? (Array.isArray(hiddenResult[0]) ? hiddenResult[0] : hiddenResult)
+          : ((hiddenResult as any)?.rows ?? []);
+        const hiddenIds = new Set((Array.isArray(rawRows) ? rawRows : []).map((r: any) => Number(r.liquorItemId ?? r.liquor_item_id ?? r[0])));
+
+        let items = itemRows.filter((item: any) => !hiddenIds.has(Number(item.id)));
+
+        // 일부 지점에서 과거 숨김 데이터가 잘못 들어가 dropdown이 완전히 비는 경우가 있어
+        // 누락 품목 추가가 막히지 않도록 active 제품 전체를 fallback으로 제공한다.
+        if (items.length === 0 && itemRows.length > 0) items = itemRows;
+
+        return { items: items.map((item: any) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
+      }),
+
     overview: publicProcedure
       .input(z.object({ date: z.string(), branchId: z.number().optional(), includeInactive: z.boolean().optional() }))
       .query(async ({ ctx, input }) => {
@@ -3694,7 +3740,7 @@ export const appRouter = router({
               await db.insert(liquorStockMovements).values({
                 branchId: effectiveBranchId,
                 liquorItemId: input.id,
-                date: new Date().toISOString().slice(0, 10),
+                date: todayKstString(),
                 type: 'ADJUST',
                 quantity: String(diff),
                 unitCost: String(unitCost),
@@ -3744,7 +3790,7 @@ export const appRouter = router({
             await db.insert(liquorStockMovements).values({
               branchId: effectiveBranchId,
               liquorItemId: itemId,
-              date: new Date().toISOString().slice(0, 10),
+              date: todayKstString(),
               type: 'ADJUST',
               quantity: String(diff),
               unitCost: String(unitCost),
@@ -3776,6 +3822,29 @@ export const appRouter = router({
         await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
         await db.delete(liquorInventories).where(and(eq(liquorInventories.branchId, branchId), eq(liquorInventories.liquorItemId, input.id)));
         return { success: true, mode: 'branch' as const };
+      }),
+
+    bulkDeleteItems: publicProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1), branchId: z.number().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const account = await requireStoreAccount(ctx);
+        const db = await getDb();
+        if (!db) return { success: false };
+        await ensureLiquorSeeded(db);
+
+        const branchId = account.role === 'admin' ? input.branchId : account.branchId;
+        if (!branchId) throw new TRPCError({ code: 'BAD_REQUEST', message: '삭제할 지점을 먼저 선택해주세요' });
+        if (account.role !== 'admin' && Number(account.branchId) !== Number(branchId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: '해당 지점 품목만 삭제할 수 있습니다' });
+        }
+
+        const ids = Array.from(new Set(input.ids.map(Number).filter(Boolean)));
+        if (!ids.length) return { success: true, count: 0 };
+        for (const id of ids) {
+          await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${id})`);
+        }
+        await db.delete(liquorInventories).where(and(eq(liquorInventories.branchId, branchId), inArray(liquorInventories.liquorItemId, ids)));
+        return { success: true, count: ids.length, mode: 'branch' as const };
       }),
 
     recordMovement: publicProcedure
@@ -4018,7 +4087,7 @@ export const appRouter = router({
         else await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
         if (diff !== 0) {
           const unitCost = Number(item.unitCost || 0);
-          await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: new Date().toISOString().slice(0, 10), type: 'ADJUST', quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || `재고수정: ${prevStock}개 → ${input.currentStock}개 (${diff > 0 ? '+' : ''}${diff})`, createdBy: account.id });
+          await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: todayKstString(), type: 'ADJUST', quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || `재고수정: ${prevStock}개 → ${input.currentStock}개 (${diff > 0 ? '+' : ''}${diff})`, createdBy: account.id });
         }
         return { success: true };
       }),
@@ -4670,7 +4739,7 @@ export const appRouter = router({
             if (db) {
               const cutoffDate = new Date();
               cutoffDate.setDate(cutoffDate.getDate() - 90); // 90일치 학습
-              const cutoff = cutoffDate.toISOString().slice(0, 10);
+              const cutoff = formatKstDateString(cutoffDate);
               const recentItems = await db
                 .select({ memo: tableItems.memo })
                 .from(tableItems)
@@ -4771,7 +4840,7 @@ export const appRouter = router({
               // 최근 60일 해당 지점 메모 조회
               const cutoffDate = new Date();
               cutoffDate.setDate(cutoffDate.getDate() - 60);
-              const cutoff = cutoffDate.toISOString().slice(0, 10);
+              const cutoff = formatKstDateString(cutoffDate);
               const recentItems = await db
                 .select({ memo: tableItems.memo, amount: tableItems.amount })
                 .from(tableItems)
