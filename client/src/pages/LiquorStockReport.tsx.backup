@@ -251,10 +251,20 @@ export default function LiquorStockReport() {
     const movementItems = (visibleMovements || [])
       .filter((m: any) => m.liquorItemId && m.itemName)
       .map((m: any) => ({ id: Number(m.liquorItemId), name: m.itemName, category: m.category ?? "위스키", isActive: 1 }));
+    const localCachedItems = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("liquor-items-cache") || "[]");
+      } catch {
+        return [];
+      }
+    })();
+
     const sources = [
       ...(branchItemsQuery.data?.items ?? []),
       ...(items ?? []),
+      ...(filteredItems ?? []),
       ...movementItems,
+      ...localCachedItems,
     ];
     const seen = new Set<number>();
     return sources
