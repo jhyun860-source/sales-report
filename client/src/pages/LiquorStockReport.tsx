@@ -4,6 +4,31 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useStoreAuth } from "@/hooks/useStoreAuth";
+
+// Branch Group Mapping - 같은 그룹끼리만 제품 공유
+const BRANCH_GROUP_MAP: Record<string, string> = {
+  // 선릉 그룹
+  s1: "seolleung",
+  s3: "seolleung",
+  // 삼성 그룹
+  s2: "samsung",
+  s4: "samsung",
+  // 대치 그룹
+  d1: "daechi",
+  d2: "daechi",
+  // 문정1호점 그룹
+  m1: "munjeong1",
+  m3: "munjeong1",
+  // 문정2호점 그룹
+  m2: "munjeong2",
+  m4: "munjeong2",
+};
+
+// 계정명에서 branch group 결정
+function getBranchGroup(loginId: string): string {
+  return BRANCH_GROUP_MAP[loginId] || loginId;
+}
+
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -81,7 +106,7 @@ export default function LiquorStockReport() {
   const [, navigate] = useLocation();
   const { user, loading } = useStoreAuth();
   const utils = trpc.useUtils();
-  const initialBranch = getQueryParam("branchId") || localStorage.getItem("liquorSelectedBranchId") || localStorage.getItem("selectedBranchId");
+  const initialBranch = getQueryParam("branchId") || localStorage.getItem("liquorSelectedBranchId");
   const initialDate = getQueryParam("date") || todayString();
 
   const [date, setDate] = useState(initialDate);
@@ -120,27 +145,15 @@ export default function LiquorStockReport() {
 
   const handleLogout = () => {
     try {
-      ["currentUser", "user", "auth", "role", "branch", "branchCode", "storeUser", "account", "selectedBranchId", "liquorSelectedBranchId"].forEach((key) => localStorage.removeItem(key));
+      ["currentUser", "user", "auth", "role", "branch", "branchCode", "storeUser", "account", "selectedBranchId"].forEach((key) => localStorage.removeItem(key));
       sessionStorage.clear();
     } catch {}
     navigate("/login");
   };
 
-  const changeSelectedBranchId = (next?: number) => {
-    setSelectedBranchId(next);
-    try {
-      if (next) {
-        localStorage.setItem("liquorSelectedBranchId", String(next));
-        localStorage.setItem("selectedBranchId", String(next));
-      } else {
-        localStorage.removeItem("liquorSelectedBranchId");
-      }
-    } catch {}
-  };
-
   useEffect(() => {
     if (!isAdmin || !selectedBranchId) return;
-    try { localStorage.setItem("liquorSelectedBranchId", String(selectedBranchId)); localStorage.setItem("selectedBranchId", String(selectedBranchId)); } catch {}
+    try { localStorage.setItem("liquorSelectedBranchId", String(selectedBranchId)); } catch {}
   }, [isAdmin, selectedBranchId]);
 
   const overview = trpc.liquor.overview.useQuery(
@@ -509,7 +522,7 @@ export default function LiquorStockReport() {
         isAdmin={isAdmin}
         effectiveBranchId={effectiveBranchId}
         selectedBranchId={selectedBranchId}
-        setSelectedBranchId={changeSelectedBranchId}
+        setSelectedBranchId={setSelectedBranchId}
         search={actionSearch}
         setSearch={setActionSearch}
         category={actionCategory}
@@ -583,7 +596,7 @@ export default function LiquorStockReport() {
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold" />
           {isAdmin && (
-            <select value={effectiveBranchId ?? ""} onChange={(e) => changeSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold">
+            <select value={effectiveBranchId ?? ""} onChange={(e) => setSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold">
               <option value="">전체 지점</option>
               {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
@@ -892,7 +905,7 @@ function TransactionScreen(props: any) {
           <InfoRow
             label="위치"
             value={isAdmin ? (
-              <select value={effectiveBranchId ?? ""} onChange={(e) => changeSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="w-full text-right outline-none font-black bg-white">
+              <select value={effectiveBranchId ?? ""} onChange={(e) => setSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="w-full text-right outline-none font-black bg-white">
                 <option value="">지점 선택</option>
                 {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
