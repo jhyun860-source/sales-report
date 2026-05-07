@@ -3781,7 +3781,7 @@ export const appRouter = router({
             const [created] = await db.select().from(liquorItems).where(eq(liquorItems.name, cleanName)).limit(1);
             itemId = created?.id;
           }
-        } else if (Number(existingInBranch.isActive) !== 1 && account.role === 'admin') {
+        } else if (existingInBranch && Number(existingInBranch.isActive) !== 1 && account.role === 'admin') {
           await db.update(liquorItems).set({ isActive: 1 }).where(eq(liquorItems.id, itemId));
         }
         
