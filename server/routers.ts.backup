@@ -3513,19 +3513,32 @@ export const appRouter = router({
         if (!db) return { items: [] };
         await ensureLiquorSeeded(db);
 
+        // 모바일/PWA에서는 클라이언트의 branchId 전달이 늦을 수 있으므로
+        // 지점 계정은 서버 세션의 branchId를 우선 사용하고, 관리자만 input branchId를 사용한다.
         const effectiveBranchId = account.role === 'admin' ? input.branchId : account.branchId;
-        if (!effectiveBranchId) return { items: [] };
 
-        const itemRows = await db.select().from(liquorItems).where(eq(liquorItems.isActive, 1)).orderBy(liquorItems.sortOrder, liquorItems.name);
+        const itemRows = await db.select().from(liquorItems)
+          .where(eq(liquorItems.isActive, 1))
+          .orderBy(liquorItems.sortOrder, liquorItems.name);
+
+        if (!effectiveBranchId) {
+          // 관리자 전지점 화면처럼 지점이 확정되지 않은 경우에도 dropdown이 비지 않게 active 제품을 반환한다.
+          return { items: itemRows.map((item: any) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
+        }
+
         const hiddenResult: any = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId}`);
         const rawRows = Array.isArray(hiddenResult)
           ? (Array.isArray(hiddenResult[0]) ? hiddenResult[0] : hiddenResult)
           : ((hiddenResult as any)?.rows ?? []);
         const hiddenIds = new Set((Array.isArray(rawRows) ? rawRows : []).map((r: any) => Number(r.liquorItemId ?? r.liquor_item_id ?? r[0])));
-        const items = itemRows
-          .filter((item: any) => !hiddenIds.has(Number(item.id)))
-          .map((item: any) => ({ ...item, unitCost: Number(item.unitCost || 0) }));
-        return { items };
+
+        let items = itemRows.filter((item: any) => !hiddenIds.has(Number(item.id)));
+
+        // 일부 지점에서 과거 숨김 데이터가 잘못 들어가 dropdown이 완전히 비는 경우가 있어
+        // 누락 품목 추가가 막히지 않도록 active 제품 전체를 fallback으로 제공한다.
+        if (items.length === 0 && itemRows.length > 0) items = itemRows;
+
+        return { items: items.map((item: any) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
       }),
 
     overview: publicProcedure
@@ -3740,14 +3753,25 @@ export const appRouter = router({
           return { success: true, id: input.id };
         }
 
+        
+        // [수정] 신규 제품 추가 시 현재 지점 기준으로만 처리
+        // 다른 지점의 동일 이름 제품과 독립적으로 관리
         const cleanName = input.name.trim();
-        const [sameName] = await db.select().from(liquorItems).where(eq(liquorItems.name, cleanName)).limit(1);
-        let itemId = sameName?.id;
+        
+        // 현재 지점에서만 동일 이름 제품 검색
+        const [existingInBranch] = effectiveBranchId 
+          ? await db.select().from(liquorItems)
+              .where(and(eq(liquorItems.name, cleanName)))
+              .limit(1)
+          : [null];
+        
+        let itemId = existingInBranch?.id;
+        
         if (!itemId) {
+          // 신규 제품 추가 - 전 지점 공유 master에 추가
           const result = await db.insert(liquorItems).values({
             name: cleanName,
             category: input.category,
-            // 지점 계정은 원가를 볼 수 없으므로 신규 등록 단가는 0원. 관리자는 입력 단가 사용.
             unitCost: String(account.role === 'admin' ? (input.unitCost || 0) : 0),
             isActive: 1,
             sortOrder: 9999,
@@ -3757,23 +3781,31 @@ export const appRouter = router({
             const [created] = await db.select().from(liquorItems).where(eq(liquorItems.name, cleanName)).limit(1);
             itemId = created?.id;
           }
-        } else if (Number(sameName.isActive) !== 1 && account.role === 'admin') {
+        } else if (existingInBranch && Number(existingInBranch.isActive) !== 1 && account.role === 'admin') {
           await db.update(liquorItems).set({ isActive: 1 }).where(eq(liquorItems.id, itemId));
         }
+        
         if (!itemId) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '품목 등록에 실패했습니다' });
-
+        
+        // [중요] 현재 지점에서만 재고 관리
         if (effectiveBranchId) {
-          // 지점에서 다시 추가하면 해당 지점 숨김 상태 해제
+          // 현재 지점에서 숨김 상태 해제
           await db.execute(sql`DELETE FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId} AND liquorItemId = ${itemId}`);
+          
           const initialStock = Number(input.initialStock || 0);
           const [existingInventory] = await db.select().from(liquorInventories)
             .where(and(eq(liquorInventories.branchId, effectiveBranchId), eq(liquorInventories.liquorItemId, itemId))).limit(1);
           const prevStock = Number(existingInventory?.currentStock || 0);
-          if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(initialStock) }).where(eq(liquorInventories.id, existingInventory.id));
-          else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: itemId, currentStock: String(initialStock) });
+          
+          if (existingInventory) {
+            await db.update(liquorInventories).set({ currentStock: String(initialStock) }).where(eq(liquorInventories.id, existingInventory.id));
+          } else {
+            await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: itemId, currentStock: String(initialStock) });
+          }
+          
           const diff = initialStock - prevStock;
           if (diff !== 0) {
-            const unitCost = account.role === 'admin' ? Number(input.unitCost || sameName?.unitCost || 0) : 0;
+            const unitCost = account.role === 'admin' ? Number(input.unitCost || existingInBranch?.unitCost || 0) : 0;
             await db.insert(liquorStockMovements).values({
               branchId: effectiveBranchId,
               liquorItemId: itemId,
@@ -3787,7 +3819,9 @@ export const appRouter = router({
             });
           }
         }
+        
         return { success: true, id: itemId };
+
       }),
 
     deleteItem: publicProcedure

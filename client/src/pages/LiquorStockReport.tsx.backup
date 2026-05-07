@@ -22,6 +22,21 @@ import {
 type MovementType = "IN" | "OUT" | "ADJUST";
 type CartRow = { liquorItemId: number; quantity: number; memo?: string };
 
+const STAFF_LIQUOR_ONLY_IDS = new Set(["s3", "s4", "d2", "m3", "m4"]);
+const LONG_PRESS_MS = 800;
+
+const branchDisplayMap: { [key: string]: string } = {
+  s1: "선릉점",
+  s2: "삼성점",
+  d1: "대치점",
+  m1: "문정1호점",
+  m2: "문정2호점",
+  s3: "선릉점",
+  s4: "삼성점",
+  d2: "대치점",
+  m3: "문정1호점",
+  m4: "문정2호점",
+};
 const CATEGORY_ORDER = ["위스키", "샴페인", "리큐르", "맥주"] as const;
 type LiquorCategory = (typeof CATEGORY_ORDER)[number];
 
@@ -101,6 +116,15 @@ export default function LiquorStockReport() {
 
   const isAdmin = user?.role === "admin";
   const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? undefined);
+  const isStaffLiquorOnly = STAFF_LIQUOR_ONLY_IDS.has(String(user?.loginId ?? ""));
+
+  const handleLogout = () => {
+    try {
+      ["currentUser", "user", "auth", "role", "branch", "branchCode", "storeUser", "account", "selectedBranchId"].forEach((key) => localStorage.removeItem(key));
+      sessionStorage.clear();
+    } catch {}
+    navigate("/login");
+  };
 
   useEffect(() => {
     if (!isAdmin || !selectedBranchId) return;
@@ -525,7 +549,24 @@ export default function LiquorStockReport() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 pb-24">
-      <Header title="주류 출고현황" back={() => navigate("/")} right={<button onClick={() => setTab(isAdmin ? "admin" : "items")} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>} />
+      <Header
+        title={`${branchDisplayMap[user?.loginId] || ""} 주류 출고현황`}
+        back={() => navigate("/")}
+        right={
+          <div className="flex items-center gap-1">
+            {isStaffLiquorOnly && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-black whitespace-nowrap"
+              >
+                로그아웃
+              </button>
+            )}
+            <button onClick={() => setTab(isAdmin ? "admin" : "items")} className="p-2 -mr-2 rounded-full hover:bg-slate-100"><Settings size={22} /></button>
+          </div>
+        }
+      />
       <div className="px-4 pt-4 space-y-4 max-w-3xl mx-auto">
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold" />
@@ -660,7 +701,7 @@ function sortItems(a: any, b: any, sortMode: string, stockByItem: Map<number, nu
 }
 
 function Header({ title, back, right }: { title: string; back: () => void; right?: ReactNode }) {
-  return <div className="sticky top-0 z-20 bg-white border-b border-slate-200"><div className="flex items-center justify-between px-4 h-14"><button onClick={back} className="p-2 -ml-2 rounded-full hover:bg-slate-100"><ArrowLeft size={22} /></button><div className="font-black text-lg">{title}</div><div className="w-10 flex justify-end">{right}</div></div></div>;
+  return <div className="sticky top-0 z-20 bg-white border-b border-slate-200"><div className="flex items-center justify-between px-4 h-14"><button onClick={back} className="p-2 -ml-2 rounded-full hover:bg-slate-100"><ArrowLeft size={22} /></button><div className="font-black text-lg truncate px-2">{title}</div><div className="min-w-10 flex justify-end">{right}</div></div></div>;
 }
 
 function LoadingState() {
@@ -706,6 +747,7 @@ function ActionMenuButton({ type, label, onClick }: { type: MovementType; label:
 function ItemsPanel({ search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, isAdmin, openNewProduct, openItem, selectedProductIds = [], setSelectedProductIds, onBulkDelete, bulkDeletePending, focusItemId, clearFocusItem }: any) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const selectedSet = useMemo(() => new Set((selectedProductIds || []).map(Number)), [selectedProductIds]);
+  const isSelectionMode = selectedProductIds.length > 0;
   const toggleProduct = (id: number) => {
     setSelectedProductIds?.((prev: number[]) => {
       const exists = prev.map(Number).includes(Number(id));
@@ -744,27 +786,68 @@ function ItemsPanel({ search, setSearch, activeCategory, setActiveCategory, sort
     <SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색" />
     <CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
     <SortSelect sortMode={sortMode} setSortMode={setSortMode} />
-    <div className="flex items-center gap-2 mb-3">
-      <button type="button" onClick={toggleAllVisible} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black">{allVisibleSelected ? "전체 해제" : "화면 전체 선택"}</button>
-      {selectedProductIds.length > 0 && <button type="button" onClick={clearSelection} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-black">선택 해제</button>}
-      {selectedProductIds.length > 0 && <button type="button" onClick={onBulkDelete} disabled={bulkDeletePending} className="h-9 px-3 rounded-xl bg-red-50 text-red-600 text-sm font-black disabled:opacity-50">선택 {selectedProductIds.length}개 삭제</button>}
+    <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+      <span className="text-xs font-bold text-slate-400 whitespace-nowrap">제품을 길게 누르면 선택됩니다</span>
+      {isSelectionMode && <button type="button" onClick={() => { setSelectedProductIds([]) }} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black whitespace-nowrap">← 뒤로가기</button>}{isSelectionMode && <button type="button" onClick={() => { setSelectedProductIds([]); }} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-black whitespace-nowrap">선택취소</button>}{isSelectionMode && <button type="button" onClick={toggleAllVisible} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black whitespace-nowrap">{allVisibleSelected ? "전체 해제" : "화면 전체 선택"}</button>}
+      {isSelectionMode && <button type="button" onClick={clearSelection} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-black whitespace-nowrap">선택 해제</button>}
+      {isSelectionMode && <button type="button" onClick={onBulkDelete} disabled={bulkDeletePending} className="h-9 px-3 rounded-xl bg-red-50 text-red-600 text-sm font-black disabled:opacity-50 whitespace-nowrap">선택 {selectedProductIds.length}개 삭제</button>}
     </div>
     <div ref={listRef} className="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden max-h-[60vh] overflow-y-auto">
-      {filteredItems.map((item: any) => <ProductRow key={item.id} item={item} stock={stockByItem.get(item.id) ?? 0} isAdmin={isAdmin} selected={selectedSet.has(Number(item.id))} onToggleSelect={() => toggleProduct(item.id)} onClick={() => openItem(item)} />)}
+      {filteredItems.map((item: any) => <ProductRow key={item.id} item={item} stock={stockByItem.get(item.id) ?? 0} isAdmin={isAdmin} selected={selectedSet.has(Number(item.id))} selectionMode={isSelectionMode} onToggleSelect={() => toggleProduct(item.id)} onClick={() => openItem(item)} />)}
     </div>
   </div>;
 }
-function ProductRow({ item, stock, isAdmin, selected, onToggleSelect, onClick }: any) {
-  return <div data-liquor-item-id={item.id} className={`w-full flex items-center gap-2 py-4 px-3 bg-white hover:bg-slate-50 transition ${selected ? "bg-blue-50" : ""}`}>
-    <input type="checkbox" checked={!!selected} onChange={onToggleSelect} onClick={(e) => e.stopPropagation()} className="w-5 h-5 rounded border-slate-300 shrink-0" aria-label={`${item.name} 선택`} />
-    <button onClick={onClick} className="flex-1 min-w-0 flex items-center justify-between text-left">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center shrink-0"><Package className="text-slate-400" size={22}/></div>
-        <div className="min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>
-      </div>
-      <div className="text-2xl font-black text-blue-600 pl-3">{qty(stock)}</div>
-    </button>
-  </div>;
+function ProductRow({ item, stock, isAdmin, selected, selectionMode, onToggleSelect, onClick }: any) {
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressedRef = useRef(false);
+
+  const startPress = () => {
+    longPressedRef.current = false;
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      longPressedRef.current = true;
+      onToggleSelect?.();
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try { navigator.vibrate?.(30); } catch {}
+      }
+    }, LONG_PRESS_MS);
+  };
+  const cancelPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+  const handleClick = () => {
+    if (longPressedRef.current) {
+      longPressedRef.current = false;
+      return;
+    }
+    if (selectionMode) onToggleSelect?.();
+    else onClick?.();
+  };
+
+  return <button
+    type="button"
+    data-liquor-item-id={item.id}
+    onMouseDown={startPress}
+    onMouseUp={cancelPress}
+    onMouseLeave={cancelPress}
+    onTouchStart={startPress}
+    onTouchEnd={cancelPress}
+    onTouchCancel={cancelPress}
+    onClick={handleClick}
+    className={`w-full flex items-center gap-3 py-4 px-3 text-left bg-white hover:bg-slate-50 transition select-none ${selected ? "bg-blue-50 ring-2 ring-blue-500 ring-inset" : ""}`}
+  >
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${selected ? "bg-blue-600" : "bg-slate-200"}`}>
+      {selected ? <span className="text-white font-black text-lg">✓</span> : <Package className="text-slate-400" size={22}/>}
+    </div>
+    <div className="flex-1 min-w-0">
+      <div className="font-bold truncate">{item.name}</div>
+      <div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div>
+    </div>
+    <div className="text-2xl font-black text-blue-600 pl-3">{qty(stock)}</div>
+  </button>;
 }
 function SearchInput({ value, onChange, placeholder }: any) {
   return <div className="flex items-center gap-2 mb-3 bg-slate-100 rounded-xl px-3 h-11"><Search size={18} className="text-slate-400"/><input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-transparent outline-none flex-1" />{value && <button type="button" onClick={() => onChange("")} className="w-7 h-7 rounded-full bg-slate-300/70 text-slate-600 flex items-center justify-center"><X size={16}/></button>}</div>;
@@ -1205,6 +1288,56 @@ function MovementGroupEditorModal({ group, movements = [], items = [], close, sa
   </div>;
 }
 
+
+function AdminProductRow({ item, isAdmin, selected, selectionMode, toggleProduct, stockValue, stockEdit, setStockEdit, setStock, setEditingItem, deleteProduct }: any) {
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressedRef = useRef(false);
+  const startPress = () => {
+    longPressedRef.current = false;
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      longPressedRef.current = true;
+      toggleProduct?.();
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try { navigator.vibrate?.(30); } catch {}
+      }
+    }, LONG_PRESS_MS);
+  };
+  const cancelPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+  const swallowAfterLongPress = (e: any) => {
+    if (longPressedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      longPressedRef.current = false;
+      return true;
+    }
+    return false;
+  };
+  return <div
+    data-liquor-item-id={item.id}
+    onMouseDown={startPress}
+    onMouseUp={cancelPress}
+    onMouseLeave={cancelPress}
+    onTouchStart={startPress}
+    onTouchEnd={cancelPress}
+    onTouchCancel={cancelPress}
+    onClick={(e) => { if (swallowAfterLongPress(e)) return; if (selectionMode) { e.preventDefault(); e.stopPropagation(); toggleProduct?.(); } }}
+    className={`flex items-center gap-2 py-2 px-2 rounded-xl select-none ${selected ? "bg-blue-50 ring-2 ring-blue-500 ring-inset" : ""}`}
+  >
+    {selected && <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-black flex items-center justify-center shrink-0">✓</div>}
+    <div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>
+    {isAdmin ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockValue)} onClick={(e) => e.stopPropagation()} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockValue)}</div>}
+    {isAdmin && <button onClick={(e) => { e.stopPropagation(); setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockValue)); }} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}
+    {isAdmin && <button onClick={(e) => { e.stopPropagation(); setEditingItem(item); }} className="h-10 px-2 rounded-xl bg-slate-100"><Edit3 size={16}/></button>}
+    <button onClick={(e) => { e.stopPropagation(); deleteProduct?.(item); }} className="h-10 px-2 rounded-xl bg-red-50 text-red-600"><Trash2 size={16}/></button>
+  </div>;
+}
+
 function AdminPanel(props: any) {
   const { isAdmin, newItem, setNewItem, editingItemId, saveItem, upsertPending, search, setSearch, activeCategory, setActiveCategory, sortMode, setSortMode, filteredItems, stockByItem, stockEdit, setStockEdit, setStock, setEditingItem, selectedProductIds = [], setSelectedProductIds, onBulkDelete, bulkDeletePending, deleteProduct } = props;
   const selectedSet = useMemo(() => new Set((selectedProductIds || []).map(Number)), [selectedProductIds]);
@@ -1241,19 +1374,26 @@ function AdminPanel(props: any) {
       <SearchInput value={search} onChange={setSearch} placeholder="제품 이름 검색"/>
       <CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory}/>
       <SortSelect sortMode={sortMode} setSortMode={setSortMode}/>
-      <div className="flex items-center gap-2 mb-2">
-        <button type="button" onClick={toggleAllVisible} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black">{allVisibleSelected ? "전체 해제" : "화면 전체 선택"}</button>
-        {selectedProductIds.length > 0 && <button type="button" onClick={() => setSelectedProductIds?.([])} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-black">선택 해제</button>}
+      <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-1">
+        <span className="text-xs font-bold text-slate-400 whitespace-nowrap">제품을 길게 누르면 선택됩니다</span>
+        {selectedProductIds.length > 0 && <button type="button" onClick={toggleAllVisible} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black whitespace-nowrap">{allVisibleSelected ? "전체 해제" : "화면 전체 선택"}</button>}
+        {selectedProductIds.length > 0 && <button type="button" onClick={() => setSelectedProductIds?.([])} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-black whitespace-nowrap">선택 해제</button>}
       </div>
       <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
-        {filteredItems.map((item: any) => <div key={item.id} data-liquor-item-id={item.id} className={`flex items-center gap-2 py-2 ${selectedSet.has(Number(item.id)) ? "bg-blue-50" : ""}`}>
-          <input type="checkbox" checked={selectedSet.has(Number(item.id))} onChange={() => toggleProduct(item.id)} className="w-5 h-5 rounded border-slate-300 shrink-0" />
-          <div className="flex-1 min-w-0"><div className="font-bold truncate">{item.name}</div><div className="text-xs text-slate-500">{categoryOf(item)}{isAdmin ? ` · ${won(Number(item.unitCost || 0))}` : ""}</div></div>
-          {isAdmin ? <input value={stockEdit?.itemId === item.id ? stockEdit?.value ?? "" : String(stockByItem.get(item.id) ?? 0)} onChange={(e) => setStockEdit({ itemId: item.id, value: e.target.value.replace(/[^0-9.-]/g, "") })} className="w-20 h-10 rounded-xl border border-slate-200 text-right px-2"/> : <div className="w-20 text-right text-xl font-bold text-blue-600">{qty(stockByItem.get(item.id) ?? 0)}</div>}
-          {isAdmin && <button onClick={() => setStock(item, stockEdit?.itemId === item.id ? stockEdit?.value : String(stockByItem.get(item.id) ?? 0))} className="h-10 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold">저장</button>}
-          {isAdmin && <button onClick={() => setEditingItem(item)} className="h-10 px-2 rounded-xl bg-slate-100"><Edit3 size={16}/></button>}
-          <button onClick={() => deleteProduct?.(item)} className="h-10 px-2 rounded-xl bg-red-50 text-red-600"><Trash2 size={16}/></button>
-        </div>)}
+        {filteredItems.map((item: any) => <AdminProductRow
+          key={item.id}
+          item={item}
+          isAdmin={isAdmin}
+          selected={selectedSet.has(Number(item.id))}
+          selectionMode={selectedProductIds.length > 0}
+          toggleProduct={() => toggleProduct(item.id)}
+          stockValue={stockByItem.get(item.id) ?? 0}
+          stockEdit={stockEdit}
+          setStockEdit={setStockEdit}
+          setStock={setStock}
+          setEditingItem={setEditingItem}
+          deleteProduct={deleteProduct}
+        />)}
       </div>
     </div>
   </div>;
