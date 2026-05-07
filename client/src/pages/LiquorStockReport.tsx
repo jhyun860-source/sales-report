@@ -48,7 +48,7 @@ type MovementType = "IN" | "OUT" | "ADJUST";
 type CartRow = { liquorItemId: number; quantity: number; memo?: string };
 
 const STAFF_LIQUOR_ONLY_IDS = new Set(["s3", "s4", "d2", "m3", "m4"]);
-const LONG_PRESS_MS = 1200;
+const LONG_PRESS_MS = 1500;
 
 const branchDisplayMap: { [key: string]: string } = {
   s1: "선릉점",
@@ -106,7 +106,7 @@ export default function LiquorStockReport() {
   const [, navigate] = useLocation();
   const { user, loading } = useStoreAuth();
   const utils = trpc.useUtils();
-  const initialBranch = getQueryParam("branchId") || localStorage.getItem("liquorSelectedBranchId");
+  const initialBranch = getQueryParam("branchId") || localStorage.getItem("liquorSelectedBranchId") || localStorage.getItem("selectedBranchId");
   const initialDate = getQueryParam("date") || todayString();
 
   const [date, setDate] = useState(initialDate);
@@ -153,7 +153,10 @@ export default function LiquorStockReport() {
 
   useEffect(() => {
     if (!isAdmin || !selectedBranchId) return;
-    try { localStorage.setItem("liquorSelectedBranchId", String(selectedBranchId)); } catch {}
+    try {
+      localStorage.setItem("liquorSelectedBranchId", String(selectedBranchId));
+      localStorage.setItem("selectedBranchId", String(selectedBranchId));
+    } catch {}
   }, [isAdmin, selectedBranchId]);
 
   const overview = trpc.liquor.overview.useQuery(
@@ -596,7 +599,7 @@ export default function LiquorStockReport() {
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold" />
           {isAdmin && (
-            <select value={effectiveBranchId ?? ""} onChange={(e) => setSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold">
+            <select value={effectiveBranchId ?? ""} onChange={(e) => { const nextId = e.target.value ? Number(e.target.value) : undefined; setSelectedBranchId(nextId); try { if (nextId) { localStorage.setItem("liquorSelectedBranchId", String(nextId)); localStorage.setItem("selectedBranchId", String(nextId)); } } catch {} }} className="flex-1 h-11 px-3 rounded-xl bg-white border border-slate-200 font-semibold">
               <option value="">전체 지점</option>
               {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
@@ -905,7 +908,7 @@ function TransactionScreen(props: any) {
           <InfoRow
             label="위치"
             value={isAdmin ? (
-              <select value={effectiveBranchId ?? ""} onChange={(e) => setSelectedBranchId(e.target.value ? Number(e.target.value) : undefined)} className="w-full text-right outline-none font-black bg-white">
+              <select value={effectiveBranchId ?? ""} onChange={(e) => { const nextId = e.target.value ? Number(e.target.value) : undefined; setSelectedBranchId(nextId); try { if (nextId) { localStorage.setItem("liquorSelectedBranchId", String(nextId)); localStorage.setItem("selectedBranchId", String(nextId)); } } catch {} }} className="w-full text-right outline-none font-black bg-white">
                 <option value="">지점 선택</option>
                 {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>

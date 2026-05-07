@@ -36,31 +36,6 @@ import { storagePut } from "./storage";
 import { eq, and, desc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
-// Branch Group Mapping - 같은 그룹끼리만 제품 공유
-const BRANCH_GROUP_MAP: Record<string, string> = {
-  // 선릉 그룹
-  s1: "seolleung",
-  s3: "seolleung",
-  // 삼성 그룹
-  s2: "samsung",
-  s4: "samsung",
-  // 대치 그룹
-  d1: "daechi",
-  d2: "daechi",
-  // 문정1호점 그룹
-  m1: "munjeong1",
-  m3: "munjeong1",
-  // 문정2호점 그룹
-  m2: "munjeong2",
-  m4: "munjeong2",
-};
-
-// 계정명에서 branch group 결정
-function getBranchGroup(loginId: string): string {
-  return BRANCH_GROUP_MAP[loginId] || loginId;
-}
-
-
 
 function formatKstDateString(date: Date): string {
   const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
@@ -3590,8 +3565,10 @@ export const appRouter = router({
         // 선택 지점에서 삭제한 품목은 관리자/매니저/직원 모두 해당 지점 화면에서 숨김 처리
         if (selectedBranchIds.length === 1) {
           const hiddenResult: any = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${selectedBranchIds[0]}`);
-          const hiddenRows = Array.isArray(hiddenResult) ? hiddenResult[0] : [];
-          const hiddenIds = new Set((Array.isArray(hiddenRows) ? hiddenRows : []).map((r: any) => Number(r.liquorItemId)));
+          const rawHiddenRows = Array.isArray(hiddenResult)
+            ? (Array.isArray(hiddenResult[0]) ? hiddenResult[0] : hiddenResult)
+            : ((hiddenResult as any)?.rows ?? []);
+          const hiddenIds = new Set((Array.isArray(rawHiddenRows) ? rawHiddenRows : []).map((r: any) => Number(r.liquorItemId ?? r.liquor_item_id ?? r[0])));
           activeItems = activeItems.filter(i => !hiddenIds.has(Number(i.id)));
         }
         const inventoryRows = await db.select().from(liquorInventories).where(inArray(liquorInventories.branchId, selectedBranchIds));
@@ -3735,6 +3712,10 @@ export const appRouter = router({
           ? input.branchId
           : account.branchId;
 
+        if (!effectiveBranchId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: '주류 품목을 추가/수정하려면 지점을 먼저 선택해주세요' });
+        }
+
         // 기존 품목 수정은 관리자만 허용. 지점은 신규 품목 등록만 가능.
         if (input.id) {
           if (account.role === 'admin') {
@@ -3791,6 +3772,7 @@ export const appRouter = router({
           : [null];
         
         let itemId = existingInBranch?.id;
+        let shouldHideFromOtherBranches = false;
         
         if (!itemId) {
           // 신규 제품 추가 - 전 지점 공유 master에 추가
@@ -3802,19 +3784,31 @@ export const appRouter = router({
             sortOrder: 9999,
           });
           itemId = Number((result as any).insertId || 0);
+          shouldHideFromOtherBranches = true;
           if (!itemId) {
             const [created] = await db.select().from(liquorItems).where(eq(liquorItems.name, cleanName)).limit(1);
             itemId = created?.id;
           }
         } else if (existingInBranch && Number(existingInBranch.isActive) !== 1 && account.role === 'admin') {
           await db.update(liquorItems).set({ isActive: 1 }).where(eq(liquorItems.id, itemId));
+          shouldHideFromOtherBranches = true;
         }
         
         if (!itemId) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '품목 등록에 실패했습니다' });
         
-        // [중요] 현재 지점에서만 재고 관리
+        // [중요] 현재 지점에서만 재고 관리/노출 처리
         if (effectiveBranchId) {
-          // 현재 지점에서 숨김 상태 해제
+          // 새로 만든 품목은 기본적으로 다른 모든 지점에서 숨긴다.
+          // 이렇게 해야 admin(v1) 삼성점에서 추가한 품목이 대치/문정 등에 보이지 않는다.
+          if (shouldHideFromOtherBranches) {
+            const allBranchRows = await db.select().from(branches);
+            for (const branch of allBranchRows) {
+              if (Number(branch.id) !== Number(effectiveBranchId)) {
+                await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branch.id}, ${itemId})`);
+              }
+            }
+          }
+          // 현재 지점에서는 반드시 보이게 숨김 상태 해제
           await db.execute(sql`DELETE FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId} AND liquorItemId = ${itemId}`);
           
           const initialStock = Number(input.initialStock || 0);

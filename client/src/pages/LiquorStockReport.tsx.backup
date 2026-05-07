@@ -48,7 +48,7 @@ type MovementType = "IN" | "OUT" | "ADJUST";
 type CartRow = { liquorItemId: number; quantity: number; memo?: string };
 
 const STAFF_LIQUOR_ONLY_IDS = new Set(["s3", "s4", "d2", "m3", "m4"]);
-const LONG_PRESS_MS = 800;
+const LONG_PRESS_MS = 1200;
 
 const branchDisplayMap: { [key: string]: string } = {
   s1: "선릉점",
