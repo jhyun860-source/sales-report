@@ -23,20 +23,7 @@ type MovementType = "IN" | "OUT" | "ADJUST";
 type CartRow = { liquorItemId: number; quantity: number; memo?: string };
 
 const STAFF_LIQUOR_ONLY_IDS = new Set(["s3", "s4", "d2", "m3", "m4"]);
-const LONG_PRESS_MS = 800;
 
-const branchDisplayMap: { [key: string]: string } = {
-  s1: "선릉점",
-  s2: "삼성점",
-  d1: "대치점",
-  m1: "문정1호점",
-  m2: "문정2호점",
-  s3: "선릉점",
-  s4: "삼성점",
-  d2: "대치점",
-  m3: "문정1호점",
-  m4: "문정2호점",
-};
 const CATEGORY_ORDER = ["위스키", "샴페인", "리큐르", "맥주"] as const;
 type LiquorCategory = (typeof CATEGORY_ORDER)[number];
 
@@ -550,7 +537,7 @@ export default function LiquorStockReport() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 pb-24">
       <Header
-        title={`${branchDisplayMap[user?.username] || ""} 주류 출고현황`}
+        title="주류 출고현황"
         back={() => navigate("/")}
         right={
           <div className="flex items-center gap-1">
@@ -788,7 +775,7 @@ function ItemsPanel({ search, setSearch, activeCategory, setActiveCategory, sort
     <SortSelect sortMode={sortMode} setSortMode={setSortMode} />
     <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
       <span className="text-xs font-bold text-slate-400 whitespace-nowrap">제품을 길게 누르면 선택됩니다</span>
-      {isSelectionMode && <button type="button" onClick={() => { setSelectedProductIds([]); setIsSelectionMode(false); }} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black whitespace-nowrap">← 뒤로가기</button>}{isSelectionMode && <button type="button" onClick={() => { setSelectedProductIds([]); }} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-black whitespace-nowrap">선택취소</button>}{isSelectionMode && <button type="button" onClick={toggleAllVisible} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black whitespace-nowrap">{allVisibleSelected ? "전체 해제" : "화면 전체 선택"}</button>}
+      {isSelectionMode && <button type="button" onClick={toggleAllVisible} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-black whitespace-nowrap">{allVisibleSelected ? "전체 해제" : "화면 전체 선택"}</button>}
       {isSelectionMode && <button type="button" onClick={clearSelection} className="h-9 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-black whitespace-nowrap">선택 해제</button>}
       {isSelectionMode && <button type="button" onClick={onBulkDelete} disabled={bulkDeletePending} className="h-9 px-3 rounded-xl bg-red-50 text-red-600 text-sm font-black disabled:opacity-50 whitespace-nowrap">선택 {selectedProductIds.length}개 삭제</button>}
     </div>
@@ -810,7 +797,7 @@ function ProductRow({ item, stock, isAdmin, selected, selectionMode, onToggleSel
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try { navigator.vibrate?.(30); } catch {}
       }
-    }, LONG_PRESS_MS);
+    }, 450);
   };
   const cancelPress = () => {
     if (longPressTimer.current) {
@@ -1301,7 +1288,7 @@ function AdminProductRow({ item, isAdmin, selected, selectionMode, toggleProduct
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try { navigator.vibrate?.(30); } catch {}
       }
-    }, LONG_PRESS_MS);
+    }, 450);
   };
   const cancelPress = () => {
     if (longPressTimer.current) {
