@@ -4,6 +4,31 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useStoreAuth } from "@/hooks/useStoreAuth";
+
+// Branch Group Mapping - 같은 그룹끼리만 제품 공유
+const BRANCH_GROUP_MAP: Record<string, string> = {
+  // 선릉 그룹
+  s1: "seolleung",
+  s3: "seolleung",
+  // 삼성 그룹
+  s2: "samsung",
+  s4: "samsung",
+  // 대치 그룹
+  d1: "daechi",
+  d2: "daechi",
+  // 문정1호점 그룹
+  m1: "munjeong1",
+  m3: "munjeong1",
+  // 문정2호점 그룹
+  m2: "munjeong2",
+  m4: "munjeong2",
+};
+
+// 계정명에서 branch group 결정
+function getBranchGroup(loginId: string): string {
+  return BRANCH_GROUP_MAP[loginId] || loginId;
+}
+
 import {
   ArrowDownToLine,
   ArrowLeft,

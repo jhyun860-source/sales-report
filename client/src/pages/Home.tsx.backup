@@ -283,7 +283,7 @@ export default function Home() {
   useEffect(() => {
     if (!authLoading && user && isStaffLiquorOnly(user.loginId)) {
       const branchId = user.branchId ?? undefined;
-      navigate(`/liquor-stock${branchId ? `?branchId=${branchId}` : ''}`);
+      navigate(`/liquor-stock?date=${getTodayString()}${branchId ? `&branchId=${branchId}` : ''}`);
     }
   }, [authLoading, user, navigate]);
 
@@ -670,7 +670,7 @@ export default function Home() {
 
           {/* 주류 출고현황 버튼 */}
           <button
-            onClick={() => navigate(`/liquor-stock?date=${currentDate}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`)}
+            onClick={() => navigate(`/liquor-stock?date=${getTodayString()}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`)}
             className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
             style={{
               background: 'oklch(0.92 0.015 85)',
