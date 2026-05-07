@@ -550,7 +550,7 @@ export default function LiquorStockReport() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 pb-24">
       <Header
-        title={`${branchDisplayMap[user?.username] || ""} 주류 출고현황`}
+        title={`${branchDisplayMap[user?.loginId] || ""} 주류 출고현황`}
         back={() => navigate("/")}
         right={
           <div className="flex items-center gap-1">
