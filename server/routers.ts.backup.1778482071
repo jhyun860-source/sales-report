@@ -118,18 +118,15 @@ async function ensureCanonicalStoreAccounts() {
     if (!branch) continue;
 
     const existing = await getStoreAccountByLoginId(spec.loginId);
+    const passwordHash = await bcrypt.hash(spec.password, 10);
     if (existing) {
-      // IMPORTANT: Do not overwrite an existing account password during deploy/restart.
-      // v1/admin에서 변경한 비밀번호는 운영 DB에 저장된 passwordHash가 진짜 값입니다.
-      // 기본 계정 동기화는 지점/표시명/권한 같은 메타데이터만 보정하고,
-      // passwordHash는 계정이 처음 생성될 때만 1234로 넣습니다.
       await updateStoreAccount(existing.id, {
+        passwordHash,
         displayName: spec.displayName,
         branchId: branch.id,
         role: spec.role,
       });
     } else {
-      const passwordHash = await bcrypt.hash(spec.password, 10);
       await createStoreAccount({
         loginId: spec.loginId,
         passwordHash,
