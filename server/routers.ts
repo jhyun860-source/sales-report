@@ -3096,6 +3096,7 @@ export const appRouter = router({
         let record = await getDailySalesRecord(input.branchId, input.date);
         if (!record) return null;
         record = await normalizeMonthlyCumulativeRecord(record);
+        if (!record) return null;
         const posStart = parseInt(record.posStartAmount || '0') || 0;
         const posEnd = parseInt(record.posEndAmount || '0') || 0;
         // 기존 레코드가 있는데 POS 시작금/마감금이 0이면, 이전 유효 마감금으로 화면 표시값 보정
@@ -3103,7 +3104,7 @@ export const appRouter = router({
         if (posStart <= 0 && posEnd <= 0) {
           const prevPosRecord = await getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
           const fallbackStart = parseInt(prevPosRecord?.posEndAmount || '0') || 0;
-          if (fallbackStart > 0) {
+          if (fallbackStart > 0 && record) {
             const expenses = Array.isArray(record.expenses) ? record.expenses : [];
             const expenseTotal = (expenses as Array<{ amount?: string }>).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
             const cashDepositVal = parseInt(record.cashDeposit || '0') || 0;
