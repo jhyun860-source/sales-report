@@ -348,6 +348,19 @@ export default function Home() {
     { enabled: !!selectedBranchId && !!user }
   );
 
+  // 매월 1일 누적 리셋 보정용: 현재 날짜가 속한 달의 기록만 조회해
+  // 전달 누적이 섞이지 않도록 화면 누적값을 월 단위로 재계산합니다.
+  const currentMonthStart = `${currentDate.slice(0, 7)}-01`;
+  const currentMonthEnd = (() => {
+    const [y, m] = currentDate.split('-').map(Number);
+    const last = new Date(y, m, 0).getDate();
+    return `${currentDate.slice(0, 7)}-${String(last).padStart(2, '0')}`;
+  })();
+  const { data: currentMonthRecords } = trpc.storeSales.getRecords.useQuery(
+    { branchId: selectedBranchId!, startDate: currentMonthStart, endDate: currentMonthEnd },
+    { enabled: !!selectedBranchId && !!user }
+  );
+
   useEffect(() => {
     if (serverRecord) {
       setRecord({
@@ -371,10 +384,15 @@ export default function Home() {
     { enabled: !!selectedBranchId && !!user }
   );
 
-  // 월초(1일)이면 이전날 누적금액을 무시하고 0부터 시작
-  const isFirstOfMonth = currentDate.endsWith('-01');
-  const previousCashTotal = isFirstOfMonth ? 0 : (prevRecord ? Number(prevRecord.cashTotal || 0) : 0);
-  const previousCardTotal = isFirstOfMonth ? 0 : (prevRecord ? Number(prevRecord.cardTotal || 0) : 0);
+  // 누적금액은 항상 currentDate가 속한 월 안에서만 합산합니다.
+  // 기존 prevRecord.cashTotal을 그대로 쓰면 5월 1일 이후에도 4월 누적이 섞이는 문제가 생깁니다.
+  const currentMonthPrefix = currentDate.slice(0, 7);
+  const previousCashTotal = (currentMonthRecords ?? [])
+    .filter((r: any) => typeof r.date === 'string' && r.date.startsWith(currentMonthPrefix) && r.date < currentDate)
+    .reduce((sum: number, r: any) => sum + (Number(r.cash || 0) || 0), 0);
+  const previousCardTotal = (currentMonthRecords ?? [])
+    .filter((r: any) => typeof r.date === 'string' && r.date.startsWith(currentMonthPrefix) && r.date < currentDate)
+    .reduce((sum: number, r: any) => sum + (Number(r.card || 0) || 0), 0);
   const autoCalculatedPosStartAmount = prevRecord ? Number(prevRecord.posEndAmount || 0) : 0;
 
   // 기존 레코드가 POS 시작금 0으로 만들어졌거나 새 날짜 레코드가 없는 경우,

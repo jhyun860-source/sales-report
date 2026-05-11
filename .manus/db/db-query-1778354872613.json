@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, name, email, role FROM users LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4QiutJstJpfAyei.root --database iJ7WC357SjYWxzEAX5nDtr --execute SELECT id, name, email, role FROM users LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "주현 이",
+      "email": "jhyun860@naver.com",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n1\t주현 이\tjhyun860@naver.com\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 1809
+}

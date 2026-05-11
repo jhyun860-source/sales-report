@@ -46,6 +46,30 @@ function todayKstString(): string {
   return formatKstDateString(new Date());
 }
 
+async function normalizeMonthlyCumulativeRecord(record: any): Promise<any> {
+  if (!record) return record;
+  try {
+    const todayCash = parseInt(record.cash || '0') || 0;
+    const todayCard = parseInt(record.card || '0') || 0;
+    const computed = await computeCumulativesForDate(record.branchId, record.date, null, todayCash, todayCard);
+    const nextCashTotal = String(computed.cashTotal);
+    const nextCardTotal = String(computed.cardTotal);
+
+    if (record.cashTotal !== nextCashTotal || record.cardTotal !== nextCardTotal) {
+      const db = await getDb();
+      if (db && record.id) {
+        await db.update(dailySalesRecords)
+          .set({ cashTotal: nextCashTotal, cardTotal: nextCardTotal, updatedAt: new Date() })
+          .where(eq(dailySalesRecords.id, record.id));
+      }
+      return { ...record, cashTotal: nextCashTotal, cardTotal: nextCardTotal };
+    }
+  } catch (error) {
+    console.error('[normalizeMonthlyCumulativeRecord 오류]', error);
+  }
+  return record;
+}
+
 // VAPID 설정
 if (ENV.vapidPublicKey && ENV.vapidPrivateKey) {
   webpush.setVapidDetails(
@@ -3069,8 +3093,9 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
-        const record = await getDailySalesRecord(input.branchId, input.date);
+        let record = await getDailySalesRecord(input.branchId, input.date);
         if (!record) return null;
+        record = await normalizeMonthlyCumulativeRecord(record);
         const posStart = parseInt(record.posStartAmount || '0') || 0;
         const posEnd = parseInt(record.posEndAmount || '0') || 0;
         // 기존 레코드가 있는데 POS 시작금/마감금이 0이면, 이전 유효 마감금으로 화면 표시값 보정
@@ -3103,8 +3128,9 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
-        // input.date 이전의 가장 최근 기록을 반환 (하루 전 고정 조회 아님)
-        return getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
+        // input.date 이전의 가장 최근 POS 유효 기록을 반환하되, cashTotal/cardTotal은 월 단위 리셋 기준으로 보정합니다.
+        const prev = await getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
+        return normalizeMonthlyCumulativeRecord(prev);
       }),
     getRecords: publicProcedure
       .input(z.object({ branchId: z.number(), startDate: z.string(), endDate: z.string() }))
@@ -3116,7 +3142,8 @@ export const appRouter = router({
         if (account.role !== 'admin' && account.branchId !== input.branchId) {
           throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
         }
-        return getDailySalesRecordsByDateRange(input.branchId, input.startDate, input.endDate);
+        const records = await getDailySalesRecordsByDateRange(input.branchId, input.startDate, input.endDate);
+        return Promise.all(records.map((record: any) => normalizeMonthlyCumulativeRecord(record)));
       }),
     save: publicProcedure
       .input(z.object({

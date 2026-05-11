@@ -3760,85 +3760,62 @@ export const appRouter = router({
         }
 
         
-        // [수정] 신규 제품 추가 시 현재 지점 기준으로만 처리
-        // 다른 지점의 동일 이름 제품과 독립적으로 관리
+        // [최종 수정] 신규 제품 추가는 반드시 현재 선택 지점에만 독립 생성합니다.
+        // liquorItems 테이블은 전역 master 구조이므로, 새 품목을 만든 뒤 다른 모든 지점에는 hidden 처리합니다.
+        // 같은 이름의 품목이 다른 지점에 있어도 재사용하지 않습니다. 재사용하면 삼성점 추가품목이 대치/문정에도 보이는 문제가 다시 발생합니다.
         const cleanName = input.name.trim();
-        
-        // 현재 지점에서만 동일 이름 제품 검색
-        const [existingInBranch] = effectiveBranchId 
-          ? await db.select().from(liquorItems)
-              .where(and(eq(liquorItems.name, cleanName)))
-              .limit(1)
-          : [null];
-        
-        let itemId = existingInBranch?.id;
-        let shouldHideFromOtherBranches = false;
-        
+
+        const result = await db.insert(liquorItems).values({
+          name: cleanName,
+          category: input.category,
+          unitCost: String(account.role === 'admin' ? (input.unitCost || 0) : 0),
+          isActive: 1,
+          sortOrder: 9999,
+        });
+
+        let itemId = Number((result as any).insertId || 0);
         if (!itemId) {
-          // 신규 제품 추가 - 전 지점 공유 master에 추가
-          const result = await db.insert(liquorItems).values({
-            name: cleanName,
-            category: input.category,
-            unitCost: String(account.role === 'admin' ? (input.unitCost || 0) : 0),
-            isActive: 1,
-            sortOrder: 9999,
-          });
-          itemId = Number((result as any).insertId || 0);
-          shouldHideFromOtherBranches = true;
-          if (!itemId) {
-            const [created] = await db.select().from(liquorItems).where(eq(liquorItems.name, cleanName)).limit(1);
-            itemId = created?.id;
-          }
-        } else if (existingInBranch && Number(existingInBranch.isActive) !== 1 && account.role === 'admin') {
-          await db.update(liquorItems).set({ isActive: 1 }).where(eq(liquorItems.id, itemId));
-          shouldHideFromOtherBranches = true;
+          const [created] = await db.select().from(liquorItems)
+            .where(eq(liquorItems.name, cleanName))
+            .orderBy(desc(liquorItems.id))
+            .limit(1);
+          itemId = created?.id;
         }
-        
+
         if (!itemId) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '품목 등록에 실패했습니다' });
-        
-        // [중요] 현재 지점에서만 재고 관리/노출 처리
-        if (effectiveBranchId) {
-          // 새로 만든 품목은 기본적으로 다른 모든 지점에서 숨긴다.
-          // 이렇게 해야 admin(v1) 삼성점에서 추가한 품목이 대치/문정 등에 보이지 않는다.
-          if (shouldHideFromOtherBranches) {
-            const allBranchRows = await db.select().from(branches);
-            for (const branch of allBranchRows) {
-              if (Number(branch.id) !== Number(effectiveBranchId)) {
-                await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branch.id}, ${itemId})`);
-              }
-            }
-          }
-          // 현재 지점에서는 반드시 보이게 숨김 상태 해제
-          await db.execute(sql`DELETE FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId} AND liquorItemId = ${itemId}`);
-          
-          const initialStock = Number(input.initialStock || 0);
-          const [existingInventory] = await db.select().from(liquorInventories)
-            .where(and(eq(liquorInventories.branchId, effectiveBranchId), eq(liquorInventories.liquorItemId, itemId))).limit(1);
-          const prevStock = Number(existingInventory?.currentStock || 0);
-          
-          if (existingInventory) {
-            await db.update(liquorInventories).set({ currentStock: String(initialStock) }).where(eq(liquorInventories.id, existingInventory.id));
-          } else {
-            await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: itemId, currentStock: String(initialStock) });
-          }
-          
-          const diff = initialStock - prevStock;
-          if (diff !== 0) {
-            const unitCost = account.role === 'admin' ? Number(input.unitCost || existingInBranch?.unitCost || 0) : 0;
-            await db.insert(liquorStockMovements).values({
-              branchId: effectiveBranchId,
-              liquorItemId: itemId,
-              date: todayKstString(),
-              type: 'ADJUST',
-              quantity: String(diff),
-              unitCost: String(unitCost),
-              totalCost: String(Math.abs(diff) * unitCost),
-              memo: '제품 등록 초기 재고',
-              createdBy: account.id,
-            });
+
+        // 현재 선택 지점을 제외한 모든 지점에서 숨김 처리합니다.
+        // 예: admin(v1) 삼성점에서 추가 → s2/s4/삼성점에서만 보이고 대치/문정/선릉에는 보이지 않음.
+        const allBranchRows = await db.select().from(branches);
+        for (const branch of allBranchRows) {
+          if (Number(branch.id) !== Number(effectiveBranchId)) {
+            await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branch.id}, ${itemId})`);
           }
         }
-        
+        await db.execute(sql`DELETE FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId} AND liquorItemId = ${itemId}`);
+
+        const initialStock = Number(input.initialStock || 0);
+        await db.insert(liquorInventories).values({
+          branchId: effectiveBranchId,
+          liquorItemId: itemId,
+          currentStock: String(initialStock),
+        });
+
+        if (initialStock !== 0) {
+          const unitCost = account.role === 'admin' ? Number(input.unitCost || 0) : 0;
+          await db.insert(liquorStockMovements).values({
+            branchId: effectiveBranchId,
+            liquorItemId: itemId,
+            date: todayKstString(),
+            type: 'ADJUST',
+            quantity: String(initialStock),
+            unitCost: String(unitCost),
+            totalCost: String(Math.abs(initialStock) * unitCost),
+            memo: '제품 등록 초기 재고',
+            createdBy: account.id,
+          });
+        }
+
         return { success: true, id: itemId };
 
       }),

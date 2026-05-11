@@ -302,7 +302,7 @@ export default function Home() {
   // selectedBranchId: 일반 계정은 무조건 자기 지점만 사용합니다.
   // 관리자만 localStorage의 선택 지점을 사용할 수 있어 계정 전환 시 지점 혼선이 나지 않습니다.
   const [_selectedBranchId, _setSelectedBranchId] = useState<number | null>(() => {
-    const saved = localStorage.getItem('selectedBranchId');
+    const saved = localStorage.getItem('selectedBranchId') || localStorage.getItem('liquorSelectedBranchId');
     const parsed = saved ? parseInt(saved, 10) : NaN;
     return Number.isFinite(parsed) ? parsed : null;
   });
@@ -323,13 +323,14 @@ export default function Home() {
     try {
       // 새로고침/페이지 이동 후에도 현재 지점을 유지하고, 계정 전환 시 stale 지점값 방지
       localStorage.setItem('selectedBranchId', String(selectedBranchId));
+      localStorage.setItem('liquorSelectedBranchId', String(selectedBranchId));
     } catch {}
   }, [user?.loginId, user?.role, selectedBranchId]);
 
   const setSelectedBranchId = (id: number) => {
     if (user?.role !== 'admin') return;
     _setSelectedBranchId(id);
-    try { localStorage.setItem('selectedBranchId', String(id)); } catch {}
+    try { localStorage.setItem('selectedBranchId', String(id)); localStorage.setItem('liquorSelectedBranchId', String(id)); } catch {}
   };
 
   const [record, setRecord] = useState<LocalRecord>(createEmptyLocalRecord);

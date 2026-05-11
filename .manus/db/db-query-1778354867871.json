@@ -1,0 +1,9 @@
+{
+  "query": "SELECT u.id, u.name, u.email, bm.role FROM users u LEFT JOIN branchManagers bm ON u.id = bm.userId WHERE u.name IN ('m1', 'm2');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4QiutJstJpfAyei.root --database iJ7WC357SjYWxzEAX5nDtr --execute SELECT u.id, u.name, u.email, bm.role FROM users u LEFT JOIN branchManagers bm ON u.id = bm.userId WHERE u.name IN ('m1', 'm2');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1751
+}
