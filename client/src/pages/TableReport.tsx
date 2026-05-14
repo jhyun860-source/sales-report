@@ -712,7 +712,17 @@ export default function TableReport() {
         toast.error('주문 내역을 파악하지 못했습니다. 다시 시도해주세요.');
       }
     } catch (err: any) {
-      toast.error('분석 실패: ' + (err?.message ?? '알 수 없는 오류'));
+      const errorMsg = err?.message ?? '알 수 없는 오류';
+      // 서비스 불가 오류는 재시도 권유
+      if (errorMsg.includes('503') || errorMsg.includes('Service Unavailable')) {
+        toast.error('서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.');
+      } else if (errorMsg.includes('upload') || errorMsg.includes('Storage')) {
+        toast.error('사진 업로드 중 오류가 발생했습니다. 다시 시도해주세요.');
+      } else if (errorMsg.includes('파악하지 못했습니다')) {
+        toast.error('주문 내역을 파악하지 못했습니다. 다시 시도해주세요.');
+      } else {
+        toast.error('분석 실패: ' + errorMsg);
+      }
     } finally {
       setAnalyzingLocalId(null);
     }

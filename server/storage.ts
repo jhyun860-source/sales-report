@@ -75,21 +75,52 @@ export async function storagePut(
   const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
   const uploadUrl = buildUploadUrl(baseUrl, key);
-  const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: buildAuthHeaders(apiKey),
-    body: formData,
-  });
+  
+  // 재시도 로직: 최대 3회 시도
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 1000; // 1초
+  
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: buildAuthHeaders(apiKey),
+        body: formData,
+        signal: AbortSignal.timeout(30000), // 30초 타임아웃
+      });
 
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(
-      `Storage upload failed (${response.status} ${response.statusText}): ${message}`
-    );
+      if (!response.ok) {
+        const message = await response.text().catch(() => response.statusText);
+        
+        // 503 Service Unavailable는 재시도 가능
+        if (response.status === 503 && attempt < MAX_RETRIES) {
+          console.warn(`[Storage] Upload attempt ${attempt}/${MAX_RETRIES} failed with 503, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          continue;
+        }
+        
+        throw new Error(
+          `Storage upload failed (${response.status} ${response.statusText}): ${message}`
+        );
+      }
+      
+      const url = (await response.json()).url;
+      return { key, url };
+    } catch (err: any) {
+      // 네트워크 오류나 타임아웃도 재시도
+      if (attempt < MAX_RETRIES && (err.name === 'TimeoutError' || err.message?.includes('fetch'))) {
+        console.warn(`[Storage] Upload attempt ${attempt}/${MAX_RETRIES} failed with ${err.message}, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+        continue;
+      }
+      
+      // 마지막 시도 실패 시 에러 던지기
+      throw err;
+    }
   }
-  const url = (await response.json()).url;
-  return { key, url };
+  
+  throw new Error('Storage upload failed after maximum retries');
 }
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
