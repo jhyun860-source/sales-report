@@ -4082,7 +4082,7 @@ export const appRouter = router({
           unitCost: String(unitCost),
           totalCost: String(totalCost),
           memo: input.memo || base.memo || null,
-          createdBy: account.id,
+          createdBy: base.createdBy,
           createdAt: base.createdAt as any,
         });
         const [existing] = await db.select().from(liquorInventories)

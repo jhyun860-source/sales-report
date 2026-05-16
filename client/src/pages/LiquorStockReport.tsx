@@ -1086,6 +1086,18 @@ function HistoryList({ movements, isAdmin, loading, historyBackSignal, onDetailO
       onDetailOpenChange?.(false);
     }
   }, [historyBackSignal]);
+
+  // movements가 새로 불러와지면 열려있는 detailGroup도 최신 데이터로 갱신
+  useEffect(() => {
+    if (!detailGroup || detailGroup.length === 0) return;
+    const key = movementBatchKey(detailGroup[0]);
+    const refreshed = movements.filter((m: any) => movementBatchKey(m) === key);
+    if (refreshed.length > 0) {
+      setDetailGroup(refreshed);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movements]);
+
   if (loading) return <div className="bg-white rounded-2xl p-8 text-center text-slate-500">히스토리 불러오는 중...</div>;
 
   const byDate = movements.reduce<Record<string, Record<string, any[]>>>((acc, m) => {
