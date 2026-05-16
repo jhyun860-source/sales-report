@@ -1,0 +1,44 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "db",
+    "server",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://4QiutJstJpfAyei.root:zcBl6FoM8C8wR2m3HaI0@gateway05.us-east-1.prod.aws.tidbcloud.com:4000/iJ7WC357SjYWxzEAX5nDtr?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": null,
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663544956173/iJ7WC357SjYWxzEAX5nDtr",
+    "access_key_id": "ASIAZV3A2ECZHGK3P6IF",
+    "secret_access_key": "iUBzgyh8RQKx283U7IzURj+bxS1XD2MrRg5RChVK",
+    "session_token": "IQoJb3JpZ2luX2VjEL7//////////wEaCXVzLWVhc3QtMSJHMEUCIHox4ipUYKCoGkegH7w2VrWz4Cut9b+gMSvMRcB12Qo4AiEA/zOGVYJqFM/akLyuzBxHn22jikEk86Sv+boy/+/rhQYq/wMIh///////////ARAEGgw2NjUzODYwOTg4NjYiDAJuPtbC6QcNoA+E3yrTA0we2E/bZq1i4R3Fw69Icg/T3UV6PFJidN4h4fC5c7e8VaQP8hFpi5nuNVtSik1qHKOA1zl79AqyuDCWPAbsWC7r45tEt1YpY/YgIThGQ6Q7o2H1TjN2TVRtXaSPpH3dCxSc2Nlnw50SQ1EeBwvu43iI9tA7ec+vNcieXqXvCCHgzDilL00WhvzH0lYWOmbGvOMmiAbC55OlKeR7mD+X7/je8YiWYBt2y16sZe0dZICibyxgh8sFDXPXSBcPyb+4ydhho7JjPulSIo/AEGa9OgmrKlF5E8eQlUuaZVa9r/ZYKPkvub6m3AnpV5Vy9GtOrtW9CiWOeN7Ncx670TX61WAPcOIU7mqjmt5v9pPFlUT3jRSyRiYGFl70c8yUWIGuUotIlbCvuGJW3VHyVJhG1ssSgT1jaTJC/zTGHbpnQeRywDDHbRSEcVgoraAFjwcU7t5HRUdEQtkM8K7xalzUmg+xUDwB7E4JoVha2Sc7emKHRkOhiAw29ym4lh+llRsz35y2+UOJ55kvjQFtuFx1pfoe1BlPZIwuy1FMZEy+fuskBTKvhmpt/OwdMPEuIeSV73CP+D144lMcsTlk+mGJO6dKvyqnVobmvJEg7Z9730ZJvWKlMN2KoNAGOp0B3Zk62Faq6zsgSu70EJ9R0e51gt6iFhdRzewaVRScZs/53jnLqbm4dOy8ddKpiwPuKdaq7J3UiDxn0jVh6tJqzHS9tYsgQkwQhiOyYGBZzq3qHrrG2bmlyCYOza23EDh6DGLu4lTiax/Ey4akcy5IwQeqclm3gdw02YNmjhLGNv48j0PeXirGWTBdTn4K482gZ/B1E5Kq+ClZDVWCXA==",
+    "expiration": "2026-05-16T17:49:17.000Z"
+  },
+  "name": "sales-report",
+  "path": "/home/ubuntu/sales-report",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "BUnGx8vC6FiNeVMSftPXgf",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "VrrXg7oKaX8wL2SCnmyEfR",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "주현 이",
+    "OWNER_OPEN_ID": "A2UH7qPNNHYa27Gag2tcZ9",
+    "VAPID_PRIVATE_KEY": "4ILdnkZ5gkhw83kPhN0oeGxLDih9WDCcPCrRDgQLodI",
+    "VAPID_PUBLIC_KEY": "BONhwuWlbr6DmdHfLqj3qxLKc09gugJUKx0hfNa-COWfiHoCDYI6ZzISGXaO1KDrjX9d-hgTwAZttznKp1RmV48",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "080b0e3d-02fe-4796-9148-69624a8ae8dd",
+    "VITE_APP_ID": "iJ7WC357SjYWxzEAX5nDtr",
+    "VITE_APP_LOGO": "https://files.manuscdn.com/user_upload_by_module/web_dev_logo/310519663544956173/LJQXUuXddAqqjyQJ.png",
+    "VITE_APP_TITLE": "매출 일일 보고",
+    "VITE_FRONTEND_FORGE_API_KEY": "SB5fXqNVR4kh3HH93maVWS",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im",
+    "VITE_VAPID_PUBLIC_KEY": "BONhwuWlbr6DmdHfLqj3qxLKc09gugJUKx0hfNa-COWfiHoCDYI6ZzISGXaO1KDrjX9d-hgTwAZttznKp1RmV48"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}

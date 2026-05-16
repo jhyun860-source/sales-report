@@ -156,6 +156,8 @@ export default function LiquorStockReport() {
     try {
       localStorage.setItem("liquorSelectedBranchId", String(selectedBranchId));
       localStorage.setItem("selectedBranchId", String(selectedBranchId));
+      sessionStorage.setItem("liquorSelectedBranchId", String(selectedBranchId));
+      sessionStorage.setItem("selectedBranchId", String(selectedBranchId));
     } catch {}
   }, [isAdmin, selectedBranchId]);
 
