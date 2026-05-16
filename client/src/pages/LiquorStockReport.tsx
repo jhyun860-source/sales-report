@@ -717,6 +717,10 @@ export default function LiquorStockReport() {
           close={() => setEditingMovement(null)}
           pending={updateMovement.isPending}
           save={(payload: any) => updateMovement.mutate(payload)}
+          onConvertToGroup={(movement: any) => {
+            setEditingMovement(null);
+            setEditingMovementGroup([movement]);
+          }}
         />
       )}
       {editingMovementGroup && (
@@ -1196,7 +1200,7 @@ function ProductEditorModal({ isAdmin, newItem, setNewItem, editingItemId, saveI
   return <div className="fixed inset-0 z-50 bg-black/45 flex items-end justify-center"><div className="w-full max-w-md bg-white rounded-t-3xl p-5 shadow-2xl"><div className="flex items-center justify-between mb-4"><div className="text-xl font-black">{editingItemId ? "제품 수정" : "제품 추가"}</div><button onClick={close} className="p-2 rounded-full bg-slate-100"><X size={20}/></button></div><div className="space-y-3"><div><div className="text-xs font-bold text-slate-500 mb-1">제품명</div><input value={newItem.name} onChange={(e) => setNewItem((v: any) => ({ ...v, name: e.target.value }))} placeholder="예: 글렌리벳 12y" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none"/></div><div className="grid grid-cols-2 gap-2"><div><div className="text-xs font-bold text-slate-500 mb-1">카테고리</div><select value={newItem.category} onChange={(e) => setNewItem((v: any) => ({ ...v, category: e.target.value }))} className="w-full h-12 px-3 rounded-xl border border-slate-200 bg-white outline-none">{CATEGORY_ORDER.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select></div><div><div className="text-xs font-bold text-slate-500 mb-1">현재 수량</div><input value={newItem.initialStock} onChange={(e) => setNewItem((v: any) => ({ ...v, initialStock: e.target.value.replace(/[^0-9.-]/g, "") }))} inputMode="decimal" placeholder="0" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none text-right"/></div></div>{isAdmin && <div><div className="text-xs font-bold text-slate-500 mb-1">원가/단가</div><input value={newItem.unitCost} onChange={(e) => setNewItem((v: any) => ({ ...v, unitCost: e.target.value.replace(/[^0-9]/g, "") }))} inputMode="numeric" placeholder="관리자만 입력" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none text-right"/></div>}{!isAdmin && <div className="text-xs text-slate-400 leading-5">지점 계정은 제품명, 카테고리, 현재 수량만 등록할 수 있습니다. 원가/단가는 관리자만 관리합니다.</div>}<button onClick={saveItem} disabled={pending} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-50">{pending ? "저장 중..." : editingItemId ? "수정 저장" : "제품 추가"}</button></div></div></div>;
 }
 
-function MovementEditorModal({ movement, close, save, pending }: any) {
+function MovementEditorModal({ movement, close, save, pending, onConvertToGroup }: any) {
   const [editDate, setEditDate] = useState(movement.date || todayString());
   const [editType, setEditType] = useState<MovementType>(movement.type || "OUT");
   const [editQty, setEditQty] = useState(String(Math.abs(Number(movement.quantity || 0))));
@@ -1234,7 +1238,10 @@ function MovementEditorModal({ movement, close, save, pending }: any) {
           <div className="text-xs font-bold text-slate-500 mb-1">메모</div>
           <input value={editMemo} onChange={(e) => setEditMemo(e.target.value)} placeholder="메모" className="w-full h-12 px-3 rounded-xl border border-slate-200 outline-none" />
         </div>
-        <button onClick={() => save({ id: movement.id, date: editDate, type: editType, quantity: Number(editQty || 0), memo: editMemo || undefined })} disabled={pending} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-black text-lg disabled:opacity-50">{pending ? "저장 중..." : "수정 저장"}</button>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={() => save({ id: movement.id, date: editDate, type: editType, quantity: Number(editQty || 0), memo: editMemo || undefined })} disabled={pending} className="h-12 rounded-2xl bg-blue-600 text-white font-black disabled:opacity-50">{pending ? "저장 중..." : "수정 저장"}</button>
+          <button onClick={() => onConvertToGroup?.(movement)} disabled={pending} className="h-12 rounded-2xl bg-slate-900 text-white font-black disabled:opacity-50">출고 추가</button>
+        </div>
       </div>
     </div>
   </div>;
