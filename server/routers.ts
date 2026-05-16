@@ -3756,6 +3756,24 @@ export const appRouter = router({
               unitCost: String(input.unitCost || 0),
               isActive: input.isActive ? 1 : 0,
             }).where(eq(liquorItems.id, input.id));
+
+            // 단가가 0보다 크게 새로 설정된 경우,
+            // 과거 히스토리 중 unitCost=0 이거나 totalCost=0 인 레코드를 새 단가로 소급 업데이트
+            const newUnitCost = Number(input.unitCost || 0);
+            if (newUnitCost > 0) {
+              const staleMovements = await db.select().from(liquorStockMovements)
+                .where(and(
+                  eq(liquorStockMovements.liquorItemId, input.id),
+                  sql`(CAST(${liquorStockMovements.unitCost} AS DECIMAL) = 0 OR CAST(${liquorStockMovements.totalCost} AS DECIMAL) = 0)`
+                ));
+              for (const mv of staleMovements) {
+                const newTotalCost = Math.abs(Number(mv.quantity || 0)) * newUnitCost;
+                await db.update(liquorStockMovements).set({
+                  unitCost: String(newUnitCost),
+                  totalCost: String(newTotalCost),
+                }).where(eq(liquorStockMovements.id, mv.id));
+              }
+            }
           } else {
             await db.update(liquorItems).set({
               name: input.name,
