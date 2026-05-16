@@ -675,6 +675,8 @@ export default function LiquorStockReport() {
               if (!window.confirm(`${movement.itemName} 히스토리를 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return;
               deleteMovement.mutate({ id: movement.id });
             }}
+            onAddMovementToGroup={addMovementToGroup.mutate}
+            items={historySelectableItems}
           />
         )}
 
@@ -1007,7 +1009,7 @@ function InfoRow({ label, value, valueClass = "font-bold" }: any) {
   );
 }
 
-function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, historyBackSignal, onDetailOpenChange, onEditMovement, onEditMovementGroup, onDeleteMovement }: any) {
+function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd, historySearch, setHistorySearch, historyType, setHistoryType, movements, isAdmin, loading, historyBackSignal, onDetailOpenChange, onEditMovement, onEditMovementGroup, onDeleteMovement, onAddMovementToGroup, items }: any) {
   const [filterOpen, setFilterOpen] = useState(false);
   const hasFilter = historyType !== "ALL" || historySearch.trim() || historyStart !== "2000-01-01" || historyEnd !== todayString();
   return <div className="space-y-4">
@@ -1020,7 +1022,7 @@ function HistoryPanel({ historyStart, setHistoryStart, historyEnd, setHistoryEnd
         <SlidersHorizontal size={17}/>필터
       </button>
     </div>
-    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} historyBackSignal={historyBackSignal} onDetailOpenChange={onDetailOpenChange} onEditMovement={onEditMovement} onEditMovementGroup={onEditMovementGroup} onDeleteMovement={onDeleteMovement}/>
+    <HistoryList movements={movements} isAdmin={isAdmin} loading={loading} historyBackSignal={historyBackSignal} onDetailOpenChange={onDetailOpenChange} onEditMovement={onEditMovement} onEditMovementGroup={onEditMovementGroup} onDeleteMovement={onDeleteMovement} onAddMovementToGroup={onAddMovementToGroup} items={items}/>
     {filterOpen && <HistoryFilterModal
       close={() => setFilterOpen(false)}
       reset={() => { setHistoryType("ALL"); setHistoryStart("2000-01-01"); setHistoryEnd(todayString()); setHistorySearch(""); }}
@@ -1075,7 +1077,7 @@ function movementBatchKey(m: any): string {
   return `${m.date}|${m.type}|${m.branchId}|${m.createdBy || ""}|${m.memo || ""}|${created}`;
 }
 
-function HistoryList({ movements, isAdmin, loading, historyBackSignal, onDetailOpenChange, onEditMovement, onEditMovementGroup, onDeleteMovement }: { movements: any[]; isAdmin: boolean; loading?: boolean; historyBackSignal?: number; onDetailOpenChange?: (open: boolean) => void; onEditMovement?: (m: any) => void; onEditMovementGroup?: (group: any[]) => void; onDeleteMovement?: (m: any) => void }) {
+function HistoryList({ movements, isAdmin, loading, historyBackSignal, onDetailOpenChange, onEditMovement, onEditMovementGroup, onDeleteMovement, onAddMovementToGroup, items }: { movements: any[]; isAdmin: boolean; loading?: boolean; historyBackSignal?: number; onDetailOpenChange?: (open: boolean) => void; onEditMovement?: (m: any) => void; onEditMovementGroup?: (group: any[]) => void; onDeleteMovement?: (m: any) => void; onAddMovementToGroup?: (payload: any) => void; items?: any[] }) {
   const [detailGroup, setDetailGroup] = useState<any[] | null>(null);
 
   useEffect(() => {
@@ -1106,7 +1108,7 @@ function HistoryList({ movements, isAdmin, loading, historyBackSignal, onDetailO
         </div>
       </div>;
     })}
-    {detailGroup && <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => { setDetailGroup(null); onDetailOpenChange?.(false); }} onEditMovement={onEditMovement} onEditMovementGroup={onEditMovementGroup} onDeleteMovement={onDeleteMovement} />}
+    {detailGroup &&     <HistoryDetailView group={detailGroup} isAdmin={isAdmin} close={() => { setDetailGroup(null); onDetailOpenChange?.(false); }} onEditMovement={onEditMovement} onEditMovementGroup={onEditMovementGroup} onDeleteMovement={onDeleteMovement} onAddMovementToGroup={onAddMovementToGroup} items={items} />}
   </div>;
 }
 
@@ -1134,13 +1136,17 @@ function HistoryBatchCard({ group, isAdmin, onClick }: { group: any[]; isAdmin: 
   </button>;
 }
 
-function HistoryDetailView({ group, isAdmin, close, onEditMovement, onEditMovementGroup, onDeleteMovement }: any) {
+function HistoryDetailView({ group, isAdmin, close, onEditMovement, onEditMovementGroup, onDeleteMovement, onAddMovementToGroup, items = [] }: any) {
   const first = group[0];
   const type = first.type;
   const label = type === "OUT" ? "출고" : type === "IN" ? "입고" : "조정";
   const color = type === "OUT" ? "text-red-500" : type === "IN" ? "text-emerald-600" : "text-slate-700";
   const totalQty = group.reduce((sum: number, m: any) => sum + Number(m.quantity || 0), 0);
   const totalCost = group.reduce((sum: number, m: any) => sum + Math.abs(Number(m.totalCost || 0)), 0);
+  const [addItemId, setAddItemId] = useState<number | "">("");
+  const [addQty, setAddQty] = useState("");
+  const [addType, setAddType] = useState<MovementType>(type || "OUT");
+  const [addMemo, setAddMemo] = useState("");
   return <div className="fixed inset-0 z-50 bg-white text-slate-950 overflow-y-auto">
     <Header title="상세 내역" back={close} right={<button onClick={() => onEditMovementGroup?.(group)} className="h-9 min-w-[52px] px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-black whitespace-nowrap leading-none flex items-center justify-center shadow-sm">수정</button>}/>
     <div className="max-w-3xl mx-auto p-5 pb-20">
@@ -1167,6 +1173,30 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onEditMoveme
             <button onClick={() => onDeleteMovement?.(m)} className="h-8 min-w-[44px] px-3 rounded-lg bg-red-50 border border-red-100 text-red-500 text-xs font-black whitespace-nowrap leading-none flex items-center justify-center">삭제</button>
           </div>
         </div>)}
+        <div className="rounded-2xl border border-slate-200 p-3 bg-slate-50 space-y-2 mt-6">
+          <div className="text-sm font-black text-slate-700">항목 추가</div>
+          <select value={addItemId} onChange={(e) => setAddItemId(e.target.value ? Number(e.target.value) : "")} className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white outline-none font-bold">
+            <option value="">제품 선택</option>
+            {items.length === 0 ? <option value="" disabled>선택 가능한 제품이 없습니다</option> : items.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          {items.length === 0 && <div className="text-xs text-red-500 font-bold">제품 목록을 불러오지 못했습니다. 지점 선택/제품 활성 상태를 확인해주세요.</div>}
+          <div className="grid grid-cols-2 gap-2">
+            <input value={addQty} onChange={(e) => setAddQty(e.target.value.replace(/[^0-9.-]/g, ""))} inputMode="decimal" placeholder="수량" className="h-11 px-3 rounded-xl border border-slate-200 outline-none text-right font-black" />
+            <input value={addMemo} onChange={(e) => setAddMemo(e.target.value)} placeholder="메모 (선택)" className="h-11 px-3 rounded-xl border border-slate-200 outline-none" />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!addItemId) return toast.error("추가할 제품을 선택해주세요");
+              if (addQty === "" || Number.isNaN(Number(addQty))) return toast.error("수량을 입력해주세요");
+              onAddMovementToGroup?.({ groupIds: (group || []).map((m: any) => Number(m.id)), liquorItemId: Number(addItemId), quantity: Number(addQty || 0), type: addType, date: first.date, memo: addMemo || undefined });
+              setAddItemId("");
+              setAddQty("");
+              setAddMemo("");
+            }}
+            className="w-full h-11 rounded-xl bg-slate-900 text-white font-black"
+          >항목 추가</button>
+        </div>
       </div>
       <div className="mt-8 text-xl text-slate-400">메모</div>
       {first.memo && <div className="mt-3 text-slate-700">{first.memo}</div>}
