@@ -238,6 +238,9 @@ export default function LiquorStockReport() {
     onSuccess: () => {
       utils.liquor.overview.invalidate();
       utils.liquor.history.invalidate();
+      // 명시적 refetch로 UI 즉시 갱신
+      overview.refetch();
+      historyQuery.refetch();
       setEditingMovement(null);
       toast.success("히스토리가 수정되었습니다");
     },
@@ -248,6 +251,9 @@ export default function LiquorStockReport() {
     onSuccess: () => {
       utils.liquor.overview.invalidate();
       utils.liquor.history.invalidate();
+      // 명시적 refetch로 UI 즉시 갱신
+      overview.refetch();
+      historyQuery.refetch();
       setEditingMovementGroup(null);
       toast.success("히스토리가 수정되었습니다");
     },
@@ -258,6 +264,9 @@ export default function LiquorStockReport() {
     onSuccess: () => {
       utils.liquor.overview.invalidate();
       utils.liquor.history.invalidate();
+      // 명시적 refetch로 UI 즉시 갱신
+      overview.refetch();
+      historyQuery.refetch();
       toast.success("히스토리가 삭제되었습니다");
     },
     onError: (e) => toast.error(e.message),
@@ -268,6 +277,10 @@ export default function LiquorStockReport() {
       utils.liquor.overview.invalidate();
       utils.liquor.history.invalidate();
       utils.liquor.branchItems.invalidate();
+      // 명시적 refetch로 UI 즉시 갱신
+      overview.refetch();
+      historyQuery.refetch();
+      branchItemsQuery.refetch();
       toast.success("히스토리에 품목이 추가되었습니다");
     },
     onError: (e) => toast.error(e.message),
