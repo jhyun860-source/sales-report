@@ -1293,10 +1293,22 @@ export default function TableReport() {
           const totalBottle = incentives.reduce((s, inc) => s + (inc.bottleCount || 0), 0);
           const totalBeer = incentives.reduce((s, inc) => s + (inc.beerBottleCount || 0), 0);
 
+          // 단가 상수
+          const GLASS_PRICE = 5000;
+          const BOTTLE_PRICE = 10000;
+          const BEER_PRICE = 3000;
+
+          // 추가판매 금액 합계
+          const totalAddSalesAmount = totalGlass * GLASS_PRICE + totalBottle * BOTTLE_PRICE + totalBeer * BEER_PRICE;
+
+          // 영업인센 합계
+          const totalSalesIncentive = incentives.reduce((s, inc) => s + (Number(inc.salesIncentive) || 0), 0);
+
           const hasParttime = incentives.some(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd);
           const hasAdds = totalGlass > 0 || totalBottle > 0 || totalBeer > 0;
+          const hasSalesIncentive = totalSalesIncentive > 0;
 
-          if (!hasParttime && !hasAdds) return null;
+          if (!hasParttime && !hasAdds && !hasSalesIncentive) return null;
 
           return (
             <div className="rounded-lg p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
@@ -1333,16 +1345,39 @@ export default function TableReport() {
               {hasAdds && (
                 <div className={hasParttime ? 'pt-2 border-t' : ''} style={hasParttime ? { borderColor: BORDER } : {}}>
                   <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>추가판매 총계 (전체)</div>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1.5">
                     {totalGlass > 0 && (
-                      <span className="text-sm font-semibold" style={{ color: TEXT }}>잔추가 <span style={{ color: PRIMARY }}>{totalGlass}잔</span></span>
+                      <span className="text-sm font-semibold" style={{ color: TEXT }}>
+                        잔추가 <span style={{ color: PRIMARY }}>{totalGlass}잔</span>
+                        <span className="text-xs ml-1" style={{ color: MUTED }}>×{GLASS_PRICE.toLocaleString()} = <span style={{ color: PRIMARY }}>{(totalGlass * GLASS_PRICE).toLocaleString()}원</span></span>
+                      </span>
                     )}
                     {totalBottle > 0 && (
-                      <span className="text-sm font-semibold" style={{ color: TEXT }}>병추가 <span style={{ color: PRIMARY }}>{totalBottle}병</span></span>
+                      <span className="text-sm font-semibold" style={{ color: TEXT }}>
+                        병추가 <span style={{ color: PRIMARY }}>{totalBottle}병</span>
+                        <span className="text-xs ml-1" style={{ color: MUTED }}>×{BOTTLE_PRICE.toLocaleString()} = <span style={{ color: PRIMARY }}>{(totalBottle * BOTTLE_PRICE).toLocaleString()}원</span></span>
+                      </span>
                     )}
                     {totalBeer > 0 && (
-                      <span className="text-sm font-semibold" style={{ color: TEXT }}>맥주병추가 <span style={{ color: PRIMARY }}>{totalBeer}병</span></span>
+                      <span className="text-sm font-semibold" style={{ color: TEXT }}>
+                        맥주병추가 <span style={{ color: PRIMARY }}>{totalBeer}병</span>
+                        <span className="text-xs ml-1" style={{ color: MUTED }}>×{BEER_PRICE.toLocaleString()} = <span style={{ color: PRIMARY }}>{(totalBeer * BEER_PRICE).toLocaleString()}원</span></span>
+                      </span>
                     )}
+                  </div>
+                  <div className="flex items-center justify-between pt-1.5 border-t" style={{ borderColor: BORDER }}>
+                    <span className="text-xs font-semibold" style={{ color: TEXT, opacity: 0.7 }}>추가판매 합계</span>
+                    <span className="text-sm font-bold" style={{ color: PRIMARY }}>{totalAddSalesAmount.toLocaleString()}원</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 영업인센 합계 */}
+              {hasSalesIncentive && (
+                <div className={hasParttime || hasAdds ? 'pt-2 border-t mt-2' : ''} style={hasParttime || hasAdds ? { borderColor: BORDER } : {}}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>영업인센 합계</span>
+                    <span className="text-sm font-bold" style={{ color: PRIMARY }}>{totalSalesIncentive.toLocaleString()}원</span>
                   </div>
                 </div>
               )}
