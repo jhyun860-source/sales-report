@@ -13,6 +13,7 @@ import { Plus, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2, Users, Win
 import { MemoEditor } from '@/components/MemoEditor';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
+import { MANAGER_LIQUOR_EDIT_IDS } from '@/lib/accountAccess';
 
 // 날짜 포맷
 function getTodayString() {
@@ -1067,7 +1068,7 @@ export default function TableReport() {
                     value={inc.staffName}
                     onChange={e => updateIncentiveField(inc.localId, 'staffName', e.target.value)}
                     placeholder="직원 이름"
-                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold"
+                    className="w-20 flex-shrink-0 bg-transparent border-none outline-none text-sm font-semibold"
                     style={{ color: TEXT }}
                     lang="ko"
                     inputMode="text"
@@ -1307,12 +1308,18 @@ export default function TableReport() {
           const hasParttime = incentives.some(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd);
           const hasAdds = totalGlass > 0 || totalBottle > 0 || totalBeer > 0;
           const hasSalesIncentive = totalSalesIncentive > 0;
+          
+          // 관리자 여부 확인
+          const isAdmin = account?.role === 'admin';
+          const isManagerAccount = account?.loginId && MANAGER_LIQUOR_EDIT_IDS.includes(account.loginId as any);
+          // 관리자 또는 지점 매니저만 추가판매/영업인센 합계 표시
+          const canViewSummary = isAdmin || isManagerAccount;
 
           if (!hasParttime && !hasAdds && !hasSalesIncentive) return null;
 
           return (
             <div className="rounded-lg p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-              {/* 아르바이트 총 근무시간 */}
+              {/* 아르바이트 총 근무시간 - 모든 사용자에게 표시 */}
               {hasParttime && (
                 <div className="mb-2">
                   <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>아르바이트 총 근무시간</div>
@@ -1341,8 +1348,8 @@ export default function TableReport() {
                 </div>
               )}
 
-              {/* 추가판매 총계 */}
-              {hasAdds && (
+              {/* 추가판매 총계 - 관리자/지점 매니저만 표시 */}
+              {hasAdds && canViewSummary && (
                 <div className={hasParttime ? 'pt-2 border-t' : ''} style={hasParttime ? { borderColor: BORDER } : {}}>
                   <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>추가판매 총계 (전체)</div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1.5">
@@ -1372,8 +1379,8 @@ export default function TableReport() {
                 </div>
               )}
 
-              {/* 영업인센 합계 */}
-              {hasSalesIncentive && (
+              {/* 영업인센 합계 - 관리자/지점 매니저만 표시 */}
+              {hasSalesIncentive && canViewSummary && (
                 <div className={hasParttime || hasAdds ? 'pt-2 border-t mt-2' : ''} style={hasParttime || hasAdds ? { borderColor: BORDER } : {}}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>영업인센 합계</span>
