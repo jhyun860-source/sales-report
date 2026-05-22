@@ -4522,80 +4522,68 @@ export const appRouter = router({
           reportId = (result as any).insertId;
         }
 
-        // 2. 테이블 항목 배치 처리
-        // INSERT는 insertId 충돌 방지를 위해 순차 처리, UPDATE는 병렬 처리
+        // 2. 테이블 항목 배치 처리 (Promise.all로 병렬)
         const itemIdMap: Record<string, number> = {};
         const validItems = input.items.filter(it => it.tableNumber || it.amount || it.memo);
-        const itemsToUpdate = validItems.filter(it => it.id);
-        const itemsToInsert = validItems.filter(it => !it.id);
-
-        // UPDATE: 병렬 처리 (id가 확정된 항목이므로 안전)
-        await Promise.all(itemsToUpdate.map(async (it) => {
-          await db.update(tableItems).set({
-            tableNumber: it.tableNumber,
-            guestType: it.guestType,
-            guestName: it.guestName ?? null,
-            amount: it.amount || '0',
-            paymentMethod: it.paymentMethod,
-            memo: it.memo || null,
-            sortOrder: it.sortOrder,
-          }).where(eq(tableItems.id, it.id!));
-          itemIdMap[it.localId] = it.id!;
+        await Promise.all(validItems.map(async (it, i) => {
+          if (it.id) {
+            await db.update(tableItems).set({
+              tableNumber: it.tableNumber,
+              guestType: it.guestType,
+              guestName: it.guestName ?? null,
+              amount: it.amount || '0',
+              paymentMethod: it.paymentMethod,
+              memo: it.memo || null,
+              sortOrder: it.sortOrder ?? i,
+            }).where(eq(tableItems.id, it.id));
+            itemIdMap[it.localId] = it.id;
+          } else {
+            const [result] = await db.insert(tableItems).values({
+              tableReportId: reportId,
+              tableNumber: it.tableNumber,
+              guestType: it.guestType,
+              guestName: it.guestName ?? null,
+              amount: it.amount || '0',
+              paymentMethod: it.paymentMethod,
+              memo: it.memo || null,
+              sortOrder: it.sortOrder ?? i,
+            });
+            itemIdMap[it.localId] = (result as any).insertId;
+          }
         }));
 
-        // INSERT: 순차 처리 (insertId 혼용 방지)
-        for (const it of itemsToInsert) {
-          const [result] = await db.insert(tableItems).values({
-            tableReportId: reportId,
-            tableNumber: it.tableNumber,
-            guestType: it.guestType,
-            guestName: it.guestName ?? null,
-            amount: it.amount || '0',
-            paymentMethod: it.paymentMethod,
-            memo: it.memo || null,
-            sortOrder: it.sortOrder,
-          });
-          itemIdMap[it.localId] = (result as any).insertId;
-        }
-
-        // 3. 인센티브 배치 처리
-        // INSERT는 insertId 충돌 방지를 위해 순차 처리, UPDATE는 병렬 처리
+        // 3. 인센티브 배치 처리 (Promise.all로 병렬)
         const incentiveIdMap: Record<string, number> = {};
         const validIncentives = input.incentives.filter(inc => inc.staffName);
-        const incentivesToUpdate = validIncentives.filter(inc => inc.id);
-        const incentivesToInsert = validIncentives.filter(inc => !inc.id);
-
-        // UPDATE: 병렬 처리
-        await Promise.all(incentivesToUpdate.map(async (inc) => {
-          await db.update(staffIncentives).set({
-            staffName: inc.staffName,
-            staffType: inc.staffType,
-            glassCount: inc.glassCount,
-            bottleCount: inc.bottleCount,
-            beerBottleCount: inc.beerBottleCount,
-            salesIncentive: inc.salesIncentive || '0',
-            workStart: inc.workStart || null,
-            workEnd: inc.workEnd || null,
-          }).where(eq(staffIncentives.id, inc.id!));
-          incentiveIdMap[inc.localId] = inc.id!;
+        await Promise.all(validIncentives.map(async (inc, i) => {
+          if (inc.id) {
+            await db.update(staffIncentives).set({
+              staffName: inc.staffName,
+              staffType: inc.staffType,
+              glassCount: inc.glassCount,
+              bottleCount: inc.bottleCount,
+              beerBottleCount: inc.beerBottleCount,
+              salesIncentive: inc.salesIncentive || '0',
+              workStart: inc.workStart || null,
+              workEnd: inc.workEnd || null,
+            }).where(eq(staffIncentives.id, inc.id));
+            incentiveIdMap[inc.localId] = inc.id;
+          } else {
+            const [result] = await db.insert(staffIncentives).values({
+              tableReportId: reportId,
+              staffName: inc.staffName,
+              staffType: inc.staffType,
+              glassCount: inc.glassCount,
+              bottleCount: inc.bottleCount,
+              beerBottleCount: inc.beerBottleCount,
+              salesIncentive: inc.salesIncentive || '0',
+              workStart: inc.workStart || null,
+              workEnd: inc.workEnd || null,
+              sortOrder: inc.sortOrder ?? i,
+            });
+            incentiveIdMap[inc.localId] = (result as any).insertId;
+          }
         }));
-
-        // INSERT: 순차 처리
-        for (const inc of incentivesToInsert) {
-          const [result] = await db.insert(staffIncentives).values({
-            tableReportId: reportId,
-            staffName: inc.staffName,
-            staffType: inc.staffType,
-            glassCount: inc.glassCount,
-            bottleCount: inc.bottleCount,
-            beerBottleCount: inc.beerBottleCount,
-            salesIncentive: inc.salesIncentive || '0',
-            workStart: inc.workStart || null,
-            workEnd: inc.workEnd || null,
-            sortOrder: inc.sortOrder,
-          });
-          incentiveIdMap[inc.localId] = (result as any).insertId;
-        }
 
         // 4. 현금/카드 합산 → dailySalesRecords 자동 반영
         const allItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, reportId));
