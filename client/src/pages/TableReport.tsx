@@ -1061,20 +1061,20 @@ export default function TableReport() {
             {incentives.map(inc => (
               <div key={inc.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
                 {/* 1행: 이름 + 아르바이트/직원 토글 + 삭제 */}
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
+                <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
                   <input
                     type="text"
                     value={inc.staffName}
                     onChange={e => updateIncentiveField(inc.localId, 'staffName', e.target.value)}
                     placeholder="직원 이름"
-                    className="flex-1 bg-transparent border-none outline-none text-sm font-semibold"
+                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold"
                     style={{ color: TEXT }}
                     lang="ko"
                     inputMode="text"
                   />
                   <button
                     onClick={() => updateIncentiveField(inc.localId, 'staffType', inc.staffType === 'staff' ? 'parttime' : 'staff')}
-                    className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0"
+                    className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap"
                     style={{
                       background: inc.staffType === 'staff' ? PRIMARY : 'oklch(0.65 0.12 200)',
                       color: 'white',
@@ -1082,8 +1082,8 @@ export default function TableReport() {
                   >
                     {inc.staffType === 'staff' ? '직원' : '아르바'}
                   </button>
-                  <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70">
-                    <Trash2 size={13} />
+                  <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0 min-w-[40px] w-10 h-10 flex items-center justify-center">
+                    <Trash2 size={16} />
                   </button>
                 </div>
 
