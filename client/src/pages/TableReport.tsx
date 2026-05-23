@@ -1068,7 +1068,7 @@ export default function TableReport() {
                     value={inc.staffName}
                     onChange={e => updateIncentiveField(inc.localId, 'staffName', e.target.value)}
                     placeholder="직원 이름"
-                    className="w-20 min-w-0 bg-transparent border-none outline-none text-sm font-semibold"
+                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold"
                     style={{ color: TEXT }}
                     lang="ko"
                     inputMode="text"
@@ -1083,7 +1083,7 @@ export default function TableReport() {
                   >
                     {inc.staffType === 'staff' ? '직원' : '아르바'}
                   </button>
-                  <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0 min-w-[40px] w-10 h-10 flex items-center justify-center">
+                  <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0 w-8 h-8 flex items-center justify-center">
                     <Trash2 size={16} />
                   </button>
                 </div>
