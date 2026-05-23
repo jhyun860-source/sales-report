@@ -1068,7 +1068,7 @@ export default function TableReport() {
                     value={inc.staffName}
                     onChange={e => updateIncentiveField(inc.localId, 'staffName', e.target.value)}
                     placeholder="직원 이름"
-                    className="w-20 flex-shrink-0 bg-transparent border-none outline-none text-sm font-semibold"
+                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold"
                     style={{ color: TEXT }}
                     lang="ko"
                     inputMode="text"
@@ -1311,9 +1311,8 @@ export default function TableReport() {
           
           // 관리자 여부 확인
           const isAdmin = account?.role === 'admin';
-          const isManagerAccount = account?.loginId && MANAGER_LIQUOR_EDIT_IDS.includes(account.loginId as any);
-          // 관리자 또는 지점 매니저만 추가판매/영업인센 합계 표시
-          const canViewSummary = isAdmin || isManagerAccount;
+          // v1 관리자만 추가판매/영업인센 합계 표시
+          const canViewSummary = isAdmin;
 
           if (!hasParttime && !hasAdds && !hasSalesIncentive) return null;
 
