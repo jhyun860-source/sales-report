@@ -1062,7 +1062,7 @@ export default function TableReport() {
             {incentives.map(inc => (
               <div key={inc.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
                 {/* 1행: 이름 + 아르바이트/직원 토글 + 삭제 */}
-                <div className="flex items-center gap-2 px-3 py-1" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
+                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
                   <input
                     type="text"
                     value={inc.staffName}
