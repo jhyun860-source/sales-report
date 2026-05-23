@@ -1062,13 +1062,13 @@ export default function TableReport() {
             {incentives.map(inc => (
               <div key={inc.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
                 {/* 1행: 이름 + 아르바이트/직원 토글 + 삭제 */}
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
+                <div className="flex items-center gap-2 px-3 py-1" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
                   <input
                     type="text"
                     value={inc.staffName}
                     onChange={e => updateIncentiveField(inc.localId, 'staffName', e.target.value)}
                     placeholder="직원 이름"
-                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-xs font-semibold"
+                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold"
                     style={{ color: TEXT }}
                     lang="ko"
                     inputMode="text"
