@@ -1,9 +1,9 @@
 /**
- * íì´ë¸ ìì ê¸°ë¡ íì´ì§
- * - ë ì§ë³ íì´ë¸ ëª©ë¡ (ë²í¸, ìëêµ¬ë¶, ê¸ì¡, ê²°ì ìë¨, ë©ëª¨)
- * - ì¶ê·¼ì ì¸ì¼í°ë¸ (ìì¶ê°, ë³ì¶ê°, ë§¥ì£¼ë³ì¶ê°, ììì¸ì¼, ê·¼ë¬´ìê°)
- * - íì, ê¸°í ì¬í­
- * - ì ì¥ ì íê¸/ì¹´ë í©ì°ê°ì´ ë§¤ì¶ê¸°ë¡ì ìë ë°ìë¨
+ * Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã¬ÂÂÃ¬ÂÂ ÃªÂ¸Â°Ã«Â¡Â Ã­ÂÂÃ¬ÂÂ´Ã¬Â§Â
+ * - Ã«ÂÂ Ã¬Â§ÂÃ«Â³Â Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã«ÂªÂ©Ã«Â¡Â (Ã«Â²ÂÃ­ÂÂ¸, Ã¬ÂÂÃ«ÂÂÃªÂµÂ¬Ã«Â¶Â, ÃªÂ¸ÂÃ¬ÂÂ¡, ÃªÂ²Â°Ã¬Â ÂÃ¬ÂÂÃ«ÂÂ¨, Ã«Â©ÂÃ«ÂªÂ¨)
+ * - Ã¬Â¶ÂÃªÂ·Â¼Ã¬ÂÂ Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â (Ã¬ÂÂÃ¬Â¶ÂÃªÂ°Â, Ã«Â³ÂÃ¬Â¶ÂÃªÂ°Â, Ã«Â§Â¥Ã¬Â£Â¼Ã«Â³ÂÃ¬Â¶ÂÃªÂ°Â, Ã¬ÂÂÃ¬ÂÂÃ¬ÂÂ¸Ã¬ÂÂ¼, ÃªÂ·Â¼Ã«Â¬Â´Ã¬ÂÂÃªÂ°Â)
+ * - Ã­ÂÂÃ¬ÂÂ, ÃªÂ¸Â°Ã­ÂÂ Ã¬ÂÂ¬Ã­ÂÂ­
+ * - Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂ Ã­ÂÂÃªÂ¸Â/Ã¬Â¹Â´Ã«ÂÂ Ã­ÂÂ©Ã¬ÂÂ°ÃªÂ°ÂÃ¬ÂÂ´ Ã«Â§Â¤Ã¬Â¶ÂÃªÂ¸Â°Ã«Â¡ÂÃ¬ÂÂ Ã¬ÂÂÃ«ÂÂ Ã«Â°ÂÃ¬ÂÂÃ«ÂÂ¨
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -15,33 +15,33 @@ import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { MANAGER_LIQUOR_EDIT_IDS } from '@/lib/accountAccess';
 
-// Google Sheets ì ì¡ì ìí GAS URL
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxZ8v9UvsEKUGRuipvDPwFvdVh3SccEg7NQAjHRGGAUCry8-UEhkD7l62LyrlN7Yq_Vdg/exec";
+// Google Sheets Ã¬Â ÂÃ¬ÂÂ¡Ã¬ÂÂ Ã¬ÂÂÃ­ÂÂ GAS URL
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxfa8sXtVXxilxrtLJ7KyZT-3qAgHdLvlfrLNzx5m99MdbtzM22Lq9QGJ4zEtkimcHfZQ/exec";
 
-// ë ì§ í¬ë§·
+// Ã«ÂÂ Ã¬Â§Â Ã­ÂÂ¬Ã«Â§Â·
 function getTodayString() {
   const d = new Date();
-  // ì¼ìì¼(0)ì´ë©´ ì ë (í ìì¼)ë¡
+  // Ã¬ÂÂ¼Ã¬ÂÂÃ¬ÂÂ¼(0)Ã¬ÂÂ´Ã«Â©Â´ Ã¬Â ÂÃ«ÂÂ (Ã­ÂÂ Ã¬ÂÂÃ¬ÂÂ¼)Ã«Â¡Â
   if (d.getDay() === 0) d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function formatDateDisplay(dateStr: string) {
   const [y, m, d] = dateStr.split('-');
-  const days = ['ì¼', 'ì', 'í', 'ì', 'ëª©', 'ê¸', 'í '];
+  const days = ['Ã¬ÂÂ¼', 'Ã¬ÂÂ', 'Ã­ÂÂ', 'Ã¬ÂÂ', 'Ã«ÂªÂ©', 'ÃªÂ¸Â', 'Ã­ÂÂ '];
   const dow = new Date(Number(y), Number(m) - 1, Number(d)).getDay();
-  return `${Number(m)}ì ${Number(d)}ì¼ (${days[dow]})`;
+  return `${Number(m)}Ã¬ÂÂ ${Number(d)}Ã¬ÂÂ¼ (${days[dow]})`;
 }
 
 function moveDateBy(dateStr: string, days: number) {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
-  // ì´ëí ë ì§ê° ì¼ìì¼ì´ë©´ ê°ì ë°©í¥ì¼ë¡ í ì¹¸ ë ì´ë
+  // Ã¬ÂÂ´Ã«ÂÂÃ­ÂÂ Ã«ÂÂ Ã¬Â§ÂÃªÂ°Â Ã¬ÂÂ¼Ã¬ÂÂÃ¬ÂÂ¼Ã¬ÂÂ´Ã«Â©Â´ ÃªÂ°ÂÃ¬ÂÂ Ã«Â°Â©Ã­ÂÂ¥Ã¬ÂÂ¼Ã«Â¡Â Ã­ÂÂ Ã¬Â¹Â¸ Ã«ÂÂ Ã¬ÂÂ´Ã«ÂÂ
   if (d.getDay() === 0) d.setDate(d.getDate() + days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// ê¸ì¡ ìë ¥ ì»´í¬ëí¸
+// ÃªÂ¸ÂÃ¬ÂÂ¡ Ã¬ÂÂÃ«Â Â¥ Ã¬Â»Â´Ã­ÂÂ¬Ã«ÂÂÃ­ÂÂ¸
 function AmountInput({
   value,
   onChange,
@@ -79,7 +79,7 @@ function AmountInput({
   );
 }
 
-// íì´ë¸ ì¹´ë íì
+// Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã¬Â¹Â´Ã«ÂÂ Ã­ÂÂÃ¬ÂÂ
 type TableItemLocal = {
   id?: number;
   localId: string;
@@ -91,24 +91,24 @@ type TableItemLocal = {
   memo: string;
 };
 
-// ì§ì ì¸ì¼í°ë¸ íì
+// Ã¬Â§ÂÃ¬ÂÂ Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â Ã­ÂÂÃ¬ÂÂ
 type IncentiveLocal = {
   id?: number;
   localId: string;
   staffName: string;
-  staffType: 'staff' | 'parttime'; // ì§ì/ìë¥´ë°ì´í¸
+  staffType: 'staff' | 'parttime'; // Ã¬Â§ÂÃ¬ÂÂ/Ã¬ÂÂÃ«Â¥Â´Ã«Â°ÂÃ¬ÂÂ´Ã­ÂÂ¸
   glassCount: number;
   bottleCount: number;
   beerBottleCount: number;
   salesIncentive: string;
-  workStart: string;       // HH:mm 24ìê° íìì¼ë¡ ì ì¥
-  workEnd: string;         // HH:mm 24ìê° íìì¼ë¡ ì ì¥
+  workStart: string;       // HH:mm 24Ã¬ÂÂÃªÂ°Â Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ¼Ã«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥
+  workEnd: string;         // HH:mm 24Ã¬ÂÂÃªÂ°Â Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ¼Ã«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥
   workStartAmPm: 'AM' | 'PM';
   workEndAmPm: 'AM' | 'PM';
-  workStartHour: string;   // íìì© ìê° (1~12)
-  workEndHour: string;     // íìì© ìê° (1~12)
-  workStartMin: string;    // íìì© ë¶ (00~59)
-  workEndMin: string;      // íìì© ë¶ (00~59)
+  workStartHour: string;   // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã¬ÂÂÃªÂ°Â (1~12)
+  workEndHour: string;     // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã¬ÂÂÃªÂ°Â (1~12)
+  workStartMin: string;    // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã«Â¶Â (00~59)
+  workEndMin: string;      // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã«Â¶Â (00~59)
 };
 
 function makeLocalId() {
@@ -123,7 +123,7 @@ function emptyIncentive(): IncentiveLocal {
   return { localId: makeLocalId(), staffName: '', staffType: 'staff', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '', workStartAmPm: 'PM', workEndAmPm: 'PM', workStartHour: '', workEndHour: '', workStartMin: '', workEndMin: '' };
 }
 
-// HH:mm â ì¤ì /ì¤í, ìê°(1~12), ë¶ ì­ë³í
+// HH:mm Ã¢ÂÂ Ã¬ÂÂ¤Ã¬Â Â/Ã¬ÂÂ¤Ã­ÂÂ, Ã¬ÂÂÃªÂ°Â(1~12), Ã«Â¶Â Ã¬ÂÂ­Ã«Â³ÂÃ­ÂÂ
 function fromHHMM(hhmm: string): { ampm: 'AM' | 'PM'; hour: string; min: string } {
   if (!hhmm) return { ampm: 'PM', hour: '', min: '' };
   const [hStr, mStr] = hhmm.split(':');
@@ -136,7 +136,7 @@ function fromHHMM(hhmm: string): { ampm: 'AM' | 'PM'; hour: string; min: string 
   return { ampm, hour: String(h12), min: String(m).padStart(2, '0') };
 }
 
-// ì¤ì /ì¤í + ìê°/ë¶ â HH:mm 24ìê° ë³í
+// Ã¬ÂÂ¤Ã¬Â Â/Ã¬ÂÂ¤Ã­ÂÂ + Ã¬ÂÂÃªÂ°Â/Ã«Â¶Â Ã¢ÂÂ HH:mm 24Ã¬ÂÂÃªÂ°Â Ã«Â³ÂÃ­ÂÂ
 function toHHMM(ampm: 'AM' | 'PM', hour: string, min: string): string {
   const h = parseInt(hour, 10);
   const m = parseInt(min || '0', 10);
@@ -151,12 +151,12 @@ function toHHMM(ampm: 'AM' | 'PM', hour: string, min: string): string {
 export default function TableReport() {
   const [, navigate] = useLocation();
   const { user: account, loading: authLoading } = useStoreAuth();
-  // ë ì§ë¥¼ localStorageì ì ì¥/ë³µì (ìë¡ê³ ì¹¨ íìë ì ì§)
+  // Ã«ÂÂ Ã¬Â§ÂÃ«Â¥Â¼ localStorageÃ¬ÂÂ Ã¬Â ÂÃ¬ÂÂ¥/Ã«Â³ÂµÃ¬ÂÂ (Ã¬ÂÂÃ«Â¡ÂÃªÂ³Â Ã¬Â¹Â¨ Ã­ÂÂÃ¬ÂÂÃ«ÂÂ Ã¬ÂÂ Ã¬Â§Â)
   const [currentDate, setCurrentDateState] = useState(() => {
     try {
       const saved = localStorage.getItem('selectedDate');
       if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
-        // ì¼ìì¼ì´ë©´ í ìì¼ë¡ ë³´ì 
+        // Ã¬ÂÂ¼Ã¬ÂÂÃ¬ÂÂ¼Ã¬ÂÂ´Ã«Â©Â´ Ã­ÂÂ Ã¬ÂÂÃ¬ÂÂ¼Ã«Â¡Â Ã«Â³Â´Ã¬Â Â
         const d = new Date(saved.replace(/-/g, '/'));
         if (d.getDay() === 0) {
           d.setDate(d.getDate() - 1);
@@ -172,10 +172,10 @@ export default function TableReport() {
     setCurrentDateState(prev => {
       const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
       if (next !== prev) {
-        // ë ì§ê° ë¬ë¼ì§ë©´ loadedDateRef ì´ê¸°í â ì ë ì§ ë°ì´í° ë¡ë íì©
+        // Ã«ÂÂ Ã¬Â§ÂÃªÂ°Â Ã«ÂÂ¬Ã«ÂÂ¼Ã¬Â§ÂÃ«Â©Â´ loadedDateRef Ã¬Â´ÂÃªÂ¸Â°Ã­ÂÂ Ã¢ÂÂ Ã¬ÂÂ Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ° Ã«Â¡ÂÃ«ÂÂ Ã­ÂÂÃ¬ÂÂ©
         loadedDateRef.current = null;
         setSaved(false);
-        // ìëì ì¥ íì´ë¨¸ ì·¨ì: ë ì§ ì´ë ì ì´ì  ë ì§ ë°ì´í°ê° ì ë ì§ë¡ ì ì¥ëë ê² ë°©ì§
+        // Ã¬ÂÂÃ«ÂÂÃ¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂÃ¬ÂÂ´Ã«Â¨Â¸ Ã¬Â·Â¨Ã¬ÂÂ: Ã«ÂÂ Ã¬Â§Â Ã¬ÂÂ´Ã«ÂÂ Ã¬ÂÂ Ã¬ÂÂ´Ã¬Â Â Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°ÃªÂ°Â Ã¬ÂÂ Ã«ÂÂ Ã¬Â§ÂÃ«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥Ã«ÂÂÃ«ÂÂ ÃªÂ²Â Ã«Â°Â©Ã¬Â§Â
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
           saveTimeoutRef.current = null;
@@ -193,10 +193,10 @@ export default function TableReport() {
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // ì´ë¯¸ ë¡ëí ë ì§ ì¶ì  (items ë®ì´ì°ê¸° ë°©ì§)
+  // Ã¬ÂÂ´Ã«Â¯Â¸ Ã«Â¡ÂÃ«ÂÂÃ­ÂÂ Ã«ÂÂ Ã¬Â§Â Ã¬Â¶ÂÃ¬Â Â (items Ã«ÂÂ®Ã¬ÂÂ´Ã¬ÂÂ°ÃªÂ¸Â° Ã«Â°Â©Ã¬Â§Â)
   const loadedDateRef = useRef<string | null>(null);
 
-  // URL íë¼ë¯¸í°ìì branchId ì½ê¸° (ê´ë¦¬ìê° ì§ì  ì í í ì´ë ì ì¬ì©)
+  // URL Ã­ÂÂÃ«ÂÂ¼Ã«Â¯Â¸Ã­ÂÂ°Ã¬ÂÂÃ¬ÂÂ branchId Ã¬ÂÂ½ÃªÂ¸Â° (ÃªÂ´ÂÃ«Â¦Â¬Ã¬ÂÂÃªÂ°Â Ã¬Â§ÂÃ¬Â Â Ã¬ÂÂ Ã­ÂÂ Ã­ÂÂ Ã¬ÂÂ´Ã«ÂÂ Ã¬ÂÂ Ã¬ÂÂ¬Ã¬ÂÂ©)
   const search = useSearch();
   const urlBranchId = (() => {
     const params = new URLSearchParams(search);
@@ -218,22 +218,22 @@ export default function TableReport() {
     try { localStorage.setItem('selectedBranchId', String(effectiveBranchId)); } catch {}
   }, [effectiveBranchId]);
 
-  // ë ì§ë³ ê¸°ë¡ ì¡°í - staleTimeì ê¸¸ê² ì¤ì í´ ìë ë¦¬íì¹ ë°©ì§
+  // Ã«ÂÂ Ã¬Â§ÂÃ«Â³Â ÃªÂ¸Â°Ã«Â¡Â Ã¬Â¡Â°Ã­ÂÂ - staleTimeÃ¬ÂÂ ÃªÂ¸Â¸ÃªÂ²Â Ã¬ÂÂ¤Ã¬Â ÂÃ­ÂÂ´ Ã¬ÂÂÃ«ÂÂ Ã«Â¦Â¬Ã­ÂÂÃ¬Â¹Â Ã«Â°Â©Ã¬Â§Â
   const { data: reportData, dataUpdatedAt } = trpc.tableReport.getByDate.useQuery(
     { date: currentDate, branchId: effectiveBranchId },
     { enabled: !!account && !!effectiveBranchId, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
-  // ìë² ë°ì´í° â ë¡ì»¬ ìí ëê¸°í
-  // reportDataê° í´ë¹ ë ì§(currentDate)ì ë°ì´í°ì¼ ëë§ ë®ì´ì
+  // Ã¬ÂÂÃ«Â²Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ° Ã¢ÂÂ Ã«Â¡ÂÃ¬Â»Â¬ Ã¬ÂÂÃ­ÂÂ Ã«ÂÂÃªÂ¸Â°Ã­ÂÂ
+  // reportDataÃªÂ°Â Ã­ÂÂ´Ã«ÂÂ¹ Ã«ÂÂ Ã¬Â§Â(currentDate)Ã¬ÂÂ Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°Ã¬ÂÂ¼ Ã«ÂÂÃ«Â§Â Ã«ÂÂ®Ã¬ÂÂ´Ã¬ÂÂ
   useEffect(() => {
-    // reportDataê° ìì§ undefinedë©´ ë¡ë© ì¤ â ê±´ëë
+    // reportDataÃªÂ°Â Ã¬ÂÂÃ¬Â§Â undefinedÃ«Â©Â´ Ã«Â¡ÂÃ«ÂÂ© Ã¬Â¤Â Ã¢ÂÂ ÃªÂ±Â´Ã«ÂÂÃ«ÂÂ
     if (reportData === undefined) return;
-    // ì´ë¯¸ ì´ ë ì§ ë°ì´í°ë¥¼ ë¡ëíì¼ë©´ ë¤ì ë®ì´ì°ì§ ìì
+    // Ã¬ÂÂ´Ã«Â¯Â¸ Ã¬ÂÂ´ Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°Ã«Â¥Â¼ Ã«Â¡ÂÃ«ÂÂÃ­ÂÂÃ¬ÂÂ¼Ã«Â©Â´ Ã«ÂÂ¤Ã¬ÂÂ Ã«ÂÂ®Ã¬ÂÂ´Ã¬ÂÂ°Ã¬Â§Â Ã¬ÂÂÃ¬ÂÂ
     if (loadedDateRef.current === currentDate) return;
-    // íì¬ ë ì§ ê¸°ë¡ ìë£
+    // Ã­ÂÂÃ¬ÂÂ¬ Ã«ÂÂ Ã¬Â§Â ÃªÂ¸Â°Ã«Â¡Â Ã¬ÂÂÃ«Â£Â
     loadedDateRef.current = currentDate;
-    // ìëì ì¥ íì´ë¨¸ê° ìì¼ë©´ ì·¨ì (ë ì§ ì´ë ì ì´ì  ë ì§ ë°ì´í°ë¡ ì ì¥ëë ê² ë°©ì§)
+    // Ã¬ÂÂÃ«ÂÂÃ¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂÃ¬ÂÂ´Ã«Â¨Â¸ÃªÂ°Â Ã¬ÂÂÃ¬ÂÂ¼Ã«Â©Â´ Ã¬Â·Â¨Ã¬ÂÂ (Ã«ÂÂ Ã¬Â§Â Ã¬ÂÂ´Ã«ÂÂ Ã¬ÂÂ Ã¬ÂÂ´Ã¬Â Â Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°Ã«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥Ã«ÂÂÃ«ÂÂ ÃªÂ²Â Ã«Â°Â©Ã¬Â§Â)
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
@@ -286,21 +286,21 @@ export default function TableReport() {
       setItems([emptyItem()]);
       setIncentives([emptyIncentive()]);
     }
-    // ë ì§ê° ì¤ì ë¡ ë³ê²½ëìì ëë§ saved ë¦¬ì (ì ì¥ ìë£ í ë°ì´í° ë¡ë ììë saved ì ì§)
-    // setSaved(false)ë¥¼ ì¬ê¸°ì í¸ì¶íë©´ ì ì¥ ìë£ í ìë² ë°ì´í°ê° ë¤ì ë¤ì´ì¬ ë saved íìê° ì¬ë¼ì§
+    // Ã«ÂÂ Ã¬Â§ÂÃªÂ°Â Ã¬ÂÂ¤Ã¬Â ÂÃ«Â¡Â Ã«Â³ÂÃªÂ²Â½Ã«ÂÂÃ¬ÂÂÃ¬ÂÂ Ã«ÂÂÃ«Â§Â saved Ã«Â¦Â¬Ã¬ÂÂ (Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂÃ«Â£Â Ã­ÂÂ Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ° Ã«Â¡ÂÃ«ÂÂ Ã¬ÂÂÃ¬ÂÂÃ«ÂÂ saved Ã¬ÂÂ Ã¬Â§Â)
+    // setSaved(false)Ã«Â¥Â¼ Ã¬ÂÂ¬ÃªÂ¸Â°Ã¬ÂÂ Ã­ÂÂ¸Ã¬Â¶ÂÃ­ÂÂÃ«Â©Â´ Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂÃ«Â£Â Ã­ÂÂ Ã¬ÂÂÃ«Â²Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°ÃªÂ°Â Ã«ÂÂ¤Ã¬ÂÂ Ã«ÂÂ¤Ã¬ÂÂ´Ã¬ÂÂ¬ Ã«ÂÂ saved Ã­ÂÂÃ¬ÂÂÃªÂ°Â Ã¬ÂÂ¬Ã«ÂÂ¼Ã¬Â§Â
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportData, currentDate, dataUpdatedAt]); // currentDateë loadedDateRefë¡ ì²´í¬íì§ë§ ìì¡´ì±ìë í¬í¨íì¬ ë ì§ ë³ê²½ ì ì¤í ë³´ì¥
+  }, [reportData, currentDate, dataUpdatedAt]); // currentDateÃ«ÂÂ loadedDateRefÃ«Â¡Â Ã¬Â²Â´Ã­ÂÂ¬Ã­ÂÂÃ¬Â§ÂÃ«Â§Â Ã¬ÂÂÃ¬Â¡Â´Ã¬ÂÂ±Ã¬ÂÂÃ«ÂÂ Ã­ÂÂ¬Ã­ÂÂ¨Ã­ÂÂÃ¬ÂÂ¬ Ã«ÂÂ Ã¬Â§Â Ã«Â³ÂÃªÂ²Â½ Ã¬ÂÂ Ã¬ÂÂ¤Ã­ÂÂ Ã«Â³Â´Ã¬ÂÂ¥
 
-  // íê´í í¨í´ ìë íìµ - ì± ë¡ë ì ì´ì  ë©ëª¨ìì í¨í´ ì¶ì¶ í localStorage ìºì
+  // Ã­ÂÂÃªÂ´ÂÃ­ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬ÂÂÃ«ÂÂ Ã­ÂÂÃ¬ÂÂµ - Ã¬ÂÂ± Ã«Â¡ÂÃ«ÂÂ Ã¬ÂÂ Ã¬ÂÂ´Ã¬Â Â Ã«Â©ÂÃ«ÂªÂ¨Ã¬ÂÂÃ¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬Â¶ÂÃ¬Â¶Â Ã­ÂÂ localStorage Ã¬ÂºÂÃ¬ÂÂ
   const highlightCacheKey = `highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
 
-  // [ìì ] ì¬ì©ì íìµí íê´í ì ì¸ ë¨ì´ ì ì¥ í¤
-  //   - ì¬ì©ìê° ìë íê´íì ì§ì´ ë¨ì´ë¥¼ ëì  ì¹´ì´í¸íì¬,
-  //     ì¼ì  íì(EXCLUDE_THRESHOLD ì´ì) ì ê±°ëë©´ ë¤ì ë¶ìë¶í° ìë ì ì¸íë íìµí ë¡ì§.
+  // [Ã¬ÂÂÃ¬Â Â] Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂ Ã­ÂÂÃ¬ÂÂµÃ­ÂÂ Ã­ÂÂÃªÂ´ÂÃ­ÂÂ Ã¬Â ÂÃ¬ÂÂ¸ Ã«ÂÂ¨Ã¬ÂÂ´ Ã¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂ¤
+  //   - Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂÃªÂ°Â Ã¬ÂÂÃ«ÂÂ Ã­ÂÂÃªÂ´ÂÃ­ÂÂÃ¬ÂÂ Ã¬Â§ÂÃ¬ÂÂ´ Ã«ÂÂ¨Ã¬ÂÂ´Ã«Â¥Â¼ Ã«ÂÂÃ¬Â Â Ã¬Â¹Â´Ã¬ÂÂ´Ã­ÂÂ¸Ã­ÂÂÃ¬ÂÂ¬,
+  //     Ã¬ÂÂ¼Ã¬Â Â Ã­ÂÂÃ¬ÂÂ(EXCLUDE_THRESHOLD Ã¬ÂÂ´Ã¬ÂÂ) Ã¬Â ÂÃªÂ±Â°Ã«ÂÂÃ«Â©Â´ Ã«ÂÂ¤Ã¬ÂÂ Ã«Â¶ÂÃ¬ÂÂÃ«Â¶ÂÃ­ÂÂ° Ã¬ÂÂÃ«ÂÂ Ã¬Â ÂÃ¬ÂÂ¸Ã­ÂÂÃ«ÂÂ Ã­ÂÂÃ¬ÂÂµÃ­ÂÂ Ã«Â¡ÂÃ¬Â§Â.
   const highlightExcludeKey = `excluded_highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
 
   type HighlightExcludes = {
-    yellow: Record<string, number>; // ë¨ì´ -> ì¬ì©ìê° markë¥¼ ì§ì´ íì
+    yellow: Record<string, number>; // Ã«ÂÂ¨Ã¬ÂÂ´ -> Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂÃªÂ°Â markÃ«Â¥Â¼ Ã¬Â§ÂÃ¬ÂÂ´ Ã­ÂÂÃ¬ÂÂ
     pink: Record<string, number>;
     updatedAt: number;
   };
@@ -326,7 +326,7 @@ export default function TableReport() {
     } catch {}
   };
 
-  // íìµ ìê³ê°: 1ì´ë©´ í ë² ì§ì°ë©´ ì¦ì ì ì¸, 2ì´ë©´ ë ë² ì´ì ì§ì ì ë ì ì¸
+  // Ã­ÂÂÃ¬ÂÂµ Ã¬ÂÂÃªÂ³ÂÃªÂ°Â: 1Ã¬ÂÂ´Ã«Â©Â´ Ã­ÂÂ Ã«Â²Â Ã¬Â§ÂÃ¬ÂÂ°Ã«Â©Â´ Ã¬Â¦ÂÃ¬ÂÂ Ã¬Â ÂÃ¬ÂÂ¸, 2Ã¬ÂÂ´Ã«Â©Â´ Ã«ÂÂ Ã«Â²Â Ã¬ÂÂ´Ã¬ÂÂ Ã¬Â§ÂÃ¬ÂÂ Ã¬ÂÂ Ã«ÂÂ Ã¬Â ÂÃ¬ÂÂ¸
   const EXCLUDE_THRESHOLD = 1;
 
   const isExcluded = (excludes: HighlightExcludes, color: 'yellow' | 'pink', word: string): boolean => {
@@ -343,7 +343,7 @@ export default function TableReport() {
     return list.filter(w => !isExcluded(excludes, color, w));
   };
 
-  // ë©ëª¨ HTMLìì ìê¹ë³ mark íì¤í¸ ì¶ì¶ (yellow / pink)
+  // Ã«Â©ÂÃ«ÂªÂ¨ HTMLÃ¬ÂÂÃ¬ÂÂ Ã¬ÂÂÃªÂ¹ÂÃ«Â³Â mark Ã­ÂÂÃ¬ÂÂ¤Ã­ÂÂ¸ Ã¬Â¶ÂÃ¬Â¶Â (yellow / pink)
   const extractMarkedTexts = (html: string): { yellow: string[]; pink: string[] } => {
     const yellow: string[] = [];
     const pink: string[] = [];
@@ -355,7 +355,7 @@ export default function TableReport() {
     return { yellow, pink };
   };
 
-  // localStorageìì ìºìë í¨í´ ì´ê¸° ë¡ë
+  // localStorageÃ¬ÂÂÃ¬ÂÂ Ã¬ÂºÂÃ¬ÂÂÃ«ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬Â´ÂÃªÂ¸Â° Ã«Â¡ÂÃ«ÂÂ
   const [highlightPatterns, setHighlightPatterns] = useState<{
     yellowKeywords: string[];
     pinkKeywords: string[];
@@ -369,8 +369,8 @@ export default function TableReport() {
     return null;
   });
 
-  // [íìµ í¨ì] ë¶ìë keyword ì¤, ë©ëª¨ HTMLì "ë¨ì´ ê²½ê³ê° ë³´ì¡´ë íë¬¸"ì¼ë¡ë ì¡´ì¬íë
-  // mark íê·¸ë¡ë ì ì©ëì´ ìì§ ìì ë¨ì´ë¥¼ "ì¬ì©ìê° markë¥¼ ì§ì´ ë¨ì´"ë¡ ë³´ê³  ì¹´ì´í¸ +1.
+  // [Ã­ÂÂÃ¬ÂÂµ Ã­ÂÂ¨Ã¬ÂÂ] Ã«Â¶ÂÃ¬ÂÂÃ«ÂÂ keyword Ã¬Â¤Â, Ã«Â©ÂÃ«ÂªÂ¨ HTMLÃ¬ÂÂ "Ã«ÂÂ¨Ã¬ÂÂ´ ÃªÂ²Â½ÃªÂ³ÂÃªÂ°Â Ã«Â³Â´Ã¬Â¡Â´Ã«ÂÂ Ã­ÂÂÃ«Â¬Â¸"Ã¬ÂÂ¼Ã«Â¡ÂÃ«ÂÂ Ã¬Â¡Â´Ã¬ÂÂ¬Ã­ÂÂÃ«ÂÂ
+  // mark Ã­ÂÂÃªÂ·Â¸Ã«Â¡ÂÃ«ÂÂ Ã¬Â ÂÃ¬ÂÂ©Ã«ÂÂÃ¬ÂÂ´ Ã¬ÂÂÃ¬Â§Â Ã¬ÂÂÃ¬ÂÂ Ã«ÂÂ¨Ã¬ÂÂ´Ã«Â¥Â¼ "Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂÃªÂ°Â markÃ«Â¥Â¼ Ã¬Â§ÂÃ¬ÂÂ´ Ã«ÂÂ¨Ã¬ÂÂ´"Ã«Â¡Â Ã«Â³Â´ÃªÂ³Â  Ã¬Â¹Â´Ã¬ÂÂ´Ã­ÂÂ¸ +1.
   const learnHighlightExcludesFromMemo = (memoHtml: string) => {
     if (!memoHtml) return;
     const patterns = highlightPatterns;
@@ -379,11 +379,11 @@ export default function TableReport() {
     const cleanText = memoHtml.replace(/<[^>]+>/g, '');
     const next = loadHighlightExcludes();
 
-    // ë¨ì´ ì¼ë¶ë¡ ë¶ì´ìì¼ë©´ ì ëë ì¸ì  ë¬¸ì í¨í´
+    // Ã«ÂÂ¨Ã¬ÂÂ´ Ã¬ÂÂ¼Ã«Â¶ÂÃ«Â¡Â Ã«Â¶ÂÃ¬ÂÂ´Ã¬ÂÂÃ¬ÂÂ¼Ã«Â©Â´ Ã¬ÂÂ Ã«ÂÂÃ«ÂÂ Ã¬ÂÂ¸Ã¬Â Â Ã«Â¬Â¸Ã¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´
     const ADJACENT_BAD = /[\uAC00-\uD7A3A-Za-z0-9(]/;
     const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // ë¨ì´ ê²½ê³ ê¸°ë° íë¬¸ ë°ì ê²ì¬
+    // Ã«ÂÂ¨Ã¬ÂÂ´ ÃªÂ²Â½ÃªÂ³Â ÃªÂ¸Â°Ã«Â°Â Ã­ÂÂÃ«Â¬Â¸ Ã«Â°ÂÃ¬ÂÂ ÃªÂ²ÂÃ¬ÂÂ¬
     const hasPlainOccurrence = (kw: string): boolean => {
       if (!kw || kw.length <= 1) return false;
       const re = new RegExp(escapeRegExp(kw), 'g');
@@ -423,7 +423,7 @@ export default function TableReport() {
     }
   };
 
-  // ìë²ìì í¨í´ ì¡°í
+  // Ã¬ÂÂÃ«Â²ÂÃ¬ÂÂÃ¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬Â¡Â°Ã­ÂÂ
   const shouldFetchPatterns = !!account && !!effectiveBranchId && (
     !highlightPatterns || Date.now() - highlightPatterns.cachedAt > 60 * 60 * 1000
   );
@@ -432,7 +432,7 @@ export default function TableReport() {
     { enabled: shouldFetchPatterns, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
-  // ìë²ìì í¨í´ ë°ì¼ë©´ localStorageì ìºì
+  // Ã¬ÂÂÃ«Â²ÂÃ¬ÂÂÃ¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã«Â°ÂÃ¬ÂÂ¼Ã«Â©Â´ localStorageÃ¬ÂÂ Ã¬ÂºÂÃ¬ÂÂ
   useEffect(() => {
     if (!fetchedPatterns) return;
     const cached = {
@@ -452,7 +452,7 @@ export default function TableReport() {
   const deleteIncentive = trpc.tableReport.deleteIncentive.useMutation();
   const analyzeOrderMemo = trpc.tableReport.analyzeOrderMemo.useMutation();
 
-  // 주류 당일 출고 총액 조회
+  // ì£¼ë¥ ë¹ì¼ ì¶ê³  ì´ì¡ ì¡°í
   const { data: liquorHistoryData } = trpc.liquor.history.useQuery(
     {
       startDate: currentDate,
@@ -472,10 +472,10 @@ export default function TableReport() {
     0
   );
 
-  // Google Sheets ì ì¡ í¨ì
+  // Google Sheets Ã¬Â ÂÃ¬ÂÂ¡ Ã­ÂÂ¨Ã¬ÂÂ
   const syncToGoogleSheets = async (_rData: any) => {
     try {
-      const branchName = account?.branch?.name || '알 수 없음';
+      const branchName = account?.branch?.name || 'ì ì ìì';
 
       const cashSales = items
         .filter(it => it.paymentMethod === 'cash')
@@ -525,13 +525,13 @@ export default function TableReport() {
         body:    JSON.stringify(payload),
       });
 
-      console.log('[SalesDash] Google Sheets 동기화 완료', payload);
+      console.log('[SalesDash] Google Sheets ëê¸°í ìë£', payload);
     } catch (err) {
-      console.error('[SalesDash] Google Sheets 동기화 실패:', err);
+      console.error('[SalesDash] Google Sheets ëê¸°í ì¤í¨:', err);
     }
   };
 
-  // ì ì¥ í¨ì
+  // Ã¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂ¨Ã¬ÂÂ
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     if (isSaving) return;
@@ -542,7 +542,7 @@ export default function TableReport() {
         if (it.memo) learnHighlightExcludesFromMemo(it.memo);
       }
     } catch (e) {
-      console.warn('[highlight-excludes] íìµ ì¤í¨:', e);
+      console.warn('[highlight-excludes] Ã­ÂÂÃ¬ÂÂµ Ã¬ÂÂ¤Ã­ÂÂ¨:', e);
     }
 
     try {
@@ -577,7 +577,7 @@ export default function TableReport() {
         })),
       });
 
-      // Google Sheets ëê¸°í ì¤í
+      // Google Sheets Ã«ÂÂÃªÂ¸Â°Ã­ÂÂ Ã¬ÂÂ¤Ã­ÂÂ
       syncToGoogleSheets(result);
 
       setReportId(result.id);
@@ -590,28 +590,28 @@ export default function TableReport() {
 
       loadedDateRef.current = currentDate;
       setSaved(true);
-      toast.success(`ì ì¥ ìë£ | êµ¬ê¸ ìí¸ ëê¸°í ì¤...`, { duration: 2500 });
+      toast.success(`Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂÃ«Â£Â | ÃªÂµÂ¬ÃªÂ¸Â Ã¬ÂÂÃ­ÂÂ¸ Ã«ÂÂÃªÂ¸Â°Ã­ÂÂ Ã¬Â¤Â...`, { duration: 2500 });
     } catch (e: any) {
-      toast.error('ì ì¥ ì¤í¨: ' + (e?.message ?? 'ì ì ìë ì¤ë¥'));
+      toast.error('Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂ¤Ã­ÂÂ¨: ' + (e?.message ?? 'Ã¬ÂÂ Ã¬ÂÂ Ã¬ÂÂÃ«ÂÂ Ã¬ÂÂ¤Ã«Â¥Â'));
     } finally {
       setIsSaving(false);
     }
   }, [currentDate, teamCount, notes, items, incentives, isSaving, effectiveBranchId, account]);
 
-  // ìë ì ì¥ í¸ë¦¬ê±°
+  // Ã¬ÂÂÃ«ÂÂ Ã¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂ¸Ã«Â¦Â¬ÃªÂ±Â°
   const scheduleAutoSave = useCallback(() => {
     setSaved(false);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => handleSave(), 5000);
   }, [handleSave]);
 
-  // íì´ë¸ í­ëª© ìë°ì´í¸
+  // Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã­ÂÂ­Ã«ÂªÂ© Ã¬ÂÂÃ«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ¸
   const updateItemField = (localId: string, field: keyof TableItemLocal, value: string) => {
     setItems(prev => prev.map(it => it.localId === localId ? { ...it, [field]: value } : it));
     scheduleAutoSave();
   };
 
-  // íì´ë¸ í­ëª© ì­ì 
+  // Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã­ÂÂ­Ã«ÂªÂ© Ã¬ÂÂ­Ã¬Â Â
   const removeItem = async (item: TableItemLocal) => {
     if (item.id) {
       try { await deleteItem.mutateAsync({ id: item.id }); } catch {}
@@ -622,13 +622,13 @@ export default function TableReport() {
     });
   };
 
-  // ì¸ì¼í°ë¸ ìë°ì´í¸
+  // Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â Ã¬ÂÂÃ«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ¸
   const updateIncentiveField = (localId: string, field: keyof IncentiveLocal, value: string | number) => {
     setIncentives(prev => prev.map(inc => inc.localId === localId ? { ...inc, [field]: value } : inc));
     scheduleAutoSave();
   };
 
-  // ì¸ì¼í°ë¸ ì­ì 
+  // Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â Ã¬ÂÂ­Ã¬Â Â
   const removeIncentive = async (inc: IncentiveLocal) => {
     if (inc.id) {
       try { await deleteIncentive.mutateAsync({ id: inc.id }); } catch {}
@@ -639,7 +639,7 @@ export default function TableReport() {
     });
   };
 
-  // ì¬ì§ ì°ì´ì ë©ëª¨ ìë ìë ¥
+  // Ã¬ÂÂ¬Ã¬Â§Â Ã¬Â°ÂÃ¬ÂÂ´Ã¬ÂÂ Ã«Â©ÂÃ«ÂªÂ¨ Ã¬ÂÂÃ«ÂÂ Ã¬ÂÂÃ«Â Â¥
   const [analyzingLocalId, setAnalyzingLocalId] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const pendingAnalyzeLocalIdRef = useRef<string | null>(null);
@@ -684,17 +684,17 @@ export default function TableReport() {
       if (memo) {
         updateItemField(localId, 'memo', memo);
         if (amount) updateItemField(localId, 'amount', amount);
-        toast.success('ë¶ì ìë£');
+        toast.success('Ã«Â¶ÂÃ¬ÂÂ Ã¬ÂÂÃ«Â£Â');
       }
     } catch (err: any) {
-      toast.error('ë¶ì ì¤í¨');
+      toast.error('Ã«Â¶ÂÃ¬ÂÂ Ã¬ÂÂ¤Ã­ÂÂ¨');
     } finally {
       setAnalyzingLocalId(null);
     }
   }, [analyzeOrderMemo, updateItemField, effectiveBranchId, currentDate, highlightPatterns]);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center">ë¡ë© ì¤...</div>;
-  if (!account) return <div className="min-h-screen flex items-center justify-center">ë¡ê·¸ì¸ì´ íìí©ëë¤</div>;
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center">Ã«Â¡ÂÃ«ÂÂ© Ã¬Â¤Â...</div>;
+  if (!account) return <div className="min-h-screen flex items-center justify-center">Ã«Â¡ÂÃªÂ·Â¸Ã¬ÂÂ¸Ã¬ÂÂ´ Ã­ÂÂÃ¬ÂÂÃ­ÂÂ©Ã«ÂÂÃ«ÂÂ¤</div>;
 
   const cashTotal = items.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
   const cardTotal = items.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
@@ -705,52 +705,52 @@ export default function TableReport() {
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageFileChange} />
       <header className="sticky top-0 z-10 bg-white border-b px-4 py-2.5 flex items-center justify-between">
         <div>
-          <div className="text-sm font-bold">íì´ë¸ ê¸°ë¡</div>
+          <div className="text-sm font-bold">Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â ÃªÂ¸Â°Ã«Â¡Â</div>
           <div className="text-xs text-gray-500">{account.branch?.name}</div>
         </div>
         <div className="flex items-center gap-2">
-          {saved && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 size={13} />ì ì¥ë¨</span>}
+          {saved && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 size={13} />Ã¬Â ÂÃ¬ÂÂ¥Ã«ÂÂ¨</span>}
           <button onClick={handleSave} disabled={isSaving} className="bg-black text-white px-3 py-1.5 rounded text-xs">
-            {isSaving ? 'ì ì¥ ì¤...' : 'ì ì¥'}
+            {isSaving ? 'Ã¬Â ÂÃ¬ÂÂ¥ Ã¬Â¤Â...' : 'Ã¬Â ÂÃ¬ÂÂ¥'}
           </button>
         </div>
       </header>
 
       <main className="p-4 space-y-4 max-w-lg mx-auto">
-        {/* ìì½ */}
+        {/* Ã¬ÂÂÃ¬ÂÂ½ */}
         <div className="bg-white rounded-lg border p-4">
           <div className="flex justify-between items-center mb-4">
-            <span className="font-bold">íì</span>
+            <span className="font-bold">Ã­ÂÂÃ¬ÂÂ</span>
             <div className="flex items-center gap-4">
-              <button onClick={() => setTeamCount(c => Math.max(0, c - 1))} className="w-8 h-8 rounded-full bg-gray-100">â</button>
+              <button onClick={() => setTeamCount(c => Math.max(0, c - 1))} className="w-8 h-8 rounded-full bg-gray-100">Ã¢ÂÂ</button>
               <span className="font-bold">{teamCount}</span>
               <button onClick={() => setTeamCount(c => c + 1)} className="w-8 h-8 rounded-full bg-black text-white">+</button>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div><div className="text-gray-500">íê¸</div><div className="font-bold">â©{cashTotal.toLocaleString()}</div></div>
-            <div><div className="text-gray-500">ì¹´ë</div><div className="font-bold">â©{cardTotal.toLocaleString()}</div></div>
-            <div><div className="text-gray-500">í©ê³</div><div className="font-bold">â©{totalAll.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">Ã­ÂÂÃªÂ¸Â</div><div className="font-bold">Ã¢ÂÂ©{cashTotal.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">Ã¬Â¹Â´Ã«ÂÂ</div><div className="font-bold">Ã¢ÂÂ©{cardTotal.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">Ã­ÂÂ©ÃªÂ³Â</div><div className="font-bold">Ã¢ÂÂ©{totalAll.toLocaleString()}</div></div>
           </div>
         </div>
 
-        {/* íì´ë¸ ëª©ë¡ */}
+        {/* Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã«ÂªÂ©Ã«Â¡Â */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="font-bold">â  íì´ë¸ ê¸°ë¡</span>
-            <button onClick={() => setItems([...items, emptyItem()])} className="text-xs border px-2 py-1 rounded">+ ì¶ê°</button>
+            <span className="font-bold">Ã¢ÂÂ  Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â ÃªÂ¸Â°Ã«Â¡Â</span>
+            <button onClick={() => setItems([...items, emptyItem()])} className="text-xs border px-2 py-1 rounded">+ Ã¬Â¶ÂÃªÂ°Â</button>
           </div>
           {items.map((item, idx) => (
             <div key={item.localId} className="bg-white rounded-lg border p-3 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400">{idx + 1}</span>
-                <input value={item.tableNumber} onChange={e => updateItemField(item.localId, 'tableNumber', e.target.value)} placeholder="ë²í¸" className="text-sm font-bold outline-none" />
+                <input value={item.tableNumber} onChange={e => updateItemField(item.localId, 'tableNumber', e.target.value)} placeholder="Ã«Â²ÂÃ­ÂÂ¸" className="text-sm font-bold outline-none" />
                 <button onClick={() => removeItem(item)}><Trash2 size={14} className="text-red-400" /></button>
               </div>
               <div className="flex gap-2">
                 <AmountInput value={item.amount} onChange={v => updateItemField(item.localId, 'amount', v)} className="flex-1 text-right font-bold" />
                 <button onClick={() => updateItemField(item.localId, 'paymentMethod', item.paymentMethod === 'card' ? 'cash' : 'card')} className="text-xs border px-2 py-1 rounded">
-                  {item.paymentMethod === 'card' ? 'ì¹´ë' : 'íê¸'}
+                  {item.paymentMethod === 'card' ? 'Ã¬Â¹Â´Ã«ÂÂ' : 'Ã­ÂÂÃªÂ¸Â'}
                 </button>
               </div>
               <MemoEditor value={item.memo} onChange={v => updateItemField(item.localId, 'memo', v)} onCamera={() => handleCameraCapture(item.localId)} isAnalyzing={analyzingLocalId === item.localId} />
