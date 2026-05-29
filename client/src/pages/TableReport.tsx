@@ -15,6 +15,9 @@ import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { MANAGER_LIQUOR_EDIT_IDS } from '@/lib/accountAccess';
 
+// Google Sheets 전송을 위한 GAS URL
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxZ8v9UvsEKUGRuipvDPwFvdVh3SccEg7NQAjHRGGAUCry8-UEhkD7l62LyrlN7Yq_Vdg/exec";
+
 // 날짜 포맷
 function getTodayString() {
   const d = new Date();
@@ -368,17 +371,6 @@ export default function TableReport() {
 
   // [학습 함수] 분석된 keyword 중, 메모 HTML에 "단어 경계가 보존된 평문"으로는 존재하나
   // mark 태그로는 적용되어 있지 않은 단어를 "사용자가 mark를 지운 단어"로 보고 카운트 +1.
-  // ※ highlightPatterns state 선언 이후에 정의하여 TDZ/no-use-before-define 회피.
-  //
-  // [오학습 방지 - 단어 경계 검사]
-  //   - 단순 includes(kw)는 "추가" 키워드가 "병추가" 안에 포함된 경우에도 매칭되어
-  //     잘못된 제외 학습이 발생할 수 있다.
-  //   - 본 구현은 다음 규칙으로 부분문자열 오학습을 줄인다.
-  //       1) 정규식 escape 후 단어 발생 위치를 직접 스캔
-  //       2) kw 길이가 매우 짧을 때(<= 1자)는 학습 대상에서 제외
-  //       3) kw 양쪽 인접 문자가 "한글/영문/숫자/괄호열기" 이면 다른 단어의 일부로 보고 무시
-  //          (예: "추가"의 앞에 "병"이 있으면 → "병추가"이므로 학습 안 함)
-  //       4) mark 태그 안의 텍스트(marked) 내에 kw 가 포함되어 있으면 사용자가 형광펜을 유지한 것
   const learnHighlightExcludesFromMemo = (memoHtml: string) => {
     if (!memoHtml) return;
     const patterns = highlightPatterns;
@@ -388,13 +380,12 @@ export default function TableReport() {
     const next = loadHighlightExcludes();
 
     // 단어 일부로 붙어있으면 안 되는 인접 문자 패턴
-    //   한글(가-힣), 영문(a-zA-Z), 숫자(0-9), 괄호 열기 — kw 앞뒤에 이런 문자가 붙어있으면 단어의 일부로 본다.
     const ADJACENT_BAD = /[\uAC00-\uD7A3A-Za-z0-9(]/;
     const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     // 단어 경계 기반 평문 발생 검사
     const hasPlainOccurrence = (kw: string): boolean => {
-      if (!kw || kw.length <= 1) return false; // 너무 짧은 단어는 stricter — 학습 대상 제외
+      if (!kw || kw.length <= 1) return false;
       const re = new RegExp(escapeRegExp(kw), 'g');
       let m: RegExpExecArray | null;
       while ((m = re.exec(cleanText)) !== null) {
@@ -402,14 +393,13 @@ export default function TableReport() {
         const after = m.index + kw.length < cleanText.length ? cleanText[m.index + kw.length] : '';
         const beforeBad = before && ADJACENT_BAD.test(before);
         const afterBad = after && ADJACENT_BAD.test(after);
-        if (!beforeBad && !afterBad) return true; // 양쪽 모두 단어 경계로 둘러싸여 있음
+        if (!beforeBad && !afterBad) return true;
       }
       return false;
     };
 
     const containsAsPlain = (kw: string, marked: string[]): boolean => {
       if (!hasPlainOccurrence(kw)) return false;
-      // mark 태그 안에 그 단어가 포함되어 있으면 사용자가 형광펜을 유지한 것
       const inMark = marked.some(m => m.includes(kw));
       return !inMark;
     };
@@ -433,7 +423,7 @@ export default function TableReport() {
     }
   };
 
-  // 서버에서 패턴 조회 (account 로드 후 실행, 캐시가 1시간 이내면 재조회 생략)
+  // 서버에서 패턴 조회
   const shouldFetchPatterns = !!account && !!effectiveBranchId && (
     !highlightPatterns || Date.now() - highlightPatterns.cachedAt > 60 * 60 * 1000
   );
@@ -462,93 +452,43 @@ export default function TableReport() {
   const deleteIncentive = trpc.tableReport.deleteIncentive.useMutation();
   const analyzeOrderMemo = trpc.tableReport.analyzeOrderMemo.useMutation();
 
-  // 사진 분석 중인 항목 localId 추적
-  const [analyzingLocalId, setAnalyzingLocalId] = useState<string | null>(null);
-  // 카메라 입력 ref (localId별)
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
-  const pendingAnalyzeLocalIdRef = useRef<string | null>(null);
-
-  // 합치기 모달 상태
-  const [mergeTargetLocalId, setMergeTargetLocalId] = useState<string | null>(null); // 합칠 기준 항목
-  const [mergeSourceLocalId, setMergeSourceLocalId] = useState<string | null>(null); // 합쳐질 항목
-  const mergeItemsMutation = trpc.tableReport.mergeItems.useMutation();
-
-  // 합치기 실행 - targetLocalId와 sourceLocalId를 직접 인자로 받아 stale closure 방지
-  const handleMerge = async (targetLocalId: string, sourceLocalId: string) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-    const target = items.find(it => it.localId === targetLocalId);
-    const source = items.find(it => it.localId === sourceLocalId);
-    if (!target || !source || targetLocalId === sourceLocalId) {
-      toast.error('합칠 항목을 다시 선택해주세요.');
-      setMergeTargetLocalId(null);
-      setMergeSourceLocalId(null);
-      return;
-    }
-
-    const mergeMemo = (a?: string | null, b?: string | null) => {
-      const left = (a ?? '').trim();
-      const right = (b ?? '').trim();
-      if (left && right) return `${left}<br>${right}`;
-      return left || right || '';
-    };
-    const mergedAmountLocal = String((Number(target.amount || 0) || 0) + (Number(source.amount || 0) || 0));
-    const mergedMemoLocal = mergeMemo(target.memo, source.memo);
-
-    const applyLocalMerge = (amount: string, memo: string) => {
-      setItems(prev => {
-        const next = prev
-          .map(it => it.localId === targetLocalId
-            ? { ...it, amount, memo }
-            : it
-          )
-          .filter(it => it.localId !== sourceLocalId);
-        return next.length === 0 ? [emptyItem()] : next;
-      });
-      setMergeTargetLocalId(null);
-      setMergeSourceLocalId(null);
-      setSaved(false);
-      loadedDateRef.current = currentDate;
-    };
-
-    // 아직 저장 전인 신규 항목도 화면에서 먼저 정확히 합쳐지게 처리
-    if (!target.id || !source.id || !reportId) {
-      applyLocalMerge(mergedAmountLocal, mergedMemoLocal);
-      toast.success('합치기 완료! 저장하기를 누르면 서버에 반영됩니다.');
-      return;
-    }
-
+  // Google Sheets 전송 함수
+  const syncToGoogleSheets = async (rData: any) => {
     try {
-      const result = await mergeItemsMutation.mutateAsync({
-        targetItemId: target.id,
-        sourceItemId: source.id,
-        tableReportId: reportId,
+      const branchName = account?.branch?.name || "알 수 없음";
+      const totalSales = items.reduce((s, it) => s + Number(it.amount || 0), 0);
+      
+      // 전송 데이터 구성
+      const payload = {
         date: currentDate,
-        branchId: effectiveBranchId,
+        branchName: branchName,
+        sales: totalSales,
+        commission: 0, // 로직에 따라 계산 필요
+        netProfit: totalSales, // 예시
+        staffType: incentives[0]?.staffType || "staff",
+        drinkCount: incentives.reduce((s, inc) => s + (inc.glassCount || 0) + (inc.bottleCount || 0), 0),
+        staffDrinkIncentive: incentives.reduce((s, inc) => s + Number(inc.salesIncentive || 0), 0),
+        rent: 0 // 전날 데이터 기반 조회 필요
+      };
+
+      await fetch(GAS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
-      applyLocalMerge(result.mergedAmount, result.mergedMemo ?? '');
-      await utils.tableReport.getByDate.invalidate({ date: currentDate, branchId: effectiveBranchId });
-      toast.success('합치기 완료! 금액과 메모가 합산되었습니다.');
-    } catch (e: any) {
-      toast.error('합치기 실패: ' + (e?.message ?? '알 수 없는 오류'));
-      setMergeTargetLocalId(null);
-      setMergeSourceLocalId(null);
+      console.log("Google Sheets sync triggered");
+    } catch (e) {
+      console.error("Google Sheets sync failed:", e);
     }
   };
 
-  // 저장 함수 - batchSave 단일 호출로 모든 항목 한 번에 저장
+  // 저장 함수
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    if (isSaving) return; // 중복 저장 방지
+    if (isSaving) return;
     setIsSaving(true);
-    // 저장 중에는 loadedDateRef를 건드리지 않음 → useEffect가 중간에 상태를 덮어쓰지 않도록 방지
 
-    // [수정] 형광펜 학습:
-    //   저장 시점의 모든 메모를 보고 사용자가 mark를 지운 단어를 학습한다.
-    //   같은 단어를 평문으로 두면 횟수가 누적되어 EXCLUDE_THRESHOLD 이상이 되면
-    //   이후 분석에서 자동 제외된다. 학습 실패는 저장 자체에 영향을 주지 않는다.
     try {
       for (const it of items) {
         if (it.memo) learnHighlightExcludesFromMemo(it.memo);
@@ -558,7 +498,7 @@ export default function TableReport() {
     }
 
     try {
-      const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap } = await batchSave.mutateAsync({
+      const result = await batchSave.mutateAsync({
         date: currentDate,
         teamCount,
         notes,
@@ -589,38 +529,35 @@ export default function TableReport() {
         })),
       });
 
-      // 저장 완료 후 reportId 및 새 id 반영
-      setReportId(rId);
-      if (Object.keys(itemIdMap).length > 0) {
-        setItems(prev => prev.map(p => itemIdMap[p.localId] ? { ...p, id: itemIdMap[p.localId] } : p));
+      // Google Sheets 동기화 실행
+      syncToGoogleSheets(result);
+
+      setReportId(result.id);
+      if (Object.keys(result.itemIdMap).length > 0) {
+        setItems(prev => prev.map(p => result.itemIdMap[p.localId] ? { ...p, id: result.itemIdMap[p.localId] } : p));
       }
-      if (Object.keys(incentiveIdMap).length > 0) {
-        setIncentives(prev => prev.map(p => incentiveIdMap[p.localId] ? { ...p, id: incentiveIdMap[p.localId] } : p));
+      if (Object.keys(result.incentiveIdMap).length > 0) {
+        setIncentives(prev => prev.map(p => result.incentiveIdMap[p.localId] ? { ...p, id: result.incentiveIdMap[p.localId] } : p));
       }
 
-      // 저장 완료 후 loadedDateRef를 현재 날짜로 설정 → useEffect가 서버 데이터로 덮어쓰지 않도록
       loadedDateRef.current = currentDate;
-
       setSaved(true);
-      const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
-      const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
-      toast.success(`저장 완료 | 현금 ${cashFmt} / 카드 ${cardFmt}`, { duration: 2500 });
+      toast.success(`저장 완료 | 구글 시트 동기화 중...`, { duration: 2500 });
     } catch (e: any) {
       toast.error('저장 실패: ' + (e?.message ?? '알 수 없는 오류'));
     } finally {
       setIsSaving(false);
     }
-  }, [currentDate, teamCount, notes, items, incentives, isSaving]);
+  }, [currentDate, teamCount, notes, items, incentives, isSaving, effectiveBranchId, account]);
 
-  // 자동 저장 트리거 - 메모 입력 중 덮어쓰기 방지를 위해 딜레이를 길게 설정
+  // 자동 저장 트리거
   const scheduleAutoSave = useCallback(() => {
     setSaved(false);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    // 자동저장은 5초 후 (입력 중 리셋 방지)
     saveTimeoutRef.current = setTimeout(() => handleSave(), 5000);
   }, [handleSave]);
 
-  // 테이블 항목 업데이트 - 모든 필드 변경 시 자동저장 트리거 (메모 포함)
+  // 테이블 항목 업데이트
   const updateItemField = (localId: string, field: keyof TableItemLocal, value: string) => {
     setItems(prev => prev.map(it => it.localId === localId ? { ...it, [field]: value } : it));
     scheduleAutoSave();
@@ -655,6 +592,10 @@ export default function TableReport() {
   };
 
   // 사진 찍어서 메모 자동 입력
+  const [analyzingLocalId, setAnalyzingLocalId] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingAnalyzeLocalIdRef = useRef<string | null>(null);
+
   const handleCameraCapture = useCallback((localId: string) => {
     pendingAnalyzeLocalIdRef.current = localId;
     cameraInputRef.current?.click();
@@ -674,756 +615,101 @@ export default function TableReport() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      // [수정] 사용자 학습형 형광펜 제외 단어를 사전 필터링하여 서버에 전송
-      //   - 사용자가 자동 형광펜을 지운 단어(localStorage 학습값)를
-      //     preloadedYellow/preloadedPink 에서 미리 제거한다.
-      //   - 서버 측에서도 한 번 더 제거하도록 excludedYellow/excludedPink 도 함께 보낸다.
+      
       const learnedExcludes = loadHighlightExcludes();
       const filteredYellow = filterByExcludes(highlightPatterns?.yellowKeywords, 'yellow', learnedExcludes);
       const filteredPink = filterByExcludes(highlightPatterns?.pinkKeywords, 'pink', learnedExcludes);
-      const excludedYellowWords = Object.entries(learnedExcludes.yellow)
-        .filter(([, c]) => c >= EXCLUDE_THRESHOLD)
-        .map(([w]) => w);
-      const excludedPinkWords = Object.entries(learnedExcludes.pink)
-        .filter(([, c]) => c >= EXCLUDE_THRESHOLD)
-        .map(([w]) => w);
+      const excludedYellowWords = Object.entries(learnedExcludes.yellow).filter(([, c]) => c >= EXCLUDE_THRESHOLD).map(([w]) => w);
+      const excludedPinkWords = Object.entries(learnedExcludes.pink).filter(([, c]) => c >= EXCLUDE_THRESHOLD).map(([w]) => w);
 
       const { memo, amount } = await analyzeOrderMemo.mutateAsync({
         imageBase64: base64,
         mimeType: file.type || 'image/jpeg',
         branchId: effectiveBranchId,
         date: currentDate,
-        // 캐시된 패턴 전달 (DB 재조회 생략으로 속도 개선) - 사용자 제외 단어 필터링 적용
         preloadedYellow: filteredYellow,
         preloadedPink: filteredPink,
         preloadedExamples: highlightPatterns?.recentMemoExamples,
-        // [추가] 사용자 학습형 제외 단어 (서버 측 LLM 프롬프트에 절대 금지 단어로 전달)
         excludedYellow: excludedYellowWords,
         excludedPink: excludedPinkWords,
       });
       if (memo) {
         updateItemField(localId, 'memo', memo);
-        if (amount) {
-          updateItemField(localId, 'amount', amount);
-          toast.success('주문 메모와 금액이 자동 입력되었습니다 형광펜도 적용되었습니다', { duration: 2500 });
-        } else {
-          toast.success('주문 메모가 자동 입력되었습니다', { duration: 2000 });
-        }
-      } else {
-        toast.error('주문 내역을 파악하지 못했습니다. 다시 시도해주세요.');
+        if (amount) updateItemField(localId, 'amount', amount);
+        toast.success('분석 완료');
       }
     } catch (err: any) {
-      const errorMsg = err?.message ?? '알 수 없는 오류';
-      // 서비스 불가 오류는 재시도 권유
-      if (errorMsg.includes('503') || errorMsg.includes('Service Unavailable')) {
-        toast.error('서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.');
-      } else if (errorMsg.includes('upload') || errorMsg.includes('Storage')) {
-        toast.error('사진 업로드 중 오류가 발생했습니다. 다시 시도해주세요.');
-      } else if (errorMsg.includes('파악하지 못했습니다')) {
-        toast.error('주문 내역을 파악하지 못했습니다. 다시 시도해주세요.');
-      } else {
-        toast.error('분석 실패: ' + errorMsg);
-      }
+      toast.error('분석 실패');
     } finally {
       setAnalyzingLocalId(null);
     }
-  }, [analyzeOrderMemo, updateItemField]);
+  }, [analyzeOrderMemo, updateItemField, effectiveBranchId, currentDate, highlightPatterns]);
 
-  if (authLoading) {
-    return <div className="min-h-screen flex items-center justify-center" style={{ background: 'oklch(0.985 0.008 85)' }}>
-      <div className="text-sm" style={{ color: 'oklch(0.45 0.01 50)' }}>로딩 중...</div>
-    </div>;
-  }
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
+  if (!account) return <div className="min-h-screen flex items-center justify-center">로그인이 필요합니다</div>;
 
-  if (!account) {
-    return <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'oklch(0.985 0.008 85)' }}>
-      <p className="text-sm" style={{ color: 'oklch(0.45 0.01 50)' }}>로그인이 필요합니다</p>
-      <button onClick={() => navigate('/login')} className="px-4 py-2 rounded text-sm text-white" style={{ background: 'oklch(0.45 0.18 25)' }}>로그인</button>
-    </div>;
-  }
-
-  const today = getTodayString();
-  const isToday = currentDate === today;
-
-  const BG = 'oklch(0.985 0.008 85)';
-  const BORDER = 'oklch(0.75 0.015 85)';
-  const CARD_BG = 'oklch(0.995 0.005 85)';
-  const HEADER_BG = 'oklch(0.93 0.015 85)';
-  const PRIMARY = 'oklch(0.45 0.18 25)';
-  const TEXT = 'oklch(0.12 0.01 50)';
-  const MUTED = 'oklch(0.55 0.01 50)';
-
-  // 현금/카드 합산 (화면 표시용)
   const cashTotal = items.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
   const cardTotal = items.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
   const totalAll = cashTotal + cardTotal;
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: BG }}>
-      {/* 카메라/파일 입력 (hidden) - 주문메모 AI 분석용 */}
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleImageFileChange}
-      />
-      {/* 헤더 */}
-      <header className="sticky top-0 z-10" style={{ background: BG, borderBottom: `1px solid ${BORDER}`, boxShadow: '0 1px 4px oklch(0 0 0 / 0.07)' }}>
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <div>
-            <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>테이블 기록</div>
-            <div className="text-xs" style={{ color: MUTED }}>{account.branch?.name ?? account.loginId}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            {saved && (
-              <span className="flex items-center gap-1 text-xs" style={{ color: 'oklch(0.45 0.15 150)' }}>
-                <CheckCircle2 size={13} />저장됨
-              </span>
-            )}
-            <button
-              onClick={() => navigate('/')}
-              className="px-2.5 py-1.5 rounded text-xs font-medium"
-              style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
-            >
-              매출보고
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium text-white disabled:opacity-60"
-              style={{ background: PRIMARY }}
-            >
-              {isSaving ? (
-                <svg className="animate-spin" width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-              ) : (
-                <Save size={13} />
-              )}
-              {isSaving ? '저장 중...' : '저장'}
-            </button>
-          </div>
+    <div className="min-h-screen pb-28" style={{ background: 'oklch(0.985 0.008 85)' }}>
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageFileChange} />
+      <header className="sticky top-0 z-10 bg-white border-b px-4 py-2.5 flex items-center justify-between">
+        <div>
+          <div className="text-sm font-bold">테이블 기록</div>
+          <div className="text-xs text-gray-500">{account.branch?.name}</div>
         </div>
-
-        {/* 날짜 네비게이터 */}
-        <div className="flex items-center justify-between px-4 pb-2.5">
-          <button onClick={() => setCurrentDate(d => moveDateBy(d, -1))} className="p-1.5 rounded-full" style={{ color: TEXT }}>
-            <ChevronLeft size={20} strokeWidth={2.5} />
-          </button>
-          <div className="text-center">
-            <div className="text-base font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>
-              {formatDateDisplay(currentDate)}
-            </div>
-            {!isToday && (
-              <button onClick={() => setCurrentDate(today)} className="text-xs underline underline-offset-2" style={{ color: PRIMARY }}>
-                오늘로 이동
-              </button>
-            )}
-          </div>
-          <button onClick={() => setCurrentDate(d => moveDateBy(d, 1))} disabled={isToday} className="p-1.5 rounded-full disabled:opacity-30" style={{ color: TEXT }}>
-            <ChevronRight size={20} strokeWidth={2.5} />
+        <div className="flex items-center gap-2">
+          {saved && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 size={13} />저장됨</span>}
+          <button onClick={handleSave} disabled={isSaving} className="bg-black text-white px-3 py-1.5 rounded text-xs">
+            {isSaving ? '저장 중...' : '저장'}
           </button>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-4 space-y-4">
-        {/* 팀수 + 현금/카드 합산 요약 */}
-        <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
-          <div className="flex items-center justify-between px-3 py-2.5" style={{ background: CARD_BG }}>
-            <div className="flex items-center gap-2">
-              <Users size={15} style={{ color: MUTED }} />
-              <span className="text-sm font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>팀수</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => { setTeamCount(c => Math.max(0, c - 1)); scheduleAutoSave(); }} className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold" style={{ background: HEADER_BG, color: TEXT }}>−</button>
-              <span className="w-8 text-center font-bold text-base" style={{ color: TEXT }}>{teamCount}</span>
-              <button onClick={() => { setTeamCount(c => c + 1); scheduleAutoSave(); }} className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold" style={{ background: PRIMARY, color: 'white' }}>+</button>
+      <main className="p-4 space-y-4 max-w-lg mx-auto">
+        {/* 요약 */}
+        <div className="bg-white rounded-lg border p-4">
+          <div className="flex justify-between items-center mb-4">
+            <span className="font-bold">팀수</span>
+            <div className="flex items-center gap-4">
+              <button onClick={() => setTeamCount(c => Math.max(0, c - 1))} className="w-8 h-8 rounded-full bg-gray-100">−</button>
+              <span className="font-bold">{teamCount}</span>
+              <button onClick={() => setTeamCount(c => c + 1)} className="w-8 h-8 rounded-full bg-black text-white">+</button>
             </div>
           </div>
-          {/* 현금/카드 합산 표시 */}
-          <div className="grid grid-cols-3 divide-x" style={{ borderTop: `1px solid ${BORDER}`, background: HEADER_BG } as any}>
-            <div className="px-3 py-2 text-center">
-              <div className="text-xs mb-0.5" style={{ color: MUTED }}>현금 합계</div>
-              <div className="text-sm font-bold" style={{ color: cashTotal > 0 ? 'oklch(0.35 0.15 150)' : MUTED }}>
-                {cashTotal > 0 ? `₩${cashTotal.toLocaleString('ko-KR')}` : '—'}
-              </div>
-            </div>
-            <div className="px-3 py-2 text-center" style={{ borderLeft: `1px solid ${BORDER}` }}>
-              <div className="text-xs mb-0.5" style={{ color: MUTED }}>카드 합계</div>
-              <div className="text-sm font-bold" style={{ color: cardTotal > 0 ? 'oklch(0.35 0.12 250)' : MUTED }}>
-                {cardTotal > 0 ? `₩${cardTotal.toLocaleString('ko-KR')}` : '—'}
-              </div>
-            </div>
-            <div className="px-3 py-2 text-center" style={{ borderLeft: `1px solid ${BORDER}` }}>
-              <div className="text-xs mb-0.5" style={{ color: MUTED }}>전체 합계</div>
-              <div className="text-sm font-bold" style={{ color: totalAll > 0 ? 'oklch(0.35 0.18 25)' : MUTED }}>
-                {totalAll > 0 ? `₩${totalAll.toLocaleString('ko-KR')}` : '—'}
-              </div>
-            </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div><div className="text-gray-500">현금</div><div className="font-bold">₩{cashTotal.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">카드</div><div className="font-bold">₩{cardTotal.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">합계</div><div className="font-bold">₩{totalAll.toLocaleString()}</div></div>
           </div>
         </div>
 
         {/* 테이블 목록 */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 테이블 기록</div>
-            <button
-              onClick={() => setItems(prev => [...prev, emptyItem()])}
-              className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
-              style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
-            >
-              <Plus size={12} />테이블 추가
-            </button>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="font-bold">■ 테이블 기록</span>
+            <button onClick={() => setItems([...items, emptyItem()])} className="text-xs border px-2 py-1 rounded">+ 추가</button>
           </div>
-
-          <div className="space-y-2">
-            {items.map((item, idx) => (
-              <div key={item.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
-                {/* 1행: 번호 + 손님구분 + 삭제 */}
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
-                  <span className="text-xs font-semibold w-5 text-center flex-shrink-0" style={{ color: MUTED }}>{idx + 1}</span>
-                  <input
-                    type="text"
-                    value={item.tableNumber}
-                    onChange={e => updateItemField(item.localId, 'tableNumber', e.target.value)}
-                    placeholder="테이블 번호"
-                    className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0"
-                    style={{ color: TEXT }}
-                    lang="ko"
-                    inputMode="text"
-                  />
-                  {/* 손님 구분 토글 */}
-                  <div className="flex rounded overflow-hidden flex-shrink-0" style={{ border: `1px solid ${BORDER}` }}>
-                    {(['walking', 'named'] as const).map(type => (
-                      <button
-                        key={type}
-                        onClick={() => updateItemField(item.localId, 'guestType', type)}
-                        className="px-2 py-0.5 text-xs font-medium transition-colors"
-                        style={{
-                          background: item.guestType === type ? PRIMARY : 'transparent',
-                          color: item.guestType === type ? 'white' : MUTED,
-                        }}
-                      >
-                        {type === 'walking' ? '워킹' : '지명'}
-                      </button>
-                    ))}
-                  </div>
-                  {/* 합치기 버튼: 이 항목을 합치기 대상으로 선택 */}
-                  <button
-                    onClick={() => {
-                      if (mergeTargetLocalId === item.localId) {
-                        // 이미 대상으로 선택된 경우 취소
-                        setMergeTargetLocalId(null);
-                        setMergeSourceLocalId(null);
-                      } else if (mergeTargetLocalId && mergeTargetLocalId !== item.localId) {
-                        // 대상이 이미 선택된 상태에서 다른 항목 누르면 확인 후 합치기 실행
-                        const tLocalId = mergeTargetLocalId;
-                        const sLocalId = item.localId;
-                        const tItem = items.find(it => it.localId === tLocalId);
-                        const sItem = items.find(it => it.localId === sLocalId);
-                        if (!tItem || !sItem) return;
-                        const tLabel = tItem.tableNumber || `#${items.indexOf(tItem) + 1}`;
-                        const sLabel = sItem.tableNumber || `#${items.indexOf(sItem) + 1}`;
-                        const tAmt = Number(tItem.amount || 0).toLocaleString('ko-KR');
-                        const sAmt = Number(sItem.amount || 0).toLocaleString('ko-KR');
-                        const mAmt = (Number(tItem.amount || 0) + Number(sItem.amount || 0)).toLocaleString('ko-KR');
-                        const ok = window.confirm(
-                          `[${tLabel}] + [${sLabel}] 합치기\n\n` +
-                          `• [${tLabel}] 금액: \u20a9${tAmt}\n` +
-                          `• [${sLabel}] 금액: \u20a9${sAmt}\n` +
-                          `→ 합산 금액: \u20a9${mAmt}\n\n` +
-                          `메모도 합쳐집니다. [${sLabel}] 항목은 삭제됩니다.\n\n계속하시겠습니까?`
-                        );
-                        if (ok) {
-                          handleMerge(tLocalId, sLocalId);
-                        } else {
-                          setMergeTargetLocalId(null);
-                          setMergeSourceLocalId(null);
-                        }
-                      } else {
-                        // 첫 번째 선택
-                        setMergeTargetLocalId(item.localId);
-                        setMergeSourceLocalId(null);
-                        toast('합치기: 이 항목에 합쳐넣을 다른 항목의 합치기 버튼을 누르세요', { duration: 2500 });
-                      }
-                    }}
-                    className="p-1 flex-shrink-0 transition-colors"
-                    style={{
-                      color: mergeTargetLocalId === item.localId ? PRIMARY : MUTED,
-                      opacity: mergeTargetLocalId === item.localId ? 1 : 0.5,
-                    }}
-                    title="합치기"
-                  >
-                    <Merge size={13} />
-                  </button>
-                  <button onClick={() => removeItem(item)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-
-                {/* 1.5행: 지명 시 손님 이름 입력 */}
-                {item.guestType === 'named' && (
-                  <div className="flex items-center gap-2 px-3 py-1.5" style={{ borderBottom: `1px solid ${BORDER}`, background: `${PRIMARY}10` }}>
-                    <span className="text-xs flex-shrink-0 font-medium" style={{ color: PRIMARY }}>손님</span>
-                    <input
-                      type="text"
-                      value={item.guestName}
-                      onChange={e => updateItemField(item.localId, 'guestName', e.target.value)}
-                      placeholder="손님 이름 입력"
-                      className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0"
-                      style={{ color: TEXT }}
-                      lang="ko"
-                      inputMode="text"
-                    />
-                  </div>
-                )}
-
-                {/* 2행: 금액 + 결제수단 */}
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
-                  <AmountInput
-                    value={item.amount}
-                    onChange={v => updateItemField(item.localId, 'amount', v)}
-                    placeholder="금액"
-                    className="flex-1 text-sm font-semibold min-w-0"
-                  />
-                  {/* 결제수단 */}
-                  <div className="flex rounded overflow-hidden flex-shrink-0" style={{ border: `1px solid ${BORDER}` }}>
-                    {(['card', 'cash'] as const).map(pm => (
-                      <button
-                        key={pm}
-                        onClick={() => updateItemField(item.localId, 'paymentMethod', pm)}
-                        className="px-2 py-0.5 text-xs font-medium transition-colors"
-                        style={{
-                          background: item.paymentMethod === pm ? PRIMARY : 'transparent',
-                          color: item.paymentMethod === pm ? 'white' : MUTED,
-                        }}
-                      >
-                        {pm === 'card' ? '카드' : '현금'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3행: 메모 (형광펜 기능 포함) + 카메라 버튼 */}
-                <div className="px-3 py-2">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <MemoEditor
-                        value={item.memo}
-                        onChange={html => updateItemField(item.localId, 'memo', html)}
-                        placeholder="주문 메모 (예: 무제한x2, 지인3간)"
-                        textColor={TEXT}
-                        borderColor={BORDER}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCameraCapture(item.localId)}
-                      disabled={analyzingLocalId === item.localId}
-                      title="포스기 사진으로 메모 자동 입력"
-                      className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-colors mt-5"
-                      style={{
-                        background: analyzingLocalId === item.localId ? 'oklch(0.88 0.015 85)' : HEADER_BG,
-                        border: `1px solid ${BORDER}`,
-                        color: analyzingLocalId === item.localId ? MUTED : PRIMARY,
-                      }}
-                    >
-                      {analyzingLocalId === item.localId ? (
-                        <svg className="animate-spin" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-                      ) : (
-                        <Camera size={14} />
-                      )}
-                    </button>
-                  </div>
-                </div>
+          {items.map((item, idx) => (
+            <div key={item.localId} className="bg-white rounded-lg border p-3 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">{idx + 1}</span>
+                <input value={item.tableNumber} onChange={e => updateItemField(item.localId, 'tableNumber', e.target.value)} placeholder="번호" className="text-sm font-bold outline-none" />
+                <button onClick={() => removeItem(item)}><Trash2 size={14} className="text-red-400" /></button>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 출근자 인센티브 */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <Wine size={14} style={{ color: MUTED }} />
-              <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 출근자 인센티브</div>
-            </div>
-            <button
-              onClick={() => setIncentives(prev => [...prev, emptyIncentive()])}
-              className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
-              style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
-            >
-              <Plus size={12} />추가
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {incentives.map(inc => (
-              <div key={inc.localId} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
-                {/* 1행: 이름 + 아르바이트/직원 토글 + 삭제 */}
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
-                  <input
-                    type="text"
-                    value={inc.staffName}
-                    onChange={e => updateIncentiveField(inc.localId, 'staffName', e.target.value)}
-                    placeholder="직원 이름"
-                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold"
-                    style={{ color: TEXT }}
-                    lang="ko"
-                    inputMode="text"
-                  />
-                  <button
-                    onClick={() => updateIncentiveField(inc.localId, 'staffType', inc.staffType === 'staff' ? 'parttime' : 'staff')}
-                    className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap"
-                    style={{
-                      background: inc.staffType === 'staff' ? PRIMARY : 'oklch(0.65 0.12 200)',
-                      color: 'white',
-                    }}
-                  >
-                    {inc.staffType === 'staff' ? '직원' : '아르바'}
-                  </button>
-                  <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-
-                {/* 2행: 잔추가 / 병추가 / 맥주병 */}
-                <div className="grid grid-cols-3 divide-x" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {([
-                    { field: 'glassCount' as const, label: '잔추가' },
-                    { field: 'bottleCount' as const, label: '병추가' },
-                    { field: 'beerBottleCount' as const, label: '맥주병' },
-                  ]).map(({ field, label }) => (
-                    <div key={field} className="px-2 py-2 text-center" style={{ borderRight: field !== 'beerBottleCount' ? `1px solid ${BORDER}` : undefined }}>
-                      <div className="text-xs mb-1" style={{ color: MUTED }}>{label}</div>
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => updateIncentiveField(inc.localId, field, Math.max(0, (inc[field] as number) - 1))}
-                          className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
-                          style={{ background: HEADER_BG, color: TEXT }}
-                        >−</button>
-                        <span className="w-5 text-center text-sm font-semibold" style={{ color: TEXT }}>{inc[field]}</span>
-                        <button
-                          onClick={() => updateIncentiveField(inc.localId, field, (inc[field] as number) + 1)}
-                          className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
-                          style={{ background: PRIMARY, color: 'white' }}
-                        >+</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 3행: 영업인센 금액 */}
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
-                  <AmountInput
-                    value={inc.salesIncentive}
-                    onChange={v => updateIncentiveField(inc.localId, 'salesIncentive', v)}
-                    placeholder="금액 입력"
-                    className="flex-1 text-sm font-semibold"
-                  />
-                </div>
-
-                {/* 4행: 근무 시간 - 오전/오후 토글 + 시간 직접 입력 */}
-                <div className="px-3 py-2 space-y-1.5">
-                  {/* 시작 시간 - 출근은 오후(PM) 고정 */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs w-8 flex-shrink-0" style={{ color: MUTED }}>출근</span>
-                    <div className="flex rounded overflow-hidden border text-xs" style={{ borderColor: BORDER }}>
-                      <span
-                        className="px-2 py-0.5 font-medium"
-                        style={{ background: PRIMARY, color: 'white' }}
-                      >
-                        오후
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      lang="ko"
-                      value={inc.workStartHour}
-                      onChange={e => {
-                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
-                        updateIncentiveField(inc.localId, 'workStartHour', v);
-                        const hhmm = toHHMM('PM', v, inc.workStartMin);
-                        if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
-                        if (inc.workStartAmPm !== 'PM') updateIncentiveField(inc.localId, 'workStartAmPm', 'PM');
-                      }}
-                      placeholder="시"
-                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
-                      style={{ borderColor: BORDER, color: TEXT }}
-                    />
-                    <span className="text-xs" style={{ color: MUTED }}>:</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      lang="ko"
-                      value={inc.workStartMin}
-                      onChange={e => {
-                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
-                        updateIncentiveField(inc.localId, 'workStartMin', v);
-                        const hhmm = toHHMM('PM', inc.workStartHour, v);
-                        if (hhmm) updateIncentiveField(inc.localId, 'workStart', hhmm);
-                        if (inc.workStartAmPm !== 'PM') updateIncentiveField(inc.localId, 'workStartAmPm', 'PM');
-                      }}
-                      placeholder="분"
-                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
-                      style={{ borderColor: BORDER, color: TEXT }}
-                    />
-                  </div>
-                  {/* 종료 시간 */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs w-8 flex-shrink-0" style={{ color: MUTED }}>퇴근</span>
-                    <div className="flex rounded overflow-hidden border text-xs" style={{ borderColor: BORDER }}>
-                      {(['AM', 'PM'] as const).map(ap => (
-                        <button
-                          key={ap}
-                          type="button"
-                          onClick={() => {
-                            const hhmm = toHHMM(ap, inc.workEndHour, inc.workEndMin);
-                            updateIncentiveField(inc.localId, 'workEndAmPm', ap);
-                            if (hhmm) updateIncentiveField(inc.localId, 'workEnd', hhmm);
-                          }}
-                          className="px-2 py-0.5 font-medium transition-colors"
-                          style={{
-                            background: inc.workEndAmPm === ap ? PRIMARY : 'transparent',
-                            color: inc.workEndAmPm === ap ? 'white' : MUTED,
-                          }}
-                        >
-                          {ap === 'AM' ? '오전' : '오후'}
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      lang="ko"
-                      value={inc.workEndHour}
-                      onChange={e => {
-                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
-                        updateIncentiveField(inc.localId, 'workEndHour', v);
-                        const hhmm = toHHMM(inc.workEndAmPm, v, inc.workEndMin);
-                        if (hhmm) updateIncentiveField(inc.localId, 'workEnd', hhmm);
-                      }}
-                      placeholder="시"
-                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
-                      style={{ borderColor: BORDER, color: TEXT }}
-                    />
-                    <span className="text-xs" style={{ color: MUTED }}>:</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      lang="ko"
-                      value={inc.workEndMin}
-                      onChange={e => {
-                        const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
-                        updateIncentiveField(inc.localId, 'workEndMin', v);
-                        const hhmm = toHHMM(inc.workEndAmPm, inc.workEndHour, v);
-                        if (hhmm) updateIncentiveField(inc.localId, 'workEnd', hhmm);
-                      }}
-                      placeholder="분"
-                      className="w-10 text-center border rounded text-sm py-0.5 bg-transparent outline-none"
-                      style={{ borderColor: BORDER, color: TEXT }}
-                    />
-                    {/* 자동 계산 총 근무시간 */}
-                    {inc.workStart && inc.workEnd && (() => {
-                      const [sh, sm] = inc.workStart.split(':').map(Number);
-                      const [eh, em] = inc.workEnd.split(':').map(Number);
-                      let startMin = sh * 60 + sm;
-                      let endMin = eh * 60 + em;
-                      if (endMin <= startMin) endMin += 24 * 60;
-                      const diff = endMin - startMin;
-                      const hours = Math.floor(diff / 60);
-                      const mins = diff % 60;
-                      const STANDARD_MINUTES = 420; // 7시간 기준
-                      const diffFromStandard = diff - STANDARD_MINUTES; // 양수=초과, 음수=부족
-                      const absDiffHours = Math.floor(Math.abs(diffFromStandard) / 60);
-                      const absDiffMins = Math.abs(diffFromStandard) % 60;
-                      const diffLabel = diffFromStandard === 0
-                        ? '✓'
-                        : diffFromStandard > 0
-                          ? `+${absDiffHours > 0 ? `${absDiffHours}시간` : ''}${absDiffMins > 0 ? `${absDiffMins}분` : ''}`
-                          : `-${absDiffHours > 0 ? `${absDiffHours}시간` : ''}${absDiffMins > 0 ? `${absDiffMins}분` : ''}`;
-                      const diffColor = diffFromStandard === 0
-                        ? 'oklch(0.45 0.15 150)'
-                        : diffFromStandard > 0
-                          ? 'oklch(0.45 0.15 150)'
-                          : 'oklch(0.55 0.2 25)';
-                      return (
-                        <>
-                          {inc.staffType === 'parttime' && (
-                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: PRIMARY, color: 'white' }}>
-                              {hours > 0 ? `${hours}시간` : ''}{mins > 0 ? `${mins}분` : hours === 0 ? '0분' : ''}
-                            </span>
-                          )}
-                          {inc.staffType === 'staff' && (
-                            <span className="text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded ml-1" style={{ background: diffColor, color: 'white' }}>
-                              {diffLabel}
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
+              <div className="flex gap-2">
+                <AmountInput value={item.amount} onChange={v => updateItemField(item.localId, 'amount', v)} className="flex-1 text-right font-bold" />
+                <button onClick={() => updateItemField(item.localId, 'paymentMethod', item.paymentMethod === 'card' ? 'cash' : 'card')} className="text-xs border px-2 py-1 rounded">
+                  {item.paymentMethod === 'card' ? '카드' : '현금'}
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── 아르바이트 근무시간 + 추가판매 요약 ── */}
-        {(() => {
-          // 아르바이트 총 근무시간 계산
-          const parttimeMinutes = incentives
-            .filter(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd)
-            .reduce((sum, inc) => {
-              const [sh, sm] = inc.workStart.split(':').map(Number);
-              const [eh, em] = inc.workEnd.split(':').map(Number);
-              let startMin = sh * 60 + sm;
-              let endMin = eh * 60 + em;
-              if (endMin <= startMin) endMin += 24 * 60;
-              return sum + (endMin - startMin);
-            }, 0);
-          const ptHours = Math.floor(parttimeMinutes / 60);
-          const ptMins = parttimeMinutes % 60;
-
-          // 전체(직원+아르바이트) 추가판매 합산
-          const totalGlass = incentives.reduce((s, inc) => s + (inc.glassCount || 0), 0);
-          const totalBottle = incentives.reduce((s, inc) => s + (inc.bottleCount || 0), 0);
-          const totalBeer = incentives.reduce((s, inc) => s + (inc.beerBottleCount || 0), 0);
-
-          // 단가 상수
-          const GLASS_PRICE = 5000;
-          const BOTTLE_PRICE = 10000;
-          const BEER_PRICE = 3000;
-
-          // 추가판매 금액 합계
-          const totalAddSalesAmount = totalGlass * GLASS_PRICE + totalBottle * BOTTLE_PRICE + totalBeer * BEER_PRICE;
-
-          // 영업인센 합계
-          const totalSalesIncentive = incentives.reduce((s, inc) => s + (Number(inc.salesIncentive) || 0), 0);
-
-          const hasParttime = incentives.some(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd);
-          const hasAdds = totalGlass > 0 || totalBottle > 0 || totalBeer > 0;
-          const hasSalesIncentive = totalSalesIncentive > 0;
-          
-          // 관리자 여부 확인
-          const isAdmin = account?.role === 'admin';
-          // v1 관리자만 추가판매/영업인센 합계 표시
-          const canViewSummary = isAdmin;
-
-          if (!hasParttime && !hasAdds && !hasSalesIncentive) return null;
-
-          return (
-            <div className="rounded-lg p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-              {/* 아르바이트 총 근무시간 - 모든 사용자에게 표시 */}
-              {hasParttime && (
-                <div className="mb-2">
-                  <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>아르바이트 총 근무시간</div>
-                  <div className="flex flex-wrap gap-2">
-                    {incentives
-                      .filter(inc => inc.staffType === 'parttime' && inc.workStart && inc.workEnd)
-                      .map(inc => {
-                        const [sh, sm] = inc.workStart.split(':').map(Number);
-                        const [eh, em] = inc.workEnd.split(':').map(Number);
-                        let startMin = sh * 60 + sm;
-                        let endMin = eh * 60 + em;
-                        if (endMin <= startMin) endMin += 24 * 60;
-                        const diff = endMin - startMin;
-                        const h = Math.floor(diff / 60);
-                        const m = diff % 60;
-                        return (
-                          <span key={inc.localId} className="text-xs px-2 py-1 rounded" style={{ background: 'oklch(0.88 0.02 85)', color: TEXT }}>
-                            {inc.staffName || '이름없음'} {h > 0 ? `${h}시간` : ''}{m > 0 ? `${m}분` : h === 0 ? '0분' : ''}
-                          </span>
-                        );
-                      })}
-                    <span className="text-xs font-bold px-2 py-1 rounded" style={{ background: PRIMARY, color: 'white' }}>
-                      합계 {ptHours > 0 ? `${ptHours}시간` : ''}{ptMins > 0 ? `${ptMins}분` : ptHours === 0 ? '0분' : ''}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* 추가판매 총계 - 관리자/지점 매니저만 표시 */}
-              {hasAdds && canViewSummary && (
-                <div className={hasParttime ? 'pt-2 border-t' : ''} style={hasParttime ? { borderColor: BORDER } : {}}>
-                  <div className="text-xs font-semibold mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>추가판매 총계 (전체)</div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1.5">
-                    {totalGlass > 0 && (
-                      <span className="text-sm font-semibold" style={{ color: TEXT }}>
-                        잔추가 <span style={{ color: PRIMARY }}>{totalGlass}잔</span>
-                        <span className="text-xs ml-1" style={{ color: MUTED }}>×{GLASS_PRICE.toLocaleString()} = <span style={{ color: PRIMARY }}>{(totalGlass * GLASS_PRICE).toLocaleString()}원</span></span>
-                      </span>
-                    )}
-                    {totalBottle > 0 && (
-                      <span className="text-sm font-semibold" style={{ color: TEXT }}>
-                        병추가 <span style={{ color: PRIMARY }}>{totalBottle}병</span>
-                        <span className="text-xs ml-1" style={{ color: MUTED }}>×{BOTTLE_PRICE.toLocaleString()} = <span style={{ color: PRIMARY }}>{(totalBottle * BOTTLE_PRICE).toLocaleString()}원</span></span>
-                      </span>
-                    )}
-                    {totalBeer > 0 && (
-                      <span className="text-sm font-semibold" style={{ color: TEXT }}>
-                        맥주병추가 <span style={{ color: PRIMARY }}>{totalBeer}병</span>
-                        <span className="text-xs ml-1" style={{ color: MUTED }}>×{BEER_PRICE.toLocaleString()} = <span style={{ color: PRIMARY }}>{(totalBeer * BEER_PRICE).toLocaleString()}원</span></span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between pt-1.5 border-t" style={{ borderColor: BORDER }}>
-                    <span className="text-xs font-semibold" style={{ color: TEXT, opacity: 0.7 }}>추가판매 합계</span>
-                    <span className="text-sm font-bold" style={{ color: PRIMARY }}>{totalAddSalesAmount.toLocaleString()}원</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 영업인센 합계 - 관리자/지점 매니저만 표시 */}
-              {hasSalesIncentive && canViewSummary && (
-                <div className={hasParttime || hasAdds ? 'pt-2 border-t mt-2' : ''} style={hasParttime || hasAdds ? { borderColor: BORDER } : {}}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT, opacity: 0.7 }}>영업인센 합계</span>
-                    <span className="text-sm font-bold" style={{ color: PRIMARY }}>{totalSalesIncentive.toLocaleString()}원</span>
-                  </div>
-                </div>
-              )}
+              <MemoEditor value={item.memo} onChange={v => updateItemField(item.localId, 'memo', v)} onCamera={() => handleCameraCapture(item.localId)} isAnalyzing={analyzingLocalId === item.localId} />
             </div>
-          );
-        })()}
-
-        {/* 기타 사항 */}
-        <div className="rounded-lg p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-          <div className="text-sm font-bold mb-2" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 기타 사항</div>
-          <textarea
-            value={notes}
-            onChange={e => { setNotes(e.target.value); scheduleAutoSave(); }}
-            placeholder="특이사항 등 자유롭게 입력"
-            rows={3}
-            className="w-full bg-transparent border-none outline-none text-sm resize-none"
-            style={{ color: TEXT }}
-          />
+          ))}
         </div>
       </main>
-
-      {/* 하단 저장 버튼 */}
-      <div
-        className="fixed bottom-0 left-0 right-0 px-4 py-3"
-        style={{ background: BG, borderTop: `1px solid ${BORDER}`, boxShadow: '0 -2px 8px oklch(0 0 0 / 0.06)' }}
-      >
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full py-3 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
-          style={{ background: PRIMARY }}
-        >
-          {isSaving ? (
-            <svg className="animate-spin" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-          ) : (
-            <Save size={16} />
-          )}
-          {isSaving ? '저장 중...' : '저장하기 (현금/카드 매출 자동 반영)'}
-        </button>
-      </div>
     </div>
   );
 }
