@@ -1,0 +1,22 @@
+ALTER TABLE `branches` ADD `monthlyRent` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `managementFee` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `staffDailyWage` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `partTimeHourlyWage` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `commissionRate` decimal(5,4) DEFAULT '0.05' NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `hasManager` int DEFAULT 1 NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `glassUnitPrice` decimal(15,0) DEFAULT '5000' NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `bottleUnitPrice` decimal(15,0) DEFAULT '10000' NOT NULL;--> statement-breakpoint
+ALTER TABLE `branches` ADD `beerBottleUnitPrice` decimal(15,0) DEFAULT '3000' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `totalRevenue` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `commissionExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `rentExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `managementFeeExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `staffWageExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `partTimeWageExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `liquorCostExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `staffDrinkExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `otherExpense` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `totalExpenses` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `netProfit` decimal(15,0) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `staffCount` int DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` ADD `partTimeCount` int DEFAULT 0 NOT NULL;

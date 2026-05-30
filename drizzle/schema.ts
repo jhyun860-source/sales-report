@@ -35,6 +35,17 @@ export const branches = mysqlTable("branches", {
   ownerId: int("ownerId").notNull(), // admin 사용자 ID
   name: varchar("name", { length: 100 }).notNull(), // 지점명 (강남점, 홍대점 등)
   code: varchar("code", { length: 50 }).notNull().unique(), // 지점 코드
+  // 지점별 고정 비용 설정
+  monthlyRent: decimal("monthlyRent", { precision: 15, scale: 0 }).default("0").notNull(), // 월 임대료
+  managementFee: decimal("managementFee", { precision: 15, scale: 0 }).default("0").notNull(), // 월 관리비
+  staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(), // 여직원 일급
+  partTimeHourlyWage: decimal("partTimeHourlyWage", { precision: 15, scale: 0 }).default("0").notNull(), // 여알바 시급
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.05").notNull(), // 수수료/주방 비율 (기본 5%)
+  hasManager: int("hasManager").default(1).notNull(), // 점장 유무 (1=있음, 0=없음)
+  // 스탭음료 단가
+  glassUnitPrice: decimal("glassUnitPrice", { precision: 15, scale: 0 }).default("5000").notNull(), // 잔추가 단가
+  bottleUnitPrice: decimal("bottleUnitPrice", { precision: 15, scale: 0 }).default("10000").notNull(), // 병추가 단가
+  beerBottleUnitPrice: decimal("beerBottleUnitPrice", { precision: 15, scale: 0 }).default("3000").notNull(), // 맥주병추가 단가
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -79,6 +90,20 @@ export const dailySalesRecords = mysqlTable("dailySalesRecords", {
   expenses: json("expenses").$type<Array<{ id: string; description: string; amount: string }>>().default([]).notNull(),
   submittedBy: int("submittedBy"),
   submittedAt: timestamp("submittedAt"),
+  // 일별 정산 결과
+  totalRevenue: decimal("totalRevenue", { precision: 15, scale: 0 }).default("0").notNull(), // 총매출
+  commissionExpense: decimal("commissionExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 수수료/주방
+  rentExpense: decimal("rentExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 일별 임대료
+  managementFeeExpense: decimal("managementFeeExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 일별 관리비
+  staffWageExpense: decimal("staffWageExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 여직원 인건비
+  partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 여알바 인건비
+  liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 주류/단가
+  staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 스탭음료
+  otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 기타 비용
+  totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(), // 총 지출
+  netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(), // 순수익
+  staffCount: int("staffCount").default(0).notNull(), // 여직원 수
+  partTimeCount: int("partTimeCount").default(0).notNull(), // 여알바 수
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

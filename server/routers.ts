@@ -35,6 +35,7 @@ import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { eq, and, desc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { settlementRouter } from "./settlementRouter";
 
 
 function formatKstDateString(date: Date): string {
@@ -2826,6 +2827,7 @@ async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: s
 
 export const appRouter = router({
   system: systemRouter,
+  settlement: settlementRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
