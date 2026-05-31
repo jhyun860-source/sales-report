@@ -20,9 +20,20 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
+  // Serve static files from dist/public BEFORE vite middleware
+  const distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
+  if (fs.existsSync(distPath)) {
+    app.use("/assets", express.static(path.join(distPath, "assets")));
+  }
+
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+
+    // Skip static files and other assets
+    if (req.path.startsWith('/assets/') || req.path.startsWith('/manifest') || req.path.includes('.')) {
+      return next();
+    }
 
     try {
       const clientTemplate = path.resolve(
@@ -60,8 +71,13 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // fall through to index.html if the file doesn't exist (client-side routing)
+  // exclude static file requests (assets, manifest, etc.)
+  app.use("*", (req, res) => {
+    // Skip if the request is for a static file
+    if (req.path.startsWith('/assets/') || req.path.startsWith('/manifest') || req.path.includes('.')) {
+      return res.status(404).end();
+    }
     res.setHeader('Content-Type', 'text/html; charset=UTF-8');
     res.sendFile(path.resolve(distPath, "index.html"));
   });
