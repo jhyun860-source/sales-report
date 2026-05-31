@@ -8,21 +8,93 @@ import { dailySalesRecords, staffIncentives, liquorStockMovements, branches } fr
 import { eq, and, gte, lte } from 'drizzle-orm';
 
 /**
+ * 지점별 고정 설정값 (DB 마이그레이션 없이 코드에서 관리)
+ */
+const BRANCH_CONFIG: Record<string, {
+  monthlyRent: number;
+  managementFee: number;
+  staffDailyWage: number;
+  partTimeDailyWage: number;
+  commissionRate: number;
+  hasManager: boolean;
+  managerDailyWage: number;
+  glassUnitPrice: number;
+  bottleUnitPrice: number;
+  beerBottleUnitPrice: number;
+}> = {
+  '대치점': {
+    monthlyRent: 9000000,
+    managementFee: 0,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 20000,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 272727,
+    glassUnitPrice: 5000,
+    bottleUnitPrice: 10000,
+    beerBottleUnitPrice: 3000,
+  },
+  '선릉점': {
+    monthlyRent: 6500000,
+    managementFee: 0,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 20000,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 250000,
+    glassUnitPrice: 5000,
+    bottleUnitPrice: 10000,
+    beerBottleUnitPrice: 3000,
+  },
+  '삼성점': {
+    monthlyRent: 6500000,
+    managementFee: 0,
+    staffDailyWage: 159090,
+    partTimeDailyWage: 20000,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 181818,
+    glassUnitPrice: 5000,
+    bottleUnitPrice: 10000,
+    beerBottleUnitPrice: 3000,
+  },
+  '문정1호점': {
+    monthlyRent: 4500000,
+    managementFee: 0,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 20000,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 204545,
+    glassUnitPrice: 5000,
+    bottleUnitPrice: 10000,
+    beerBottleUnitPrice: 3000,
+  },
+  '문정2호점': {
+    monthlyRent: 4500000,
+    managementFee: 30000,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 20000,
+    commissionRate: 0.17,
+    hasManager: false,
+    managerDailyWage: 0,
+    glassUnitPrice: 5000,
+    bottleUnitPrice: 10000,
+    beerBottleUnitPrice: 3000,
+  },
+};
+
+/**
  * 영업일수 계산 (월~토, 일요일 제외)
  */
 export function getBusinessDaysInMonth(year: number, month: number): number {
   const firstDay = new Date(year, month - 1, 1);
   const lastDay = new Date(year, month, 0);
-  
   let businessDays = 0;
   for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
     const dayOfWeek = date.getDay();
-    // 일요일(0)이 아니면 영업일
-    if (dayOfWeek !== 0) {
-      businessDays++;
-    }
+    if (dayOfWeek !== 0) businessDays++;
   }
-  
   return businessDays;
 }
 
@@ -41,80 +113,56 @@ export function calculateDailyRent(monthlyRent: number, year: number, month: num
 export async function getStaffCounts(tableReportId: number): Promise<{ staffCount: number; partTimeCount: number }> {
   const db = await getDb();
   if (!db) return { staffCount: 0, partTimeCount: 0 };
-
-  const incentives = await db
-    .select()
-    .from(staffIncentives)
-    .where(eq(staffIncentives.tableReportId, tableReportId));
-
+  const incentives = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
   const staffCount = incentives.filter(i => i.staffType === 'staff').length;
   const partTimeCount = incentives.filter(i => i.staffType === 'parttime').length;
-
   return { staffCount, partTimeCount };
 }
 
 /**
  * 스탭음료 비용 계산
  */
-export async function calculateStaffDrinkExpense(tableReportId: number, branchId: number): Promise<number> {
+export async function calculateStaffDrinkExpense(tableReportId: number, branchName: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
 
-  const branch = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
-  if (!branch || branch.length === 0) return 0;
+  const config = BRANCH_CONFIG[branchName];
+  const glassPrice = config?.glassUnitPrice ?? 5000;
+  const bottlePrice = config?.bottleUnitPrice ?? 10000;
+  const beerBottlePrice = config?.beerBottleUnitPrice ?? 3000;
 
-  const branchData = branch[0];
-  const glassPrice = Number(branchData.glassUnitPrice || 0);
-  const bottlePrice = Number(branchData.bottleUnitPrice || 0);
-  const beerBottlePrice = Number(branchData.beerBottleUnitPrice || 0);
-
-  const incentives = await db
-    .select()
-    .from(staffIncentives)
-    .where(eq(staffIncentives.tableReportId, tableReportId));
-
-  let totalStaffDrink = 0;
-  incentives.forEach(incentive => {
-    totalStaffDrink += (Number(incentive.glassCount || 0) * glassPrice);
-    totalStaffDrink += (Number(incentive.bottleCount || 0) * bottlePrice);
-    totalStaffDrink += (Number(incentive.beerBottleCount || 0) * beerBottlePrice);
+  const incentives = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
+  let total = 0;
+  incentives.forEach(inc => {
+    total += (Number(inc.glassCount || 0) * glassPrice);
+    total += (Number(inc.bottleCount || 0) * bottlePrice);
+    total += (Number(inc.beerBottleCount || 0) * beerBottlePrice);
   });
-
-  return totalStaffDrink;
+  return total;
 }
 
 /**
- * 주류/단가 비용 계산 (해당 날짜의 OUT 기록)
+ * 주류/단가 비용 계산 (해당 날짜의 OUT 기록 totalCost 합산)
  */
 export async function calculateLiquorCostExpense(branchId: number, date: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-
-  const movements = await db
-    .select()
-    .from(liquorStockMovements)
-    .where(
-      and(
-        eq(liquorStockMovements.branchId, branchId),
-        eq(liquorStockMovements.date, date),
-        eq(liquorStockMovements.type, 'OUT')
-      )
-    );
-
-  let totalCost = 0;
-  movements.forEach(movement => {
-    totalCost += Number(movement.totalCost || 0);
-  });
-
-  return totalCost;
+  const movements = await db.select().from(liquorStockMovements).where(
+    and(
+      eq(liquorStockMovements.branchId, branchId),
+      eq(liquorStockMovements.date, date),
+      eq(liquorStockMovements.type, 'OUT')
+    )
+  );
+  return movements.reduce((sum, m) => sum + Number(m.totalCost || 0), 0);
 }
 
 /**
- * 기타 비용 합계 계산
+ * 기타 비용 합계
  */
 export function calculateOtherExpenses(expenses: Array<{ id: string; description: string; amount: string }>): number {
   if (!Array.isArray(expenses)) return 0;
-  return expenses.reduce((sum, exp) => sum + (Number(exp.amount || 0)), 0);
+  return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 }
 
 /**
@@ -135,6 +183,7 @@ export async function calculateDailySettlement(
   rentExpense: number;
   managementFeeExpense: number;
   staffWageExpense: number;
+  managerWageExpense: number;
   partTimeWageExpense: number;
   liquorCostExpense: number;
   staffDrinkExpense: number;
@@ -142,115 +191,79 @@ export async function calculateDailySettlement(
   totalExpenses: number;
   netProfit: number;
 }> {
+  const zero = {
+    totalRevenue: 0, commissionExpense: 0, rentExpense: 0,
+    managementFeeExpense: 0, staffWageExpense: 0, managerWageExpense: 0,
+    partTimeWageExpense: 0, liquorCostExpense: 0, staffDrinkExpense: 0,
+    otherExpense: 0, totalExpenses: 0, netProfit: 0,
+  };
+
   const db = await getDb();
-  if (!db) {
-    return {
-      totalRevenue: 0,
-      commissionExpense: 0,
-      rentExpense: 0,
-      managementFeeExpense: 0,
-      staffWageExpense: 0,
-      partTimeWageExpense: 0,
-      liquorCostExpense: 0,
-      staffDrinkExpense: 0,
-      otherExpense: 0,
-      totalExpenses: 0,
-      netProfit: 0,
-    };
-  }
+  if (!db) return zero;
 
-  // 지점 정보 조회
+  // 지점 이름 조회
   const branchData = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
-  if (!branchData || branchData.length === 0) {
-    return {
-      totalRevenue: 0,
-      commissionExpense: 0,
-      rentExpense: 0,
-      managementFeeExpense: 0,
-      staffWageExpense: 0,
-      partTimeWageExpense: 0,
-      liquorCostExpense: 0,
-      staffDrinkExpense: 0,
-      otherExpense: 0,
-      totalExpenses: 0,
-      netProfit: 0,
-    };
-  }
+  if (!branchData || branchData.length === 0) return zero;
+  const branchName = branchData[0].name;
 
-  const branch = branchData[0];
+  // 코드 하드코딩 설정 우선, 없으면 DB 값 폴백
+  const config = BRANCH_CONFIG[branchName];
   const [year, month] = date.split('-').map(Number);
 
   // 1. 총매출
   const totalRevenue = cash + card;
 
-  // 2. 수수료/주방
-  const commissionRate = Number(branch.commissionRate || 0.05);
+  // 2. 수수료/주방 (17%)
+  const commissionRate = config?.commissionRate ?? Number(branchData[0].commissionRate || 0.17);
   const commissionExpense = Math.round(totalRevenue * commissionRate);
 
-  // 3. 임대료
-  const monthlyRent = Number(branch.monthlyRent || 0);
+  // 3. 임대료 (월 임대료 ÷ 영업일수)
+  const monthlyRent = config?.monthlyRent ?? Number(branchData[0].monthlyRent || 0);
   const rentExpense = calculateDailyRent(monthlyRent, year, month);
 
   // 4. 관리비
-  const managementFeeExpense = Number(branch.managementFee || 0);
+  const managementFeeExpense = config?.managementFee ?? Number(branchData[0].managementFee || 0);
 
   // 5. 여직원 인건비
-  const staffDailyWage = Number(branch.staffDailyWage || 0);
+  const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
   const staffWageExpense = staffCount * staffDailyWage;
 
-  // 5-1. 점장 인건비 (월~금만 출근)
-  const hasManager = Number(branch.hasManager ?? 1);
-  const managerDailyWage = Number((branch as any).managerDailyWage || 0);
+  // 6. 점장 인건비 (월~금만)
+  const hasManager = config?.hasManager ?? Number(branchData[0].hasManager ?? 1) === 1;
+  const managerDailyWage = config?.managerDailyWage ?? 0;
   const dateObj = new Date(date);
-  const dayOfWeek = dateObj.getDay(); // 0=일, 1=월, ..., 5=금, 6=토
-  const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5; // 월~금
-  const managerWageExpense = hasManager === 1 && isManagerWorkday ? managerDailyWage : 0;
+  const dayOfWeek = dateObj.getDay();
+  const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
+  const managerWageExpense = hasManager && isManagerWorkday ? managerDailyWage : 0;
 
-  // 6. 여알바 인건비 (일급 기준)
-  const partTimeHourlyWage = Number(branch.partTimeHourlyWage || 0);
-  // partTimeHourlyWage가 일급 20,000원으로 설정됨
-  const partTimeWageExpense = partTimeCount * partTimeHourlyWage;
+  // 7. 알바 인건비 (일급)
+  const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 20000);
+  const partTimeWageExpense = partTimeCount * partTimeDailyWage;
 
-  // 7. 주류/단가
+  // 8. 주류/단가
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
 
-  // 8. 스탭음료
-  let staffDrinkExpense = 0;
-  if (tableReportId) {
-    staffDrinkExpense = await calculateStaffDrinkExpense(tableReportId, branchId);
-  }
+  // 9. 스탭음료
+  const staffDrinkExpense = tableReportId
+    ? await calculateStaffDrinkExpense(tableReportId, branchName)
+    : 0;
 
-  // 9. 기타 비용
+  // 10. 기타비용
   const otherExpense = calculateOtherExpenses(expenses);
 
-  // 10. 총 지출
+  // 11. 총 지출
   const totalExpenses =
-    commissionExpense +
-    rentExpense +
-    managementFeeExpense +
-    staffWageExpense +
-    managerWageExpense +
-    partTimeWageExpense +
-    liquorCostExpense +
-    staffDrinkExpense +
-    otherExpense;
+    commissionExpense + rentExpense + managementFeeExpense +
+    staffWageExpense + managerWageExpense + partTimeWageExpense +
+    liquorCostExpense + staffDrinkExpense + otherExpense;
 
-  // 11. 순수익
+  // 12. 순수익
   const netProfit = totalRevenue - totalExpenses;
 
   return {
-    totalRevenue,
-    commissionExpense,
-    rentExpense,
-    managementFeeExpense,
-    staffWageExpense,
-    managerWageExpense,
-    partTimeWageExpense,
-    liquorCostExpense,
-    staffDrinkExpense,
-    otherExpense,
-    totalExpenses,
-    netProfit,
+    totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
+    staffWageExpense, managerWageExpense, partTimeWageExpense,
+    liquorCostExpense, staffDrinkExpense, otherExpense, totalExpenses, netProfit,
   };
 }
 
@@ -276,89 +289,60 @@ export async function calculateMonthlySummary(
   ratios: Record<string, number>;
 }> {
   const db = await getDb();
-  if (!db) {
-    return {
-      totalRevenue: 0,
-      commissionExpense: 0,
-      rentExpense: 0,
-      managementFeeExpense: 0,
-      staffWageExpense: 0,
-      partTimeWageExpense: 0,
-      liquorCostExpense: 0,
-      staffDrinkExpense: 0,
-      otherExpense: 0,
-      totalExpenses: 0,
-      netProfit: 0,
-      ratios: {},
-    };
-  }
+  const zero = {
+    totalRevenue: 0, commissionExpense: 0, rentExpense: 0,
+    managementFeeExpense: 0, staffWageExpense: 0, partTimeWageExpense: 0,
+    liquorCostExpense: 0, staffDrinkExpense: 0, otherExpense: 0,
+    totalExpenses: 0, netProfit: 0, ratios: {},
+  };
+  if (!db) return zero;
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
   const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
 
-  const records = await db
-    .select()
-    .from(dailySalesRecords)
-    .where(
-      and(
-        eq(dailySalesRecords.branchId, branchId),
-        gte(dailySalesRecords.date, startDate),
-        lte(dailySalesRecords.date, endDate)
-      )
-    );
+  const records = await db.select().from(dailySalesRecords).where(
+    and(
+      eq(dailySalesRecords.branchId, branchId),
+      gte(dailySalesRecords.date, startDate),
+      lte(dailySalesRecords.date, endDate)
+    )
+  );
 
-  let totalRevenue = 0;
-  let commissionExpense = 0;
-  let rentExpense = 0;
-  let managementFeeExpense = 0;
-  let staffWageExpense = 0;
-  let partTimeWageExpense = 0;
-  let liquorCostExpense = 0;
-  let staffDrinkExpense = 0;
-  let otherExpense = 0;
-  let totalExpenses = 0;
-  let netProfit = 0;
+  let totalRevenue = 0, commissionExpense = 0, rentExpense = 0;
+  let managementFeeExpense = 0, staffWageExpense = 0, partTimeWageExpense = 0;
+  let liquorCostExpense = 0, staffDrinkExpense = 0, otherExpense = 0;
+  let totalExpenses = 0, netProfit = 0;
 
   records.forEach(record => {
-    totalRevenue += Number(record.totalRevenue || 0);
+    totalRevenue      += Number(record.totalRevenue || 0);
     commissionExpense += Number(record.commissionExpense || 0);
-    rentExpense += Number(record.rentExpense || 0);
+    rentExpense       += Number(record.rentExpense || 0);
     managementFeeExpense += Number(record.managementFeeExpense || 0);
-    staffWageExpense += Number(record.staffWageExpense || 0);
+    staffWageExpense  += Number(record.staffWageExpense || 0);
     partTimeWageExpense += Number(record.partTimeWageExpense || 0);
     liquorCostExpense += Number(record.liquorCostExpense || 0);
     staffDrinkExpense += Number(record.staffDrinkExpense || 0);
-    otherExpense += Number(record.otherExpense || 0);
-    totalExpenses += Number(record.totalExpenses || 0);
-    netProfit += Number(record.netProfit || 0);
+    otherExpense      += Number(record.otherExpense || 0);
+    totalExpenses     += Number(record.totalExpenses || 0);
+    netProfit         += Number(record.netProfit || 0);
   });
 
-  // 비율 계산
   const ratios: Record<string, number> = {};
   if (totalRevenue > 0) {
-    ratios.commission = Math.round((commissionExpense / totalRevenue) * 100);
-    ratios.rent = Math.round((rentExpense / totalRevenue) * 100);
+    ratios.commission    = Math.round((commissionExpense / totalRevenue) * 100);
+    ratios.rent          = Math.round((rentExpense / totalRevenue) * 100);
     ratios.managementFee = Math.round((managementFeeExpense / totalRevenue) * 100);
-    ratios.staffWage = Math.round((staffWageExpense / totalRevenue) * 100);
-    ratios.partTimeWage = Math.round((partTimeWageExpense / totalRevenue) * 100);
-    ratios.liquorCost = Math.round((liquorCostExpense / totalRevenue) * 100);
-    ratios.staffDrink = Math.round((staffDrinkExpense / totalRevenue) * 100);
-    ratios.otherExpense = Math.round((otherExpense / totalRevenue) * 100);
-    ratios.netProfit = Math.round((netProfit / totalRevenue) * 100);
+    ratios.staffWage     = Math.round((staffWageExpense / totalRevenue) * 100);
+    ratios.partTimeWage  = Math.round((partTimeWageExpense / totalRevenue) * 100);
+    ratios.liquorCost    = Math.round((liquorCostExpense / totalRevenue) * 100);
+    ratios.staffDrink    = Math.round((staffDrinkExpense / totalRevenue) * 100);
+    ratios.otherExpense  = Math.round((otherExpense / totalRevenue) * 100);
+    ratios.netProfit     = Math.round((netProfit / totalRevenue) * 100);
   }
 
   return {
-    totalRevenue,
-    commissionExpense,
-    rentExpense,
-    managementFeeExpense,
-    staffWageExpense,
-    partTimeWageExpense,
-    liquorCostExpense,
-    staffDrinkExpense,
-    otherExpense,
-    totalExpenses,
-    netProfit,
-    ratios,
+    totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
+    staffWageExpense, partTimeWageExpense, liquorCostExpense, staffDrinkExpense,
+    otherExpense, totalExpenses, netProfit, ratios,
   };
 }

@@ -42,7 +42,6 @@ export const branches = mysqlTable("branches", {
   partTimeHourlyWage: decimal("partTimeHourlyWage", { precision: 15, scale: 0 }).default("0").notNull(), // 여알바 시급
   commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.05").notNull(), // 수수료/주방 비율 (기본 5%)
   hasManager: int("hasManager").default(1).notNull(), // 점장 유무 (1=있음, 0=없음)
-  managerDailyWage: decimal("managerDailyWage", { precision: 15, scale: 0 }).default("0").notNull(), // 점장 일급 (월~금)
   // 스탭음료 단가
   glassUnitPrice: decimal("glassUnitPrice", { precision: 15, scale: 0 }).default("5000").notNull(), // 잔추가 단가
   bottleUnitPrice: decimal("bottleUnitPrice", { precision: 15, scale: 0 }).default("10000").notNull(), // 병추가 단가
