@@ -49,10 +49,9 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   // esbuild 번들 시 dist/index.js 기준 → dist/public
-  const distPath = path.resolve(
-    path.dirname(new URL(import.meta.url).pathname),
-    "public"
-  );
+  const distPath = path.join(process.cwd(), "dist", "public");
+  console.log("[Static] distPath:", distPath);
+  console.log("[Static] cwd:", process.cwd());
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
