@@ -48,7 +48,13 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
+  // Railway: dist/index.js 기준으로 dist/public 찾기
+  const distPath = path.resolve(
+    process.env.NODE_ENV === "production"
+      ? path.dirname(process.argv[1] || "")  // dist/index.js 위치
+      : import.meta.dirname + "/../..",
+    "public"
+  );
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
