@@ -6807,13 +6807,7 @@ function serveStatic(app) {
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-  app.use(express.static(distPath, {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".html")) {
-        res.setHeader("Content-Type", "text/html; charset=UTF-8");
-      }
-    }
-  }));
+  app.use(express.static(distPath));
   app.use("*", (_req, res) => {
     res.setHeader("Content-Type", "text/html; charset=UTF-8");
     res.sendFile(path2.resolve(distPath, "index.html"));
