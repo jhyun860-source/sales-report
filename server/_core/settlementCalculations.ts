@@ -194,15 +194,22 @@ export async function calculateDailySettlement(
   // 4. 관리비
   const managementFeeExpense = Number(branch.managementFee || 0);
 
-  // 5. 여직원 인건비 (점장 유무 확인)
-  const hasManager = Number(branch.hasManager || 1);
+  // 5. 여직원 인건비
   const staffDailyWage = Number(branch.staffDailyWage || 0);
-  const staffWageExpense = hasManager === 1 ? staffCount * staffDailyWage : 0;
+  const staffWageExpense = staffCount * staffDailyWage;
 
-  // 6. 여알바 인건비 (시급 기반)
+  // 5-1. 점장 인건비 (월~금만 출근)
+  const hasManager = Number(branch.hasManager ?? 1);
+  const managerDailyWage = Number((branch as any).managerDailyWage || 0);
+  const dateObj = new Date(date);
+  const dayOfWeek = dateObj.getDay(); // 0=일, 1=월, ..., 5=금, 6=토
+  const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5; // 월~금
+  const managerWageExpense = hasManager === 1 && isManagerWorkday ? managerDailyWage : 0;
+
+  // 6. 여알바 인건비 (일급 기준)
   const partTimeHourlyWage = Number(branch.partTimeHourlyWage || 0);
-  // 평균 근무 시간은 8시간으로 가정 (실제로는 workStart/workEnd에서 계산 가능)
-  const partTimeWageExpense = partTimeCount * partTimeHourlyWage * 8;
+  // partTimeHourlyWage가 일급 20,000원으로 설정됨
+  const partTimeWageExpense = partTimeCount * partTimeHourlyWage;
 
   // 7. 주류/단가
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
@@ -222,6 +229,7 @@ export async function calculateDailySettlement(
     rentExpense +
     managementFeeExpense +
     staffWageExpense +
+    managerWageExpense +
     partTimeWageExpense +
     liquorCostExpense +
     staffDrinkExpense +
@@ -236,6 +244,7 @@ export async function calculateDailySettlement(
     rentExpense,
     managementFeeExpense,
     staffWageExpense,
+    managerWageExpense,
     partTimeWageExpense,
     liquorCostExpense,
     staffDrinkExpense,
