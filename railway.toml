@@ -1,6 +1,16 @@
 [build]
 builder = "nixpacks"
 buildCommand = "pnpm install && pnpm build"
+watchPatterns = ["**"]
+
+[build.nixpacksPlan.phases.setup]
+nixPkgs = ["nodejs_20", "nodePackages.pnpm"]
+
+[build.nixpacksPlan.phases.install]
+cmds = ["pnpm install"]
+
+[build.nixpacksPlan.phases.build]
+cmds = ["pnpm build"]
 
 [deploy]
 startCommand = "node dist/index.js"
