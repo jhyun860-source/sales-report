@@ -48,11 +48,9 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // Railway: dist/index.js 기준으로 dist/public 찾기
+  // esbuild 번들 시 dist/index.js 기준 → dist/public
   const distPath = path.resolve(
-    process.env.NODE_ENV === "production"
-      ? path.dirname(process.argv[1] || "")  // dist/index.js 위치
-      : import.meta.dirname + "/../..",
+    path.dirname(new URL(import.meta.url).pathname),
     "public"
   );
   if (!fs.existsSync(distPath)) {
