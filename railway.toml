@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install && pnpm build"
+buildCommand = "pnpm install && pnpm drizzle-kit push && pnpm build"
 
 [deploy]
 startCommand = "node dist/index.js"
