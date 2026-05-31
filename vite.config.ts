@@ -167,6 +167,12 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    cssCodeSplit: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
   server: {
     host: true,
@@ -178,6 +184,8 @@ export default defineConfig({
       ".manusvm.computer",
       "localhost",
       "127.0.0.1",
+      ".railway.app",
+      ".up.railway.app",
     ],
     fs: {
       strict: true,
