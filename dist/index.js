@@ -6837,10 +6837,6 @@ async function runMigrations() {
 async function startServer() {
   const app = express2();
   const server = createServer(app);
-  app.use((req, res, next) => {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    next();
-  });
   app.use(express2.json({ limit: "50mb" }));
   app.use(express2.urlencoded({ limit: "50mb", extended: true }));
   registerOAuthRoutes(app);
