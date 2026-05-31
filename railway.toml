@@ -1,8 +1,8 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install && pnpm drizzle-kit push && pnpm build"
+buildCommand = "pnpm install && pnpm build"
 
 [deploy]
-startCommand = "node dist/index.js"
+startCommand = "pnpm drizzle-kit push && node dist/index.js"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
