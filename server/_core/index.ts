@@ -33,6 +33,20 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+async function runMigrations() {
+  try {
+    const { execSync } = await import('child_process');
+    console.log('[DB] Running migrations...');
+    execSync('npx drizzle-kit push --force', {
+      env: { ...process.env },
+      stdio: 'inherit',
+    });
+    console.log('[DB] Migrations complete');
+  } catch (e) {
+    console.warn('[DB] Migration warning (continuing):', e instanceof Error ? e.message : e);
+  }
+}
+
 async function startServer() {
   // [수정] 서버 시작 시 자동 누적 리셋 호출 제거.
   //   - 기존: await checkAndResetMonthlyAmounts();
@@ -78,4 +92,4 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+runMigrations().then(() => startServer()).catch(console.error);
