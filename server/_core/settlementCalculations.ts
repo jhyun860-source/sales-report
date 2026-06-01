@@ -116,7 +116,8 @@ export async function getStaffCounts(tableReportId: number): Promise<{ staffCoun
   const incentives = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
   const staffCount = incentives.filter(i => i.staffType === 'staff').length;
   const partTimeCount = incentives.filter(i => i.staffType === 'parttime').length;
-  return { staffCount, partTimeCount };
+  const managerCount = incentives.filter(i => i.staffType === 'manager').length;
+  return { staffCount, partTimeCount, managerCount };
 }
 
 /**
@@ -176,7 +177,8 @@ export async function calculateDailySettlement(
   staffCount: number,
   partTimeCount: number,
   expenses: Array<{ id: string; description: string; amount: string }>,
-  tableReportId: number | null
+  tableReportId: number | null,
+  managerCount: number = 0
 ): Promise<{
   totalRevenue: number;
   commissionExpense: number;
@@ -228,13 +230,17 @@ export async function calculateDailySettlement(
   const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
   const staffWageExpense = staffCount * staffDailyWage;
 
-  // 6. 점장 인건비 (월~금만)
+  // 6. 점장 인건비
+  // managerCount > 0 이면 테이블 보고에 점장 출근 기록 있음 → 점장 일급 반영
+  // managerCount 없으면 hasManager 설정 기반으로 월~금 자동 계산 (기존 로직 유지)
   const hasManager = config?.hasManager ?? Number(branchData[0].hasManager ?? 1) === 1;
   const managerDailyWage = config?.managerDailyWage ?? 0;
   const dateObj = new Date(date);
   const dayOfWeek = dateObj.getDay();
   const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
-  const managerWageExpense = hasManager && isManagerWorkday ? managerDailyWage : 0;
+  const managerWageExpense = managerCount > 0
+    ? managerCount * managerDailyWage
+    : (hasManager && isManagerWorkday ? managerDailyWage : 0);
 
   // 7. 알바 인건비 (일급)
   const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 20000);
