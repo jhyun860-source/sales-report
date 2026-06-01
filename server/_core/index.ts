@@ -8,6 +8,7 @@ import { registerSettlementsRoutes } from "./settlements";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { startBackupScheduler } from "../backup-scheduler";
 // [수정] 서버 시작 시 자동 월초 리셋은 운영 방식과 맞지 않아 비활성화한다.
 // 운영팀은 새벽에 전날 매출을 입력하므로 "현재시간"이 아닌 "selectedDate" 기준으로
 // 누적이 계산되어야 한다. computeCumulativesForDate()가 selectedDate 기준 월별 합산을
@@ -75,6 +76,10 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // 매일 KST 00:05 자동 DB 백업 스케줄러 시작
+    if (process.env.NODE_ENV === 'production') {
+      startBackupScheduler();
+    }
   });
 }
 
