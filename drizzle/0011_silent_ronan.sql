@@ -1,0 +1,1 @@
+ALTER TABLE `staffIncentives` MODIFY COLUMN `staffType` enum('staff','parttime','manager') NOT NULL DEFAULT 'staff';
