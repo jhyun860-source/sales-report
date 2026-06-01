@@ -1129,8 +1129,8 @@ export default function TableReport() {
                   />
                 </div>
 
-                {/* 4행: 근무 시간 - 오전/오후 토글 + 시간 직접 입력 */}
-                <div className="px-3 py-2 space-y-1.5">
+                {/* 4행: 근무 시간 - 점장은 출퇴근 시간 불필요 */}
+                <div className="px-3 py-2 space-y-1.5" style={{ display: inc.staffType === 'manager' ? 'none' : undefined }}>
                   {/* 시작 시간 - 출근은 오후(PM) 고정 */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs w-8 flex-shrink-0" style={{ color: MUTED }}>출근</span>
