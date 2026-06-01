@@ -2,6 +2,7 @@
 import "dotenv/config";
 import express2 from "express";
 import { createServer } from "http";
+import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 // shared/const.ts
@@ -42,26 +43,6 @@ var branches = mysqlTable("branches", {
   // 지점명 (강남점, 홍대점 등)
   code: varchar("code", { length: 50 }).notNull().unique(),
   // 지점 코드
-  // 지점별 고정 비용 설정
-  monthlyRent: decimal("monthlyRent", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 월 임대료
-  managementFee: decimal("managementFee", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 월 관리비
-  staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 여직원 일급
-  partTimeHourlyWage: decimal("partTimeHourlyWage", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 여알바 시급
-  commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.05").notNull(),
-  // 수수료/주방 비율 (기본 5%)
-  hasManager: int("hasManager").default(1).notNull(),
-  // 점장 유무 (1=있음, 0=없음)
-  // 스탭음료 단가
-  glassUnitPrice: decimal("glassUnitPrice", { precision: 15, scale: 0 }).default("5000").notNull(),
-  // 잔추가 단가
-  bottleUnitPrice: decimal("bottleUnitPrice", { precision: 15, scale: 0 }).default("10000").notNull(),
-  // 병추가 단가
-  beerBottleUnitPrice: decimal("beerBottleUnitPrice", { precision: 15, scale: 0 }).default("3000").notNull(),
-  // 맥주병추가 단가
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
 });
@@ -93,33 +74,6 @@ var dailySalesRecords = mysqlTable("dailySalesRecords", {
   expenses: json("expenses").$type().default([]).notNull(),
   submittedBy: int("submittedBy"),
   submittedAt: timestamp("submittedAt"),
-  // 일별 정산 결과
-  totalRevenue: decimal("totalRevenue", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 총매출
-  commissionExpense: decimal("commissionExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 수수료/주방
-  rentExpense: decimal("rentExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 일별 임대료
-  managementFeeExpense: decimal("managementFeeExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 일별 관리비
-  staffWageExpense: decimal("staffWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 여직원 인건비
-  partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 여알바 인건비
-  liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 주류/단가
-  staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 스탭음료
-  otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 기타 비용
-  totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 총 지출
-  netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 순수익
-  staffCount: int("staffCount").default(0).notNull(),
-  // 여직원 수
-  partTimeCount: int("partTimeCount").default(0).notNull(),
-  // 여알바 수
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
 });
@@ -1216,10 +1170,10 @@ var systemRouter = router({
 });
 
 // server/routers.ts
-import { z as z3 } from "zod";
+import { z as z2 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
-import { SignJWT as SignJWT2, jwtVerify as jwtVerify3 } from "jose";
+import { SignJWT as SignJWT2, jwtVerify as jwtVerify2 } from "jose";
 
 // server/_core/llm.ts
 var ensureArray = (value) => Array.isArray(value) ? value : [value];
@@ -1456,522 +1410,8 @@ async function storagePut(relKey, data, contentType = "application/octet-stream"
 }
 
 // server/routers.ts
-import { eq as eq5, and as and5, desc as desc3, like, sql, inArray, gte as gte4, lte as lte4, not } from "drizzle-orm";
-import { TRPCError as TRPCError4 } from "@trpc/server";
-
-// server/settlementRouter.ts
-import { z as z2 } from "zod";
+import { eq as eq3, and as and3, desc as desc2, like, sql, inArray, gte as gte2, lte as lte2, not } from "drizzle-orm";
 import { TRPCError as TRPCError3 } from "@trpc/server";
-import { eq as eq4, and as and4, gte as gte3, lte as lte3, desc as desc2 } from "drizzle-orm";
-
-// server/_core/settlementCalculations.ts
-import { eq as eq3, and as and3, gte as gte2, lte as lte2 } from "drizzle-orm";
-var BRANCH_CONFIG = {
-  "\uB300\uCE58\uC810": {
-    monthlyRent: 9e6,
-    managementFee: 0,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 272727,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uC120\uB989\uC810": {
-    monthlyRent: 65e5,
-    managementFee: 0,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 25e4,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uC0BC\uC131\uC810": {
-    monthlyRent: 65e5,
-    managementFee: 0,
-    staffDailyWage: 159090,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 181818,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uBB38\uC8151\uD638\uC810": {
-    monthlyRent: 45e5,
-    managementFee: 0,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 204545,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uBB38\uC8152\uD638\uC810": {
-    monthlyRent: 45e5,
-    managementFee: 3e4,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: false,
-    managerDailyWage: 0,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  }
-};
-function getBusinessDaysInMonth(year, month) {
-  const firstDay = new Date(year, month - 1, 1);
-  const lastDay = new Date(year, month, 0);
-  let businessDays = 0;
-  for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
-    const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0) businessDays++;
-  }
-  return businessDays;
-}
-function calculateDailyRent(monthlyRent, year, month) {
-  const businessDays = getBusinessDaysInMonth(year, month);
-  if (businessDays === 0) return 0;
-  return Math.round(monthlyRent / businessDays);
-}
-async function getStaffCounts(tableReportId) {
-  const db = await getDb();
-  if (!db) return { staffCount: 0, partTimeCount: 0 };
-  const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
-  const staffCount = incentives.filter((i) => i.staffType === "staff").length;
-  const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
-  return { staffCount, partTimeCount };
-}
-async function calculateStaffDrinkExpense(tableReportId, branchName) {
-  const db = await getDb();
-  if (!db) return 0;
-  const config = BRANCH_CONFIG[branchName];
-  const glassPrice = config?.glassUnitPrice ?? 5e3;
-  const bottlePrice = config?.bottleUnitPrice ?? 1e4;
-  const beerBottlePrice = config?.beerBottleUnitPrice ?? 3e3;
-  const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
-  let total = 0;
-  incentives.forEach((inc) => {
-    total += Number(inc.glassCount || 0) * glassPrice;
-    total += Number(inc.bottleCount || 0) * bottlePrice;
-    total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
-  });
-  return total;
-}
-async function calculateLiquorCostExpense(branchId, date) {
-  const db = await getDb();
-  if (!db) return 0;
-  const movements = await db.select().from(liquorStockMovements).where(
-    and3(
-      eq3(liquorStockMovements.branchId, branchId),
-      eq3(liquorStockMovements.date, date),
-      eq3(liquorStockMovements.type, "OUT")
-    )
-  );
-  return movements.reduce((sum, m) => sum + Number(m.totalCost || 0), 0);
-}
-function calculateOtherExpenses(expenses) {
-  if (!Array.isArray(expenses)) return 0;
-  return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
-}
-async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId) {
-  const zero = {
-    totalRevenue: 0,
-    commissionExpense: 0,
-    rentExpense: 0,
-    managementFeeExpense: 0,
-    staffWageExpense: 0,
-    managerWageExpense: 0,
-    partTimeWageExpense: 0,
-    liquorCostExpense: 0,
-    staffDrinkExpense: 0,
-    otherExpense: 0,
-    totalExpenses: 0,
-    netProfit: 0
-  };
-  const db = await getDb();
-  if (!db) return zero;
-  const branchData = await db.select().from(branches).where(eq3(branches.id, branchId)).limit(1);
-  if (!branchData || branchData.length === 0) return zero;
-  const branchName = branchData[0].name;
-  const config = BRANCH_CONFIG[branchName];
-  const [year, month] = date.split("-").map(Number);
-  const totalRevenue = cash + card;
-  const commissionRate = config?.commissionRate ?? Number(branchData[0].commissionRate || 0.17);
-  const commissionExpense = Math.round(totalRevenue * commissionRate);
-  const monthlyRent = config?.monthlyRent ?? Number(branchData[0].monthlyRent || 0);
-  const rentExpense = calculateDailyRent(monthlyRent, year, month);
-  const managementFeeExpense = config?.managementFee ?? Number(branchData[0].managementFee || 0);
-  const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
-  const staffWageExpense = staffCount * staffDailyWage;
-  const hasManager = config?.hasManager ?? Number(branchData[0].hasManager ?? 1) === 1;
-  const managerDailyWage = config?.managerDailyWage ?? 0;
-  const dateObj = new Date(date);
-  const dayOfWeek = dateObj.getDay();
-  const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
-  const managerWageExpense = hasManager && isManagerWorkday ? managerDailyWage : 0;
-  const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 2e4);
-  const partTimeWageExpense = partTimeCount * partTimeDailyWage;
-  const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
-  const staffDrinkExpense = tableReportId ? await calculateStaffDrinkExpense(tableReportId, branchName) : 0;
-  const otherExpense = calculateOtherExpenses(expenses);
-  const totalExpenses = commissionExpense + rentExpense + managementFeeExpense + staffWageExpense + managerWageExpense + partTimeWageExpense + liquorCostExpense + staffDrinkExpense + otherExpense;
-  const netProfit = totalRevenue - totalExpenses;
-  return {
-    totalRevenue,
-    commissionExpense,
-    rentExpense,
-    managementFeeExpense,
-    staffWageExpense,
-    managerWageExpense,
-    partTimeWageExpense,
-    liquorCostExpense,
-    staffDrinkExpense,
-    otherExpense,
-    totalExpenses,
-    netProfit
-  };
-}
-async function calculateMonthlySummary(branchId, year, month) {
-  const db = await getDb();
-  const zero = {
-    totalRevenue: 0,
-    commissionExpense: 0,
-    rentExpense: 0,
-    managementFeeExpense: 0,
-    staffWageExpense: 0,
-    partTimeWageExpense: 0,
-    liquorCostExpense: 0,
-    staffDrinkExpense: 0,
-    otherExpense: 0,
-    totalExpenses: 0,
-    netProfit: 0,
-    ratios: {}
-  };
-  if (!db) return zero;
-  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-  const endDate = `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`;
-  const records = await db.select().from(dailySalesRecords).where(
-    and3(
-      eq3(dailySalesRecords.branchId, branchId),
-      gte2(dailySalesRecords.date, startDate),
-      lte2(dailySalesRecords.date, endDate)
-    )
-  );
-  let totalRevenue = 0, commissionExpense = 0, rentExpense = 0;
-  let managementFeeExpense = 0, staffWageExpense = 0, partTimeWageExpense = 0;
-  let liquorCostExpense = 0, staffDrinkExpense = 0, otherExpense = 0;
-  let totalExpenses = 0, netProfit = 0;
-  records.forEach((record) => {
-    totalRevenue += Number(record.totalRevenue || 0);
-    commissionExpense += Number(record.commissionExpense || 0);
-    rentExpense += Number(record.rentExpense || 0);
-    managementFeeExpense += Number(record.managementFeeExpense || 0);
-    staffWageExpense += Number(record.staffWageExpense || 0);
-    partTimeWageExpense += Number(record.partTimeWageExpense || 0);
-    liquorCostExpense += Number(record.liquorCostExpense || 0);
-    staffDrinkExpense += Number(record.staffDrinkExpense || 0);
-    otherExpense += Number(record.otherExpense || 0);
-    totalExpenses += Number(record.totalExpenses || 0);
-    netProfit += Number(record.netProfit || 0);
-  });
-  const ratios = {};
-  if (totalRevenue > 0) {
-    ratios.commission = Math.round(commissionExpense / totalRevenue * 100);
-    ratios.rent = Math.round(rentExpense / totalRevenue * 100);
-    ratios.managementFee = Math.round(managementFeeExpense / totalRevenue * 100);
-    ratios.staffWage = Math.round(staffWageExpense / totalRevenue * 100);
-    ratios.partTimeWage = Math.round(partTimeWageExpense / totalRevenue * 100);
-    ratios.liquorCost = Math.round(liquorCostExpense / totalRevenue * 100);
-    ratios.staffDrink = Math.round(staffDrinkExpense / totalRevenue * 100);
-    ratios.otherExpense = Math.round(otherExpense / totalRevenue * 100);
-    ratios.netProfit = Math.round(netProfit / totalRevenue * 100);
-  }
-  return {
-    totalRevenue,
-    commissionExpense,
-    rentExpense,
-    managementFeeExpense,
-    staffWageExpense,
-    partTimeWageExpense,
-    liquorCostExpense,
-    staffDrinkExpense,
-    otherExpense,
-    totalExpenses,
-    netProfit,
-    ratios
-  };
-}
-
-// server/settlementRouter.ts
-import { jwtVerify as jwtVerify2 } from "jose";
-async function parseStoreCookie(cookieHeader, authHeader) {
-  let token;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.slice(7).trim();
-  }
-  if (!token && cookieHeader) {
-    const cookies = Object.fromEntries(
-      cookieHeader.split(";").map((c) => {
-        const [k, ...v] = c.trim().split("=");
-        return [k.trim(), v.join("=")];
-      })
-    );
-    token = cookies[COOKIE_NAME];
-  }
-  if (!token) return null;
-  try {
-    const secret = new TextEncoder().encode(ENV.cookieSecret);
-    const { payload } = await jwtVerify2(token, secret, { algorithms: ["HS256"] });
-    if (payload.type !== "store") return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-var settlementRouter = router({
-  /**
-   * 지점 설정 조회
-   */
-  getBranchSettings: publicProcedure.input(z2.object({ branchId: z2.number() })).query(async ({ ctx, input }) => {
-    const db = await getDb();
-    if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
-    const branch = await db.select().from(branches).where(eq4(branches.id, input.branchId)).limit(1);
-    if (!branch || branch.length === 0) {
-      throw new TRPCError3({ code: "NOT_FOUND", message: "\uC9C0\uC810\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-    }
-    return branch[0];
-  }),
-  /**
-   * 지점 설정 업데이트
-   */
-  updateBranchSettings: publicProcedure.input(
-    z2.object({
-      branchId: z2.number(),
-      monthlyRent: z2.string().optional(),
-      managementFee: z2.string().optional(),
-      staffDailyWage: z2.string().optional(),
-      partTimeHourlyWage: z2.string().optional(),
-      commissionRate: z2.string().optional(),
-      hasManager: z2.number().optional(),
-      glassUnitPrice: z2.string().optional(),
-      bottleUnitPrice: z2.string().optional(),
-      beerBottleUnitPrice: z2.string().optional()
-    })
-  ).mutation(async ({ ctx, input }) => {
-    const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
-    if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
-    const account = await getStoreAccountById(payload.accountId);
-    if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-    if (account.role !== "admin") {
-      throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC124\uC815\uC744 \uBCC0\uACBD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
-    }
-    const db = await getDb();
-    if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
-    const updateData = { updatedAt: /* @__PURE__ */ new Date() };
-    if (input.monthlyRent !== void 0) updateData.monthlyRent = input.monthlyRent;
-    if (input.managementFee !== void 0) updateData.managementFee = input.managementFee;
-    if (input.staffDailyWage !== void 0) updateData.staffDailyWage = input.staffDailyWage;
-    if (input.partTimeHourlyWage !== void 0) updateData.partTimeHourlyWage = input.partTimeHourlyWage;
-    if (input.commissionRate !== void 0) updateData.commissionRate = input.commissionRate;
-    if (input.hasManager !== void 0) updateData.hasManager = input.hasManager;
-    if (input.glassUnitPrice !== void 0) updateData.glassUnitPrice = input.glassUnitPrice;
-    if (input.bottleUnitPrice !== void 0) updateData.bottleUnitPrice = input.bottleUnitPrice;
-    if (input.beerBottleUnitPrice !== void 0) updateData.beerBottleUnitPrice = input.beerBottleUnitPrice;
-    await db.update(branches).set(updateData).where(eq4(branches.id, input.branchId));
-    const updated = await db.select().from(branches).where(eq4(branches.id, input.branchId)).limit(1);
-    return updated[0] || null;
-  }),
-  /**
-   * 일별 정산 조회 및 계산
-   */
-  getDailySettlement: publicProcedure.input(z2.object({ branchId: z2.number(), date: z2.string() })).query(async ({ ctx, input }) => {
-    const db = await getDb();
-    if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
-    const record = await db.select().from(dailySalesRecords).where(and4(eq4(dailySalesRecords.branchId, input.branchId), eq4(dailySalesRecords.date, input.date))).limit(1);
-    if (!record || record.length === 0) {
-      return null;
-    }
-    return record[0];
-  }),
-  /**
-   * 일별 정산 저장 (정산 계산 포함)
-   */
-  saveDailySettlement: publicProcedure.input(
-    z2.object({
-      branchId: z2.number(),
-      date: z2.string(),
-      cash: z2.string().default("0"),
-      card: z2.string().default("0"),
-      expenses: z2.array(z2.object({ id: z2.string(), description: z2.string(), amount: z2.string() })).default([])
-    })
-  ).mutation(async ({ ctx, input }) => {
-    const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
-    if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
-    const account = await getStoreAccountById(payload.accountId);
-    if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-    if (account.role !== "admin" && account.branchId !== input.branchId) {
-      throw new TRPCError3({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
-    }
-    const db = await getDb();
-    if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
-    const tableReport = await db.select().from(tableReports).where(and4(eq4(tableReports.branchId, input.branchId), eq4(tableReports.date, input.date))).limit(1);
-    const tableReportId = tableReport && tableReport.length > 0 ? tableReport[0].id : null;
-    const { staffCount, partTimeCount } = tableReportId ? await getStaffCounts(tableReportId) : { staffCount: 0, partTimeCount: 0 };
-    const cash = Number(input.cash || 0);
-    const card = Number(input.card || 0);
-    const [year, month] = input.date.split("-").map(Number);
-    const settlement = await calculateDailySettlement(
-      input.branchId,
-      input.date,
-      cash,
-      card,
-      staffCount,
-      partTimeCount,
-      input.expenses,
-      tableReportId
-    );
-    const existing = await db.select().from(dailySalesRecords).where(and4(eq4(dailySalesRecords.branchId, input.branchId), eq4(dailySalesRecords.date, input.date))).limit(1);
-    let result;
-    if (existing && existing.length > 0) {
-      await db.update(dailySalesRecords).set({
-        cash: String(cash),
-        card: String(card),
-        expenses: input.expenses,
-        totalRevenue: String(settlement.totalRevenue),
-        commissionExpense: String(settlement.commissionExpense),
-        rentExpense: String(settlement.rentExpense),
-        managementFeeExpense: String(settlement.managementFeeExpense),
-        staffWageExpense: String(settlement.staffWageExpense),
-        partTimeWageExpense: String(settlement.partTimeWageExpense),
-        liquorCostExpense: String(settlement.liquorCostExpense),
-        staffDrinkExpense: String(settlement.staffDrinkExpense),
-        otherExpense: String(settlement.otherExpense),
-        totalExpenses: String(settlement.totalExpenses),
-        netProfit: String(settlement.netProfit),
-        staffCount,
-        partTimeCount,
-        submittedAt: /* @__PURE__ */ new Date(),
-        updatedAt: /* @__PURE__ */ new Date()
-      }).where(eq4(dailySalesRecords.id, existing[0].id));
-      const updated = await db.select().from(dailySalesRecords).where(eq4(dailySalesRecords.id, existing[0].id)).limit(1);
-      result = updated[0];
-    } else {
-      const insertResult = await db.insert(dailySalesRecords).values({
-        branchId: input.branchId,
-        date: input.date,
-        cash: String(cash),
-        card: String(card),
-        expenses: input.expenses,
-        totalRevenue: String(settlement.totalRevenue),
-        commissionExpense: String(settlement.commissionExpense),
-        rentExpense: String(settlement.rentExpense),
-        managementFeeExpense: String(settlement.managementFeeExpense),
-        staffWageExpense: String(settlement.staffWageExpense),
-        partTimeWageExpense: String(settlement.partTimeWageExpense),
-        liquorCostExpense: String(settlement.liquorCostExpense),
-        staffDrinkExpense: String(settlement.staffDrinkExpense),
-        otherExpense: String(settlement.otherExpense),
-        totalExpenses: String(settlement.totalExpenses),
-        netProfit: String(settlement.netProfit),
-        staffCount,
-        partTimeCount,
-        submittedAt: /* @__PURE__ */ new Date()
-      });
-      const recordId = insertResult.insertId;
-      const created = await db.select().from(dailySalesRecords).where(eq4(dailySalesRecords.id, recordId)).limit(1);
-      result = created[0];
-    }
-    return result;
-  }),
-  /**
-   * 월 누적 현황 조회
-   */
-  getMonthlySummary: publicProcedure.input(z2.object({ branchId: z2.number(), year: z2.number(), month: z2.number() })).query(async ({ ctx, input }) => {
-    const summary = await calculateMonthlySummary(input.branchId, input.year, input.month);
-    return summary;
-  }),
-  /**
-   * 기간별 정산 조회
-   */
-  getSettlementsByDateRange: publicProcedure.input(z2.object({ branchId: z2.number(), startDate: z2.string(), endDate: z2.string() })).query(async ({ ctx, input }) => {
-    const db = await getDb();
-    if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
-    const records = await db.select().from(dailySalesRecords).where(
-      and4(
-        eq4(dailySalesRecords.branchId, input.branchId),
-        gte3(dailySalesRecords.date, input.startDate),
-        lte3(dailySalesRecords.date, input.endDate)
-      )
-    ).orderBy(desc2(dailySalesRecords.date));
-    return records;
-  }),
-  /**
-   * 오늘 순수익 조회
-   */
-  getTodayNetProfit: publicProcedure.input(z2.object({ branchId: z2.number() })).query(async ({ ctx, input }) => {
-    const db = await getDb();
-    if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
-    const today = /* @__PURE__ */ new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const record = await db.select().from(dailySalesRecords).where(and4(eq4(dailySalesRecords.branchId, input.branchId), eq4(dailySalesRecords.date, todayStr))).limit(1);
-    if (!record || record.length === 0) {
-      return { netProfit: 0, totalRevenue: 0 };
-    }
-    return {
-      netProfit: Number(record[0].netProfit || 0),
-      totalRevenue: Number(record[0].totalRevenue || 0)
-    };
-  }),
-  /**
-   * 이번 달 누적 순수익 조회
-   */
-  getMonthlyNetProfit: publicProcedure.input(z2.object({ branchId: z2.number() })).query(async ({ ctx, input }) => {
-    const today = /* @__PURE__ */ new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1;
-    const summary = await calculateMonthlySummary(input.branchId, year, month);
-    return {
-      netProfit: summary.netProfit,
-      totalRevenue: summary.totalRevenue
-    };
-  }),
-  /**
-   * 모든 지점의 오늘 순수익 조회
-   */
-  getAllBranchesTodayNetProfit: publicProcedure.query(async ({ ctx }) => {
-    const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
-    if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
-    const account = await getStoreAccountById(payload.accountId);
-    if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-    if (account.role !== "admin") {
-      throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
-    }
-    const db = await getDb();
-    if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
-    const allBranches = await db.select().from(branches).orderBy(branches.name);
-    const today = /* @__PURE__ */ new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const records = await db.select().from(dailySalesRecords).where(eq4(dailySalesRecords.date, todayStr));
-    return allBranches.map((branch) => ({
-      branchId: branch.id,
-      branchName: branch.name,
-      netProfit: Number(records.find((r) => r.branchId === branch.id)?.netProfit || 0),
-      totalRevenue: Number(records.find((r) => r.branchId === branch.id)?.totalRevenue || 0)
-    }));
-  })
-});
-
-// server/routers.ts
 function formatKstDateString(date) {
   const kst = new Date(date.getTime() + 9 * 60 * 60 * 1e3);
   return kst.toISOString().slice(0, 10);
@@ -1990,7 +1430,7 @@ async function normalizeMonthlyCumulativeRecord(record) {
     if (record.cashTotal !== nextCashTotal || record.cardTotal !== nextCardTotal) {
       const db = await getDb();
       if (db && record.id) {
-        await db.update(dailySalesRecords).set({ cashTotal: nextCashTotal, cardTotal: nextCardTotal, updatedAt: /* @__PURE__ */ new Date() }).where(eq5(dailySalesRecords.id, record.id));
+        await db.update(dailySalesRecords).set({ cashTotal: nextCashTotal, cardTotal: nextCardTotal, updatedAt: /* @__PURE__ */ new Date() }).where(eq3(dailySalesRecords.id, record.id));
       }
       return { ...record, cashTotal: nextCashTotal, cardTotal: nextCardTotal };
     }
@@ -4523,11 +3963,11 @@ var BOXHERO_ITEM_ALIASES = {
   "\uD55C\uB9E5\uC0DD\uB9E5": "\uD55C\uB9E5 \uC0DD\uB9E5\uC8FC"
 };
 async function requireStoreAccount(ctx) {
-  const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-  if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+  const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+  if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
   await ensureCanonicalStoreAccounts();
   const account = await getStoreAccountById(payload.accountId);
-  if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+  if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
   return account;
 }
 async function ensureLiquorTables(db) {
@@ -4627,14 +4067,14 @@ async function ensureBoxHeroBranchStockSeeded(db) {
     });
     const insertId = Number(result.insertId || 0);
     if (insertId) {
-      const [created] = await db.select().from(liquorItems).where(eq5(liquorItems.id, insertId)).limit(1);
+      const [created] = await db.select().from(liquorItems).where(eq3(liquorItems.id, insertId)).limit(1);
       if (created) {
         itemByKey.set(canonicalKey, created);
         itemByKey.set(rawKey, created);
         return created;
       }
     }
-    const [fallback] = await db.select().from(liquorItems).where(eq5(liquorItems.name, canonicalName)).limit(1);
+    const [fallback] = await db.select().from(liquorItems).where(eq3(liquorItems.name, canonicalName)).limit(1);
     if (!fallback) throw new Error(`\uC8FC\uB958 \uD488\uBAA9 \uC0DD\uC131 \uC2E4\uD328: ${canonicalName}`);
     itemByKey.set(canonicalKey, fallback);
     itemByKey.set(rawKey, fallback);
@@ -4649,9 +4089,9 @@ async function ensureBoxHeroBranchStockSeeded(db) {
     for (const row of rows) {
       const item = await getOrCreateItem(row.name, row.category);
       const qty = Number(row.quantity || 0);
-      const [existingInventory] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, branch.id), eq5(liquorInventories.liquorItemId, item.id))).limit(1);
+      const [existingInventory] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, branch.id), eq3(liquorInventories.liquorItemId, item.id))).limit(1);
       if (existingInventory) {
-        await db.update(liquorInventories).set({ currentStock: String(qty) }).where(eq5(liquorInventories.id, existingInventory.id));
+        await db.update(liquorInventories).set({ currentStock: String(qty) }).where(eq3(liquorInventories.id, existingInventory.id));
       } else {
         await db.insert(liquorInventories).values({ branchId: branch.id, liquorItemId: item.id, currentStock: String(qty) });
       }
@@ -4675,7 +4115,7 @@ async function ensureLiquorSeeded(db) {
   }
   await ensureBoxHeroBranchStockSeeded(db);
 }
-async function parseStoreCookie2(cookieHeader, authHeader) {
+async function parseStoreCookie(cookieHeader, authHeader) {
   let token;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.slice(7).trim();
@@ -4692,7 +4132,7 @@ async function parseStoreCookie2(cookieHeader, authHeader) {
   if (!token) return null;
   try {
     const secret = new TextEncoder().encode(ENV.cookieSecret);
-    const { payload } = await jwtVerify3(token, secret, { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify2(token, secret, { algorithms: ["HS256"] });
     if (payload.type !== "store") return null;
     return payload;
   } catch {
@@ -4701,7 +4141,6 @@ async function parseStoreCookie2(cookieHeader, authHeader) {
 }
 var appRouter = router({
   system: systemRouter,
-  settlement: settlementRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -4710,18 +4149,18 @@ var appRouter = router({
       return { success: true };
     }),
     // 자체 아이디/비밀번호 로그인
-    loginWithPassword: publicProcedure.input(z3.object({
-      loginId: z3.string().min(1),
-      password: z3.string().min(1)
+    loginWithPassword: publicProcedure.input(z2.object({
+      loginId: z2.string().min(1),
+      password: z2.string().min(1)
     })).mutation(async ({ ctx, input }) => {
       await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountByLoginId(input.loginId);
       if (!account) {
-        throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
       }
       const isValid = await bcrypt.compare(input.password, account.passwordHash);
       if (!isValid) {
-        throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
       }
       const token = await createStoreSessionToken(account.id, account.loginId, account.role);
       const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -4746,7 +4185,7 @@ var appRouter = router({
     }),
     // 자체 계정 현재 사용자 조회
     storeMe: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) return null;
       await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountById(payload.accountId);
@@ -4774,11 +4213,11 @@ var appRouter = router({
     })
   }),
   push: router({
-    subscribe: protectedProcedure.input(z3.object({ endpoint: z3.string(), p256dh: z3.string(), auth: z3.string() })).mutation(async ({ ctx, input }) => {
+    subscribe: protectedProcedure.input(z2.object({ endpoint: z2.string(), p256dh: z2.string(), auth: z2.string() })).mutation(async ({ ctx, input }) => {
       await savePushSubscription({ userId: ctx.user.id, endpoint: input.endpoint, p256dh: input.p256dh, auth: input.auth });
       return { success: true };
     }),
-    unsubscribe: protectedProcedure.input(z3.object({ endpoint: z3.string() })).mutation(async ({ input }) => {
+    unsubscribe: protectedProcedure.input(z2.object({ endpoint: z2.string() })).mutation(async ({ input }) => {
       await deletePushSubscription(input.endpoint);
       return { success: true };
     }),
@@ -4801,7 +4240,7 @@ var appRouter = router({
       const db = await getDb();
       if (!db) return [];
       if (ctx.user.role === "admin") return db.select().from(branches).orderBy(branches.name);
-      const managed = await db.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq5(branchManagers.branchId, branches.id)).where(eq5(branchManagers.userId, ctx.user.id));
+      const managed = await db.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq3(branchManagers.branchId, branches.id)).where(eq3(branchManagers.userId, ctx.user.id));
       return managed.map((r) => r.branch);
     }),
     list: adminProcedure.query(async () => {
@@ -4809,20 +4248,20 @@ var appRouter = router({
       if (!db) return [];
       return db.select().from(branches).orderBy(branches.name);
     }),
-    create: adminProcedure.input(z3.object({ name: z3.string().min(1), code: z3.string().min(1) })).mutation(async ({ ctx, input }) => {
+    create: adminProcedure.input(z2.object({ name: z2.string().min(1), code: z2.string().min(1) })).mutation(async ({ ctx, input }) => {
       const branch = await createBranch({ name: input.name, code: input.code, ownerId: ctx.user.id });
       return { success: true, branch };
     }),
-    update: adminProcedure.input(z3.object({ id: z3.number(), name: z3.string().min(1), code: z3.string().min(1) })).mutation(async ({ input }) => {
+    update: adminProcedure.input(z2.object({ id: z2.number(), name: z2.string().min(1), code: z2.string().min(1) })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false };
-      await db.update(branches).set({ name: input.name, code: input.code }).where(eq5(branches.id, input.id));
+      await db.update(branches).set({ name: input.name, code: input.code }).where(eq3(branches.id, input.id));
       return { success: true };
     }),
-    delete: adminProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ input }) => {
+    delete: adminProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false };
-      await db.delete(branches).where(eq5(branches.id, input.id));
+      await db.delete(branches).where(eq3(branches.id, input.id));
       return { success: true };
     })
   }),
@@ -4832,37 +4271,37 @@ var appRouter = router({
       if (!db) return [];
       const allUsers = await db.select().from(users).orderBy(users.name);
       return Promise.all(allUsers.map(async (u) => {
-        const managed = await db.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq5(branchManagers.branchId, branches.id)).where(eq5(branchManagers.userId, u.id));
+        const managed = await db.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq3(branchManagers.branchId, branches.id)).where(eq3(branchManagers.userId, u.id));
         return { ...u, assignedBranches: managed.map((r) => r.branch) };
       }));
     }),
-    updateRole: adminProcedure.input(z3.object({ userId: z3.number(), role: z3.enum(["user", "admin"]) })).mutation(async ({ input }) => {
+    updateRole: adminProcedure.input(z2.object({ userId: z2.number(), role: z2.enum(["user", "admin"]) })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false };
-      await db.update(users).set({ role: input.role }).where(eq5(users.id, input.userId));
+      await db.update(users).set({ role: input.role }).where(eq3(users.id, input.userId));
       return { success: true };
     }),
-    assignBranch: adminProcedure.input(z3.object({ userId: z3.number(), branchId: z3.number() })).mutation(async ({ input }) => {
+    assignBranch: adminProcedure.input(z2.object({ userId: z2.number(), branchId: z2.number() })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false };
-      const existing = await db.select().from(branchManagers).where(and5(eq5(branchManagers.userId, input.userId), eq5(branchManagers.branchId, input.branchId))).limit(1);
+      const existing = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, input.userId), eq3(branchManagers.branchId, input.branchId))).limit(1);
       if (existing.length === 0) {
         await db.insert(branchManagers).values({ userId: input.userId, branchId: input.branchId, role: "manager" });
       }
       return { success: true };
     }),
-    unassignBranch: adminProcedure.input(z3.object({ userId: z3.number(), branchId: z3.number() })).mutation(async ({ input }) => {
+    unassignBranch: adminProcedure.input(z2.object({ userId: z2.number(), branchId: z2.number() })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false };
-      await db.delete(branchManagers).where(and5(eq5(branchManagers.userId, input.userId), eq5(branchManagers.branchId, input.branchId)));
+      await db.delete(branchManagers).where(and3(eq3(branchManagers.userId, input.userId), eq3(branchManagers.branchId, input.branchId)));
       return { success: true };
     })
   }),
   // storeAccount 관리 API
   storeAccount: router({
     list: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const accounts = await getAllStoreAccounts();
       const db = await getDb();
       const allBranches = db ? await db.select().from(branches) : [];
@@ -4876,17 +4315,17 @@ var appRouter = router({
         branch: allBranches.find((b) => b.id === acc.branchId) || null
       }));
     }),
-    create: publicProcedure.input(z3.object({
-      loginId: z3.string().min(1).max(50),
-      password: z3.string().min(1),
-      displayName: z3.string().optional(),
-      role: z3.enum(["user", "admin"]).default("user"),
-      branchId: z3.number().optional()
+    create: publicProcedure.input(z2.object({
+      loginId: z2.string().min(1).max(50),
+      password: z2.string().min(1),
+      displayName: z2.string().optional(),
+      role: z2.enum(["user", "admin"]).default("user"),
+      branchId: z2.number().optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const existing = await getStoreAccountByLoginId(input.loginId);
-      if (existing) throw new TRPCError4({ code: "CONFLICT", message: "\uC774\uBBF8 \uC0AC\uC6A9 \uC911\uC778 \uC544\uC774\uB514\uC785\uB2C8\uB2E4" });
+      if (existing) throw new TRPCError3({ code: "CONFLICT", message: "\uC774\uBBF8 \uC0AC\uC6A9 \uC911\uC778 \uC544\uC774\uB514\uC785\uB2C8\uB2E4" });
       const passwordHash = await bcrypt.hash(input.password, 10);
       const account = await createStoreAccount({
         loginId: input.loginId,
@@ -4897,28 +4336,28 @@ var appRouter = router({
       });
       return { success: true, account };
     }),
-    changePassword: publicProcedure.input(z3.object({ accountId: z3.number(), newPassword: z3.string().min(1) })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+    changePassword: publicProcedure.input(z2.object({ accountId: z2.number(), newPassword: z2.string().min(1) })).mutation(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const passwordHash = await bcrypt.hash(input.newPassword, 10);
       await updateStoreAccount(input.accountId, { passwordHash });
       return { success: true };
     }),
-    delete: publicProcedure.input(z3.object({ accountId: z3.number() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+    delete: publicProcedure.input(z2.object({ accountId: z2.number() })).mutation(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await deleteStoreAccount(input.accountId);
       return { success: true };
     }),
-    assignBranch: publicProcedure.input(z3.object({ accountId: z3.number(), branchId: z3.number().nullable() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+    assignBranch: publicProcedure.input(z2.object({ accountId: z2.number(), branchId: z2.number().nullable() })).mutation(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await updateStoreAccount(input.accountId, { branchId: input.branchId });
       return { success: true };
     }),
     branchList: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const db = await getDb();
       if (!db) return [];
       return db.select().from(branches).orderBy(branches.name);
@@ -4926,13 +4365,13 @@ var appRouter = router({
   }),
   // 매출 기록 API (storeAccount 기반)
   storeSales: router({
-    getRecord: publicProcedure.input(z3.object({ branchId: z3.number(), date: z3.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+    getRecord: publicProcedure.input(z2.object({ branchId: z2.number(), date: z2.string() })).query(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       let record = await getDailySalesRecord(input.branchId, input.date);
       if (!record) return null;
@@ -4958,46 +4397,46 @@ var appRouter = router({
       }
       return record;
     }),
-    getPrevRecord: publicProcedure.input(z3.object({ branchId: z3.number(), date: z3.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+    getPrevRecord: publicProcedure.input(z2.object({ branchId: z2.number(), date: z2.string() })).query(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       const prev = await getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
       return normalizeMonthlyCumulativeRecord(prev);
     }),
-    getRecords: publicProcedure.input(z3.object({ branchId: z3.number(), startDate: z3.string(), endDate: z3.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+    getRecords: publicProcedure.input(z2.object({ branchId: z2.number(), startDate: z2.string(), endDate: z2.string() })).query(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       const records = await getDailySalesRecordsByDateRange(input.branchId, input.startDate, input.endDate);
       return Promise.all(records.map((record) => normalizeMonthlyCumulativeRecord(record)));
     }),
-    save: publicProcedure.input(z3.object({
-      branchId: z3.number(),
-      date: z3.string(),
-      posStartAmount: z3.string().default("0"),
-      cash: z3.string().default("0"),
-      card: z3.string().default("0"),
-      cashTotal: z3.string().default("0"),
-      cardTotal: z3.string().default("0"),
-      posEndAmount: z3.string().default("0"),
-      cashDeposit: z3.string().optional(),
-      expenses: z3.array(z3.object({ id: z3.string(), description: z3.string(), amount: z3.string() })).default([])
+    save: publicProcedure.input(z2.object({
+      branchId: z2.number(),
+      date: z2.string(),
+      posStartAmount: z2.string().default("0"),
+      cash: z2.string().default("0"),
+      card: z2.string().default("0"),
+      cashTotal: z2.string().default("0"),
+      cardTotal: z2.string().default("0"),
+      posEndAmount: z2.string().default("0"),
+      cashDeposit: z2.string().optional(),
+      expenses: z2.array(z2.object({ id: z2.string(), description: z2.string(), amount: z2.string() })).default([])
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       const prevRec = await getPrevDailySalesRecord(input.branchId, input.date);
       const dateObj = /* @__PURE__ */ new Date(input.date + "T12:00:00");
@@ -5073,16 +4512,16 @@ var appRouter = router({
       }
       return { success: true, record, pushSent };
     }),
-    adminDailyDetail: publicProcedure.input(z3.object({ date: z3.string() })).query(async ({ ctx, input }) => {
-      const storePayload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+    adminDailyDetail: publicProcedure.input(z2.object({ date: z2.string() })).query(async ({ ctx, input }) => {
+      const storePayload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin = storePayload?.role === "admin";
       const isOAuthAdmin = ctx.user?.role === "admin";
-      if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const db = await getDb();
       if (!db) return [];
       const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).where(eq5(dailySalesRecords.date, input.date));
-      const tableReportRows = await db.select().from(tableReports).where(eq5(tableReports.date, input.date));
+      const records = await db.select().from(dailySalesRecords).where(eq3(dailySalesRecords.date, input.date));
+      const tableReportRows = await db.select().from(tableReports).where(eq3(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
       const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)) : [];
       const incentiveRows = reportIds.length > 0 ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
@@ -5100,15 +4539,15 @@ var appRouter = router({
         })()
       }));
     }),
-    adminSummary: publicProcedure.input(z3.object({ startDate: z3.string(), endDate: z3.string() })).query(async ({ ctx, input }) => {
-      const storePayload2 = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+    adminSummary: publicProcedure.input(z2.object({ startDate: z2.string(), endDate: z2.string() })).query(async ({ ctx, input }) => {
+      const storePayload2 = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin2 = storePayload2?.role === "admin";
       const isOAuthAdmin2 = ctx.user?.role === "admin";
-      if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const db = await getDb();
       if (!db) return { byBranch: [], byDate: [] };
       const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).orderBy(desc3(dailySalesRecords.date));
+      const records = await db.select().from(dailySalesRecords).orderBy(desc2(dailySalesRecords.date));
       const filtered = records.filter((r) => r.date >= input.startDate && r.date <= input.endDate);
       const byBranch = allBranches.map((branch) => {
         const br = filtered.filter((r) => r.branchId === branch.id);
@@ -5127,12 +4566,12 @@ var appRouter = router({
       const byDate = Object.entries(dateMap).map(([date, data]) => ({ date, ...data })).sort((a, b) => b.date.localeCompare(a.date));
       return { byBranch, byDate };
     }),
-    analyzeImage: publicProcedure.input(z3.object({
-      imageBase64: z3.string(),
-      mimeType: z3.string().default("image/jpeg")
+    analyzeImage: publicProcedure.input(z2.object({
+      imageBase64: z2.string(),
+      mimeType: z2.string().default("image/jpeg")
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");
       const ext = input.mimeType.includes("png") ? "png" : "jpg";
@@ -5196,7 +4635,7 @@ var appRouter = router({
         }
       });
       const rawContent = response.choices?.[0]?.message?.content;
-      if (!rawContent) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
+      if (!rawContent) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
       const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
       const result = JSON.parse(content);
       return {
@@ -5210,55 +4649,44 @@ var appRouter = router({
         confidence: result.confidence,
         note: result.note
       };
-    }),
-    getBranches: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-      if (account.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
-      const db = await getDb();
-      if (!db) return [];
-      const allBranches = await db.select().from(branches).orderBy(branches.name);
-      return allBranches.map((b) => ({ id: b.id, name: b.name }));
     })
   }),
   // 기존 Manus OAuth 기반 매출 API (하위 호환)
   sales: router({
-    getRecord: protectedProcedure.input(z3.object({ branchId: z3.number(), date: z3.string() })).query(async ({ ctx, input }) => {
+    getRecord: protectedProcedure.input(z2.object({ branchId: z2.number(), date: z2.string() })).query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         const db = await getDb();
         if (!db) return null;
-        const managed = await db.select().from(branchManagers).where(and5(eq5(branchManagers.userId, ctx.user.id), eq5(branchManagers.branchId, input.branchId))).limit(1);
+        const managed = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, ctx.user.id), eq3(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       return getDailySalesRecord(input.branchId, input.date);
     }),
-    getRecords: protectedProcedure.input(z3.object({ branchId: z3.number(), startDate: z3.string(), endDate: z3.string() })).query(async ({ ctx, input }) => {
+    getRecords: protectedProcedure.input(z2.object({ branchId: z2.number(), startDate: z2.string(), endDate: z2.string() })).query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         const db = await getDb();
         if (!db) return [];
-        const managed = await db.select().from(branchManagers).where(and5(eq5(branchManagers.userId, ctx.user.id), eq5(branchManagers.branchId, input.branchId))).limit(1);
+        const managed = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, ctx.user.id), eq3(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       return getDailySalesRecordsByDateRange(input.branchId, input.startDate, input.endDate);
     }),
-    save: protectedProcedure.input(z3.object({
-      branchId: z3.number(),
-      date: z3.string(),
-      posStartAmount: z3.string().default("0"),
-      cash: z3.string().default("0"),
-      card: z3.string().default("0"),
-      cashTotal: z3.string().default("0"),
-      cardTotal: z3.string().default("0"),
-      posEndAmount: z3.string().default("0"),
-      cashDeposit: z3.string().optional(),
-      expenses: z3.array(z3.object({ id: z3.string(), description: z3.string(), amount: z3.string() })).default([])
+    save: protectedProcedure.input(z2.object({
+      branchId: z2.number(),
+      date: z2.string(),
+      posStartAmount: z2.string().default("0"),
+      cash: z2.string().default("0"),
+      card: z2.string().default("0"),
+      cashTotal: z2.string().default("0"),
+      cardTotal: z2.string().default("0"),
+      posEndAmount: z2.string().default("0"),
+      cashDeposit: z2.string().optional(),
+      expenses: z2.array(z2.object({ id: z2.string(), description: z2.string(), amount: z2.string() })).default([])
     })).mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         const db = await getDb();
         if (!db) return { success: false };
-        const managed = await db.select().from(branchManagers).where(and5(eq5(branchManagers.userId, ctx.user.id), eq5(branchManagers.branchId, input.branchId))).limit(1);
+        const managed = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, ctx.user.id), eq3(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       const prevRec2 = await getPrevDailySalesRecord(input.branchId, input.date);
@@ -5334,11 +4762,11 @@ var appRouter = router({
       }
       return { success: true, record, pushSent };
     }),
-    adminSummary: adminProcedure.input(z3.object({ startDate: z3.string(), endDate: z3.string() })).query(async ({ input }) => {
+    adminSummary: adminProcedure.input(z2.object({ startDate: z2.string(), endDate: z2.string() })).query(async ({ input }) => {
       const db = await getDb();
       if (!db) return { byBranch: [], byDate: [] };
       const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).orderBy(desc3(dailySalesRecords.date));
+      const records = await db.select().from(dailySalesRecords).orderBy(desc2(dailySalesRecords.date));
       const filtered = records.filter((r) => r.date >= input.startDate && r.date <= input.endDate);
       const byBranch = allBranches.map((branch) => {
         const br = filtered.filter((r) => r.branchId === branch.id);
@@ -5357,12 +4785,12 @@ var appRouter = router({
       const byDate = Object.entries(dateMap).map(([date, data]) => ({ date, ...data })).sort((a, b) => b.date.localeCompare(a.date));
       return { byBranch, byDate };
     }),
-    adminDailyDetail: adminProcedure.input(z3.object({ date: z3.string() })).query(async ({ input }) => {
+    adminDailyDetail: adminProcedure.input(z2.object({ date: z2.string() })).query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
       const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).where(eq5(dailySalesRecords.date, input.date));
-      const tableReportRows = await db.select().from(tableReports).where(eq5(tableReports.date, input.date));
+      const records = await db.select().from(dailySalesRecords).where(eq3(dailySalesRecords.date, input.date));
+      const tableReportRows = await db.select().from(tableReports).where(eq3(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
       const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)) : [];
       const incentiveRows = reportIds.length > 0 ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
@@ -5380,19 +4808,19 @@ var appRouter = router({
         })()
       }));
     }),
-    notify: publicProcedure.input(z3.object({
-      branch: z3.string(),
-      date: z3.string(),
-      cash: z3.string(),
-      card: z3.string(),
-      dailyTotal: z3.string(),
-      cashTotal: z3.string(),
-      cardTotal: z3.string(),
-      grandTotal: z3.string(),
-      posStartAmount: z3.string(),
-      posEndAmount: z3.string(),
-      cashDeposit: z3.string().optional(),
-      expenses: z3.array(z3.object({ description: z3.string(), amount: z3.string() }))
+    notify: publicProcedure.input(z2.object({
+      branch: z2.string(),
+      date: z2.string(),
+      cash: z2.string(),
+      card: z2.string(),
+      dailyTotal: z2.string(),
+      cashTotal: z2.string(),
+      cardTotal: z2.string(),
+      grandTotal: z2.string(),
+      posStartAmount: z2.string(),
+      posEndAmount: z2.string(),
+      cashDeposit: z2.string().optional(),
+      expenses: z2.array(z2.object({ description: z2.string(), amount: z2.string() }))
     })).mutation(async ({ input }) => {
       const fmt = (v) => {
         const n = Number((v || "").replace(/,/g, ""));
@@ -5423,13 +4851,13 @@ var appRouter = router({
     })
   }),
   liquor: router({
-    branchItems: publicProcedure.input(z3.object({ branchId: z3.number().optional() })).query(async ({ ctx, input }) => {
+    branchItems: publicProcedure.input(z2.object({ branchId: z2.number().optional() })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { items: [] };
       await ensureLiquorSeeded(db);
       const effectiveBranchId = account.role === "admin" ? input.branchId : account.branchId;
-      const itemRows = await db.select().from(liquorItems).where(eq5(liquorItems.isActive, 1)).orderBy(liquorItems.sortOrder, liquorItems.name);
+      const itemRows = await db.select().from(liquorItems).where(eq3(liquorItems.isActive, 1)).orderBy(liquorItems.sortOrder, liquorItems.name);
       if (!effectiveBranchId) {
         return { items: itemRows.map((item) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
       }
@@ -5440,12 +4868,12 @@ var appRouter = router({
       if (items.length === 0 && itemRows.length > 0) items = itemRows;
       return { items: items.map((item) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
     }),
-    overview: publicProcedure.input(z3.object({ date: z3.string(), branchId: z3.number().optional(), includeInactive: z3.boolean().optional() })).query(async ({ ctx, input }) => {
+    overview: publicProcedure.input(z2.object({ date: z2.string(), branchId: z2.number().optional(), includeInactive: z2.boolean().optional() })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { branches: [], items: [], inventories: [], movements: [], branchSummaries: [], totals: { stock: 0, inQty: 0, outQty: 0, outCost: 0 } };
       await ensureLiquorSeeded(db);
-      const allBranches = account.role === "admin" ? await db.select().from(branches).orderBy(branches.name) : account.branchId ? await db.select().from(branches).where(eq5(branches.id, account.branchId)) : [];
+      const allBranches = account.role === "admin" ? await db.select().from(branches).orderBy(branches.name) : account.branchId ? await db.select().from(branches).where(eq3(branches.id, account.branchId)) : [];
       const allowedBranchIds = allBranches.map((b) => b.id);
       const selectedBranchIds = account.role === "admin" && input.branchId ? allowedBranchIds.filter((id) => id === input.branchId) : allowedBranchIds;
       if (selectedBranchIds.length === 0) {
@@ -5460,7 +4888,7 @@ var appRouter = router({
         activeItems = activeItems.filter((i) => !hiddenIds.has(Number(i.id)));
       }
       const inventoryRows = await db.select().from(liquorInventories).where(inArray(liquorInventories.branchId, selectedBranchIds));
-      const movementRows = await db.select().from(liquorStockMovements).where(and5(inArray(liquorStockMovements.branchId, selectedBranchIds), eq5(liquorStockMovements.date, input.date))).orderBy(desc3(liquorStockMovements.createdAt));
+      const movementRows = await db.select().from(liquorStockMovements).where(and3(inArray(liquorStockMovements.branchId, selectedBranchIds), eq3(liquorStockMovements.date, input.date))).orderBy(desc2(liquorStockMovements.createdAt));
       const itemById = new Map(itemRows.map((i) => [i.id, i]));
       const branchById = new Map(allBranches.map((b) => [b.id, b]));
       const creatorRows = await db.select().from(storeAccounts);
@@ -5506,18 +4934,18 @@ var appRouter = router({
       };
       return { branches: allBranches, items: activeItems.map((i) => ({ ...i, unitCost: Number(i.unitCost || 0) })), inventories, movements, branchSummaries, totals };
     }),
-    history: publicProcedure.input(z3.object({
-      startDate: z3.string(),
-      endDate: z3.string(),
-      branchId: z3.number().optional(),
-      keyword: z3.string().optional(),
-      type: z3.enum(["IN", "OUT", "ADJUST"]).optional()
+    history: publicProcedure.input(z2.object({
+      startDate: z2.string(),
+      endDate: z2.string(),
+      branchId: z2.number().optional(),
+      keyword: z2.string().optional(),
+      type: z2.enum(["IN", "OUT", "ADJUST"]).optional()
     })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { movements: [] };
       await ensureLiquorSeeded(db);
-      const allBranches = account.role === "admin" ? await db.select().from(branches).orderBy(branches.name) : account.branchId ? await db.select().from(branches).where(eq5(branches.id, account.branchId)) : [];
+      const allBranches = account.role === "admin" ? await db.select().from(branches).orderBy(branches.name) : account.branchId ? await db.select().from(branches).where(eq3(branches.id, account.branchId)) : [];
       const allowedBranchIds = allBranches.map((b) => b.id);
       const selectedBranchIds = account.role === "admin" && input.branchId ? allowedBranchIds.filter((id) => id === input.branchId) : allowedBranchIds;
       if (selectedBranchIds.length === 0) return { movements: [] };
@@ -5528,11 +4956,11 @@ var appRouter = router({
       const creatorById = new Map(creatorRows.map((a) => [Number(a.id), a]));
       const historyConditions = [
         inArray(liquorStockMovements.branchId, selectedBranchIds),
-        gte4(liquorStockMovements.date, input.startDate),
-        lte4(liquorStockMovements.date, input.endDate)
+        gte2(liquorStockMovements.date, input.startDate),
+        lte2(liquorStockMovements.date, input.endDate)
       ];
-      if (input.type) historyConditions.push(eq5(liquorStockMovements.type, input.type));
-      const movementRows = await db.select().from(liquorStockMovements).where(and5(...historyConditions)).orderBy(desc3(liquorStockMovements.date), desc3(liquorStockMovements.createdAt));
+      if (input.type) historyConditions.push(eq3(liquorStockMovements.type, input.type));
+      const movementRows = await db.select().from(liquorStockMovements).where(and3(...historyConditions)).orderBy(desc2(liquorStockMovements.date), desc2(liquorStockMovements.createdAt));
       const keyword = (input.keyword || "").trim().toLowerCase();
       const movements = movementRows.map((m) => {
         const item = itemById.get(m.liquorItemId);
@@ -5553,14 +4981,14 @@ var appRouter = router({
       }).filter((m) => !keyword || String(m.itemName).toLowerCase().includes(keyword));
       return { movements };
     }),
-    upsertItem: publicProcedure.input(z3.object({
-      id: z3.number().optional(),
-      name: z3.string().min(1),
-      category: z3.string().min(1).default("\uAE30\uD0C0"),
-      unitCost: z3.number().min(0).optional().default(0),
-      isActive: z3.boolean().default(true),
-      branchId: z3.number().optional(),
-      initialStock: z3.number().optional().default(0)
+    upsertItem: publicProcedure.input(z2.object({
+      id: z2.number().optional(),
+      name: z2.string().min(1),
+      category: z2.string().min(1).default("\uAE30\uD0C0"),
+      unitCost: z2.number().min(0).optional().default(0),
+      isActive: z2.boolean().default(true),
+      branchId: z2.number().optional(),
+      initialStock: z2.number().optional().default(0)
     })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
@@ -5568,7 +4996,7 @@ var appRouter = router({
       await ensureLiquorSeeded(db);
       const effectiveBranchId = account.role === "admin" ? input.branchId : account.branchId;
       if (!effectiveBranchId) {
-        throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC8FC\uB958 \uD488\uBAA9\uC744 \uCD94\uAC00/\uC218\uC815\uD558\uB824\uBA74 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
+        throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC8FC\uB958 \uD488\uBAA9\uC744 \uCD94\uAC00/\uC218\uC815\uD558\uB824\uBA74 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       }
       if (input.id) {
         if (account.role === "admin") {
@@ -5577,11 +5005,11 @@ var appRouter = router({
             category: input.category,
             unitCost: String(input.unitCost || 0),
             isActive: input.isActive ? 1 : 0
-          }).where(eq5(liquorItems.id, input.id));
+          }).where(eq3(liquorItems.id, input.id));
           const newUnitCost = Number(input.unitCost || 0);
           if (newUnitCost > 0) {
-            const staleMovements = await db.select().from(liquorStockMovements).where(and5(
-              eq5(liquorStockMovements.liquorItemId, input.id),
+            const staleMovements = await db.select().from(liquorStockMovements).where(and3(
+              eq3(liquorStockMovements.liquorItemId, input.id),
               sql`(CAST(${liquorStockMovements.unitCost} AS DECIMAL) = 0 OR CAST(${liquorStockMovements.totalCost} AS DECIMAL) = 0)`
             ));
             for (const mv of staleMovements) {
@@ -5589,7 +5017,7 @@ var appRouter = router({
               await db.update(liquorStockMovements).set({
                 unitCost: String(newUnitCost),
                 totalCost: String(newTotalCost)
-              }).where(eq5(liquorStockMovements.id, mv.id));
+              }).where(eq3(liquorStockMovements.id, mv.id));
             }
           }
         } else {
@@ -5597,17 +5025,17 @@ var appRouter = router({
             name: input.name,
             category: input.category,
             isActive: input.isActive ? 1 : 0
-          }).where(eq5(liquorItems.id, input.id));
+          }).where(eq3(liquorItems.id, input.id));
         }
         if (effectiveBranchId && input.initialStock !== void 0) {
-          const [existingInventory] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, effectiveBranchId), eq5(liquorInventories.liquorItemId, input.id))).limit(1);
+          const [existingInventory] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, effectiveBranchId), eq3(liquorInventories.liquorItemId, input.id))).limit(1);
           const prevStock = Number(existingInventory?.currentStock || 0);
           const nextStock = Number(input.initialStock || 0);
           const diff = nextStock - prevStock;
-          if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existingInventory.id));
+          if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existingInventory.id));
           else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
           if (diff !== 0) {
-            const [stockItem] = await db.select().from(liquorItems).where(eq5(liquorItems.id, input.id)).limit(1);
+            const [stockItem] = await db.select().from(liquorItems).where(eq3(liquorItems.id, input.id)).limit(1);
             const unitCost = Number(stockItem?.unitCost || 0);
             await db.insert(liquorStockMovements).values({
               branchId: effectiveBranchId,
@@ -5634,10 +5062,10 @@ var appRouter = router({
       });
       let itemId = Number(result.insertId || 0);
       if (!itemId) {
-        const [created] = await db.select().from(liquorItems).where(eq5(liquorItems.name, cleanName)).orderBy(desc3(liquorItems.id)).limit(1);
+        const [created] = await db.select().from(liquorItems).where(eq3(liquorItems.name, cleanName)).orderBy(desc2(liquorItems.id)).limit(1);
         itemId = created?.id;
       }
-      if (!itemId) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "\uD488\uBAA9 \uB4F1\uB85D\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4" });
+      if (!itemId) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uD488\uBAA9 \uB4F1\uB85D\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4" });
       const allBranchRows = await db.select().from(branches);
       for (const branch of allBranchRows) {
         if (Number(branch.id) !== Number(effectiveBranchId)) {
@@ -5667,41 +5095,41 @@ var appRouter = router({
       }
       return { success: true, id: itemId };
     }),
-    deleteItem: publicProcedure.input(z3.object({ id: z3.number(), branchId: z3.number().optional() })).mutation(async ({ ctx, input }) => {
+    deleteItem: publicProcedure.input(z2.object({ id: z2.number(), branchId: z2.number().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
       const branchId = account.role === "admin" ? input.branchId : account.branchId;
-      if (!branchId) throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
+      if (!branchId) throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       if (account.role !== "admin" && Number(account.branchId) !== Number(branchId)) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
-      await db.delete(liquorInventories).where(and5(eq5(liquorInventories.branchId, branchId), eq5(liquorInventories.liquorItemId, input.id)));
+      await db.delete(liquorInventories).where(and3(eq3(liquorInventories.branchId, branchId), eq3(liquorInventories.liquorItemId, input.id)));
       return { success: true, mode: "branch" };
     }),
-    bulkDeleteItems: publicProcedure.input(z3.object({ ids: z3.array(z3.number()).min(1), branchId: z3.number().optional() })).mutation(async ({ ctx, input }) => {
+    bulkDeleteItems: publicProcedure.input(z2.object({ ids: z2.array(z2.number()).min(1), branchId: z2.number().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
       const branchId = account.role === "admin" ? input.branchId : account.branchId;
-      if (!branchId) throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
+      if (!branchId) throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       if (account.role !== "admin" && Number(account.branchId) !== Number(branchId)) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const ids = Array.from(new Set(input.ids.map(Number).filter(Boolean)));
       if (!ids.length) return { success: true, count: 0 };
       for (const id of ids) {
         await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${id})`);
       }
-      await db.delete(liquorInventories).where(and5(eq5(liquorInventories.branchId, branchId), inArray(liquorInventories.liquorItemId, ids)));
+      await db.delete(liquorInventories).where(and3(eq3(liquorInventories.branchId, branchId), inArray(liquorInventories.liquorItemId, ids)));
       return { success: true, count: ids.length, mode: "branch" };
     }),
-    recordMovement: publicProcedure.input(z3.object({ branchId: z3.number(), date: z3.string(), type: z3.enum(["IN", "OUT", "ADJUST"]), items: z3.array(z3.object({ liquorItemId: z3.number(), quantity: z3.number(), memo: z3.string().optional() })).min(1), memo: z3.string().optional() })).mutation(async ({ ctx, input }) => {
+    recordMovement: publicProcedure.input(z2.object({ branchId: z2.number(), date: z2.string(), type: z2.enum(["IN", "OUT", "ADJUST"]), items: z2.array(z2.object({ liquorItemId: z2.number(), quantity: z2.number(), memo: z2.string().optional() })).min(1), memo: z2.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
@@ -5717,33 +5145,33 @@ var appRouter = router({
         const signedQty = input.type === "OUT" ? -Math.abs(rawQty) : input.type === "IN" ? Math.abs(rawQty) : rawQty;
         const totalCost = Math.abs(signedQty) * unitCost;
         await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, date: input.date, type: input.type, quantity: String(signedQty), unitCost: String(unitCost), totalCost: String(totalCost), memo: row.memo || input.memo || null, createdBy: account.id });
-        const [existing] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, input.branchId), eq5(liquorInventories.liquorItemId, row.liquorItemId))).limit(1);
+        const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, input.branchId), eq3(liquorInventories.liquorItemId, row.liquorItemId))).limit(1);
         const nextStock = Number(existing?.currentStock || 0) + signedQty;
         if (existing) {
-          await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+          await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
         } else {
           await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
         }
       }
       return { success: true };
     }),
-    updateMovement: publicProcedure.input(z3.object({ id: z3.number(), date: z3.string(), type: z3.enum(["IN", "OUT", "ADJUST"]).optional(), quantity: z3.number(), memo: z3.string().optional() })).mutation(async ({ ctx, input }) => {
+    updateMovement: publicProcedure.input(z2.object({ id: z2.number(), date: z2.string(), type: z2.enum(["IN", "OUT", "ADJUST"]).optional(), quantity: z2.number(), memo: z2.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
-      const [movement] = await db.select().from(liquorStockMovements).where(eq5(liquorStockMovements.id, input.id)).limit(1);
-      if (!movement) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [movement] = await db.select().from(liquorStockMovements).where(eq3(liquorStockMovements.id, input.id)).limit(1);
+      if (!movement) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== movement.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const rawQty = Number(input.quantity || 0);
       const nextType = input.type || movement.type;
-      if (!rawQty && nextType !== "ADJUST") throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
+      if (!rawQty && nextType !== "ADJUST") throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
       const newSignedQty = nextType === "OUT" ? -Math.abs(rawQty) : nextType === "IN" ? Math.abs(rawQty) : rawQty;
       const oldSignedQty = Number(movement.quantity || 0);
       const diff = newSignedQty - oldSignedQty;
-      const [itemForCost] = await db.select().from(liquorItems).where(eq5(liquorItems.id, movement.liquorItemId)).limit(1);
+      const [itemForCost] = await db.select().from(liquorItems).where(eq3(liquorItems.id, movement.liquorItemId)).limit(1);
       const unitCost = Number(movement.unitCost || itemForCost?.unitCost || 0);
       const totalCost = Math.abs(newSignedQty) * unitCost;
       await db.update(liquorStockMovements).set({
@@ -5753,34 +5181,34 @@ var appRouter = router({
         totalCost: String(totalCost),
         memo: input.memo || null,
         updatedAt: /* @__PURE__ */ new Date()
-      }).where(eq5(liquorStockMovements.id, input.id));
+      }).where(eq3(liquorStockMovements.id, input.id));
       if (diff !== 0) {
-        const [existing] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, movement.branchId), eq5(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+        const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, movement.branchId), eq3(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
         if (existing) {
           const nextStock = Number(existing.currentStock || 0) + diff;
-          await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+          await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
         } else {
           await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
         }
       }
       return { success: true };
     }),
-    updateMovementGroup: publicProcedure.input(z3.object({ ids: z3.array(z3.number()).min(1), date: z3.string(), type: z3.enum(["IN", "OUT", "ADJUST"]), memo: z3.string().optional(), mergeSameDate: z3.boolean().optional() })).mutation(async ({ ctx, input }) => {
+    updateMovementGroup: publicProcedure.input(z2.object({ ids: z2.array(z2.number()).min(1), date: z2.string(), type: z2.enum(["IN", "OUT", "ADJUST"]), memo: z2.string().optional(), mergeSameDate: z2.boolean().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
       const rows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
-      if (rows.length === 0) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (rows.length === 0) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && rows.some((m) => Number(m.branchId) !== Number(account.branchId))) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
-      const mergeTarget = input.mergeSameDate ? (await db.select().from(liquorStockMovements).where(and5(
-        eq5(liquorStockMovements.branchId, rows[0].branchId),
-        eq5(liquorStockMovements.date, input.date),
-        eq5(liquorStockMovements.type, input.type),
+      const mergeTarget = input.mergeSameDate ? (await db.select().from(liquorStockMovements).where(and3(
+        eq3(liquorStockMovements.branchId, rows[0].branchId),
+        eq3(liquorStockMovements.date, input.date),
+        eq3(liquorStockMovements.type, input.type),
         not(inArray(liquorStockMovements.id, input.ids))
-      )).orderBy(desc3(liquorStockMovements.createdAt)).limit(1))[0] : null;
+      )).orderBy(desc2(liquorStockMovements.createdAt)).limit(1))[0] : null;
       const mergedCreatedAt = mergeTarget?.createdAt ? new Date(mergeTarget.createdAt) : void 0;
       const mergedCreatedBy = mergeTarget?.createdBy || rows[0].createdBy;
       const mergedMemo = input.mergeSameDate && mergeTarget ? input.memo ?? mergeTarget.memo ?? null : input.memo || null;
@@ -5788,11 +5216,11 @@ var appRouter = router({
         await db.update(liquorStockMovements).set({
           memo: mergedMemo,
           updatedAt: /* @__PURE__ */ new Date()
-        }).where(and5(
-          eq5(liquorStockMovements.branchId, rows[0].branchId),
-          eq5(liquorStockMovements.date, input.date),
-          eq5(liquorStockMovements.type, input.type),
-          eq5(liquorStockMovements.createdAt, mergeTarget.createdAt)
+        }).where(and3(
+          eq3(liquorStockMovements.branchId, rows[0].branchId),
+          eq3(liquorStockMovements.date, input.date),
+          eq3(liquorStockMovements.type, input.type),
+          eq3(liquorStockMovements.createdAt, mergeTarget.createdAt)
         ));
       }
       for (const movement of rows) {
@@ -5809,12 +5237,12 @@ var appRouter = router({
           memo: mergedMemo,
           ...mergedCreatedAt ? { createdAt: mergedCreatedAt, createdBy: mergedCreatedBy } : {},
           updatedAt: /* @__PURE__ */ new Date()
-        }).where(eq5(liquorStockMovements.id, movement.id));
+        }).where(eq3(liquorStockMovements.id, movement.id));
         if (diff !== 0) {
-          const [existing] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, movement.branchId), eq5(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+          const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, movement.branchId), eq3(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
           if (existing) {
             const nextStock = Number(existing.currentStock || 0) + diff;
-            await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+            await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
           } else {
             await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
           }
@@ -5822,28 +5250,28 @@ var appRouter = router({
       }
       return { success: true };
     }),
-    addMovementToGroup: publicProcedure.input(z3.object({
-      groupIds: z3.array(z3.number()).min(1),
-      liquorItemId: z3.number(),
-      quantity: z3.number(),
-      type: z3.enum(["IN", "OUT", "ADJUST"]),
-      date: z3.string(),
-      memo: z3.string().optional()
+    addMovementToGroup: publicProcedure.input(z2.object({
+      groupIds: z2.array(z2.number()).min(1),
+      liquorItemId: z2.number(),
+      quantity: z2.number(),
+      type: z2.enum(["IN", "OUT", "ADJUST"]),
+      date: z2.string(),
+      memo: z2.string().optional()
     })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
       const groupRows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.groupIds));
-      if (groupRows.length === 0) throw new TRPCError4({ code: "NOT_FOUND", message: "\uAE30\uC900 \uD788\uC2A4\uD1A0\uB9AC\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (groupRows.length === 0) throw new TRPCError3({ code: "NOT_FOUND", message: "\uAE30\uC900 \uD788\uC2A4\uD1A0\uB9AC\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const base = groupRows[0];
       if (account.role !== "admin" && Number(account.branchId) !== Number(base.branchId)) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
-      const [item] = await db.select().from(liquorItems).where(eq5(liquorItems.id, input.liquorItemId)).limit(1);
-      if (!item) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [item] = await db.select().from(liquorItems).where(eq3(liquorItems.id, input.liquorItemId)).limit(1);
+      if (!item) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const rawQty = Number(input.quantity || 0);
-      if (!rawQty && input.type !== "ADJUST") throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
+      if (!rawQty && input.type !== "ADJUST") throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
       const signedQty = input.type === "OUT" ? -Math.abs(rawQty) : input.type === "IN" ? Math.abs(rawQty) : rawQty;
       const unitCost = Number(item.unitCost || 0);
       const totalCost = Math.abs(signedQty) * unitCost;
@@ -5859,43 +5287,43 @@ var appRouter = router({
         createdBy: base.createdBy,
         createdAt: base.createdAt
       });
-      const [existing] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, base.branchId), eq5(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
+      const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, base.branchId), eq3(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
       const nextStock = Number(existing?.currentStock || 0) + signedQty;
-      if (existing) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+      if (existing) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
       else await db.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
       return { success: true };
     }),
-    deleteMovement: publicProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ ctx, input }) => {
+    deleteMovement: publicProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
-      const [movement] = await db.select().from(liquorStockMovements).where(eq5(liquorStockMovements.id, input.id)).limit(1);
-      if (!movement) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [movement] = await db.select().from(liquorStockMovements).where(eq3(liquorStockMovements.id, input.id)).limit(1);
+      if (!movement) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== movement.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const signedQty = Number(movement.quantity || 0);
-      const [existing] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, movement.branchId), eq5(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+      const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, movement.branchId), eq3(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
       if (existing) {
         const nextStock = Number(existing.currentStock || 0) - signedQty;
-        await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+        await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
       }
-      await db.delete(liquorStockMovements).where(eq5(liquorStockMovements.id, input.id));
+      await db.delete(liquorStockMovements).where(eq3(liquorStockMovements.id, input.id));
       return { success: true };
     }),
-    setStock: publicProcedure.input(z3.object({ branchId: z3.number(), liquorItemId: z3.number(), currentStock: z3.number(), memo: z3.string().optional() })).mutation(async ({ ctx, input }) => {
+    setStock: publicProcedure.input(z2.object({ branchId: z2.number(), liquorItemId: z2.number(), currentStock: z2.number(), memo: z2.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uC7AC\uACE0\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uC7AC\uACE0\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       const db = await getDb();
       if (!db) return { success: false };
       await ensureLiquorSeeded(db);
-      const [item] = await db.select().from(liquorItems).where(eq5(liquorItems.id, input.liquorItemId)).limit(1);
-      if (!item) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-      const [existing] = await db.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, input.branchId), eq5(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
+      const [item] = await db.select().from(liquorItems).where(eq3(liquorItems.id, input.liquorItemId)).limit(1);
+      if (!item) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, input.branchId), eq3(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
       const prevStock = Number(existing?.currentStock || 0);
       const diff = input.currentStock - prevStock;
-      if (existing) await db.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq5(liquorInventories.id, existing.id));
+      if (existing) await db.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq3(liquorInventories.id, existing.id));
       else await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
       if (diff !== 0) {
         const unitCost = Number(item.unitCost || 0);
@@ -5906,43 +5334,43 @@ var appRouter = router({
   }),
   tableReport: router({
     // 날짜별 테이블 기록 조회 (없으면 null 반환)
-    getByDate: publicProcedure.input(z3.object({ date: z3.string(), branchId: z3.number().optional() })).query(async ({ ctx, input }) => {
+    getByDate: publicProcedure.input(z2.object({ date: z2.string(), branchId: z2.number().optional() })).query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return null;
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) return null;
       const effectiveBranchId = account.branchId ?? input.branchId;
       if (!effectiveBranchId) return null;
-      const [report] = await db.select().from(tableReports).where(and5(eq5(tableReports.branchId, effectiveBranchId), eq5(tableReports.date, input.date))).limit(1);
+      const [report] = await db.select().from(tableReports).where(and3(eq3(tableReports.branchId, effectiveBranchId), eq3(tableReports.date, input.date))).limit(1);
       if (!report) return null;
-      const items = await db.select().from(tableItems).where(eq5(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
-      const incentives = await db.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
+      const items = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
+      const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
       return { ...report, items, incentives };
     }),
     // 기록 생성 또는 업데이트
-    upsert: publicProcedure.input(z3.object({
-      date: z3.string(),
-      teamCount: z3.number().default(0),
-      notes: z3.string().optional(),
-      branchId: z3.number().optional()
+    upsert: publicProcedure.input(z2.object({
+      date: z2.string(),
+      teamCount: z2.number().default(0),
+      notes: z2.string().optional(),
+      branchId: z2.number().optional()
     })).mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const effectiveBranchId = account.branchId ?? input.branchId;
-      if (!effectiveBranchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const [existing] = await db.select().from(tableReports).where(and5(eq5(tableReports.branchId, effectiveBranchId), eq5(tableReports.date, input.date))).limit(1);
+      if (!effectiveBranchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const [existing] = await db.select().from(tableReports).where(and3(eq3(tableReports.branchId, effectiveBranchId), eq3(tableReports.date, input.date))).limit(1);
       let reportId;
       if (existing) {
         await db.update(tableReports).set({
           teamCount: input.teamCount,
           notes: input.notes || null
-        }).where(eq5(tableReports.id, existing.id));
+        }).where(eq3(tableReports.id, existing.id));
         reportId = existing.id;
       } else {
         const [result] = await db.insert(tableReports).values({
@@ -5953,13 +5381,13 @@ var appRouter = router({
         });
         reportId = result.insertId;
       }
-      const allItems = await db.select().from(tableItems).where(eq5(tableItems.tableReportId, reportId));
+      const allItems = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, reportId));
       const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((sum, it) => sum + Number(it.amount || 0), 0);
       const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((sum, it) => sum + Number(it.amount || 0), 0);
       await db.update(tableReports).set({
         cashAmount: String(cashSum),
         cardAmount: String(cardSum)
-      }).where(eq5(tableReports.id, reportId));
+      }).where(eq3(tableReports.id, reportId));
       const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
       const prevRec2 = await getPrevDailySalesRecord(effectiveBranchId, input.date);
       const { cashTotal: computedCashTotal2, cardTotal: computedCardTotal2 } = await computeCumulativesForDate(
@@ -5994,18 +5422,18 @@ var appRouter = router({
       return { id: reportId, cashSum, cardSum };
     }),
     // 테이블 항목 추가
-    addItem: publicProcedure.input(z3.object({
-      tableReportId: z3.number(),
-      tableNumber: z3.string(),
-      guestType: z3.enum(["walking", "regular", "named"]).default("walking"),
-      guestName: z3.string().optional(),
-      amount: z3.string().default("0"),
-      paymentMethod: z3.enum(["card", "cash"]).default("card"),
-      memo: z3.string().optional(),
-      sortOrder: z3.number().default(0)
+    addItem: publicProcedure.input(z2.object({
+      tableReportId: z2.number(),
+      tableNumber: z2.string(),
+      guestType: z2.enum(["walking", "regular", "named"]).default("walking"),
+      guestName: z2.string().optional(),
+      amount: z2.string().default("0"),
+      paymentMethod: z2.enum(["card", "cash"]).default("card"),
+      memo: z2.string().optional(),
+      sortOrder: z2.number().default(0)
     })).mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const [result] = await db.insert(tableItems).values({
         tableReportId: input.tableReportId,
         tableNumber: input.tableNumber,
@@ -6019,17 +5447,17 @@ var appRouter = router({
       return { id: result.insertId };
     }),
     // 테이블 항목 수정
-    updateItem: publicProcedure.input(z3.object({
-      id: z3.number(),
-      tableNumber: z3.string().optional(),
-      guestType: z3.enum(["walking", "regular", "named"]).optional(),
-      guestName: z3.string().optional().nullable(),
-      amount: z3.string().optional(),
-      paymentMethod: z3.enum(["card", "cash"]).optional(),
-      memo: z3.string().optional()
+    updateItem: publicProcedure.input(z2.object({
+      id: z2.number(),
+      tableNumber: z2.string().optional(),
+      guestType: z2.enum(["walking", "regular", "named"]).optional(),
+      guestName: z2.string().optional().nullable(),
+      amount: z2.string().optional(),
+      paymentMethod: z2.enum(["card", "cash"]).optional(),
+      memo: z2.string().optional()
     })).mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const { id, ...rest } = input;
       const updateData = {};
       if (rest.tableNumber !== void 0) updateData.tableNumber = rest.tableNumber;
@@ -6038,40 +5466,40 @@ var appRouter = router({
       if (rest.amount !== void 0) updateData.amount = rest.amount;
       if (rest.paymentMethod !== void 0) updateData.paymentMethod = rest.paymentMethod;
       if (rest.memo !== void 0) updateData.memo = rest.memo;
-      await db.update(tableItems).set(updateData).where(eq5(tableItems.id, id));
+      await db.update(tableItems).set(updateData).where(eq3(tableItems.id, id));
       return { success: true };
     }),
     // 테이블 항목 삭제
-    deleteItem: publicProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ input }) => {
+    deleteItem: publicProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      await db.delete(tableItems).where(eq5(tableItems.id, input.id));
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      await db.delete(tableItems).where(eq3(tableItems.id, input.id));
       return { success: true };
     }),
     // 두 테이블 항목 합치기 (분할 결제 대응)
     // targetItemId: 남길 테이블 항목 ID, sourceItemId: 합쳐지고 삭제될 테이블 항목 ID
-    mergeItems: publicProcedure.input(z3.object({
-      targetItemId: z3.number(),
+    mergeItems: publicProcedure.input(z2.object({
+      targetItemId: z2.number(),
       // 남길 항목
-      sourceItemId: z3.number(),
+      sourceItemId: z2.number(),
       // 합쳐지고 삭제될 항목
-      tableReportId: z3.number(),
+      tableReportId: z2.number(),
       // 소속 tableReport ID (누적금 재계산용)
-      date: z3.string(),
+      date: z2.string(),
       // YYYY-MM-DD (누적금 재계산용)
-      branchId: z3.number().optional()
+      branchId: z2.number().optional()
     })).mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "FORBIDDEN" });
-      const [target] = await db.select().from(tableItems).where(eq5(tableItems.id, input.targetItemId)).limit(1);
-      const [source] = await db.select().from(tableItems).where(eq5(tableItems.id, input.sourceItemId)).limit(1);
-      if (!target || !source) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError3({ code: "FORBIDDEN" });
+      const [target] = await db.select().from(tableItems).where(eq3(tableItems.id, input.targetItemId)).limit(1);
+      const [source] = await db.select().from(tableItems).where(eq3(tableItems.id, input.sourceItemId)).limit(1);
+      if (!target || !source) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (target.tableReportId !== source.tableReportId) {
-        throw new TRPCError4({ code: "BAD_REQUEST", message: "\uAC19\uC740 \uB0A0\uC9DC\uC758 \uD56D\uBAA9\uB9CC \uD569\uCE60 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError3({ code: "BAD_REQUEST", message: "\uAC19\uC740 \uB0A0\uC9DC\uC758 \uD56D\uBAA9\uB9CC \uD569\uCE60 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const mergedAmount = String(Number(target.amount || 0) + Number(source.amount || 0));
       const targetMemo = (target.memo ?? "").trim();
@@ -6087,17 +5515,17 @@ var appRouter = router({
       await db.update(tableItems).set({
         amount: mergedAmount,
         memo: mergedMemo
-      }).where(eq5(tableItems.id, input.targetItemId));
-      await db.delete(tableItems).where(eq5(tableItems.id, input.sourceItemId));
+      }).where(eq3(tableItems.id, input.targetItemId));
+      await db.delete(tableItems).where(eq3(tableItems.id, input.sourceItemId));
       const effectiveBranchId = account.role === "admin" ? input.branchId ?? account.branchId ?? null : account.branchId ?? null;
       if (effectiveBranchId) {
-        const allItems = await db.select().from(tableItems).where(eq5(tableItems.tableReportId, input.tableReportId));
+        const allItems = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, input.tableReportId));
         const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((s, it) => s + Number(it.amount || 0), 0);
         const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((s, it) => s + Number(it.amount || 0), 0);
         await db.update(tableReports).set({
           cashAmount: String(cashSum),
           cardAmount: String(cardSum)
-        }).where(eq5(tableReports.id, input.tableReportId));
+        }).where(eq3(tableReports.id, input.tableReportId));
         const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
         const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
         const { cashTotal, cardTotal } = await computeCumulativesForDate(effectiveBranchId, input.date, prevRec ?? null, cashSum, cardSum);
@@ -6122,35 +5550,35 @@ var appRouter = router({
       return { success: true, mergedAmount, mergedMemo };
     }),
     // 직원 인센티브 추가
-    addIncentive: publicProcedure.input(z3.object({
-      tableReportId: z3.number(),
-      staffName: z3.string(),
-      glassCount: z3.number().default(0),
-      bottleCount: z3.number().default(0),
-      beerBottleCount: z3.number().default(0),
-      salesIncentive: z3.string().default("0"),
-      workStart: z3.string().optional(),
-      workEnd: z3.string().optional(),
-      sortOrder: z3.number().default(0)
+    addIncentive: publicProcedure.input(z2.object({
+      tableReportId: z2.number(),
+      staffName: z2.string(),
+      glassCount: z2.number().default(0),
+      bottleCount: z2.number().default(0),
+      beerBottleCount: z2.number().default(0),
+      salesIncentive: z2.string().default("0"),
+      workStart: z2.string().optional(),
+      workEnd: z2.string().optional(),
+      sortOrder: z2.number().default(0)
     })).mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const [result] = await db.insert(staffIncentives).values(input);
       return { id: result.insertId };
     }),
     // 직원 인센티브 수정
-    updateIncentive: publicProcedure.input(z3.object({
-      id: z3.number(),
-      staffName: z3.string().optional(),
-      glassCount: z3.number().optional(),
-      bottleCount: z3.number().optional(),
-      beerBottleCount: z3.number().optional(),
-      salesIncentive: z3.string().optional(),
-      workStart: z3.string().optional(),
-      workEnd: z3.string().optional()
+    updateIncentive: publicProcedure.input(z2.object({
+      id: z2.number(),
+      staffName: z2.string().optional(),
+      glassCount: z2.number().optional(),
+      bottleCount: z2.number().optional(),
+      beerBottleCount: z2.number().optional(),
+      salesIncentive: z2.string().optional(),
+      workStart: z2.string().optional(),
+      workEnd: z2.string().optional()
     })).mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const { id, ...rest } = input;
       const updateData = {};
       if (rest.staffName !== void 0) updateData.staffName = rest.staffName;
@@ -6160,62 +5588,62 @@ var appRouter = router({
       if (rest.salesIncentive !== void 0) updateData.salesIncentive = rest.salesIncentive;
       if (rest.workStart !== void 0) updateData.workStart = rest.workStart;
       if (rest.workEnd !== void 0) updateData.workEnd = rest.workEnd;
-      await db.update(staffIncentives).set(updateData).where(eq5(staffIncentives.id, id));
+      await db.update(staffIncentives).set(updateData).where(eq3(staffIncentives.id, id));
       return { success: true };
     }),
     // 직원 인센티브 삭제
-    deleteIncentive: publicProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ input }) => {
+    deleteIncentive: publicProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      await db.delete(staffIncentives).where(eq5(staffIncentives.id, input.id));
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      await db.delete(staffIncentives).where(eq3(staffIncentives.id, input.id));
       return { success: true };
     }),
     // 배치 저장 API - 한 번의 요청으로 report + 항목 + 인센티브 모두 저장
-    batchSave: publicProcedure.input(z3.object({
-      date: z3.string(),
-      teamCount: z3.number().default(0),
-      notes: z3.string().optional(),
-      branchId: z3.number().optional(),
-      items: z3.array(z3.object({
-        id: z3.number().optional(),
-        localId: z3.string(),
-        tableNumber: z3.string(),
-        guestType: z3.enum(["walking", "regular", "named"]).default("walking"),
-        guestName: z3.string().optional().nullable(),
-        amount: z3.string().default("0"),
-        paymentMethod: z3.enum(["card", "cash"]).default("card"),
-        memo: z3.string().optional(),
-        sortOrder: z3.number().default(0)
+    batchSave: publicProcedure.input(z2.object({
+      date: z2.string(),
+      teamCount: z2.number().default(0),
+      notes: z2.string().optional(),
+      branchId: z2.number().optional(),
+      items: z2.array(z2.object({
+        id: z2.number().optional(),
+        localId: z2.string(),
+        tableNumber: z2.string(),
+        guestType: z2.enum(["walking", "regular", "named"]).default("walking"),
+        guestName: z2.string().optional().nullable(),
+        amount: z2.string().default("0"),
+        paymentMethod: z2.enum(["card", "cash"]).default("card"),
+        memo: z2.string().optional(),
+        sortOrder: z2.number().default(0)
       })),
-      incentives: z3.array(z3.object({
-        id: z3.number().optional(),
-        localId: z3.string(),
-        staffName: z3.string(),
-        staffType: z3.enum(["staff", "parttime"]).default("staff"),
-        glassCount: z3.number().default(0),
-        bottleCount: z3.number().default(0),
-        beerBottleCount: z3.number().default(0),
-        salesIncentive: z3.string().default("0"),
-        workStart: z3.string().optional(),
-        workEnd: z3.string().optional(),
-        sortOrder: z3.number().default(0)
+      incentives: z2.array(z2.object({
+        id: z2.number().optional(),
+        localId: z2.string(),
+        staffName: z2.string(),
+        staffType: z2.enum(["staff", "parttime"]).default("staff"),
+        glassCount: z2.number().default(0),
+        bottleCount: z2.number().default(0),
+        beerBottleCount: z2.number().default(0),
+        salesIncentive: z2.string().default("0"),
+        workStart: z2.string().optional(),
+        workEnd: z2.string().optional(),
+        sortOrder: z2.number().default(0)
       }))
     })).mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const effectiveBranchId = account.branchId ?? input.branchId;
-      if (!effectiveBranchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const [existing] = await db.select().from(tableReports).where(and5(eq5(tableReports.branchId, effectiveBranchId), eq5(tableReports.date, input.date))).limit(1);
+      if (!effectiveBranchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const [existing] = await db.select().from(tableReports).where(and3(eq3(tableReports.branchId, effectiveBranchId), eq3(tableReports.date, input.date))).limit(1);
       let reportId;
       if (existing) {
         await db.update(tableReports).set({
           teamCount: input.teamCount,
           notes: input.notes || null
-        }).where(eq5(tableReports.id, existing.id));
+        }).where(eq3(tableReports.id, existing.id));
         reportId = existing.id;
       } else {
         const [result] = await db.insert(tableReports).values({
@@ -6239,7 +5667,7 @@ var appRouter = router({
           paymentMethod: it.paymentMethod,
           memo: it.memo || null,
           sortOrder: it.sortOrder
-        }).where(eq5(tableItems.id, it.id));
+        }).where(eq3(tableItems.id, it.id));
         itemIdMap[it.localId] = it.id;
       }));
       for (const it of itemsToInsert) {
@@ -6269,7 +5697,7 @@ var appRouter = router({
           salesIncentive: inc.salesIncentive || "0",
           workStart: inc.workStart || null,
           workEnd: inc.workEnd || null
-        }).where(eq5(staffIncentives.id, inc.id));
+        }).where(eq3(staffIncentives.id, inc.id));
         incentiveIdMap[inc.localId] = inc.id;
       }));
       for (const inc of incentivesToInsert) {
@@ -6287,13 +5715,13 @@ var appRouter = router({
         });
         incentiveIdMap[inc.localId] = result.insertId;
       }
-      const allItems = await db.select().from(tableItems).where(eq5(tableItems.tableReportId, reportId));
+      const allItems = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, reportId));
       const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((s, it) => s + Number(it.amount || 0), 0);
       const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((s, it) => s + Number(it.amount || 0), 0);
       await db.update(tableReports).set({
         cashAmount: String(cashSum),
         cardAmount: String(cardSum)
-      }).where(eq5(tableReports.id, reportId));
+      }).where(eq3(tableReports.id, reportId));
       const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
       const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
       const { cashTotal: computedCashTotal, cardTotal: computedCardTotal } = await computeCumulativesForDate(
@@ -6328,19 +5756,19 @@ var appRouter = router({
       return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
     }),
     // 직원별 월간 인센티브 집계
-    staffIncentiveStats: publicProcedure.input(z3.object({
-      yearMonth: z3.string(),
+    staffIncentiveStats: publicProcedure.input(z2.object({
+      yearMonth: z2.string(),
       // 'YYYY-MM'
-      branchId: z3.number().optional()
+      branchId: z2.number().optional()
       // 없으면 전체 지점
     })).query(async ({ input, ctx }) => {
-      const account = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED" });
+      const account = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!account) throw new TRPCError3({ code: "UNAUTHORIZED" });
       const db = await getDb();
-      if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const prefix = `${input.yearMonth}-%`;
       const fullAccount = await getStoreAccountById(account.accountId);
-      if (!fullAccount) throw new TRPCError4({ code: "UNAUTHORIZED" });
+      if (!fullAccount) throw new TRPCError3({ code: "UNAUTHORIZED" });
       const targetBranchId = account.role === "admin" ? input.branchId ?? null : fullAccount.branchId;
       const rows = await db.select({
         staffName: staffIncentives.staffName,
@@ -6350,8 +5778,8 @@ var appRouter = router({
         totalBeerBottle: sql`SUM(${staffIncentives.beerBottleCount})`,
         totalSalesIncentive: sql`SUM(CAST(NULLIF(${staffIncentives.salesIncentive}, '') AS DECIMAL(15,0)))`,
         workDays: sql`COUNT(DISTINCT ${tableReports.date})`
-      }).from(staffIncentives).innerJoin(tableReports, eq5(staffIncentives.tableReportId, tableReports.id)).where(
-        targetBranchId !== null ? and5(like(tableReports.date, prefix), eq5(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
+      }).from(staffIncentives).innerJoin(tableReports, eq3(staffIncentives.tableReportId, tableReports.id)).where(
+        targetBranchId !== null ? and3(like(tableReports.date, prefix), eq3(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
       ).groupBy(staffIncentives.staffName, staffIncentives.staffType).orderBy(staffIncentives.staffType, staffIncentives.staffName);
       const detailRows = await db.select({
         staffName: staffIncentives.staffName,
@@ -6359,8 +5787,8 @@ var appRouter = router({
         date: tableReports.date,
         workStart: staffIncentives.workStart,
         workEnd: staffIncentives.workEnd
-      }).from(staffIncentives).innerJoin(tableReports, eq5(staffIncentives.tableReportId, tableReports.id)).where(
-        targetBranchId !== null ? and5(like(tableReports.date, prefix), eq5(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
+      }).from(staffIncentives).innerJoin(tableReports, eq3(staffIncentives.tableReportId, tableReports.id)).where(
+        targetBranchId !== null ? and3(like(tableReports.date, prefix), eq3(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
       ).orderBy(tableReports.date);
       function calcWorkMinutes(start, end) {
         if (!start || !end) return 0;
@@ -6437,11 +5865,11 @@ var appRouter = router({
       return { stats: result, weekLabels: allWeekLabels };
     }),
     // 지점 메모에서 형광펜 패턴 추출 (앱 로드 시 사전 학습용)
-    getHighlightPatterns: publicProcedure.input(z3.object({
-      branchId: z3.number().optional()
+    getHighlightPatterns: publicProcedure.input(z2.object({
+      branchId: z2.number().optional()
     })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
       let yellowKeywords = [];
@@ -6454,14 +5882,14 @@ var appRouter = router({
             const cutoffDate = /* @__PURE__ */ new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 90);
             const cutoff = formatKstDateString(cutoffDate);
-            const recentItems = await db.select({ memo: tableItems.memo }).from(tableItems).innerJoin(tableReports, eq5(tableItems.tableReportId, tableReports.id)).where(
-              and5(
-                eq5(tableReports.branchId, effectiveBranchId),
+            const recentItems = await db.select({ memo: tableItems.memo }).from(tableItems).innerJoin(tableReports, eq3(tableItems.tableReportId, tableReports.id)).where(
+              and3(
+                eq3(tableReports.branchId, effectiveBranchId),
                 sql`${tableReports.date} >= ${cutoff}`,
                 sql`${tableItems.memo} IS NOT NULL`,
                 sql`${tableItems.memo} != ''`
               )
-            ).orderBy(desc3(tableReports.date)).limit(200);
+            ).orderBy(desc2(tableReports.date)).limit(200);
             const yellowSet = /* @__PURE__ */ new Set();
             const pinkSet = /* @__PURE__ */ new Set();
             for (const row of recentItems) {
@@ -6497,23 +5925,23 @@ var appRouter = router({
       return { yellowKeywords, pinkKeywords, recentMemoExamples, branchId: effectiveBranchId };
     }),
     // 포스기 주문내역 사진에서 주문메모 텍스트 자동 추출 (이전 기록 참고 형광펜 + 금액 계산)
-    analyzeOrderMemo: publicProcedure.input(z3.object({
-      imageBase64: z3.string(),
-      mimeType: z3.string().default("image/jpeg"),
-      branchId: z3.number().optional(),
-      date: z3.string().optional(),
+    analyzeOrderMemo: publicProcedure.input(z2.object({
+      imageBase64: z2.string(),
+      mimeType: z2.string().default("image/jpeg"),
+      branchId: z2.number().optional(),
+      date: z2.string().optional(),
       // 클라이언트에서 사전 로드된 패턴 (있으면 DB 재조회 생략)
-      preloadedYellow: z3.array(z3.string()).optional(),
-      preloadedPink: z3.array(z3.string()).optional(),
-      preloadedExamples: z3.array(z3.string()).optional(),
+      preloadedYellow: z2.array(z2.string()).optional(),
+      preloadedPink: z2.array(z2.string()).optional(),
+      preloadedExamples: z2.array(z2.string()).optional(),
       // [추가] 사용자 학습형 형광펜 제외 단어
       //   - 클라이언트에서 사용자가 mark를 지운 횟수를 누적하여 임계값을 넘은 단어 목록.
       //   - 서버 단에서 keyword 후보 및 LLM 프롬프트의 절대 형광펜 금지 항목에 포함시킨다.
-      excludedYellow: z3.array(z3.string()).optional(),
-      excludedPink: z3.array(z3.string()).optional()
+      excludedYellow: z2.array(z2.string()).optional(),
+      excludedPink: z2.array(z2.string()).optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");
       const ext = input.mimeType.includes("png") ? "png" : "jpg";
@@ -6534,14 +5962,14 @@ var appRouter = router({
             const cutoffDate = /* @__PURE__ */ new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 60);
             const cutoff = formatKstDateString(cutoffDate);
-            const recentItems = await db.select({ memo: tableItems.memo, amount: tableItems.amount }).from(tableItems).innerJoin(tableReports, eq5(tableItems.tableReportId, tableReports.id)).where(
-              and5(
-                eq5(tableReports.branchId, effectiveBranchId),
+            const recentItems = await db.select({ memo: tableItems.memo, amount: tableItems.amount }).from(tableItems).innerJoin(tableReports, eq3(tableItems.tableReportId, tableReports.id)).where(
+              and3(
+                eq3(tableReports.branchId, effectiveBranchId),
                 sql`${tableReports.date} >= ${cutoff}`,
                 sql`${tableItems.memo} IS NOT NULL`,
                 sql`${tableItems.memo} != ''`
               )
-            ).orderBy(desc3(tableReports.date)).limit(80);
+            ).orderBy(desc2(tableReports.date)).limit(80);
             const yellowSet = /* @__PURE__ */ new Set();
             const pinkSet = /* @__PURE__ */ new Set();
             for (const row of recentItems) {
@@ -6674,7 +6102,7 @@ ${pinkGuide}${userExcludeNote}
         }
       });
       const rawContent = response.choices?.[0]?.message?.content;
-      if (!rawContent) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
+      if (!rawContent) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
       const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
       const result = JSON.parse(content);
       const stripMarksContaining = (html, markPattern, excludedList) => {
@@ -6716,21 +6144,127 @@ async function createContext(opts) {
 
 // server/_core/vite.ts
 import express from "express";
-import fs from "fs";
+import fs2 from "fs";
 import { nanoid } from "nanoid";
 import path2 from "path";
 import { createServer as createViteServer } from "vite";
 
 // vite.config.ts
+import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import fs from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vite";
+import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 var PROJECT_ROOT = import.meta.dirname;
 var LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
 var MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024;
 var TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6);
-var plugins = [react(), tailwindcss()];
+function ensureLogDir() {
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+}
+function trimLogFile(logPath, maxSize) {
+  try {
+    if (!fs.existsSync(logPath) || fs.statSync(logPath).size <= maxSize) {
+      return;
+    }
+    const lines = fs.readFileSync(logPath, "utf-8").split("\n");
+    const keptLines = [];
+    let keptBytes = 0;
+    const targetSize = TRIM_TARGET_BYTES;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const lineBytes = Buffer.byteLength(`${lines[i]}
+`, "utf-8");
+      if (keptBytes + lineBytes > targetSize) break;
+      keptLines.unshift(lines[i]);
+      keptBytes += lineBytes;
+    }
+    fs.writeFileSync(logPath, keptLines.join("\n"), "utf-8");
+  } catch {
+  }
+}
+function writeToLogFile(source, entries) {
+  if (entries.length === 0) return;
+  ensureLogDir();
+  const logPath = path.join(LOG_DIR, `${source}.log`);
+  const lines = entries.map((entry) => {
+    const ts = (/* @__PURE__ */ new Date()).toISOString();
+    return `[${ts}] ${JSON.stringify(entry)}`;
+  });
+  fs.appendFileSync(logPath, `${lines.join("\n")}
+`, "utf-8");
+  trimLogFile(logPath, MAX_LOG_SIZE_BYTES);
+}
+function vitePluginManusDebugCollector() {
+  return {
+    name: "manus-debug-collector",
+    transformIndexHtml(html) {
+      if (process.env.NODE_ENV === "production") {
+        return html;
+      }
+      return {
+        html,
+        tags: [
+          {
+            tag: "script",
+            attrs: {
+              src: "/__manus__/debug-collector.js",
+              defer: true
+            },
+            injectTo: "head"
+          }
+        ]
+      };
+    },
+    configureServer(server) {
+      server.middlewares.use("/__manus__/logs", (req, res, next) => {
+        if (req.method !== "POST") {
+          return next();
+        }
+        const handlePayload = (payload) => {
+          if (payload.consoleLogs?.length > 0) {
+            writeToLogFile("browserConsole", payload.consoleLogs);
+          }
+          if (payload.networkRequests?.length > 0) {
+            writeToLogFile("networkRequests", payload.networkRequests);
+          }
+          if (payload.sessionEvents?.length > 0) {
+            writeToLogFile("sessionReplay", payload.sessionEvents);
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true }));
+        };
+        const reqBody = req.body;
+        if (reqBody && typeof reqBody === "object") {
+          try {
+            handlePayload(reqBody);
+          } catch (e) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: false, error: String(e) }));
+          }
+          return;
+        }
+        let body = "";
+        req.on("data", (chunk) => {
+          body += chunk.toString();
+        });
+        req.on("end", () => {
+          try {
+            const payload = JSON.parse(body);
+            handlePayload(payload);
+          } catch (e) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: false, error: String(e) }));
+          }
+        });
+      });
+    }
+  };
+}
+var plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 var vite_config_default = defineConfig({
   plugins,
   resolve: {
@@ -6778,16 +6312,9 @@ async function setupVite(app, server) {
     server: serverOptions,
     appType: "custom"
   });
-  const distPath = path2.resolve(import.meta.dirname, "../..", "dist", "public");
-  if (fs.existsSync(distPath)) {
-    app.use("/assets", express.static(path2.join(distPath, "assets")));
-  }
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
-    if (req.path.startsWith("/assets/") || req.path.startsWith("/manifest") || req.path.includes(".")) {
-      return next();
-    }
     try {
       const clientTemplate = path2.resolve(
         import.meta.dirname,
@@ -6795,7 +6322,7 @@ async function setupVite(app, server) {
         "client",
         "index.html"
       );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -6809,37 +6336,35 @@ async function setupVite(app, server) {
   });
 }
 function serveStatic(app) {
-  const distPath = path2.join(process.cwd(), "dist", "public");
-  console.log("[Static] distPath:", distPath);
-  console.log("[Static] cwd:", process.cwd());
-  if (!fs.existsSync(distPath)) {
+  const distPath = process.env.NODE_ENV === "development" ? path2.resolve(import.meta.dirname, "../..", "dist", "public") : path2.resolve(import.meta.dirname, "public");
+  if (!fs2.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
   app.use(express.static(distPath));
-  app.use("*", (req, res) => {
-    if (req.path.startsWith("/assets/") || req.path.startsWith("/manifest") || req.path.includes(".")) {
-      return res.status(404).end();
-    }
-    res.setHeader("Content-Type", "text/html; charset=UTF-8");
+  app.use("*", (_req, res) => {
     res.sendFile(path2.resolve(distPath, "index.html"));
   });
 }
 
 // server/_core/index.ts
-async function runMigrations() {
-  try {
-    const { execSync } = await import("child_process");
-    console.log("[DB] Running migrations...");
-    execSync("npx drizzle-kit push --force", {
-      env: { ...process.env },
-      stdio: "inherit"
+function isPortAvailable(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.listen(port, () => {
+      server.close(() => resolve(true));
     });
-    console.log("[DB] Migrations complete");
-  } catch (e) {
-    console.warn("[DB] Migration warning (continuing):", e instanceof Error ? e.message : e);
+    server.on("error", () => resolve(false));
+  });
+}
+async function findAvailablePort(startPort = 3e3) {
+  for (let port = startPort; port < startPort + 20; port++) {
+    if (await isPortAvailable(port)) {
+      return port;
+    }
   }
+  throw new Error(`No available port found starting from ${startPort}`);
 }
 async function startServer() {
   const app = express2();
@@ -6860,9 +6385,13 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
-  const port = parseInt(process.env.PORT || "3000");
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+  const preferredPort = parseInt(process.env.PORT || "3000");
+  const port = await findAvailablePort(preferredPort);
+  if (port !== preferredPort) {
+    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+  }
+  server.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}/`);
   });
 }
-runMigrations().then(() => startServer()).catch(console.error);
+startServer().catch(console.error);

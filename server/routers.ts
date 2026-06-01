@@ -35,7 +35,6 @@ import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { eq, and, desc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { settlementRouter } from "./settlementRouter";
 
 
 function formatKstDateString(date: Date): string {
@@ -2827,7 +2826,6 @@ async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: s
 
 export const appRouter = router({
   system: systemRouter,
-  settlement: settlementRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -3365,18 +3363,6 @@ export const appRouter = router({
           confidence: result.confidence as string,
           note: result.note as string,
         };
-      }),
-    getBranches: publicProcedure
-      .query(async ({ ctx }) => {
-        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
-        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
-        const account = await getStoreAccountById(payload.accountId);
-        if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
-        if (account.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
-        const db = await getDb();
-        if (!db) return [];
-        const allBranches = await db.select().from(branches).orderBy(branches.name);
-        return allBranches.map(b => ({ id: b.id, name: b.name }));
       }),
   }),
 

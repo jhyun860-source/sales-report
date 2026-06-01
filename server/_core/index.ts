@@ -33,20 +33,6 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
-async function runMigrations() {
-  try {
-    const { execSync } = await import('child_process');
-    console.log('[DB] Running migrations...');
-    execSync('npx drizzle-kit push --force', {
-      env: { ...process.env },
-      stdio: 'inherit',
-    });
-    console.log('[DB] Migrations complete');
-  } catch (e) {
-    console.warn('[DB] Migration warning (continuing):', e instanceof Error ? e.message : e);
-  }
-}
-
 async function startServer() {
   // [수정] 서버 시작 시 자동 누적 리셋 호출 제거.
   //   - 기존: await checkAndResetMonthlyAmounts();
@@ -80,11 +66,16 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const port = parseInt(process.env.PORT || "3000");
+  const preferredPort = parseInt(process.env.PORT || "3000");
+  const port = await findAvailablePort(preferredPort);
 
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+  if (port !== preferredPort) {
+    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+  }
+
+  server.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}/`);
   });
 }
 
-runMigrations().then(() => startServer()).catch(console.error);
+startServer().catch(console.error);
