@@ -293,8 +293,8 @@ async function upsertUser(user) {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
   }
-  const db = await getDb();
-  if (!db) {
+  const db2 = await getDb();
+  if (!db2) {
     console.warn("[Database] Cannot upsert user: database not available");
     return;
   }
@@ -329,7 +329,7 @@ async function upsertUser(user) {
     if (Object.keys(updateSet).length === 0) {
       updateSet.lastSignedIn = /* @__PURE__ */ new Date();
     }
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db2.insert(users).values(values).onDuplicateKeyUpdate({
       set: updateSet
     });
   } catch (error) {
@@ -338,51 +338,51 @@ async function upsertUser(user) {
   }
 }
 async function getUserByOpenId(openId) {
-  const db = await getDb();
-  if (!db) {
+  const db2 = await getDb();
+  if (!db2) {
     console.warn("[Database] Cannot get user: database not available");
     return void 0;
   }
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db2.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function createBranch(data) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.insert(branches).values(data);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.insert(branches).values(data);
   const branchId = result.insertId;
   if (!branchId) return null;
-  const created = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
+  const created = await db2.select().from(branches).where(eq(branches.id, branchId)).limit(1);
   return created[0] || null;
 }
 async function getBranchById(branchId) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.select().from(branches).where(eq(branches.id, branchId)).limit(1);
   return result[0] || null;
 }
 async function getDailySalesRecord(branchId, date) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), eq(dailySalesRecords.date, date))).limit(1);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), eq(dailySalesRecords.date, date))).limit(1);
   return result[0] || null;
 }
 async function getPrevDailySalesRecord(branchId, beforeDate) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate))).orderBy(desc(dailySalesRecords.date)).limit(1);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate))).orderBy(desc(dailySalesRecords.date)).limit(1);
   return result[0] || null;
 }
 async function getPrevDailySalesRecordWithPosEnd(branchId, beforeDate) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate))).orderBy(desc(dailySalesRecords.date)).limit(120);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate))).orderBy(desc(dailySalesRecords.date)).limit(120);
   return result.find((rec) => (parseInt(rec.posEndAmount || "0") || 0) > 0) || result[0] || null;
 }
 async function getDailySalesRecordsByDateRange(branchId, startDate, endDate) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(dailySalesRecords).where(
+  const db2 = await getDb();
+  if (!db2) return [];
+  return db2.select().from(dailySalesRecords).where(
     and(
       eq(dailySalesRecords.branchId, branchId),
       gte(dailySalesRecords.date, startDate),
@@ -391,88 +391,88 @@ async function getDailySalesRecordsByDateRange(branchId, startDate, endDate) {
   ).orderBy(desc(dailySalesRecords.date));
 }
 async function upsertDailySalesRecord(data) {
-  const db = await getDb();
-  if (!db) return null;
+  const db2 = await getDb();
+  if (!db2) return null;
   const existing = await getDailySalesRecord(data.branchId, data.date);
   if (existing) {
-    await db.update(dailySalesRecords).set({
+    await db2.update(dailySalesRecords).set({
       ...data,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(eq(dailySalesRecords.id, existing.id));
-    const updated = await db.select().from(dailySalesRecords).where(eq(dailySalesRecords.id, existing.id)).limit(1);
+    const updated = await db2.select().from(dailySalesRecords).where(eq(dailySalesRecords.id, existing.id)).limit(1);
     return updated[0] || null;
   } else {
-    const result = await db.insert(dailySalesRecords).values(data);
+    const result = await db2.insert(dailySalesRecords).values(data);
     const recordId = result.insertId;
     if (!recordId) return null;
-    const created = await db.select().from(dailySalesRecords).where(eq(dailySalesRecords.id, recordId)).limit(1);
+    const created = await db2.select().from(dailySalesRecords).where(eq(dailySalesRecords.id, recordId)).limit(1);
     return created[0] || null;
   }
 }
 async function savePushSubscription(data) {
-  const db = await getDb();
-  if (!db) return;
-  await db.delete(pushSubscriptions).where(
+  const db2 = await getDb();
+  if (!db2) return;
+  await db2.delete(pushSubscriptions).where(
     and(eq(pushSubscriptions.userId, data.userId), eq(pushSubscriptions.endpoint, data.endpoint))
   );
-  await db.insert(pushSubscriptions).values(data);
+  await db2.insert(pushSubscriptions).values(data);
 }
 async function getPushSubscriptionsByUserId(userId) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  const db2 = await getDb();
+  if (!db2) return [];
+  return db2.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
 }
 async function deletePushSubscription(endpoint) {
-  const db = await getDb();
-  if (!db) return;
-  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  const db2 = await getDb();
+  if (!db2) return;
+  await db2.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
 }
 async function getPushSubscriptionsByOpenId(openId) {
-  const db = await getDb();
-  if (!db) return [];
+  const db2 = await getDb();
+  if (!db2) return [];
   const user = await getUserByOpenId(openId);
   if (!user) return [];
   return getPushSubscriptionsByUserId(user.id);
 }
 async function getStoreAccountByLoginId(loginId) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(storeAccounts).where(eq(storeAccounts.loginId, loginId)).limit(1);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.select().from(storeAccounts).where(eq(storeAccounts.loginId, loginId)).limit(1);
   return result[0] || null;
 }
 async function getStoreAccountById(id) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(storeAccounts).where(eq(storeAccounts.id, id)).limit(1);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.select().from(storeAccounts).where(eq(storeAccounts.id, id)).limit(1);
   return result[0] || null;
 }
 async function createStoreAccount(data) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.insert(storeAccounts).values(data);
+  const db2 = await getDb();
+  if (!db2) return null;
+  const result = await db2.insert(storeAccounts).values(data);
   const accountId = result.insertId;
   if (!accountId) return null;
   return getStoreAccountById(accountId);
 }
 async function updateStoreAccount(id, data) {
-  const db = await getDb();
-  if (!db) return;
-  await db.update(storeAccounts).set({ ...data, updatedAt: /* @__PURE__ */ new Date() }).where(eq(storeAccounts.id, id));
+  const db2 = await getDb();
+  if (!db2) return;
+  await db2.update(storeAccounts).set({ ...data, updatedAt: /* @__PURE__ */ new Date() }).where(eq(storeAccounts.id, id));
 }
 async function getAllStoreAccounts() {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(storeAccounts).orderBy(storeAccounts.loginId);
+  const db2 = await getDb();
+  if (!db2) return [];
+  return db2.select().from(storeAccounts).orderBy(storeAccounts.loginId);
 }
 async function deleteStoreAccount(id) {
-  const db = await getDb();
-  if (!db) return;
-  await db.delete(storeAccounts).where(eq(storeAccounts.id, id));
+  const db2 = await getDb();
+  if (!db2) return;
+  await db2.delete(storeAccounts).where(eq(storeAccounts.id, id));
 }
 async function cascadeUpdatePosAmounts(branchId, fromDate) {
-  const db = await getDb();
-  if (!db) return;
-  const futureRecords = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), gt(dailySalesRecords.date, fromDate))).orderBy(dailySalesRecords.date);
+  const db2 = await getDb();
+  if (!db2) return;
+  const futureRecords = await db2.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), gt(dailySalesRecords.date, fromDate))).orderBy(dailySalesRecords.date);
   if (futureRecords.length === 0) return;
   let prevRecord = await getDailySalesRecord(branchId, fromDate);
   if (!prevRecord || (parseInt(prevRecord.posEndAmount || "0") || 0) <= 0) {
@@ -490,7 +490,7 @@ async function cascadeUpdatePosAmounts(branchId, fromDate) {
     const newPosStart = prevPosEnd;
     const newPosEnd = isSunday ? newPosStart : newPosStart - expTotal + cashDep;
     if (String(newPosStart) !== rec.posStartAmount || String(newPosEnd) !== rec.posEndAmount) {
-      await db.update(dailySalesRecords).set({ posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
+      await db2.update(dailySalesRecords).set({ posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
       prevRecord = { ...rec, posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd) };
     } else {
       prevRecord = rec;
@@ -498,19 +498,19 @@ async function cascadeUpdatePosAmounts(branchId, fromDate) {
   }
 }
 async function computeCumulativesForDate(branchId, date, _prevRecord, todayCash, todayCard) {
-  const db = await getDb();
+  const db2 = await getDb();
   const isFirstOfMonth = date.endsWith("-01");
   if (isFirstOfMonth) {
     return { cashTotal: todayCash, cardTotal: todayCard };
   }
-  if (!db) {
+  if (!db2) {
     return { cashTotal: todayCash, cardTotal: todayCard };
   }
   const [year, month] = date.split("-");
   const monthStart = `${year}-${month}-01`;
   const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
   const monthEnd = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
-  const allPrevRecords = await db.select().from(dailySalesRecords).where(and(
+  const allPrevRecords = await db2.select().from(dailySalesRecords).where(and(
     eq(dailySalesRecords.branchId, branchId),
     gte(dailySalesRecords.date, monthStart),
     lte(dailySalesRecords.date, monthEnd),
@@ -526,21 +526,21 @@ async function computeCumulativesForDate(branchId, date, _prevRecord, todayCash,
   return { cashTotal: baseCashTotal + todayCash, cardTotal: baseCardTotal + todayCard };
 }
 async function manualResetCumulativeAmounts(branchId) {
-  const db = await getDb();
-  if (!db) return { success: false, message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" };
+  const db2 = await getDb();
+  if (!db2) return { success: false, message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" };
   try {
     let branchesToReset = [];
     if (branchId) {
-      const branch = await db.select().from(branches).where(eq(branches.id, branchId));
+      const branch = await db2.select().from(branches).where(eq(branches.id, branchId));
       if (branch.length === 0) {
         return { success: false, message: "\uC9C0\uC810\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" };
       }
       branchesToReset = branch;
     } else {
-      branchesToReset = await db.select().from(branches);
+      branchesToReset = await db2.select().from(branches);
     }
     for (const branch of branchesToReset) {
-      const allRecords = await db.select().from(dailySalesRecords).where(eq(dailySalesRecords.branchId, branch.id)).orderBy(dailySalesRecords.date);
+      const allRecords = await db2.select().from(dailySalesRecords).where(eq(dailySalesRecords.branchId, branch.id)).orderBy(dailySalesRecords.date);
       for (const rec of allRecords) {
         const todayCash = parseInt(rec.cash || "0") || 0;
         const todayCard = parseInt(rec.card || "0") || 0;
@@ -552,7 +552,7 @@ async function manualResetCumulativeAmounts(branchId) {
           todayCard
         );
         if (String(newCashTotal) !== rec.cashTotal || String(newCardTotal) !== rec.cardTotal) {
-          await db.update(dailySalesRecords).set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
+          await db2.update(dailySalesRecords).set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
         }
       }
     }
@@ -566,9 +566,9 @@ async function manualResetCumulativeAmounts(branchId) {
   }
 }
 async function cascadeUpdateCumulativeAmounts(branchId, fromDate) {
-  const db = await getDb();
-  if (!db) return;
-  const futureRecords = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), gt(dailySalesRecords.date, fromDate))).orderBy(dailySalesRecords.date);
+  const db2 = await getDb();
+  if (!db2) return;
+  const futureRecords = await db2.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), gt(dailySalesRecords.date, fromDate))).orderBy(dailySalesRecords.date);
   if (futureRecords.length === 0) return;
   for (const rec of futureRecords) {
     const todayCash = parseInt(rec.cash || "0") || 0;
@@ -581,7 +581,7 @@ async function cascadeUpdateCumulativeAmounts(branchId, fromDate) {
       todayCard
     );
     if (String(newCashTotal) !== rec.cashTotal || String(newCardTotal) !== rec.cardTotal) {
-      await db.update(dailySalesRecords).set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
+      await db2.update(dailySalesRecords).set({ cashTotal: String(newCashTotal), cardTotal: String(newCardTotal), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
     }
   }
 }
@@ -883,8 +883,8 @@ function validateApiKey(req, res) {
   return true;
 }
 async function getBranchIdByName(branchName) {
-  const db = await getDb();
-  if (!db) return null;
+  const db2 = await getDb();
+  if (!db2) return null;
   const branchMap = {
     "\uB300\uCE58\uC810": "daechi",
     "\uC0BC\uC131\uC810": "samsung",
@@ -895,7 +895,7 @@ async function getBranchIdByName(branchName) {
   const branchCode = branchMap[branchName];
   if (!branchCode) return null;
   try {
-    const result = await db.select().from(branches).where(eq2(branches.code, branchCode)).limit(1);
+    const result = await db2.select().from(branches).where(eq2(branches.code, branchCode)).limit(1);
     return result.length > 0 ? result[0].id : null;
   } catch (error) {
     console.error("[Settlements] Failed to get branch:", error);
@@ -903,24 +903,24 @@ async function getBranchIdByName(branchName) {
   }
 }
 async function getSettlementByDate(branchId, date) {
-  const db = await getDb();
-  if (!db) return null;
+  const db2 = await getDb();
+  if (!db2) return null;
   try {
-    const branchResult = await db.select().from(branches).where(eq2(branches.id, branchId)).limit(1);
+    const branchResult = await db2.select().from(branches).where(eq2(branches.id, branchId)).limit(1);
     if (branchResult.length === 0) return null;
     const branchName = branchResult[0].name;
-    const salesResult = await db.select().from(dailySalesRecords).where(and2(eq2(dailySalesRecords.branchId, branchId), eq2(dailySalesRecords.date, date))).limit(1);
+    const salesResult = await db2.select().from(dailySalesRecords).where(and2(eq2(dailySalesRecords.branchId, branchId), eq2(dailySalesRecords.date, date))).limit(1);
     const salesRecord = salesResult.length > 0 ? salesResult[0] : null;
     const cash = salesRecord ? Number(salesRecord.cashTotal || 0) : 0;
     const card = salesRecord ? Number(salesRecord.cardTotal || 0) : 0;
     const totalSales = cash + card;
-    const tableResult = await db.select().from(tableReports).where(and2(eq2(tableReports.branchId, branchId), eq2(tableReports.date, date))).limit(1);
+    const tableResult = await db2.select().from(tableReports).where(and2(eq2(tableReports.branchId, branchId), eq2(tableReports.date, date))).limit(1);
     const tableReport = tableResult.length > 0 ? tableResult[0] : null;
     const tableReportId = tableReport?.id || 0;
     let staffWages = 0;
     let parttimeWages = 0;
     if (tableReportId > 0) {
-      const incentives = await db.select().from(staffIncentives).where(eq2(staffIncentives.tableReportId, tableReportId));
+      const incentives = await db2.select().from(staffIncentives).where(eq2(staffIncentives.tableReportId, tableReportId));
       for (const incentive of incentives) {
         const amount = Number(incentive.salesIncentive || 0);
         if (incentive.staffType === "staff") {
@@ -930,7 +930,7 @@ async function getSettlementByDate(branchId, date) {
         }
       }
     }
-    const liquorResult = await db.select().from(liquorStockMovements).where(
+    const liquorResult = await db2.select().from(liquorStockMovements).where(
       and2(
         eq2(liquorStockMovements.branchId, branchId),
         eq2(liquorStockMovements.date, date),
@@ -959,10 +959,10 @@ async function getSettlementByDate(branchId, date) {
   }
 }
 async function getLatestSettlement(branchId) {
-  const db = await getDb();
-  if (!db) return null;
+  const db2 = await getDb();
+  if (!db2) return null;
   try {
-    const salesResult = await db.select().from(dailySalesRecords).where(eq2(dailySalesRecords.branchId, branchId)).orderBy((t2) => [t2.date]).limit(1);
+    const salesResult = await db2.select().from(dailySalesRecords).where(eq2(dailySalesRecords.branchId, branchId)).orderBy((t2) => [t2.date]).limit(1);
     if (salesResult.length === 0) return null;
     const latestDate = salesResult[0].date;
     return await getSettlementByDate(branchId, latestDate);
@@ -1410,8 +1410,203 @@ async function storagePut(relKey, data, contentType = "application/octet-stream"
 }
 
 // server/routers.ts
-import { eq as eq3, and as and3, desc as desc2, asc, like, sql, inArray, gte as gte2, lte as lte2, not } from "drizzle-orm";
+import { eq as eq4, and as and4, desc as desc2, asc, like, sql, inArray, gte as gte3, lte as lte3, not } from "drizzle-orm";
 import { TRPCError as TRPCError3 } from "@trpc/server";
+
+// server/_core/settlementCalculations.ts
+import { eq as eq3, and as and3, gte as gte2, lte as lte2 } from "drizzle-orm";
+var BRANCH_CONFIG = {
+  "\uB300\uCE58\uC810": {
+    monthlyRent: 9e6,
+    managementFee: 0,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 2e4,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 272727,
+    glassUnitPrice: 5e3,
+    bottleUnitPrice: 1e4,
+    beerBottleUnitPrice: 3e3
+  },
+  "\uC120\uB989\uC810": {
+    monthlyRent: 65e5,
+    managementFee: 0,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 2e4,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 25e4,
+    glassUnitPrice: 5e3,
+    bottleUnitPrice: 1e4,
+    beerBottleUnitPrice: 3e3
+  },
+  "\uC0BC\uC131\uC810": {
+    monthlyRent: 65e5,
+    managementFee: 0,
+    staffDailyWage: 159090,
+    partTimeDailyWage: 2e4,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 181818,
+    glassUnitPrice: 5e3,
+    bottleUnitPrice: 1e4,
+    beerBottleUnitPrice: 3e3
+  },
+  "\uBB38\uC8151\uD638\uC810": {
+    monthlyRent: 45e5,
+    managementFee: 0,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 2e4,
+    commissionRate: 0.17,
+    hasManager: true,
+    managerDailyWage: 204545,
+    glassUnitPrice: 5e3,
+    bottleUnitPrice: 1e4,
+    beerBottleUnitPrice: 3e3
+  },
+  "\uBB38\uC8152\uD638\uC810": {
+    monthlyRent: 45e5,
+    managementFee: 3e4,
+    staffDailyWage: 136363,
+    partTimeDailyWage: 2e4,
+    commissionRate: 0.17,
+    hasManager: false,
+    managerDailyWage: 0,
+    glassUnitPrice: 5e3,
+    bottleUnitPrice: 1e4,
+    beerBottleUnitPrice: 3e3
+  }
+};
+function getBusinessDaysInMonth(year, month) {
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0);
+  let businessDays = 0;
+  for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek !== 0) businessDays++;
+  }
+  return businessDays;
+}
+function calculateDailyRent(monthlyRent, year, month) {
+  const businessDays = getBusinessDaysInMonth(year, month);
+  if (businessDays === 0) return 0;
+  return Math.round(monthlyRent / businessDays);
+}
+async function calculateStaffDrinkExpense(tableReportId, branchName) {
+  const db2 = await getDb();
+  if (!db2) return 0;
+  const config = BRANCH_CONFIG[branchName];
+  const glassPrice = config?.glassUnitPrice ?? 5e3;
+  const bottlePrice = config?.bottleUnitPrice ?? 1e4;
+  const beerBottlePrice = config?.beerBottleUnitPrice ?? 3e3;
+  const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
+  let total = 0;
+  incentives.forEach((inc) => {
+    total += Number(inc.glassCount || 0) * glassPrice;
+    total += Number(inc.bottleCount || 0) * bottlePrice;
+    total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
+  });
+  return total;
+}
+async function calculateLiquorCostExpense(branchId, date) {
+  const db2 = await getDb();
+  if (!db2) return 0;
+  const movements = await db2.select().from(liquorStockMovements).where(
+    and3(
+      eq3(liquorStockMovements.branchId, branchId),
+      eq3(liquorStockMovements.date, date),
+      eq3(liquorStockMovements.type, "OUT")
+    )
+  );
+  return movements.reduce((sum, m) => sum + Number(m.totalCost || 0), 0);
+}
+function calculateOtherExpenses(expenses) {
+  if (!Array.isArray(expenses)) return 0;
+  return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+}
+async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId) {
+  const zero = {
+    totalRevenue: 0,
+    commissionExpense: 0,
+    rentExpense: 0,
+    managementFeeExpense: 0,
+    staffWageExpense: 0,
+    managerWageExpense: 0,
+    partTimeWageExpense: 0,
+    liquorCostExpense: 0,
+    staffDrinkExpense: 0,
+    otherExpense: 0,
+    totalExpenses: 0,
+    netProfit: 0
+  };
+  const db2 = await getDb();
+  if (!db2) return zero;
+  const branchData = await db2.select().from(branches).where(eq3(branches.id, branchId)).limit(1);
+  if (!branchData || branchData.length === 0) return zero;
+  const branchName = branchData[0].name;
+  const config = BRANCH_CONFIG[branchName];
+  const [year, month] = date.split("-").map(Number);
+  const totalRevenue = cash + card;
+  const commissionRate = config?.commissionRate ?? Number(branchData[0].commissionRate || 0.17);
+  const commissionExpense = Math.round(totalRevenue * commissionRate);
+  const monthlyRent = config?.monthlyRent ?? Number(branchData[0].monthlyRent || 0);
+  const rentExpense = calculateDailyRent(monthlyRent, year, month);
+  const managementFeeExpense = config?.managementFee ?? Number(branchData[0].managementFee || 0);
+  const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
+  const staffWageExpense = staffCount * staffDailyWage;
+  const hasManager = config?.hasManager ?? Number(branchData[0].hasManager ?? 1) === 1;
+  const managerDailyWage = config?.managerDailyWage ?? 0;
+  const dateObj = new Date(date);
+  const dayOfWeek = dateObj.getDay();
+  const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
+  const managerWageExpense = hasManager && isManagerWorkday ? managerDailyWage : 0;
+  const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 2e4);
+  const partTimeWageExpense = partTimeCount * partTimeDailyWage;
+  const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
+  const staffDrinkExpense = tableReportId ? await calculateStaffDrinkExpense(tableReportId, branchName) : 0;
+  const otherExpense = calculateOtherExpenses(expenses);
+  const totalExpenses = commissionExpense + rentExpense + managementFeeExpense + staffWageExpense + managerWageExpense + partTimeWageExpense + liquorCostExpense + staffDrinkExpense + otherExpense;
+  const netProfit = totalRevenue - totalExpenses;
+  return {
+    totalRevenue,
+    commissionExpense,
+    rentExpense,
+    managementFeeExpense,
+    staffWageExpense,
+    managerWageExpense,
+    partTimeWageExpense,
+    liquorCostExpense,
+    staffDrinkExpense,
+    otherExpense,
+    totalExpenses,
+    netProfit
+  };
+}
+async function saveDailySettlementRecord(branchId, date, settlement) {
+  const db2 = await getDb();
+  if (!db2) return;
+  const existing = await db2.select().from(dailySalesRecords).where(and3(eq3(dailySalesRecords.branchId, branchId), eq3(dailySalesRecords.date, date))).limit(1);
+  const fields = {
+    totalRevenue: String(settlement.totalRevenue),
+    commissionExpense: String(settlement.commissionExpense),
+    rentExpense: String(settlement.rentExpense),
+    managementFeeExpense: String(settlement.managementFeeExpense),
+    staffWageExpense: String(settlement.staffWageExpense),
+    managerWageExpense: String(settlement.managerWageExpense ?? 0),
+    partTimeWageExpense: String(settlement.partTimeWageExpense),
+    liquorCostExpense: String(settlement.liquorCostExpense),
+    staffDrinkExpense: String(settlement.staffDrinkExpense),
+    otherExpense: String(settlement.otherExpense),
+    totalExpenses: String(settlement.totalExpenses),
+    netProfit: String(settlement.netProfit),
+    updatedAt: /* @__PURE__ */ new Date()
+  };
+  if (existing && existing.length > 0) {
+    await db2.update(dailySalesRecords).set(fields).where(eq3(dailySalesRecords.id, existing[0].id));
+  }
+}
+
+// server/routers.ts
 function formatKstDateString(date) {
   const kst = new Date(date.getTime() + 9 * 60 * 60 * 1e3);
   return kst.toISOString().slice(0, 10);
@@ -1428,9 +1623,9 @@ async function normalizeMonthlyCumulativeRecord(record) {
     const nextCashTotal = String(computed.cashTotal);
     const nextCardTotal = String(computed.cardTotal);
     if (record.cashTotal !== nextCashTotal || record.cardTotal !== nextCardTotal) {
-      const db = await getDb();
-      if (db && record.id) {
-        await db.update(dailySalesRecords).set({ cashTotal: nextCashTotal, cardTotal: nextCardTotal, updatedAt: /* @__PURE__ */ new Date() }).where(eq3(dailySalesRecords.id, record.id));
+      const db2 = await getDb();
+      if (db2 && record.id) {
+        await db2.update(dailySalesRecords).set({ cashTotal: nextCashTotal, cardTotal: nextCardTotal, updatedAt: /* @__PURE__ */ new Date() }).where(eq4(dailySalesRecords.id, record.id));
       }
       return { ...record, cashTotal: nextCashTotal, cardTotal: nextCardTotal };
     }
@@ -1465,9 +1660,9 @@ var CANONICAL_STORE_ACCOUNTS = [
 var canonicalAccountsSynced = false;
 async function ensureCanonicalStoreAccounts() {
   if (canonicalAccountsSynced) return;
-  const db = await getDb();
-  if (!db) return;
-  const allBranches = await db.select().from(branches);
+  const db2 = await getDb();
+  if (!db2) return;
+  const allBranches = await db2.select().from(branches);
   const normalize = (value) => value.replace(/\s+/g, "").trim();
   const branchByCode = new Map(allBranches.map((branch) => [branch.code, branch]));
   for (const spec of CANONICAL_STORE_ACCOUNTS) {
@@ -3970,9 +4165,9 @@ async function requireStoreAccount(ctx) {
   if (!account) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
   return account;
 }
-async function ensureLiquorTables(db) {
-  if (!db) return;
-  await db.execute(sql`CREATE TABLE IF NOT EXISTS liquorItems (
+async function ensureLiquorTables(db2) {
+  if (!db2) return;
+  await db2.execute(sql`CREATE TABLE IF NOT EXISTS liquorItems (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
     category VARCHAR(50) NOT NULL DEFAULT '기타',
@@ -3982,7 +4177,7 @@ async function ensureLiquorTables(db) {
     createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   )`);
-  await db.execute(sql`CREATE TABLE IF NOT EXISTS liquorInventories (
+  await db2.execute(sql`CREATE TABLE IF NOT EXISTS liquorInventories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     branchId INT NOT NULL,
     liquorItemId INT NOT NULL,
@@ -3990,7 +4185,7 @@ async function ensureLiquorTables(db) {
     updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uniq_liquor_inventory_branch_item (branchId, liquorItemId)
   )`);
-  await db.execute(sql`CREATE TABLE IF NOT EXISTS liquorStockMovements (
+  await db2.execute(sql`CREATE TABLE IF NOT EXISTS liquorStockMovements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     branchId INT NOT NULL,
     liquorItemId INT NOT NULL,
@@ -4006,11 +4201,11 @@ async function ensureLiquorTables(db) {
     INDEX idx_liquor_movement_branch_date (branchId, date),
     INDEX idx_liquor_movement_item (liquorItemId)
   )`);
-  await db.execute(sql`CREATE TABLE IF NOT EXISTS liquorSeedMeta (
+  await db2.execute(sql`CREATE TABLE IF NOT EXISTS liquorSeedMeta (
     seedKey VARCHAR(120) PRIMARY KEY,
     appliedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`);
-  await db.execute(sql`CREATE TABLE IF NOT EXISTS liquorHiddenItems (
+  await db2.execute(sql`CREATE TABLE IF NOT EXISTS liquorHiddenItems (
     id INT AUTO_INCREMENT PRIMARY KEY,
     branchId INT NOT NULL,
     liquorItemId INT NOT NULL,
@@ -4035,15 +4230,15 @@ function getSeedCategory(rawCategory) {
   if (mapped.includes("\uB9AC\uD050\uB974") || mapped.includes("\uC2DC\uB7FD")) return "\uB9AC\uD050\uB974/\uC2DC\uB7FD";
   return "\uC704\uC2A4\uD0A4";
 }
-async function ensureBoxHeroBranchStockSeeded(db) {
-  if (!db) return;
-  await ensureLiquorTables(db);
-  const existingSeed = await db.execute(sql`SELECT seedKey FROM liquorSeedMeta WHERE seedKey = ${BOXHERO_STOCK_SEED_VERSION} LIMIT 1`);
+async function ensureBoxHeroBranchStockSeeded(db2) {
+  if (!db2) return;
+  await ensureLiquorTables(db2);
+  const existingSeed = await db2.execute(sql`SELECT seedKey FROM liquorSeedMeta WHERE seedKey = ${BOXHERO_STOCK_SEED_VERSION} LIMIT 1`);
   const seedRows = Array.isArray(existingSeed) ? existingSeed[0] : [];
   if (Array.isArray(seedRows) && seedRows.length > 0) return;
-  const allBranches = await db.select().from(branches);
+  const allBranches = await db2.select().from(branches);
   const branchByKey = new Map(allBranches.map((branch) => [normalizeBranchSeedKey(branch.name), branch]));
-  const currentItems = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
+  const currentItems = await db2.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
   const itemByKey = /* @__PURE__ */ new Map();
   for (const item of currentItems) {
     itemByKey.set(normalizeLiquorSeedKey(item.name), item);
@@ -4058,7 +4253,7 @@ async function ensureBoxHeroBranchStockSeeded(db) {
     if (item) return item;
     const unitCost = defaultCostByKey.get(canonicalKey) || defaultCostByKey.get(rawKey) || 0;
     const category = getSeedCategory(rawCategory);
-    const result = await db.insert(liquorItems).values({
+    const result = await db2.insert(liquorItems).values({
       name: canonicalName,
       category,
       unitCost: String(unitCost),
@@ -4067,14 +4262,14 @@ async function ensureBoxHeroBranchStockSeeded(db) {
     });
     const insertId = Number(result.insertId || 0);
     if (insertId) {
-      const [created] = await db.select().from(liquorItems).where(eq3(liquorItems.id, insertId)).limit(1);
+      const [created] = await db2.select().from(liquorItems).where(eq4(liquorItems.id, insertId)).limit(1);
       if (created) {
         itemByKey.set(canonicalKey, created);
         itemByKey.set(rawKey, created);
         return created;
       }
     }
-    const [fallback] = await db.select().from(liquorItems).where(eq3(liquorItems.name, canonicalName)).limit(1);
+    const [fallback] = await db2.select().from(liquorItems).where(eq4(liquorItems.name, canonicalName)).limit(1);
     if (!fallback) throw new Error(`\uC8FC\uB958 \uD488\uBAA9 \uC0DD\uC131 \uC2E4\uD328: ${canonicalName}`);
     itemByKey.set(canonicalKey, fallback);
     itemByKey.set(rawKey, fallback);
@@ -4089,23 +4284,23 @@ async function ensureBoxHeroBranchStockSeeded(db) {
     for (const row of rows) {
       const item = await getOrCreateItem(row.name, row.category);
       const qty = Number(row.quantity || 0);
-      const [existingInventory] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, branch.id), eq3(liquorInventories.liquorItemId, item.id))).limit(1);
+      const [existingInventory] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, branch.id), eq4(liquorInventories.liquorItemId, item.id))).limit(1);
       if (existingInventory) {
-        await db.update(liquorInventories).set({ currentStock: String(qty) }).where(eq3(liquorInventories.id, existingInventory.id));
+        await db2.update(liquorInventories).set({ currentStock: String(qty) }).where(eq4(liquorInventories.id, existingInventory.id));
       } else {
-        await db.insert(liquorInventories).values({ branchId: branch.id, liquorItemId: item.id, currentStock: String(qty) });
+        await db2.insert(liquorInventories).values({ branchId: branch.id, liquorItemId: item.id, currentStock: String(qty) });
       }
     }
   }
-  await db.execute(sql`INSERT INTO liquorSeedMeta (seedKey) VALUES (${BOXHERO_STOCK_SEED_VERSION})`);
+  await db2.execute(sql`INSERT INTO liquorSeedMeta (seedKey) VALUES (${BOXHERO_STOCK_SEED_VERSION})`);
   console.log(`[liquor-seed] BoxHero \uC9C0\uC810\uBCC4 \uC7AC\uACE0 \uBC18\uC601 \uC644\uB8CC: ${BOXHERO_STOCK_SEED_VERSION}`);
 }
-async function ensureLiquorSeeded(db) {
-  if (!db) return;
-  await ensureLiquorTables(db);
-  const existing = await db.select({ id: liquorItems.id }).from(liquorItems).limit(1);
+async function ensureLiquorSeeded(db2) {
+  if (!db2) return;
+  await ensureLiquorTables(db2);
+  const existing = await db2.select({ id: liquorItems.id }).from(liquorItems).limit(1);
   if (existing.length === 0) {
-    await db.insert(liquorItems).values(DEFAULT_LIQUOR_ITEMS.map((item, idx) => ({
+    await db2.insert(liquorItems).values(DEFAULT_LIQUOR_ITEMS.map((item, idx) => ({
       name: item.name,
       category: getSeedCategory(item.category),
       unitCost: String(item.unitCost),
@@ -4113,7 +4308,7 @@ async function ensureLiquorSeeded(db) {
       sortOrder: idx
     })));
   }
-  await ensureBoxHeroBranchStockSeeded(db);
+  await ensureBoxHeroBranchStockSeeded(db2);
 }
 async function parseStoreCookie(cookieHeader, authHeader) {
   let token;
@@ -4196,9 +4391,9 @@ var appRouter = router({
       }
       let allBranches = null;
       if (account.role === "admin") {
-        const db = await getDb();
-        if (db) {
-          allBranches = await db.select().from(branches).orderBy(branches.name);
+        const db2 = await getDb();
+        if (db2) {
+          allBranches = await db2.select().from(branches).orderBy(branches.name);
         }
       }
       return {
@@ -4237,63 +4432,63 @@ var appRouter = router({
   }),
   branch: router({
     myBranches: protectedProcedure.query(async ({ ctx }) => {
-      const db = await getDb();
-      if (!db) return [];
-      if (ctx.user.role === "admin") return db.select().from(branches).orderBy(branches.name);
-      const managed = await db.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq3(branchManagers.branchId, branches.id)).where(eq3(branchManagers.userId, ctx.user.id));
+      const db2 = await getDb();
+      if (!db2) return [];
+      if (ctx.user.role === "admin") return db2.select().from(branches).orderBy(branches.name);
+      const managed = await db2.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq4(branchManagers.branchId, branches.id)).where(eq4(branchManagers.userId, ctx.user.id));
       return managed.map((r) => r.branch);
     }),
     list: adminProcedure.query(async () => {
-      const db = await getDb();
-      if (!db) return [];
-      return db.select().from(branches).orderBy(branches.name);
+      const db2 = await getDb();
+      if (!db2) return [];
+      return db2.select().from(branches).orderBy(branches.name);
     }),
     create: adminProcedure.input(z2.object({ name: z2.string().min(1), code: z2.string().min(1) })).mutation(async ({ ctx, input }) => {
       const branch = await createBranch({ name: input.name, code: input.code, ownerId: ctx.user.id });
       return { success: true, branch };
     }),
     update: adminProcedure.input(z2.object({ id: z2.number(), name: z2.string().min(1), code: z2.string().min(1) })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      await db.update(branches).set({ name: input.name, code: input.code }).where(eq3(branches.id, input.id));
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await db2.update(branches).set({ name: input.name, code: input.code }).where(eq4(branches.id, input.id));
       return { success: true };
     }),
     delete: adminProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      await db.delete(branches).where(eq3(branches.id, input.id));
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await db2.delete(branches).where(eq4(branches.id, input.id));
       return { success: true };
     })
   }),
   user: router({
     list: adminProcedure.query(async () => {
-      const db = await getDb();
-      if (!db) return [];
-      const allUsers = await db.select().from(users).orderBy(users.name);
+      const db2 = await getDb();
+      if (!db2) return [];
+      const allUsers = await db2.select().from(users).orderBy(users.name);
       return Promise.all(allUsers.map(async (u) => {
-        const managed = await db.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq3(branchManagers.branchId, branches.id)).where(eq3(branchManagers.userId, u.id));
+        const managed = await db2.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq4(branchManagers.branchId, branches.id)).where(eq4(branchManagers.userId, u.id));
         return { ...u, assignedBranches: managed.map((r) => r.branch) };
       }));
     }),
     updateRole: adminProcedure.input(z2.object({ userId: z2.number(), role: z2.enum(["user", "admin"]) })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      await db.update(users).set({ role: input.role }).where(eq3(users.id, input.userId));
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await db2.update(users).set({ role: input.role }).where(eq4(users.id, input.userId));
       return { success: true };
     }),
     assignBranch: adminProcedure.input(z2.object({ userId: z2.number(), branchId: z2.number() })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      const existing = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, input.userId), eq3(branchManagers.branchId, input.branchId))).limit(1);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      const existing = await db2.select().from(branchManagers).where(and4(eq4(branchManagers.userId, input.userId), eq4(branchManagers.branchId, input.branchId))).limit(1);
       if (existing.length === 0) {
-        await db.insert(branchManagers).values({ userId: input.userId, branchId: input.branchId, role: "manager" });
+        await db2.insert(branchManagers).values({ userId: input.userId, branchId: input.branchId, role: "manager" });
       }
       return { success: true };
     }),
     unassignBranch: adminProcedure.input(z2.object({ userId: z2.number(), branchId: z2.number() })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      await db.delete(branchManagers).where(and3(eq3(branchManagers.userId, input.userId), eq3(branchManagers.branchId, input.branchId)));
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await db2.delete(branchManagers).where(and4(eq4(branchManagers.userId, input.userId), eq4(branchManagers.branchId, input.branchId)));
       return { success: true };
     })
   }),
@@ -4303,8 +4498,8 @@ var appRouter = router({
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const accounts = await getAllStoreAccounts();
-      const db = await getDb();
-      const allBranches = db ? await db.select().from(branches) : [];
+      const db2 = await getDb();
+      const allBranches = db2 ? await db2.select().from(branches) : [];
       return accounts.map((acc) => ({
         id: acc.id,
         loginId: acc.loginId,
@@ -4358,9 +4553,9 @@ var appRouter = router({
     branchList: publicProcedure.query(async ({ ctx }) => {
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const db = await getDb();
-      if (!db) return [];
-      return db.select().from(branches).orderBy(branches.name);
+      const db2 = await getDb();
+      if (!db2) return [];
+      return db2.select().from(branches).orderBy(branches.name);
     })
   }),
   // 매출 기록 API (storeAccount 기반)
@@ -4510,6 +4705,28 @@ var appRouter = router({
         } catch {
         }
       }
+      try {
+        const tableReport = await db?.select().from(tableReports).where(and4(eq4(tableReports.branchId, input.branchId), eq4(tableReports.date, input.date))).limit(1);
+        const tableReportId = tableReport?.[0]?.id ?? null;
+        const staffRows = tableReportId ? await db?.select().from(staffIncentives).where(eq4(staffIncentives.tableReportId, tableReportId)) : [];
+        const staffCount = (staffRows ?? []).filter((i) => i.staffType === "staff").length;
+        const partTimeCount = (staffRows ?? []).filter((i) => i.staffType === "parttime").length;
+        const cash = parseInt(input.cash || "0") || 0;
+        const card = parseInt(input.card || "0") || 0;
+        const settlement = await calculateDailySettlement(
+          input.branchId,
+          input.date,
+          cash,
+          card,
+          staffCount,
+          partTimeCount,
+          input.expenses,
+          tableReportId
+        );
+        await saveDailySettlementRecord(input.branchId, input.date, settlement);
+      } catch (e) {
+        console.error("[\uC815\uC0B0 \uC790\uB3D9 \uACC4\uC0B0 \uC624\uB958]", e);
+      }
       return { success: true, record, pushSent };
     }),
     adminDailyDetail: publicProcedure.input(z2.object({ date: z2.string() })).query(async ({ ctx, input }) => {
@@ -4517,14 +4734,14 @@ var appRouter = router({
       const isStoreAdmin = storePayload?.role === "admin";
       const isOAuthAdmin = ctx.user?.role === "admin";
       if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
-      const db = await getDb();
-      if (!db) return [];
-      const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).where(eq3(dailySalesRecords.date, input.date));
-      const tableReportRows = await db.select().from(tableReports).where(eq3(tableReports.date, input.date));
+      const db2 = await getDb();
+      if (!db2) return [];
+      const allBranches = await db2.select().from(branches).orderBy(branches.name);
+      const records = await db2.select().from(dailySalesRecords).where(eq4(dailySalesRecords.date, input.date));
+      const tableReportRows = await db2.select().from(tableReports).where(eq4(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
-      const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
-      const incentiveRows = reportIds.length > 0 ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
+      const tableItemRows = reportIds.length > 0 ? await db2.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
+      const incentiveRows = reportIds.length > 0 ? await db2.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
       return allBranches.map((branch) => ({
         branch,
         record: records.find((r) => r.branchId === branch.id) || null,
@@ -4544,10 +4761,10 @@ var appRouter = router({
       const isStoreAdmin2 = storePayload2?.role === "admin";
       const isOAuthAdmin2 = ctx.user?.role === "admin";
       if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError3({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
-      const db = await getDb();
-      if (!db) return { byBranch: [], byDate: [] };
-      const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).orderBy(desc2(dailySalesRecords.date));
+      const db2 = await getDb();
+      if (!db2) return { byBranch: [], byDate: [] };
+      const allBranches = await db2.select().from(branches).orderBy(branches.name);
+      const records = await db2.select().from(dailySalesRecords).orderBy(desc2(dailySalesRecords.date));
       const filtered = records.filter((r) => r.date >= input.startDate && r.date <= input.endDate);
       const byBranch = allBranches.map((branch) => {
         const br = filtered.filter((r) => r.branchId === branch.id);
@@ -4655,18 +4872,18 @@ var appRouter = router({
   sales: router({
     getRecord: protectedProcedure.input(z2.object({ branchId: z2.number(), date: z2.string() })).query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
-        const db = await getDb();
-        if (!db) return null;
-        const managed = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, ctx.user.id), eq3(branchManagers.branchId, input.branchId))).limit(1);
+        const db2 = await getDb();
+        if (!db2) return null;
+        const managed = await db2.select().from(branchManagers).where(and4(eq4(branchManagers.userId, ctx.user.id), eq4(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       return getDailySalesRecord(input.branchId, input.date);
     }),
     getRecords: protectedProcedure.input(z2.object({ branchId: z2.number(), startDate: z2.string(), endDate: z2.string() })).query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
-        const db = await getDb();
-        if (!db) return [];
-        const managed = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, ctx.user.id), eq3(branchManagers.branchId, input.branchId))).limit(1);
+        const db2 = await getDb();
+        if (!db2) return [];
+        const managed = await db2.select().from(branchManagers).where(and4(eq4(branchManagers.userId, ctx.user.id), eq4(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       return getDailySalesRecordsByDateRange(input.branchId, input.startDate, input.endDate);
@@ -4684,9 +4901,9 @@ var appRouter = router({
       expenses: z2.array(z2.object({ id: z2.string(), description: z2.string(), amount: z2.string() })).default([])
     })).mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
-        const db = await getDb();
-        if (!db) return { success: false };
-        const managed = await db.select().from(branchManagers).where(and3(eq3(branchManagers.userId, ctx.user.id), eq3(branchManagers.branchId, input.branchId))).limit(1);
+        const db2 = await getDb();
+        if (!db2) return { success: false };
+        const managed = await db2.select().from(branchManagers).where(and4(eq4(branchManagers.userId, ctx.user.id), eq4(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       const prevRec2 = await getPrevDailySalesRecord(input.branchId, input.date);
@@ -4763,10 +4980,10 @@ var appRouter = router({
       return { success: true, record, pushSent };
     }),
     adminSummary: adminProcedure.input(z2.object({ startDate: z2.string(), endDate: z2.string() })).query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return { byBranch: [], byDate: [] };
-      const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).orderBy(desc2(dailySalesRecords.date));
+      const db2 = await getDb();
+      if (!db2) return { byBranch: [], byDate: [] };
+      const allBranches = await db2.select().from(branches).orderBy(branches.name);
+      const records = await db2.select().from(dailySalesRecords).orderBy(desc2(dailySalesRecords.date));
       const filtered = records.filter((r) => r.date >= input.startDate && r.date <= input.endDate);
       const byBranch = allBranches.map((branch) => {
         const br = filtered.filter((r) => r.branchId === branch.id);
@@ -4786,14 +5003,14 @@ var appRouter = router({
       return { byBranch, byDate };
     }),
     adminDailyDetail: adminProcedure.input(z2.object({ date: z2.string() })).query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return [];
-      const allBranches = await db.select().from(branches).orderBy(branches.name);
-      const records = await db.select().from(dailySalesRecords).where(eq3(dailySalesRecords.date, input.date));
-      const tableReportRows = await db.select().from(tableReports).where(eq3(tableReports.date, input.date));
+      const db2 = await getDb();
+      if (!db2) return [];
+      const allBranches = await db2.select().from(branches).orderBy(branches.name);
+      const records = await db2.select().from(dailySalesRecords).where(eq4(dailySalesRecords.date, input.date));
+      const tableReportRows = await db2.select().from(tableReports).where(eq4(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
-      const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
-      const incentiveRows = reportIds.length > 0 ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
+      const tableItemRows = reportIds.length > 0 ? await db2.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
+      const incentiveRows = reportIds.length > 0 ? await db2.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
       return allBranches.map((branch) => ({
         branch,
         record: records.find((r) => r.branchId === branch.id) || null,
@@ -4853,15 +5070,15 @@ var appRouter = router({
   liquor: router({
     branchItems: publicProcedure.input(z2.object({ branchId: z2.number().optional() })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { items: [] };
-      await ensureLiquorSeeded(db);
+      const db2 = await getDb();
+      if (!db2) return { items: [] };
+      await ensureLiquorSeeded(db2);
       const effectiveBranchId = account.role === "admin" ? input.branchId : account.branchId;
-      const itemRows = await db.select().from(liquorItems).where(eq3(liquorItems.isActive, 1)).orderBy(liquorItems.sortOrder, liquorItems.name);
+      const itemRows = await db2.select().from(liquorItems).where(eq4(liquorItems.isActive, 1)).orderBy(liquorItems.sortOrder, liquorItems.name);
       if (!effectiveBranchId) {
         return { items: itemRows.map((item) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
       }
-      const hiddenResult = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId}`);
+      const hiddenResult = await db2.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId}`);
       const rawRows = Array.isArray(hiddenResult) ? Array.isArray(hiddenResult[0]) ? hiddenResult[0] : hiddenResult : hiddenResult?.rows ?? [];
       const hiddenIds = new Set((Array.isArray(rawRows) ? rawRows : []).map((r) => Number(r.liquorItemId ?? r.liquor_item_id ?? r[0])));
       let items = itemRows.filter((item) => !hiddenIds.has(Number(item.id)));
@@ -4870,28 +5087,28 @@ var appRouter = router({
     }),
     overview: publicProcedure.input(z2.object({ date: z2.string(), branchId: z2.number().optional(), includeInactive: z2.boolean().optional() })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { branches: [], items: [], inventories: [], movements: [], branchSummaries: [], totals: { stock: 0, inQty: 0, outQty: 0, outCost: 0 } };
-      await ensureLiquorSeeded(db);
-      const allBranches = account.role === "admin" ? await db.select().from(branches).orderBy(branches.name) : account.branchId ? await db.select().from(branches).where(eq3(branches.id, account.branchId)) : [];
+      const db2 = await getDb();
+      if (!db2) return { branches: [], items: [], inventories: [], movements: [], branchSummaries: [], totals: { stock: 0, inQty: 0, outQty: 0, outCost: 0 } };
+      await ensureLiquorSeeded(db2);
+      const allBranches = account.role === "admin" ? await db2.select().from(branches).orderBy(branches.name) : account.branchId ? await db2.select().from(branches).where(eq4(branches.id, account.branchId)) : [];
       const allowedBranchIds = allBranches.map((b) => b.id);
       const selectedBranchIds = account.role === "admin" && input.branchId ? allowedBranchIds.filter((id) => id === input.branchId) : allowedBranchIds;
       if (selectedBranchIds.length === 0) {
         return { branches: allBranches, items: [], inventories: [], movements: [], branchSummaries: [], totals: { stock: 0, inQty: 0, outQty: 0, outCost: 0 } };
       }
-      const itemRows = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
+      const itemRows = await db2.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
       let activeItems = input.includeInactive ? itemRows : itemRows.filter((i) => Number(i.isActive) === 1);
       if (selectedBranchIds.length === 1) {
-        const hiddenResult = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${selectedBranchIds[0]}`);
+        const hiddenResult = await db2.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${selectedBranchIds[0]}`);
         const rawHiddenRows = Array.isArray(hiddenResult) ? Array.isArray(hiddenResult[0]) ? hiddenResult[0] : hiddenResult : hiddenResult?.rows ?? [];
         const hiddenIds = new Set((Array.isArray(rawHiddenRows) ? rawHiddenRows : []).map((r) => Number(r.liquorItemId ?? r.liquor_item_id ?? r[0])));
         activeItems = activeItems.filter((i) => !hiddenIds.has(Number(i.id)));
       }
-      const inventoryRows = await db.select().from(liquorInventories).where(inArray(liquorInventories.branchId, selectedBranchIds));
-      const movementRows = await db.select().from(liquorStockMovements).where(and3(inArray(liquorStockMovements.branchId, selectedBranchIds), eq3(liquorStockMovements.date, input.date))).orderBy(desc2(liquorStockMovements.createdAt));
+      const inventoryRows = await db2.select().from(liquorInventories).where(inArray(liquorInventories.branchId, selectedBranchIds));
+      const movementRows = await db2.select().from(liquorStockMovements).where(and4(inArray(liquorStockMovements.branchId, selectedBranchIds), eq4(liquorStockMovements.date, input.date))).orderBy(desc2(liquorStockMovements.createdAt));
       const itemById = new Map(itemRows.map((i) => [i.id, i]));
       const branchById = new Map(allBranches.map((b) => [b.id, b]));
-      const creatorRows = await db.select().from(storeAccounts);
+      const creatorRows = await db2.select().from(storeAccounts);
       const creatorById = new Map(creatorRows.map((a) => [Number(a.id), a]));
       const movements = movementRows.map((m) => {
         const item = itemById.get(m.liquorItemId);
@@ -4942,25 +5159,25 @@ var appRouter = router({
       type: z2.enum(["IN", "OUT", "ADJUST"]).optional()
     })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { movements: [] };
-      await ensureLiquorSeeded(db);
-      const allBranches = account.role === "admin" ? await db.select().from(branches).orderBy(branches.name) : account.branchId ? await db.select().from(branches).where(eq3(branches.id, account.branchId)) : [];
+      const db2 = await getDb();
+      if (!db2) return { movements: [] };
+      await ensureLiquorSeeded(db2);
+      const allBranches = account.role === "admin" ? await db2.select().from(branches).orderBy(branches.name) : account.branchId ? await db2.select().from(branches).where(eq4(branches.id, account.branchId)) : [];
       const allowedBranchIds = allBranches.map((b) => b.id);
       const selectedBranchIds = account.role === "admin" && input.branchId ? allowedBranchIds.filter((id) => id === input.branchId) : allowedBranchIds;
       if (selectedBranchIds.length === 0) return { movements: [] };
-      const itemRows = await db.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
+      const itemRows = await db2.select().from(liquorItems).orderBy(liquorItems.sortOrder, liquorItems.name);
       const itemById = new Map(itemRows.map((i) => [i.id, i]));
       const branchById = new Map(allBranches.map((b) => [b.id, b]));
-      const creatorRows = await db.select().from(storeAccounts);
+      const creatorRows = await db2.select().from(storeAccounts);
       const creatorById = new Map(creatorRows.map((a) => [Number(a.id), a]));
       const historyConditions = [
         inArray(liquorStockMovements.branchId, selectedBranchIds),
-        gte2(liquorStockMovements.date, input.startDate),
-        lte2(liquorStockMovements.date, input.endDate)
+        gte3(liquorStockMovements.date, input.startDate),
+        lte3(liquorStockMovements.date, input.endDate)
       ];
-      if (input.type) historyConditions.push(eq3(liquorStockMovements.type, input.type));
-      const movementRows = await db.select().from(liquorStockMovements).where(and3(...historyConditions)).orderBy(desc2(liquorStockMovements.date), desc2(liquorStockMovements.createdAt));
+      if (input.type) historyConditions.push(eq4(liquorStockMovements.type, input.type));
+      const movementRows = await db2.select().from(liquorStockMovements).where(and4(...historyConditions)).orderBy(desc2(liquorStockMovements.date), desc2(liquorStockMovements.createdAt));
       const keyword = (input.keyword || "").trim().toLowerCase();
       const movements = movementRows.map((m) => {
         const item = itemById.get(m.liquorItemId);
@@ -4991,53 +5208,53 @@ var appRouter = router({
       initialStock: z2.number().optional().default(0)
     })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
       const effectiveBranchId = account.role === "admin" ? input.branchId : account.branchId;
       if (!effectiveBranchId) {
         throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC8FC\uB958 \uD488\uBAA9\uC744 \uCD94\uAC00/\uC218\uC815\uD558\uB824\uBA74 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       }
       if (input.id) {
         if (account.role === "admin") {
-          await db.update(liquorItems).set({
+          await db2.update(liquorItems).set({
             name: input.name,
             category: input.category,
             unitCost: String(input.unitCost || 0),
             isActive: input.isActive ? 1 : 0
-          }).where(eq3(liquorItems.id, input.id));
+          }).where(eq4(liquorItems.id, input.id));
           const newUnitCost = Number(input.unitCost || 0);
           if (newUnitCost > 0) {
-            const staleMovements = await db.select().from(liquorStockMovements).where(and3(
-              eq3(liquorStockMovements.liquorItemId, input.id),
+            const staleMovements = await db2.select().from(liquorStockMovements).where(and4(
+              eq4(liquorStockMovements.liquorItemId, input.id),
               sql`(CAST(${liquorStockMovements.unitCost} AS DECIMAL) = 0 OR CAST(${liquorStockMovements.totalCost} AS DECIMAL) = 0)`
             ));
             for (const mv of staleMovements) {
               const newTotalCost = Math.abs(Number(mv.quantity || 0)) * newUnitCost;
-              await db.update(liquorStockMovements).set({
+              await db2.update(liquorStockMovements).set({
                 unitCost: String(newUnitCost),
                 totalCost: String(newTotalCost)
-              }).where(eq3(liquorStockMovements.id, mv.id));
+              }).where(eq4(liquorStockMovements.id, mv.id));
             }
           }
         } else {
-          await db.update(liquorItems).set({
+          await db2.update(liquorItems).set({
             name: input.name,
             category: input.category,
             isActive: input.isActive ? 1 : 0
-          }).where(eq3(liquorItems.id, input.id));
+          }).where(eq4(liquorItems.id, input.id));
         }
         if (effectiveBranchId && input.initialStock !== void 0) {
-          const [existingInventory] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, effectiveBranchId), eq3(liquorInventories.liquorItemId, input.id))).limit(1);
+          const [existingInventory] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, effectiveBranchId), eq4(liquorInventories.liquorItemId, input.id))).limit(1);
           const prevStock = Number(existingInventory?.currentStock || 0);
           const nextStock = Number(input.initialStock || 0);
           const diff = nextStock - prevStock;
-          if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existingInventory.id));
-          else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
+          if (existingInventory) await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq4(liquorInventories.id, existingInventory.id));
+          else await db2.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
           if (diff !== 0) {
-            const [stockItem] = await db.select().from(liquorItems).where(eq3(liquorItems.id, input.id)).limit(1);
+            const [stockItem] = await db2.select().from(liquorItems).where(eq4(liquorItems.id, input.id)).limit(1);
             const unitCost = Number(stockItem?.unitCost || 0);
-            await db.insert(liquorStockMovements).values({
+            await db2.insert(liquorStockMovements).values({
               branchId: effectiveBranchId,
               liquorItemId: input.id,
               date: todayKstString(),
@@ -5053,7 +5270,7 @@ var appRouter = router({
         return { success: true, id: input.id };
       }
       const cleanName = input.name.trim();
-      const result = await db.insert(liquorItems).values({
+      const result = await db2.insert(liquorItems).values({
         name: cleanName,
         category: input.category,
         unitCost: String(account.role === "admin" ? input.unitCost || 0 : 0),
@@ -5062,26 +5279,26 @@ var appRouter = router({
       });
       let itemId = Number(result.insertId || 0);
       if (!itemId) {
-        const [created] = await db.select().from(liquorItems).where(eq3(liquorItems.name, cleanName)).orderBy(desc2(liquorItems.id)).limit(1);
+        const [created] = await db2.select().from(liquorItems).where(eq4(liquorItems.name, cleanName)).orderBy(desc2(liquorItems.id)).limit(1);
         itemId = created?.id;
       }
       if (!itemId) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uD488\uBAA9 \uB4F1\uB85D\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4" });
-      const allBranchRows = await db.select().from(branches);
+      const allBranchRows = await db2.select().from(branches);
       for (const branch of allBranchRows) {
         if (Number(branch.id) !== Number(effectiveBranchId)) {
-          await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branch.id}, ${itemId})`);
+          await db2.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branch.id}, ${itemId})`);
         }
       }
-      await db.execute(sql`DELETE FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId} AND liquorItemId = ${itemId}`);
+      await db2.execute(sql`DELETE FROM liquorHiddenItems WHERE branchId = ${effectiveBranchId} AND liquorItemId = ${itemId}`);
       const initialStock = Number(input.initialStock || 0);
-      await db.insert(liquorInventories).values({
+      await db2.insert(liquorInventories).values({
         branchId: effectiveBranchId,
         liquorItemId: itemId,
         currentStock: String(initialStock)
       });
       if (initialStock !== 0) {
         const unitCost = account.role === "admin" ? Number(input.unitCost || 0) : 0;
-        await db.insert(liquorStockMovements).values({
+        await db2.insert(liquorStockMovements).values({
           branchId: effectiveBranchId,
           liquorItemId: itemId,
           date: todayKstString(),
@@ -5097,23 +5314,23 @@ var appRouter = router({
     }),
     deleteItem: publicProcedure.input(z2.object({ id: z2.number(), branchId: z2.number().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
       const branchId = account.role === "admin" ? input.branchId : account.branchId;
       if (!branchId) throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       if (account.role !== "admin" && Number(account.branchId) !== Number(branchId)) {
         throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
-      await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
-      await db.delete(liquorInventories).where(and3(eq3(liquorInventories.branchId, branchId), eq3(liquorInventories.liquorItemId, input.id)));
+      await db2.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
+      await db2.delete(liquorInventories).where(and4(eq4(liquorInventories.branchId, branchId), eq4(liquorInventories.liquorItemId, input.id)));
       return { success: true, mode: "branch" };
     }),
     bulkDeleteItems: publicProcedure.input(z2.object({ ids: z2.array(z2.number()).min(1), branchId: z2.number().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
       const branchId = account.role === "admin" ? input.branchId : account.branchId;
       if (!branchId) throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       if (account.role !== "admin" && Number(account.branchId) !== Number(branchId)) {
@@ -5122,19 +5339,19 @@ var appRouter = router({
       const ids = Array.from(new Set(input.ids.map(Number).filter(Boolean)));
       if (!ids.length) return { success: true, count: 0 };
       for (const id of ids) {
-        await db.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${id})`);
+        await db2.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${id})`);
       }
-      await db.delete(liquorInventories).where(and3(eq3(liquorInventories.branchId, branchId), inArray(liquorInventories.liquorItemId, ids)));
+      await db2.delete(liquorInventories).where(and4(eq4(liquorInventories.branchId, branchId), inArray(liquorInventories.liquorItemId, ids)));
       return { success: true, count: ids.length, mode: "branch" };
     }),
     recordMovement: publicProcedure.input(z2.object({ branchId: z2.number(), date: z2.string(), type: z2.enum(["IN", "OUT", "ADJUST"]), items: z2.array(z2.object({ liquorItemId: z2.number(), quantity: z2.number(), memo: z2.string().optional() })).min(1), memo: z2.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
       const itemIds = input.items.map((i) => i.liquorItemId);
-      const itemRows = itemIds.length ? await db.select().from(liquorItems).where(inArray(liquorItems.id, itemIds)) : [];
+      const itemRows = itemIds.length ? await db2.select().from(liquorItems).where(inArray(liquorItems.id, itemIds)) : [];
       const itemById = new Map(itemRows.map((i) => [i.id, i]));
       for (const row of input.items) {
         const item = itemById.get(row.liquorItemId);
@@ -5144,23 +5361,23 @@ var appRouter = router({
         const unitCost = Number(item.unitCost || 0);
         const signedQty = input.type === "OUT" ? -Math.abs(rawQty) : input.type === "IN" ? Math.abs(rawQty) : rawQty;
         const totalCost = Math.abs(signedQty) * unitCost;
-        await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, date: input.date, type: input.type, quantity: String(signedQty), unitCost: String(unitCost), totalCost: String(totalCost), memo: row.memo || input.memo || null, createdBy: account.id });
-        const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, input.branchId), eq3(liquorInventories.liquorItemId, row.liquorItemId))).limit(1);
+        await db2.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, date: input.date, type: input.type, quantity: String(signedQty), unitCost: String(unitCost), totalCost: String(totalCost), memo: row.memo || input.memo || null, createdBy: account.id });
+        const [existing] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, input.branchId), eq4(liquorInventories.liquorItemId, row.liquorItemId))).limit(1);
         const nextStock = Number(existing?.currentStock || 0) + signedQty;
         if (existing) {
-          await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
+          await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq4(liquorInventories.id, existing.id));
         } else {
-          await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
+          await db2.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
         }
       }
       return { success: true };
     }),
     updateMovement: publicProcedure.input(z2.object({ id: z2.number(), date: z2.string(), type: z2.enum(["IN", "OUT", "ADJUST"]).optional(), quantity: z2.number(), memo: z2.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
-      const [movement] = await db.select().from(liquorStockMovements).where(eq3(liquorStockMovements.id, input.id)).limit(1);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
+      const [movement] = await db2.select().from(liquorStockMovements).where(eq4(liquorStockMovements.id, input.id)).limit(1);
       if (!movement) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== movement.branchId) {
         throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
@@ -5171,56 +5388,56 @@ var appRouter = router({
       const newSignedQty = nextType === "OUT" ? -Math.abs(rawQty) : nextType === "IN" ? Math.abs(rawQty) : rawQty;
       const oldSignedQty = Number(movement.quantity || 0);
       const diff = newSignedQty - oldSignedQty;
-      const [itemForCost] = await db.select().from(liquorItems).where(eq3(liquorItems.id, movement.liquorItemId)).limit(1);
+      const [itemForCost] = await db2.select().from(liquorItems).where(eq4(liquorItems.id, movement.liquorItemId)).limit(1);
       const unitCost = Number(movement.unitCost || itemForCost?.unitCost || 0);
       const totalCost = Math.abs(newSignedQty) * unitCost;
-      await db.update(liquorStockMovements).set({
+      await db2.update(liquorStockMovements).set({
         date: input.date,
         type: nextType,
         quantity: String(newSignedQty),
         totalCost: String(totalCost),
         memo: input.memo || null,
         updatedAt: /* @__PURE__ */ new Date()
-      }).where(eq3(liquorStockMovements.id, input.id));
+      }).where(eq4(liquorStockMovements.id, input.id));
       if (diff !== 0) {
-        const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, movement.branchId), eq3(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+        const [existing] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, movement.branchId), eq4(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
         if (existing) {
           const nextStock = Number(existing.currentStock || 0) + diff;
-          await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
+          await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq4(liquorInventories.id, existing.id));
         } else {
-          await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
+          await db2.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
         }
       }
       return { success: true };
     }),
     updateMovementGroup: publicProcedure.input(z2.object({ ids: z2.array(z2.number()).min(1), date: z2.string(), type: z2.enum(["IN", "OUT", "ADJUST"]), memo: z2.string().optional(), mergeSameDate: z2.boolean().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
-      const rows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
+      const rows = await db2.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
       if (rows.length === 0) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && rows.some((m) => Number(m.branchId) !== Number(account.branchId))) {
         throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
-      const mergeTarget = input.mergeSameDate ? (await db.select().from(liquorStockMovements).where(and3(
-        eq3(liquorStockMovements.branchId, rows[0].branchId),
-        eq3(liquorStockMovements.date, input.date),
-        eq3(liquorStockMovements.type, input.type),
+      const mergeTarget = input.mergeSameDate ? (await db2.select().from(liquorStockMovements).where(and4(
+        eq4(liquorStockMovements.branchId, rows[0].branchId),
+        eq4(liquorStockMovements.date, input.date),
+        eq4(liquorStockMovements.type, input.type),
         not(inArray(liquorStockMovements.id, input.ids))
       )).orderBy(desc2(liquorStockMovements.createdAt)).limit(1))[0] : null;
       const mergedCreatedAt = mergeTarget?.createdAt ? new Date(mergeTarget.createdAt) : void 0;
       const mergedCreatedBy = mergeTarget?.createdBy || rows[0].createdBy;
       const mergedMemo = input.mergeSameDate && mergeTarget ? input.memo ?? mergeTarget.memo ?? null : input.memo || null;
       if (input.mergeSameDate && mergeTarget) {
-        await db.update(liquorStockMovements).set({
+        await db2.update(liquorStockMovements).set({
           memo: mergedMemo,
           updatedAt: /* @__PURE__ */ new Date()
-        }).where(and3(
-          eq3(liquorStockMovements.branchId, rows[0].branchId),
-          eq3(liquorStockMovements.date, input.date),
-          eq3(liquorStockMovements.type, input.type),
-          eq3(liquorStockMovements.createdAt, mergeTarget.createdAt)
+        }).where(and4(
+          eq4(liquorStockMovements.branchId, rows[0].branchId),
+          eq4(liquorStockMovements.date, input.date),
+          eq4(liquorStockMovements.type, input.type),
+          eq4(liquorStockMovements.createdAt, mergeTarget.createdAt)
         ));
       }
       for (const movement of rows) {
@@ -5229,7 +5446,7 @@ var appRouter = router({
         const newSignedQty = input.type === "OUT" ? -baseQty : input.type === "IN" ? baseQty : oldSignedQty;
         const diff = newSignedQty - oldSignedQty;
         const totalCost = Math.abs(newSignedQty) * Number(movement.unitCost || 0);
-        await db.update(liquorStockMovements).set({
+        await db2.update(liquorStockMovements).set({
           date: input.date,
           type: input.type,
           quantity: String(newSignedQty),
@@ -5237,14 +5454,14 @@ var appRouter = router({
           memo: mergedMemo,
           ...mergedCreatedAt ? { createdAt: mergedCreatedAt, createdBy: mergedCreatedBy } : {},
           updatedAt: /* @__PURE__ */ new Date()
-        }).where(eq3(liquorStockMovements.id, movement.id));
+        }).where(eq4(liquorStockMovements.id, movement.id));
         if (diff !== 0) {
-          const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, movement.branchId), eq3(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+          const [existing] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, movement.branchId), eq4(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
           if (existing) {
             const nextStock = Number(existing.currentStock || 0) + diff;
-            await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
+            await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq4(liquorInventories.id, existing.id));
           } else {
-            await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
+            await db2.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
           }
         }
       }
@@ -5259,23 +5476,23 @@ var appRouter = router({
       memo: z2.string().optional()
     })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
-      const groupRows = await db.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.groupIds));
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
+      const groupRows = await db2.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.groupIds));
       if (groupRows.length === 0) throw new TRPCError3({ code: "NOT_FOUND", message: "\uAE30\uC900 \uD788\uC2A4\uD1A0\uB9AC\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const base = groupRows[0];
       if (account.role !== "admin" && Number(account.branchId) !== Number(base.branchId)) {
         throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
-      const [item] = await db.select().from(liquorItems).where(eq3(liquorItems.id, input.liquorItemId)).limit(1);
+      const [item] = await db2.select().from(liquorItems).where(eq4(liquorItems.id, input.liquorItemId)).limit(1);
       if (!item) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const rawQty = Number(input.quantity || 0);
       if (!rawQty && input.type !== "ADJUST") throw new TRPCError3({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
       const signedQty = input.type === "OUT" ? -Math.abs(rawQty) : input.type === "IN" ? Math.abs(rawQty) : rawQty;
       const unitCost = Number(item.unitCost || 0);
       const totalCost = Math.abs(signedQty) * unitCost;
-      await db.insert(liquorStockMovements).values({
+      await db2.insert(liquorStockMovements).values({
         branchId: base.branchId,
         liquorItemId: input.liquorItemId,
         date: input.date,
@@ -5287,47 +5504,47 @@ var appRouter = router({
         createdBy: base.createdBy,
         createdAt: base.createdAt
       });
-      const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, base.branchId), eq3(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
+      const [existing] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, base.branchId), eq4(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
       const nextStock = Number(existing?.currentStock || 0) + signedQty;
-      if (existing) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
-      else await db.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
+      if (existing) await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq4(liquorInventories.id, existing.id));
+      else await db2.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
       return { success: true };
     }),
     deleteMovement: publicProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
-      const [movement] = await db.select().from(liquorStockMovements).where(eq3(liquorStockMovements.id, input.id)).limit(1);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
+      const [movement] = await db2.select().from(liquorStockMovements).where(eq4(liquorStockMovements.id, input.id)).limit(1);
       if (!movement) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== movement.branchId) {
         throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const signedQty = Number(movement.quantity || 0);
-      const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, movement.branchId), eq3(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+      const [existing] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, movement.branchId), eq4(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
       if (existing) {
         const nextStock = Number(existing.currentStock || 0) - signedQty;
-        await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq3(liquorInventories.id, existing.id));
+        await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq4(liquorInventories.id, existing.id));
       }
-      await db.delete(liquorStockMovements).where(eq3(liquorStockMovements.id, input.id));
+      await db2.delete(liquorStockMovements).where(eq4(liquorStockMovements.id, input.id));
       return { success: true };
     }),
     setStock: publicProcedure.input(z2.object({ branchId: z2.number(), liquorItemId: z2.number(), currentStock: z2.number(), memo: z2.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uC7AC\uACE0\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
-      const db = await getDb();
-      if (!db) return { success: false };
-      await ensureLiquorSeeded(db);
-      const [item] = await db.select().from(liquorItems).where(eq3(liquorItems.id, input.liquorItemId)).limit(1);
+      const db2 = await getDb();
+      if (!db2) return { success: false };
+      await ensureLiquorSeeded(db2);
+      const [item] = await db2.select().from(liquorItems).where(eq4(liquorItems.id, input.liquorItemId)).limit(1);
       if (!item) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-      const [existing] = await db.select().from(liquorInventories).where(and3(eq3(liquorInventories.branchId, input.branchId), eq3(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
+      const [existing] = await db2.select().from(liquorInventories).where(and4(eq4(liquorInventories.branchId, input.branchId), eq4(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
       const prevStock = Number(existing?.currentStock || 0);
       const diff = input.currentStock - prevStock;
-      if (existing) await db.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq3(liquorInventories.id, existing.id));
-      else await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
+      if (existing) await db2.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq4(liquorInventories.id, existing.id));
+      else await db2.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
       if (diff !== 0) {
         const unitCost = Number(item.unitCost || 0);
-        await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: todayKstString(), type: "ADJUST", quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || `\uC7AC\uACE0\uC218\uC815: ${prevStock}\uAC1C \u2192 ${input.currentStock}\uAC1C (${diff > 0 ? "+" : ""}${diff})`, createdBy: account.id });
+        await db2.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: todayKstString(), type: "ADJUST", quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || `\uC7AC\uACE0\uC218\uC815: ${prevStock}\uAC1C \u2192 ${input.currentStock}\uAC1C (${diff > 0 ? "+" : ""}${diff})`, createdBy: account.id });
       }
       return { success: true };
     })
@@ -5335,18 +5552,18 @@ var appRouter = router({
   tableReport: router({
     // 날짜별 테이블 기록 조회 (없으면 null 반환)
     getByDate: publicProcedure.input(z2.object({ date: z2.string(), branchId: z2.number().optional() })).query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return null;
+      const db2 = await getDb();
+      if (!db2) return null;
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) return null;
       const effectiveBranchId = account.branchId ?? input.branchId;
       if (!effectiveBranchId) return null;
-      const [report] = await db.select().from(tableReports).where(and3(eq3(tableReports.branchId, effectiveBranchId), eq3(tableReports.date, input.date))).limit(1);
+      const [report] = await db2.select().from(tableReports).where(and4(eq4(tableReports.branchId, effectiveBranchId), eq4(tableReports.date, input.date))).limit(1);
       if (!report) return null;
-      const items = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
-      const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
+      const items = await db2.select().from(tableItems).where(eq4(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
+      const incentives = await db2.select().from(staffIncentives).where(eq4(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
       return { ...report, items, incentives };
     }),
     // 기록 생성 또는 업데이트
@@ -5356,24 +5573,24 @@ var appRouter = router({
       notes: z2.string().optional(),
       branchId: z2.number().optional()
     })).mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const effectiveBranchId = account.branchId ?? input.branchId;
       if (!effectiveBranchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const [existing] = await db.select().from(tableReports).where(and3(eq3(tableReports.branchId, effectiveBranchId), eq3(tableReports.date, input.date))).limit(1);
+      const [existing] = await db2.select().from(tableReports).where(and4(eq4(tableReports.branchId, effectiveBranchId), eq4(tableReports.date, input.date))).limit(1);
       let reportId;
       if (existing) {
-        await db.update(tableReports).set({
+        await db2.update(tableReports).set({
           teamCount: input.teamCount,
           notes: input.notes || null
-        }).where(eq3(tableReports.id, existing.id));
+        }).where(eq4(tableReports.id, existing.id));
         reportId = existing.id;
       } else {
-        const [result] = await db.insert(tableReports).values({
+        const [result] = await db2.insert(tableReports).values({
           branchId: effectiveBranchId,
           date: input.date,
           teamCount: input.teamCount,
@@ -5381,13 +5598,13 @@ var appRouter = router({
         });
         reportId = result.insertId;
       }
-      const allItems = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, reportId));
+      const allItems = await db2.select().from(tableItems).where(eq4(tableItems.tableReportId, reportId));
       const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((sum, it) => sum + Number(it.amount || 0), 0);
       const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((sum, it) => sum + Number(it.amount || 0), 0);
-      await db.update(tableReports).set({
+      await db2.update(tableReports).set({
         cashAmount: String(cashSum),
         cardAmount: String(cardSum)
-      }).where(eq3(tableReports.id, reportId));
+      }).where(eq4(tableReports.id, reportId));
       const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
       const prevRec2 = await getPrevDailySalesRecord(effectiveBranchId, input.date);
       const { cashTotal: computedCashTotal2, cardTotal: computedCardTotal2 } = await computeCumulativesForDate(
@@ -5432,9 +5649,9 @@ var appRouter = router({
       memo: z2.string().optional(),
       sortOrder: z2.number().default(0)
     })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
-      const [result] = await db.insert(tableItems).values({
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const [result] = await db2.insert(tableItems).values({
         tableReportId: input.tableReportId,
         tableNumber: input.tableNumber,
         guestType: input.guestType,
@@ -5456,8 +5673,8 @@ var appRouter = router({
       paymentMethod: z2.enum(["card", "cash"]).optional(),
       memo: z2.string().optional()
     })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const { id, ...rest } = input;
       const updateData = {};
       if (rest.tableNumber !== void 0) updateData.tableNumber = rest.tableNumber;
@@ -5466,14 +5683,14 @@ var appRouter = router({
       if (rest.amount !== void 0) updateData.amount = rest.amount;
       if (rest.paymentMethod !== void 0) updateData.paymentMethod = rest.paymentMethod;
       if (rest.memo !== void 0) updateData.memo = rest.memo;
-      await db.update(tableItems).set(updateData).where(eq3(tableItems.id, id));
+      await db2.update(tableItems).set(updateData).where(eq4(tableItems.id, id));
       return { success: true };
     }),
     // 테이블 항목 삭제
     deleteItem: publicProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
-      await db.delete(tableItems).where(eq3(tableItems.id, input.id));
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      await db2.delete(tableItems).where(eq4(tableItems.id, input.id));
       return { success: true };
     }),
     // 두 테이블 항목 합치기 (분할 결제 대응)
@@ -5489,14 +5706,14 @@ var appRouter = router({
       // YYYY-MM-DD (누적금 재계산용)
       branchId: z2.number().optional()
     })).mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError3({ code: "FORBIDDEN" });
-      const [target] = await db.select().from(tableItems).where(eq3(tableItems.id, input.targetItemId)).limit(1);
-      const [source] = await db.select().from(tableItems).where(eq3(tableItems.id, input.sourceItemId)).limit(1);
+      const [target] = await db2.select().from(tableItems).where(eq4(tableItems.id, input.targetItemId)).limit(1);
+      const [source] = await db2.select().from(tableItems).where(eq4(tableItems.id, input.sourceItemId)).limit(1);
       if (!target || !source) throw new TRPCError3({ code: "NOT_FOUND", message: "\uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (target.tableReportId !== source.tableReportId) {
         throw new TRPCError3({ code: "BAD_REQUEST", message: "\uAC19\uC740 \uB0A0\uC9DC\uC758 \uD56D\uBAA9\uB9CC \uD569\uCE60 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
@@ -5512,20 +5729,20 @@ var appRouter = router({
       } else if (sourceMemo) {
         mergedMemo = sourceMemo;
       }
-      await db.update(tableItems).set({
+      await db2.update(tableItems).set({
         amount: mergedAmount,
         memo: mergedMemo
-      }).where(eq3(tableItems.id, input.targetItemId));
-      await db.delete(tableItems).where(eq3(tableItems.id, input.sourceItemId));
+      }).where(eq4(tableItems.id, input.targetItemId));
+      await db2.delete(tableItems).where(eq4(tableItems.id, input.sourceItemId));
       const effectiveBranchId = account.role === "admin" ? input.branchId ?? account.branchId ?? null : account.branchId ?? null;
       if (effectiveBranchId) {
-        const allItems = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, input.tableReportId));
+        const allItems = await db2.select().from(tableItems).where(eq4(tableItems.tableReportId, input.tableReportId));
         const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((s, it) => s + Number(it.amount || 0), 0);
         const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((s, it) => s + Number(it.amount || 0), 0);
-        await db.update(tableReports).set({
+        await db2.update(tableReports).set({
           cashAmount: String(cashSum),
           cardAmount: String(cardSum)
-        }).where(eq3(tableReports.id, input.tableReportId));
+        }).where(eq4(tableReports.id, input.tableReportId));
         const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
         const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
         const { cashTotal, cardTotal } = await computeCumulativesForDate(effectiveBranchId, input.date, prevRec ?? null, cashSum, cardSum);
@@ -5561,9 +5778,9 @@ var appRouter = router({
       workEnd: z2.string().optional(),
       sortOrder: z2.number().default(0)
     })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
-      const [result] = await db.insert(staffIncentives).values(input);
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const [result] = await db2.insert(staffIncentives).values(input);
       return { id: result.insertId };
     }),
     // 직원 인센티브 수정
@@ -5577,8 +5794,8 @@ var appRouter = router({
       workStart: z2.string().optional(),
       workEnd: z2.string().optional()
     })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const { id, ...rest } = input;
       const updateData = {};
       if (rest.staffName !== void 0) updateData.staffName = rest.staffName;
@@ -5588,14 +5805,14 @@ var appRouter = router({
       if (rest.salesIncentive !== void 0) updateData.salesIncentive = rest.salesIncentive;
       if (rest.workStart !== void 0) updateData.workStart = rest.workStart;
       if (rest.workEnd !== void 0) updateData.workEnd = rest.workEnd;
-      await db.update(staffIncentives).set(updateData).where(eq3(staffIncentives.id, id));
+      await db2.update(staffIncentives).set(updateData).where(eq4(staffIncentives.id, id));
       return { success: true };
     }),
     // 직원 인센티브 삭제
     deleteIncentive: publicProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
-      await db.delete(staffIncentives).where(eq3(staffIncentives.id, input.id));
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      await db2.delete(staffIncentives).where(eq4(staffIncentives.id, input.id));
       return { success: true };
     }),
     // 배치 저장 API - 한 번의 요청으로 report + 항목 + 인센티브 모두 저장
@@ -5629,24 +5846,24 @@ var appRouter = router({
         sortOrder: z2.number().default(0)
       }))
     })).mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const effectiveBranchId = account.branchId ?? input.branchId;
       if (!effectiveBranchId) throw new TRPCError3({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const [existing] = await db.select().from(tableReports).where(and3(eq3(tableReports.branchId, effectiveBranchId), eq3(tableReports.date, input.date))).limit(1);
+      const [existing] = await db2.select().from(tableReports).where(and4(eq4(tableReports.branchId, effectiveBranchId), eq4(tableReports.date, input.date))).limit(1);
       let reportId;
       if (existing) {
-        await db.update(tableReports).set({
+        await db2.update(tableReports).set({
           teamCount: input.teamCount,
           notes: input.notes || null
-        }).where(eq3(tableReports.id, existing.id));
+        }).where(eq4(tableReports.id, existing.id));
         reportId = existing.id;
       } else {
-        const [result] = await db.insert(tableReports).values({
+        const [result] = await db2.insert(tableReports).values({
           branchId: effectiveBranchId,
           date: input.date,
           teamCount: input.teamCount,
@@ -5659,7 +5876,7 @@ var appRouter = router({
       const itemsToUpdate = validItems.filter((it) => it.id);
       const itemsToInsert = validItems.filter((it) => !it.id);
       await Promise.all(itemsToUpdate.map(async (it) => {
-        await db.update(tableItems).set({
+        await db2.update(tableItems).set({
           tableNumber: it.tableNumber,
           guestType: it.guestType,
           guestName: it.guestName ?? null,
@@ -5667,11 +5884,11 @@ var appRouter = router({
           paymentMethod: it.paymentMethod,
           memo: it.memo || null,
           sortOrder: it.sortOrder
-        }).where(eq3(tableItems.id, it.id));
+        }).where(eq4(tableItems.id, it.id));
         itemIdMap[it.localId] = it.id;
       }));
       for (const it of itemsToInsert) {
-        const [result] = await db.insert(tableItems).values({
+        const [result] = await db2.insert(tableItems).values({
           tableReportId: reportId,
           tableNumber: it.tableNumber,
           guestType: it.guestType,
@@ -5688,7 +5905,7 @@ var appRouter = router({
       const incentivesToUpdate = validIncentives.filter((inc) => inc.id);
       const incentivesToInsert = validIncentives.filter((inc) => !inc.id);
       await Promise.all(incentivesToUpdate.map(async (inc) => {
-        await db.update(staffIncentives).set({
+        await db2.update(staffIncentives).set({
           staffName: inc.staffName,
           staffType: inc.staffType,
           glassCount: inc.glassCount,
@@ -5697,11 +5914,11 @@ var appRouter = router({
           salesIncentive: inc.salesIncentive || "0",
           workStart: inc.workStart || null,
           workEnd: inc.workEnd || null
-        }).where(eq3(staffIncentives.id, inc.id));
+        }).where(eq4(staffIncentives.id, inc.id));
         incentiveIdMap[inc.localId] = inc.id;
       }));
       for (const inc of incentivesToInsert) {
-        const [result] = await db.insert(staffIncentives).values({
+        const [result] = await db2.insert(staffIncentives).values({
           tableReportId: reportId,
           staffName: inc.staffName,
           staffType: inc.staffType,
@@ -5715,13 +5932,13 @@ var appRouter = router({
         });
         incentiveIdMap[inc.localId] = result.insertId;
       }
-      const allItems = await db.select().from(tableItems).where(eq3(tableItems.tableReportId, reportId));
+      const allItems = await db2.select().from(tableItems).where(eq4(tableItems.tableReportId, reportId));
       const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((s, it) => s + Number(it.amount || 0), 0);
       const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((s, it) => s + Number(it.amount || 0), 0);
-      await db.update(tableReports).set({
+      await db2.update(tableReports).set({
         cashAmount: String(cashSum),
         cardAmount: String(cardSum)
-      }).where(eq3(tableReports.id, reportId));
+      }).where(eq4(tableReports.id, reportId));
       const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
       const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
       const { cashTotal: computedCashTotal, cardTotal: computedCardTotal } = await computeCumulativesForDate(
@@ -5764,13 +5981,13 @@ var appRouter = router({
     })).query(async ({ input, ctx }) => {
       const account = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!account) throw new TRPCError3({ code: "UNAUTHORIZED" });
-      const db = await getDb();
-      if (!db) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR" });
       const prefix = `${input.yearMonth}-%`;
       const fullAccount = await getStoreAccountById(account.accountId);
       if (!fullAccount) throw new TRPCError3({ code: "UNAUTHORIZED" });
       const targetBranchId = account.role === "admin" ? input.branchId ?? null : fullAccount.branchId;
-      const rows = await db.select({
+      const rows = await db2.select({
         staffName: staffIncentives.staffName,
         staffType: staffIncentives.staffType,
         totalGlass: sql`SUM(${staffIncentives.glassCount})`,
@@ -5778,17 +5995,17 @@ var appRouter = router({
         totalBeerBottle: sql`SUM(${staffIncentives.beerBottleCount})`,
         totalSalesIncentive: sql`SUM(CAST(NULLIF(${staffIncentives.salesIncentive}, '') AS DECIMAL(15,0)))`,
         workDays: sql`COUNT(DISTINCT ${tableReports.date})`
-      }).from(staffIncentives).innerJoin(tableReports, eq3(staffIncentives.tableReportId, tableReports.id)).where(
-        targetBranchId !== null ? and3(like(tableReports.date, prefix), eq3(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
+      }).from(staffIncentives).innerJoin(tableReports, eq4(staffIncentives.tableReportId, tableReports.id)).where(
+        targetBranchId !== null ? and4(like(tableReports.date, prefix), eq4(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
       ).groupBy(staffIncentives.staffName, staffIncentives.staffType).orderBy(staffIncentives.staffType, staffIncentives.staffName);
-      const detailRows = await db.select({
+      const detailRows = await db2.select({
         staffName: staffIncentives.staffName,
         staffType: staffIncentives.staffType,
         date: tableReports.date,
         workStart: staffIncentives.workStart,
         workEnd: staffIncentives.workEnd
-      }).from(staffIncentives).innerJoin(tableReports, eq3(staffIncentives.tableReportId, tableReports.id)).where(
-        targetBranchId !== null ? and3(like(tableReports.date, prefix), eq3(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
+      }).from(staffIncentives).innerJoin(tableReports, eq4(staffIncentives.tableReportId, tableReports.id)).where(
+        targetBranchId !== null ? and4(like(tableReports.date, prefix), eq4(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
       ).orderBy(tableReports.date);
       function calcWorkMinutes(start, end) {
         if (!start || !end) return 0;
@@ -5878,14 +6095,14 @@ var appRouter = router({
       let recentMemoExamples = [];
       if (effectiveBranchId) {
         try {
-          const db = await getDb();
-          if (db) {
+          const db2 = await getDb();
+          if (db2) {
             const cutoffDate = /* @__PURE__ */ new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 90);
             const cutoff = formatKstDateString(cutoffDate);
-            const recentItems = await db.select({ memo: tableItems.memo }).from(tableItems).innerJoin(tableReports, eq3(tableItems.tableReportId, tableReports.id)).where(
-              and3(
-                eq3(tableReports.branchId, effectiveBranchId),
+            const recentItems = await db2.select({ memo: tableItems.memo }).from(tableItems).innerJoin(tableReports, eq4(tableItems.tableReportId, tableReports.id)).where(
+              and4(
+                eq4(tableReports.branchId, effectiveBranchId),
                 sql`${tableReports.date} >= ${cutoff}`,
                 sql`${tableItems.memo} IS NOT NULL`,
                 sql`${tableItems.memo} != ''`
@@ -5958,14 +6175,14 @@ var appRouter = router({
       const hasPreloaded = (input.preloadedYellow?.length ?? 0) > 0 || (input.preloadedPink?.length ?? 0) > 0;
       if (effectiveBranchId && !hasPreloaded) {
         try {
-          const db = await getDb();
-          if (db) {
+          const db2 = await getDb();
+          if (db2) {
             const cutoffDate = /* @__PURE__ */ new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 60);
             const cutoff = formatKstDateString(cutoffDate);
-            const recentItems = await db.select({ memo: tableItems.memo, amount: tableItems.amount }).from(tableItems).innerJoin(tableReports, eq3(tableItems.tableReportId, tableReports.id)).where(
-              and3(
-                eq3(tableReports.branchId, effectiveBranchId),
+            const recentItems = await db2.select({ memo: tableItems.memo, amount: tableItems.amount }).from(tableItems).innerJoin(tableReports, eq4(tableItems.tableReportId, tableReports.id)).where(
+              and4(
+                eq4(tableReports.branchId, effectiveBranchId),
                 sql`${tableReports.date} >= ${cutoff}`,
                 sql`${tableItems.memo} IS NOT NULL`,
                 sql`${tableItems.memo} != ''`

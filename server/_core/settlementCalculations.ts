@@ -346,3 +346,41 @@ export async function calculateMonthlySummary(
     otherExpense, totalExpenses, netProfit, ratios,
   };
 }
+
+/**
+ * 일별 정산 결과를 DB에 저장 (upsert)
+ */
+export async function saveDailySettlementRecord(
+  branchId: number,
+  date: string,
+  settlement: Awaited<ReturnType<typeof calculateDailySettlement>>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const existing = await db
+    .select()
+    .from(dailySalesRecords)
+    .where(and(eq(dailySalesRecords.branchId, branchId), eq(dailySalesRecords.date, date)))
+    .limit(1);
+
+  const fields = {
+    totalRevenue: String(settlement.totalRevenue),
+    commissionExpense: String(settlement.commissionExpense),
+    rentExpense: String(settlement.rentExpense),
+    managementFeeExpense: String(settlement.managementFeeExpense),
+    staffWageExpense: String(settlement.staffWageExpense),
+    managerWageExpense: String(settlement.managerWageExpense ?? 0),
+    partTimeWageExpense: String(settlement.partTimeWageExpense),
+    liquorCostExpense: String(settlement.liquorCostExpense),
+    staffDrinkExpense: String(settlement.staffDrinkExpense),
+    otherExpense: String(settlement.otherExpense),
+    totalExpenses: String(settlement.totalExpenses),
+    netProfit: String(settlement.netProfit),
+    updatedAt: new Date(),
+  };
+
+  if (existing && existing.length > 0) {
+    await db.update(dailySalesRecords).set(fields).where(eq(dailySalesRecords.id, existing[0].id));
+  }
+}

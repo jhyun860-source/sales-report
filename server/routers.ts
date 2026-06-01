@@ -35,6 +35,7 @@ import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { calculateDailySettlement, saveDailySettlementRecord } from "./_core/settlementCalculations";
 
 
 function formatKstDateString(date: Date): string {
@@ -3213,6 +3214,26 @@ export const appRouter = router({
             }
           } catch {}
         }
+        // 정산 자동 계산 및 저장
+        try {
+          const tableReport = await db?.select().from(tableReports)
+            .where(and(eq(tableReports.branchId, input.branchId), eq(tableReports.date, input.date)))
+            .limit(1);
+          const tableReportId = tableReport?.[0]?.id ?? null;
+          const staffRows = tableReportId
+            ? await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId))
+            : [];
+          const staffCount = (staffRows ?? []).filter((i: any) => i.staffType === 'staff').length;
+          const partTimeCount = (staffRows ?? []).filter((i: any) => i.staffType === 'parttime').length;
+          const cash = parseInt(input.cash || '0') || 0;
+          const card = parseInt(input.card || '0') || 0;
+          const settlement = await calculateDailySettlement(
+            input.branchId, input.date, cash, card,
+            staffCount, partTimeCount, input.expenses, tableReportId
+          );
+          await saveDailySettlementRecord(input.branchId, input.date, settlement);
+        } catch (e) { console.error('[정산 자동 계산 오류]', e); }
+
         return { success: true, record, pushSent };
       }),
     adminDailyDetail: publicProcedure
