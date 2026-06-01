@@ -238,6 +238,9 @@ export default function SettlementDashboard() {
                         <td className={`px-2 py-2 text-right font-bold ${net >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                           {formatWon(net)}
                         </td>
+                        <td className={`px-2 py-2 text-right text-xs ${net >= 0 ? 'text-blue-500' : 'text-red-400'}`}>
+                          {Number(s.totalRevenue) > 0 ? (net / Number(s.totalRevenue) * 100).toFixed(1) + '%' : '-'}
+                        </td>
                       </tr>
                     );
                   })}
@@ -252,6 +255,9 @@ export default function SettlementDashboard() {
                     <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.liquorCostExpense)}</td>
                     <td className={`px-2 py-2 text-right font-bold text-base ${monthlyTotal.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                       {formatWon(monthlyTotal.netProfit)}
+                    </td>
+                    <td className={`px-2 py-2 text-right font-bold text-sm ${monthlyTotal.netProfit >= 0 ? 'text-blue-500' : 'text-red-400'}`}>
+                      {monthlyTotal.totalRevenue > 0 ? (monthlyTotal.netProfit / monthlyTotal.totalRevenue * 100).toFixed(1) + '%' : '-'}
                     </td>
                   </tr>
                 </tfoot>
