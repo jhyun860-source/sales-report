@@ -1410,7 +1410,7 @@ async function storagePut(relKey, data, contentType = "application/octet-stream"
 }
 
 // server/routers.ts
-import { eq as eq3, and as and3, desc as desc2, like, sql, inArray, gte as gte2, lte as lte2, not } from "drizzle-orm";
+import { eq as eq3, and as and3, desc as desc2, asc, like, sql, inArray, gte as gte2, lte as lte2, not } from "drizzle-orm";
 import { TRPCError as TRPCError3 } from "@trpc/server";
 function formatKstDateString(date) {
   const kst = new Date(date.getTime() + 9 * 60 * 60 * 1e3);
@@ -4523,7 +4523,7 @@ var appRouter = router({
       const records = await db.select().from(dailySalesRecords).where(eq3(dailySalesRecords.date, input.date));
       const tableReportRows = await db.select().from(tableReports).where(eq3(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
-      const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)) : [];
+      const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
       const incentiveRows = reportIds.length > 0 ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
       return allBranches.map((branch) => ({
         branch,
@@ -4792,7 +4792,7 @@ var appRouter = router({
       const records = await db.select().from(dailySalesRecords).where(eq3(dailySalesRecords.date, input.date));
       const tableReportRows = await db.select().from(tableReports).where(eq3(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
-      const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)) : [];
+      const tableItemRows = reportIds.length > 0 ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
       const incentiveRows = reportIds.length > 0 ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
       return allBranches.map((branch) => ({
         branch,

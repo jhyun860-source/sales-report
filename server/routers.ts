@@ -33,7 +33,7 @@ import {
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives, liquorItems, liquorInventories, liquorStockMovements } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
-import { eq, and, desc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
+import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 
@@ -3231,7 +3231,7 @@ export const appRouter = router({
         const tableReportRows = await db.select().from(tableReports).where(eq(tableReports.date, input.date));
         const reportIds = tableReportRows.map(r => r.id);
         const tableItemRows = reportIds.length > 0
-          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds))
+          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt))
           : [];
         // 출근자 인센티브도 함께 조회
         const incentiveRows = reportIds.length > 0
@@ -3491,7 +3491,7 @@ export const appRouter = router({
         const tableReportRows = await db.select().from(tableReports).where(eq(tableReports.date, input.date));
         const reportIds = tableReportRows.map(r => r.id);
         const tableItemRows = reportIds.length > 0
-          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds))
+          ? await db.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt))
           : [];
         const incentiveRows = reportIds.length > 0
           ? await db.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt)
