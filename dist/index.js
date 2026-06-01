@@ -5210,6 +5210,17 @@ var appRouter = router({
         confidence: result.confidence,
         note: result.note
       };
+    }),
+    getBranches: publicProcedure.query(async ({ ctx }) => {
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const account = await getStoreAccountById(payload.accountId);
+      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (account.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      const db = await getDb();
+      if (!db) return [];
+      const allBranches = await db.select().from(branches).orderBy(branches.name);
+      return allBranches.map((b) => ({ id: b.id, name: b.name }));
     })
   }),
   // 기존 Manus OAuth 기반 매출 API (하위 호환)

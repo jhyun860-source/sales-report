@@ -753,7 +753,7 @@ export default function TableReport() {
                   {item.paymentMethod === 'card' ? 'Ã¬Â¹Â´Ã«ÂÂ' : 'Ã­ÂÂÃªÂ¸Â'}
                 </button>
               </div>
-              <MemoEditor value={item.memo} onChange={v => updateItemField(item.localId, 'memo', v)} onCamera={() => handleCameraCapture(item.localId)} isAnalyzing={analyzingLocalId === item.localId} />
+              <MemoEditor value={item.memo} onChange={v => updateItemField(item.localId, 'memo', v)} />
             </div>
           ))}
         </div>

@@ -4,7 +4,7 @@
  * - 지점별 일별 순수익 및 월 누적 현황
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
@@ -49,12 +49,13 @@ export default function SettlementDashboard() {
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
-    onSuccess: (data: { id: number; name: string }[]) => {
-      if (data.length > 0 && selectedBranchId === null) {
-        setSelectedBranchId(data[0].id);
-      }
-    },
   });
+
+  useEffect(() => {
+    if (branches.length > 0 && selectedBranchId === null) {
+      setSelectedBranchId(branches[0].id);
+    }
+  }, [branches, selectedBranchId]);
 
   const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesTodayNetProfit.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
