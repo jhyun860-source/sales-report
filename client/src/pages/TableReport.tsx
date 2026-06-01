@@ -93,7 +93,7 @@ type IncentiveLocal = {
   id?: number;
   localId: string;
   staffName: string;
-  staffType: 'staff' | 'parttime'; // 직원/아르바이트
+  staffType: 'staff' | 'parttime' | 'manager'; // 직원/아르바이트/점장
   glassCount: number;
   bottleCount: number;
   beerBottleCount: number;
@@ -1074,14 +1074,17 @@ export default function TableReport() {
                     inputMode="text"
                   />
                   <button
-                    onClick={() => updateIncentiveField(inc.localId, 'staffType', inc.staffType === 'staff' ? 'parttime' : 'staff')}
+                    onClick={() => {
+                      const next = inc.staffType === 'staff' ? 'parttime' : inc.staffType === 'parttime' ? 'manager' : 'staff';
+                      updateIncentiveField(inc.localId, 'staffType', next);
+                    }}
                     className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap"
                     style={{
-                      background: inc.staffType === 'staff' ? PRIMARY : 'oklch(0.65 0.12 200)',
+                      background: inc.staffType === 'staff' ? PRIMARY : inc.staffType === 'parttime' ? 'oklch(0.65 0.12 200)' : 'oklch(0.60 0.15 30)',
                       color: 'white',
                     }}
                   >
-                    {inc.staffType === 'staff' ? '직원' : '아르바'}
+                    {inc.staffType === 'staff' ? '직원' : inc.staffType === 'parttime' ? '아르바' : '점장'}
                   </button>
                   <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
