@@ -1,9 +1,9 @@
 /**
- * Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã¬ÂÂÃ¬ÂÂ ÃªÂ¸Â°Ã«Â¡Â Ã­ÂÂÃ¬ÂÂ´Ã¬Â§Â
- * - Ã«ÂÂ Ã¬Â§ÂÃ«Â³Â Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã«ÂªÂ©Ã«Â¡Â (Ã«Â²ÂÃ­ÂÂ¸, Ã¬ÂÂÃ«ÂÂÃªÂµÂ¬Ã«Â¶Â, ÃªÂ¸ÂÃ¬ÂÂ¡, ÃªÂ²Â°Ã¬Â ÂÃ¬ÂÂÃ«ÂÂ¨, Ã«Â©ÂÃ«ÂªÂ¨)
- * - Ã¬Â¶ÂÃªÂ·Â¼Ã¬ÂÂ Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â (Ã¬ÂÂÃ¬Â¶ÂÃªÂ°Â, Ã«Â³ÂÃ¬Â¶ÂÃªÂ°Â, Ã«Â§Â¥Ã¬Â£Â¼Ã«Â³ÂÃ¬Â¶ÂÃªÂ°Â, Ã¬ÂÂÃ¬ÂÂÃ¬ÂÂ¸Ã¬ÂÂ¼, ÃªÂ·Â¼Ã«Â¬Â´Ã¬ÂÂÃªÂ°Â)
- * - Ã­ÂÂÃ¬ÂÂ, ÃªÂ¸Â°Ã­ÂÂ Ã¬ÂÂ¬Ã­ÂÂ­
- * - Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂ Ã­ÂÂÃªÂ¸Â/Ã¬Â¹Â´Ã«ÂÂ Ã­ÂÂ©Ã¬ÂÂ°ÃªÂ°ÂÃ¬ÂÂ´ Ã«Â§Â¤Ã¬Â¶ÂÃªÂ¸Â°Ã«Â¡ÂÃ¬ÂÂ Ã¬ÂÂÃ«ÂÂ Ã«Â°ÂÃ¬ÂÂÃ«ÂÂ¨
+ * 테이블 영업 기록 페이지
+ * - 날짜별 테이블 목록 (번호, 손님구분, 금액, 결제수단, 메모)
+ * - 출근자 인센티브 (잔추가, 병추가, 맥주병추가, 영업인센, 근무시간)
+ * - 팀수, 기타 사항
+ * - 저장 시 현금/카드 합산값이 매출기록에 자동 반영됨
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -15,33 +15,33 @@ import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { MANAGER_LIQUOR_EDIT_IDS } from '@/lib/accountAccess';
 
-// Google Sheets Ã¬Â ÂÃ¬ÂÂ¡Ã¬ÂÂ Ã¬ÂÂÃ­ÂÂ GAS URL
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxfa8sXtVXxilxrtLJ7KyZT-3qAgHdLvlfrLNzx5m99MdbtzM22Lq9QGJ4zEtkimcHfZQ/exec";
+// Google Sheets 전송을 위한 GAS URL
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxZ8v9UvsEKUGRuipvDPwFvdVh3SccEg7NQAjHRGGAUCry8-UEhkD7l62LyrlN7Yq_Vdg/exec";
 
-// Ã«ÂÂ Ã¬Â§Â Ã­ÂÂ¬Ã«Â§Â·
+// 날짜 포맷
 function getTodayString() {
   const d = new Date();
-  // Ã¬ÂÂ¼Ã¬ÂÂÃ¬ÂÂ¼(0)Ã¬ÂÂ´Ã«Â©Â´ Ã¬Â ÂÃ«ÂÂ (Ã­ÂÂ Ã¬ÂÂÃ¬ÂÂ¼)Ã«Â¡Â
+  // 일요일(0)이면 전날(토요일)로
   if (d.getDay() === 0) d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function formatDateDisplay(dateStr: string) {
   const [y, m, d] = dateStr.split('-');
-  const days = ['Ã¬ÂÂ¼', 'Ã¬ÂÂ', 'Ã­ÂÂ', 'Ã¬ÂÂ', 'Ã«ÂªÂ©', 'ÃªÂ¸Â', 'Ã­ÂÂ '];
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
   const dow = new Date(Number(y), Number(m) - 1, Number(d)).getDay();
-  return `${Number(m)}Ã¬ÂÂ ${Number(d)}Ã¬ÂÂ¼ (${days[dow]})`;
+  return `${Number(m)}월 ${Number(d)}일 (${days[dow]})`;
 }
 
 function moveDateBy(dateStr: string, days: number) {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
-  // Ã¬ÂÂ´Ã«ÂÂÃ­ÂÂ Ã«ÂÂ Ã¬Â§ÂÃªÂ°Â Ã¬ÂÂ¼Ã¬ÂÂÃ¬ÂÂ¼Ã¬ÂÂ´Ã«Â©Â´ ÃªÂ°ÂÃ¬ÂÂ Ã«Â°Â©Ã­ÂÂ¥Ã¬ÂÂ¼Ã«Â¡Â Ã­ÂÂ Ã¬Â¹Â¸ Ã«ÂÂ Ã¬ÂÂ´Ã«ÂÂ
+  // 이동한 날짜가 일요일이면 같은 방향으로 한 칸 더 이동
   if (d.getDay() === 0) d.setDate(d.getDate() + days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// ÃªÂ¸ÂÃ¬ÂÂ¡ Ã¬ÂÂÃ«Â Â¥ Ã¬Â»Â´Ã­ÂÂ¬Ã«ÂÂÃ­ÂÂ¸
+// 금액 입력 컴포넌트
 function AmountInput({
   value,
   onChange,
@@ -79,7 +79,7 @@ function AmountInput({
   );
 }
 
-// Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã¬Â¹Â´Ã«ÂÂ Ã­ÂÂÃ¬ÂÂ
+// 테이블 카드 타입
 type TableItemLocal = {
   id?: number;
   localId: string;
@@ -91,24 +91,24 @@ type TableItemLocal = {
   memo: string;
 };
 
-// Ã¬Â§ÂÃ¬ÂÂ Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â Ã­ÂÂÃ¬ÂÂ
+// 직원 인센티브 타입
 type IncentiveLocal = {
   id?: number;
   localId: string;
   staffName: string;
-  staffType: 'staff' | 'parttime'; // Ã¬Â§ÂÃ¬ÂÂ/Ã¬ÂÂÃ«Â¥Â´Ã«Â°ÂÃ¬ÂÂ´Ã­ÂÂ¸
+  staffType: 'staff' | 'parttime'; // 직원/아르바이트
   glassCount: number;
   bottleCount: number;
   beerBottleCount: number;
   salesIncentive: string;
-  workStart: string;       // HH:mm 24Ã¬ÂÂÃªÂ°Â Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ¼Ã«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥
-  workEnd: string;         // HH:mm 24Ã¬ÂÂÃªÂ°Â Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ¼Ã«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥
+  workStart: string;       // HH:mm 24시간 형식으로 저장
+  workEnd: string;         // HH:mm 24시간 형식으로 저장
   workStartAmPm: 'AM' | 'PM';
   workEndAmPm: 'AM' | 'PM';
-  workStartHour: string;   // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã¬ÂÂÃªÂ°Â (1~12)
-  workEndHour: string;     // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã¬ÂÂÃªÂ°Â (1~12)
-  workStartMin: string;    // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã«Â¶Â (00~59)
-  workEndMin: string;      // Ã­ÂÂÃ¬ÂÂÃ¬ÂÂ© Ã«Â¶Â (00~59)
+  workStartHour: string;   // 표시용 시간 (1~12)
+  workEndHour: string;     // 표시용 시간 (1~12)
+  workStartMin: string;    // 표시용 분 (00~59)
+  workEndMin: string;      // 표시용 분 (00~59)
 };
 
 function makeLocalId() {
@@ -123,7 +123,7 @@ function emptyIncentive(): IncentiveLocal {
   return { localId: makeLocalId(), staffName: '', staffType: 'staff', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '', workStartAmPm: 'PM', workEndAmPm: 'PM', workStartHour: '', workEndHour: '', workStartMin: '', workEndMin: '' };
 }
 
-// HH:mm Ã¢ÂÂ Ã¬ÂÂ¤Ã¬Â Â/Ã¬ÂÂ¤Ã­ÂÂ, Ã¬ÂÂÃªÂ°Â(1~12), Ã«Â¶Â Ã¬ÂÂ­Ã«Â³ÂÃ­ÂÂ
+// HH:mm → 오전/오후, 시간(1~12), 분 역변환
 function fromHHMM(hhmm: string): { ampm: 'AM' | 'PM'; hour: string; min: string } {
   if (!hhmm) return { ampm: 'PM', hour: '', min: '' };
   const [hStr, mStr] = hhmm.split(':');
@@ -136,7 +136,7 @@ function fromHHMM(hhmm: string): { ampm: 'AM' | 'PM'; hour: string; min: string 
   return { ampm, hour: String(h12), min: String(m).padStart(2, '0') };
 }
 
-// Ã¬ÂÂ¤Ã¬Â Â/Ã¬ÂÂ¤Ã­ÂÂ + Ã¬ÂÂÃªÂ°Â/Ã«Â¶Â Ã¢ÂÂ HH:mm 24Ã¬ÂÂÃªÂ°Â Ã«Â³ÂÃ­ÂÂ
+// 오전/오후 + 시간/분 → HH:mm 24시간 변환
 function toHHMM(ampm: 'AM' | 'PM', hour: string, min: string): string {
   const h = parseInt(hour, 10);
   const m = parseInt(min || '0', 10);
@@ -151,12 +151,12 @@ function toHHMM(ampm: 'AM' | 'PM', hour: string, min: string): string {
 export default function TableReport() {
   const [, navigate] = useLocation();
   const { user: account, loading: authLoading } = useStoreAuth();
-  // Ã«ÂÂ Ã¬Â§ÂÃ«Â¥Â¼ localStorageÃ¬ÂÂ Ã¬Â ÂÃ¬ÂÂ¥/Ã«Â³ÂµÃ¬ÂÂ (Ã¬ÂÂÃ«Â¡ÂÃªÂ³Â Ã¬Â¹Â¨ Ã­ÂÂÃ¬ÂÂÃ«ÂÂ Ã¬ÂÂ Ã¬Â§Â)
+  // 날짜를 localStorage에 저장/복원 (새로고침 후에도 유지)
   const [currentDate, setCurrentDateState] = useState(() => {
     try {
       const saved = localStorage.getItem('selectedDate');
       if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
-        // Ã¬ÂÂ¼Ã¬ÂÂÃ¬ÂÂ¼Ã¬ÂÂ´Ã«Â©Â´ Ã­ÂÂ Ã¬ÂÂÃ¬ÂÂ¼Ã«Â¡Â Ã«Â³Â´Ã¬Â Â
+        // 일요일이면 토요일로 보정
         const d = new Date(saved.replace(/-/g, '/'));
         if (d.getDay() === 0) {
           d.setDate(d.getDate() - 1);
@@ -172,10 +172,10 @@ export default function TableReport() {
     setCurrentDateState(prev => {
       const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
       if (next !== prev) {
-        // Ã«ÂÂ Ã¬Â§ÂÃªÂ°Â Ã«ÂÂ¬Ã«ÂÂ¼Ã¬Â§ÂÃ«Â©Â´ loadedDateRef Ã¬Â´ÂÃªÂ¸Â°Ã­ÂÂ Ã¢ÂÂ Ã¬ÂÂ Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ° Ã«Â¡ÂÃ«ÂÂ Ã­ÂÂÃ¬ÂÂ©
+        // 날짜가 달라지면 loadedDateRef 초기화 → 새 날짜 데이터 로드 허용
         loadedDateRef.current = null;
         setSaved(false);
-        // Ã¬ÂÂÃ«ÂÂÃ¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂÃ¬ÂÂ´Ã«Â¨Â¸ Ã¬Â·Â¨Ã¬ÂÂ: Ã«ÂÂ Ã¬Â§Â Ã¬ÂÂ´Ã«ÂÂ Ã¬ÂÂ Ã¬ÂÂ´Ã¬Â Â Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°ÃªÂ°Â Ã¬ÂÂ Ã«ÂÂ Ã¬Â§ÂÃ«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥Ã«ÂÂÃ«ÂÂ ÃªÂ²Â Ã«Â°Â©Ã¬Â§Â
+        // 자동저장 타이머 취소: 날짜 이동 시 이전 날짜 데이터가 새 날짜로 저장되는 것 방지
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
           saveTimeoutRef.current = null;
@@ -193,10 +193,10 @@ export default function TableReport() {
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Ã¬ÂÂ´Ã«Â¯Â¸ Ã«Â¡ÂÃ«ÂÂÃ­ÂÂ Ã«ÂÂ Ã¬Â§Â Ã¬Â¶ÂÃ¬Â Â (items Ã«ÂÂ®Ã¬ÂÂ´Ã¬ÂÂ°ÃªÂ¸Â° Ã«Â°Â©Ã¬Â§Â)
+  // 이미 로드한 날짜 추적 (items 덮어쓰기 방지)
   const loadedDateRef = useRef<string | null>(null);
 
-  // URL Ã­ÂÂÃ«ÂÂ¼Ã«Â¯Â¸Ã­ÂÂ°Ã¬ÂÂÃ¬ÂÂ branchId Ã¬ÂÂ½ÃªÂ¸Â° (ÃªÂ´ÂÃ«Â¦Â¬Ã¬ÂÂÃªÂ°Â Ã¬Â§ÂÃ¬Â Â Ã¬ÂÂ Ã­ÂÂ Ã­ÂÂ Ã¬ÂÂ´Ã«ÂÂ Ã¬ÂÂ Ã¬ÂÂ¬Ã¬ÂÂ©)
+  // URL 파라미터에서 branchId 읽기 (관리자가 지점 선택 후 이동 시 사용)
   const search = useSearch();
   const urlBranchId = (() => {
     const params = new URLSearchParams(search);
@@ -218,22 +218,22 @@ export default function TableReport() {
     try { localStorage.setItem('selectedBranchId', String(effectiveBranchId)); } catch {}
   }, [effectiveBranchId]);
 
-  // Ã«ÂÂ Ã¬Â§ÂÃ«Â³Â ÃªÂ¸Â°Ã«Â¡Â Ã¬Â¡Â°Ã­ÂÂ - staleTimeÃ¬ÂÂ ÃªÂ¸Â¸ÃªÂ²Â Ã¬ÂÂ¤Ã¬Â ÂÃ­ÂÂ´ Ã¬ÂÂÃ«ÂÂ Ã«Â¦Â¬Ã­ÂÂÃ¬Â¹Â Ã«Â°Â©Ã¬Â§Â
+  // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
   const { data: reportData, dataUpdatedAt } = trpc.tableReport.getByDate.useQuery(
     { date: currentDate, branchId: effectiveBranchId },
     { enabled: !!account && !!effectiveBranchId, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
-  // Ã¬ÂÂÃ«Â²Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ° Ã¢ÂÂ Ã«Â¡ÂÃ¬Â»Â¬ Ã¬ÂÂÃ­ÂÂ Ã«ÂÂÃªÂ¸Â°Ã­ÂÂ
-  // reportDataÃªÂ°Â Ã­ÂÂ´Ã«ÂÂ¹ Ã«ÂÂ Ã¬Â§Â(currentDate)Ã¬ÂÂ Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°Ã¬ÂÂ¼ Ã«ÂÂÃ«Â§Â Ã«ÂÂ®Ã¬ÂÂ´Ã¬ÂÂ
+  // 서버 데이터 → 로컬 상태 동기화
+  // reportData가 해당 날짜(currentDate)의 데이터일 때만 덮어씀
   useEffect(() => {
-    // reportDataÃªÂ°Â Ã¬ÂÂÃ¬Â§Â undefinedÃ«Â©Â´ Ã«Â¡ÂÃ«ÂÂ© Ã¬Â¤Â Ã¢ÂÂ ÃªÂ±Â´Ã«ÂÂÃ«ÂÂ
+    // reportData가 아직 undefined면 로딩 중 → 건너뜀
     if (reportData === undefined) return;
-    // Ã¬ÂÂ´Ã«Â¯Â¸ Ã¬ÂÂ´ Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°Ã«Â¥Â¼ Ã«Â¡ÂÃ«ÂÂÃ­ÂÂÃ¬ÂÂ¼Ã«Â©Â´ Ã«ÂÂ¤Ã¬ÂÂ Ã«ÂÂ®Ã¬ÂÂ´Ã¬ÂÂ°Ã¬Â§Â Ã¬ÂÂÃ¬ÂÂ
+    // 이미 이 날짜 데이터를 로드했으면 다시 덮어쓰지 않음
     if (loadedDateRef.current === currentDate) return;
-    // Ã­ÂÂÃ¬ÂÂ¬ Ã«ÂÂ Ã¬Â§Â ÃªÂ¸Â°Ã«Â¡Â Ã¬ÂÂÃ«Â£Â
+    // 현재 날짜 기록 완료
     loadedDateRef.current = currentDate;
-    // Ã¬ÂÂÃ«ÂÂÃ¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂÃ¬ÂÂ´Ã«Â¨Â¸ÃªÂ°Â Ã¬ÂÂÃ¬ÂÂ¼Ã«Â©Â´ Ã¬Â·Â¨Ã¬ÂÂ (Ã«ÂÂ Ã¬Â§Â Ã¬ÂÂ´Ã«ÂÂ Ã¬ÂÂ Ã¬ÂÂ´Ã¬Â Â Ã«ÂÂ Ã¬Â§Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°Ã«Â¡Â Ã¬Â ÂÃ¬ÂÂ¥Ã«ÂÂÃ«ÂÂ ÃªÂ²Â Ã«Â°Â©Ã¬Â§Â)
+    // 자동저장 타이머가 있으면 취소 (날짜 이동 시 이전 날짜 데이터로 저장되는 것 방지)
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
@@ -286,21 +286,21 @@ export default function TableReport() {
       setItems([emptyItem()]);
       setIncentives([emptyIncentive()]);
     }
-    // Ã«ÂÂ Ã¬Â§ÂÃªÂ°Â Ã¬ÂÂ¤Ã¬Â ÂÃ«Â¡Â Ã«Â³ÂÃªÂ²Â½Ã«ÂÂÃ¬ÂÂÃ¬ÂÂ Ã«ÂÂÃ«Â§Â saved Ã«Â¦Â¬Ã¬ÂÂ (Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂÃ«Â£Â Ã­ÂÂ Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ° Ã«Â¡ÂÃ«ÂÂ Ã¬ÂÂÃ¬ÂÂÃ«ÂÂ saved Ã¬ÂÂ Ã¬Â§Â)
-    // setSaved(false)Ã«Â¥Â¼ Ã¬ÂÂ¬ÃªÂ¸Â°Ã¬ÂÂ Ã­ÂÂ¸Ã¬Â¶ÂÃ­ÂÂÃ«Â©Â´ Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂÃ«Â£Â Ã­ÂÂ Ã¬ÂÂÃ«Â²Â Ã«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ°ÃªÂ°Â Ã«ÂÂ¤Ã¬ÂÂ Ã«ÂÂ¤Ã¬ÂÂ´Ã¬ÂÂ¬ Ã«ÂÂ saved Ã­ÂÂÃ¬ÂÂÃªÂ°Â Ã¬ÂÂ¬Ã«ÂÂ¼Ã¬Â§Â
+    // 날짜가 실제로 변경되었을 때만 saved 리셋 (저장 완료 후 데이터 로드 시에는 saved 유지)
+    // setSaved(false)를 여기서 호출하면 저장 완료 후 서버 데이터가 다시 들어올 때 saved 표시가 사라짘
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportData, currentDate, dataUpdatedAt]); // currentDateÃ«ÂÂ loadedDateRefÃ«Â¡Â Ã¬Â²Â´Ã­ÂÂ¬Ã­ÂÂÃ¬Â§ÂÃ«Â§Â Ã¬ÂÂÃ¬Â¡Â´Ã¬ÂÂ±Ã¬ÂÂÃ«ÂÂ Ã­ÂÂ¬Ã­ÂÂ¨Ã­ÂÂÃ¬ÂÂ¬ Ã«ÂÂ Ã¬Â§Â Ã«Â³ÂÃªÂ²Â½ Ã¬ÂÂ Ã¬ÂÂ¤Ã­ÂÂ Ã«Â³Â´Ã¬ÂÂ¥
+  }, [reportData, currentDate, dataUpdatedAt]); // currentDate는 loadedDateRef로 체크하지만 의존성에도 포함하여 날짜 변경 시 실행 보장
 
-  // Ã­ÂÂÃªÂ´ÂÃ­ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬ÂÂÃ«ÂÂ Ã­ÂÂÃ¬ÂÂµ - Ã¬ÂÂ± Ã«Â¡ÂÃ«ÂÂ Ã¬ÂÂ Ã¬ÂÂ´Ã¬Â Â Ã«Â©ÂÃ«ÂªÂ¨Ã¬ÂÂÃ¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬Â¶ÂÃ¬Â¶Â Ã­ÂÂ localStorage Ã¬ÂºÂÃ¬ÂÂ
+  // 형광펜 패턴 자동 학습 - 앱 로드 시 이전 메모에서 패턴 추출 후 localStorage 캐시
   const highlightCacheKey = `highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
 
-  // [Ã¬ÂÂÃ¬Â Â] Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂ Ã­ÂÂÃ¬ÂÂµÃ­ÂÂ Ã­ÂÂÃªÂ´ÂÃ­ÂÂ Ã¬Â ÂÃ¬ÂÂ¸ Ã«ÂÂ¨Ã¬ÂÂ´ Ã¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂ¤
-  //   - Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂÃªÂ°Â Ã¬ÂÂÃ«ÂÂ Ã­ÂÂÃªÂ´ÂÃ­ÂÂÃ¬ÂÂ Ã¬Â§ÂÃ¬ÂÂ´ Ã«ÂÂ¨Ã¬ÂÂ´Ã«Â¥Â¼ Ã«ÂÂÃ¬Â Â Ã¬Â¹Â´Ã¬ÂÂ´Ã­ÂÂ¸Ã­ÂÂÃ¬ÂÂ¬,
-  //     Ã¬ÂÂ¼Ã¬Â Â Ã­ÂÂÃ¬ÂÂ(EXCLUDE_THRESHOLD Ã¬ÂÂ´Ã¬ÂÂ) Ã¬Â ÂÃªÂ±Â°Ã«ÂÂÃ«Â©Â´ Ã«ÂÂ¤Ã¬ÂÂ Ã«Â¶ÂÃ¬ÂÂÃ«Â¶ÂÃ­ÂÂ° Ã¬ÂÂÃ«ÂÂ Ã¬Â ÂÃ¬ÂÂ¸Ã­ÂÂÃ«ÂÂ Ã­ÂÂÃ¬ÂÂµÃ­ÂÂ Ã«Â¡ÂÃ¬Â§Â.
+  // [수정] 사용자 학습형 형광펜 제외 단어 저장 키
+  //   - 사용자가 자동 형광펜을 지운 단어를 누적 카운트하여,
+  //     일정 횟수(EXCLUDE_THRESHOLD 이상) 제거되면 다음 분석부터 자동 제외하는 학습형 로직.
   const highlightExcludeKey = `excluded_highlight_patterns_${effectiveBranchId ?? 'unknown'}`;
 
   type HighlightExcludes = {
-    yellow: Record<string, number>; // Ã«ÂÂ¨Ã¬ÂÂ´ -> Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂÃªÂ°Â markÃ«Â¥Â¼ Ã¬Â§ÂÃ¬ÂÂ´ Ã­ÂÂÃ¬ÂÂ
+    yellow: Record<string, number>; // 단어 -> 사용자가 mark를 지운 횟수
     pink: Record<string, number>;
     updatedAt: number;
   };
@@ -326,7 +326,7 @@ export default function TableReport() {
     } catch {}
   };
 
-  // Ã­ÂÂÃ¬ÂÂµ Ã¬ÂÂÃªÂ³ÂÃªÂ°Â: 1Ã¬ÂÂ´Ã«Â©Â´ Ã­ÂÂ Ã«Â²Â Ã¬Â§ÂÃ¬ÂÂ°Ã«Â©Â´ Ã¬Â¦ÂÃ¬ÂÂ Ã¬Â ÂÃ¬ÂÂ¸, 2Ã¬ÂÂ´Ã«Â©Â´ Ã«ÂÂ Ã«Â²Â Ã¬ÂÂ´Ã¬ÂÂ Ã¬Â§ÂÃ¬ÂÂ Ã¬ÂÂ Ã«ÂÂ Ã¬Â ÂÃ¬ÂÂ¸
+  // 학습 임계값: 1이면 한 번 지우면 즉시 제외, 2이면 두 번 이상 지웠을 때 제외
   const EXCLUDE_THRESHOLD = 1;
 
   const isExcluded = (excludes: HighlightExcludes, color: 'yellow' | 'pink', word: string): boolean => {
@@ -343,7 +343,7 @@ export default function TableReport() {
     return list.filter(w => !isExcluded(excludes, color, w));
   };
 
-  // Ã«Â©ÂÃ«ÂªÂ¨ HTMLÃ¬ÂÂÃ¬ÂÂ Ã¬ÂÂÃªÂ¹ÂÃ«Â³Â mark Ã­ÂÂÃ¬ÂÂ¤Ã­ÂÂ¸ Ã¬Â¶ÂÃ¬Â¶Â (yellow / pink)
+  // 메모 HTML에서 색깔별 mark 텍스트 추출 (yellow / pink)
   const extractMarkedTexts = (html: string): { yellow: string[]; pink: string[] } => {
     const yellow: string[] = [];
     const pink: string[] = [];
@@ -355,7 +355,7 @@ export default function TableReport() {
     return { yellow, pink };
   };
 
-  // localStorageÃ¬ÂÂÃ¬ÂÂ Ã¬ÂºÂÃ¬ÂÂÃ«ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬Â´ÂÃªÂ¸Â° Ã«Â¡ÂÃ«ÂÂ
+  // localStorage에서 캐시된 패턴 초기 로드
   const [highlightPatterns, setHighlightPatterns] = useState<{
     yellowKeywords: string[];
     pinkKeywords: string[];
@@ -369,8 +369,8 @@ export default function TableReport() {
     return null;
   });
 
-  // [Ã­ÂÂÃ¬ÂÂµ Ã­ÂÂ¨Ã¬ÂÂ] Ã«Â¶ÂÃ¬ÂÂÃ«ÂÂ keyword Ã¬Â¤Â, Ã«Â©ÂÃ«ÂªÂ¨ HTMLÃ¬ÂÂ "Ã«ÂÂ¨Ã¬ÂÂ´ ÃªÂ²Â½ÃªÂ³ÂÃªÂ°Â Ã«Â³Â´Ã¬Â¡Â´Ã«ÂÂ Ã­ÂÂÃ«Â¬Â¸"Ã¬ÂÂ¼Ã«Â¡ÂÃ«ÂÂ Ã¬Â¡Â´Ã¬ÂÂ¬Ã­ÂÂÃ«ÂÂ
-  // mark Ã­ÂÂÃªÂ·Â¸Ã«Â¡ÂÃ«ÂÂ Ã¬Â ÂÃ¬ÂÂ©Ã«ÂÂÃ¬ÂÂ´ Ã¬ÂÂÃ¬Â§Â Ã¬ÂÂÃ¬ÂÂ Ã«ÂÂ¨Ã¬ÂÂ´Ã«Â¥Â¼ "Ã¬ÂÂ¬Ã¬ÂÂ©Ã¬ÂÂÃªÂ°Â markÃ«Â¥Â¼ Ã¬Â§ÂÃ¬ÂÂ´ Ã«ÂÂ¨Ã¬ÂÂ´"Ã«Â¡Â Ã«Â³Â´ÃªÂ³Â  Ã¬Â¹Â´Ã¬ÂÂ´Ã­ÂÂ¸ +1.
+  // [학습 함수] 분석된 keyword 중, 메모 HTML에 "단어 경계가 보존된 평문"으로는 존재하나
+  // mark 태그로는 적용되어 있지 않은 단어를 "사용자가 mark를 지운 단어"로 보고 카운트 +1.
   const learnHighlightExcludesFromMemo = (memoHtml: string) => {
     if (!memoHtml) return;
     const patterns = highlightPatterns;
@@ -379,11 +379,11 @@ export default function TableReport() {
     const cleanText = memoHtml.replace(/<[^>]+>/g, '');
     const next = loadHighlightExcludes();
 
-    // Ã«ÂÂ¨Ã¬ÂÂ´ Ã¬ÂÂ¼Ã«Â¶ÂÃ«Â¡Â Ã«Â¶ÂÃ¬ÂÂ´Ã¬ÂÂÃ¬ÂÂ¼Ã«Â©Â´ Ã¬ÂÂ Ã«ÂÂÃ«ÂÂ Ã¬ÂÂ¸Ã¬Â Â Ã«Â¬Â¸Ã¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´
+    // 단어 일부로 붙어있으면 안 되는 인접 문자 패턴
     const ADJACENT_BAD = /[\uAC00-\uD7A3A-Za-z0-9(]/;
     const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // Ã«ÂÂ¨Ã¬ÂÂ´ ÃªÂ²Â½ÃªÂ³Â ÃªÂ¸Â°Ã«Â°Â Ã­ÂÂÃ«Â¬Â¸ Ã«Â°ÂÃ¬ÂÂ ÃªÂ²ÂÃ¬ÂÂ¬
+    // 단어 경계 기반 평문 발생 검사
     const hasPlainOccurrence = (kw: string): boolean => {
       if (!kw || kw.length <= 1) return false;
       const re = new RegExp(escapeRegExp(kw), 'g');
@@ -423,7 +423,7 @@ export default function TableReport() {
     }
   };
 
-  // Ã¬ÂÂÃ«Â²ÂÃ¬ÂÂÃ¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã¬Â¡Â°Ã­ÂÂ
+  // 서버에서 패턴 조회
   const shouldFetchPatterns = !!account && !!effectiveBranchId && (
     !highlightPatterns || Date.now() - highlightPatterns.cachedAt > 60 * 60 * 1000
   );
@@ -432,7 +432,7 @@ export default function TableReport() {
     { enabled: shouldFetchPatterns, staleTime: Infinity, refetchOnWindowFocus: false }
   );
 
-  // Ã¬ÂÂÃ«Â²ÂÃ¬ÂÂÃ¬ÂÂ Ã­ÂÂ¨Ã­ÂÂ´ Ã«Â°ÂÃ¬ÂÂ¼Ã«Â©Â´ localStorageÃ¬ÂÂ Ã¬ÂºÂÃ¬ÂÂ
+  // 서버에서 패턴 받으면 localStorage에 캐시
   useEffect(() => {
     if (!fetchedPatterns) return;
     const cached = {
@@ -452,86 +452,38 @@ export default function TableReport() {
   const deleteIncentive = trpc.tableReport.deleteIncentive.useMutation();
   const analyzeOrderMemo = trpc.tableReport.analyzeOrderMemo.useMutation();
 
-  // ì£¼ë¥ ë¹ì¼ ì¶ê³  ì´ì¡ ì¡°í
-  const { data: liquorHistoryData } = trpc.liquor.history.useQuery(
-    {
-      startDate: currentDate,
-      endDate:   currentDate,
-      branchId:  effectiveBranchId,
-      type:      'OUT',
-    },
-    {
-      enabled:              !!account && !!effectiveBranchId,
-      staleTime:            Infinity,
-      refetchOnWindowFocus: false,
-    }
-  );
-
-  const dailyLiquorTotal = (liquorHistoryData?.movements ?? []).reduce(
-    (sum: number, m: any) => sum + Number(m.totalCost ?? 0),
-    0
-  );
-
-  // Google Sheets Ã¬Â ÂÃ¬ÂÂ¡ Ã­ÂÂ¨Ã¬ÂÂ
-  const syncToGoogleSheets = async (_rData: any) => {
+  // Google Sheets 전송 함수
+  const syncToGoogleSheets = async (rData: any) => {
     try {
-      const branchName = account?.branch?.name || 'ì ì ìì';
-
-      const cashSales = items
-        .filter(it => it.paymentMethod === 'cash')
-        .reduce((s, it) => s + Number(it.amount || 0), 0);
-      const cardSales = items
-        .filter(it => it.paymentMethod === 'card')
-        .reduce((s, it) => s + Number(it.amount || 0), 0);
-      const totalSales = cashSales + cardSales;
-
-      const liquorPrice = dailyLiquorTotal;
-
-      const staffDrink = incentives.reduce(
-        (s, inc) => s + (inc.glassCount || 0) + (inc.bottleCount || 0) + (inc.beerBottleCount || 0),
-        0
-      );
-
-      const incentiveTotal = incentives.reduce(
-        (s, inc) => s + Number(inc.salesIncentive || 0),
-        0
-      );
-
-      const staffList = incentives
-        .filter(inc => inc.staffName?.trim())
-        .map(inc => ({
-          staffType: inc.staffType === 'parttime' ? 'parttime' : 'staff',
-          count: 1,
-          name: inc.staffName,
-        }));
-
+      const branchName = account?.branch?.name || "알 수 없음";
+      const totalSales = items.reduce((s, it) => s + Number(it.amount || 0), 0);
+      
+      // 전송 데이터 구성
       const payload = {
-        date:                currentDate,
-        branchName:          branchName,
-        totalSales:          totalSales,
-        cashSales:           cashSales,
-        cardSales:           cardSales,
-        liquorPrice:         liquorPrice,
-        staffDrink:          staffDrink,
-        incentiveTotal:      incentiveTotal,
-        staffList:           staffList,
-        staffSalaryOverride: 0,
+        date: currentDate,
+        branchName: branchName,
+        sales: totalSales,
+        commission: 0, // 로직에 따라 계산 필요
+        netProfit: totalSales, // 예시
+        staffType: incentives[0]?.staffType || "staff",
+        drinkCount: incentives.reduce((s, inc) => s + (inc.glassCount || 0) + (inc.bottleCount || 0), 0),
+        staffDrinkIncentive: incentives.reduce((s, inc) => s + Number(inc.salesIncentive || 0), 0),
+        rent: 0 // 전날 데이터 기반 조회 필요
       };
 
       await fetch(GAS_URL, {
-        method:  'POST',
-        mode:    'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
-
-      console.log('[SalesDash] Google Sheets ëê¸°í ìë£', payload);
-    } catch (err) {
-      console.error('[SalesDash] Google Sheets ëê¸°í ì¤í¨:', err);
+      console.log("Google Sheets sync triggered");
+    } catch (e) {
+      console.error("Google Sheets sync failed:", e);
     }
   };
 
-  // Ã¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂ¨Ã¬ÂÂ
+  // 저장 함수
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     if (isSaving) return;
@@ -542,7 +494,7 @@ export default function TableReport() {
         if (it.memo) learnHighlightExcludesFromMemo(it.memo);
       }
     } catch (e) {
-      console.warn('[highlight-excludes] Ã­ÂÂÃ¬ÂÂµ Ã¬ÂÂ¤Ã­ÂÂ¨:', e);
+      console.warn('[highlight-excludes] 학습 실패:', e);
     }
 
     try {
@@ -577,7 +529,7 @@ export default function TableReport() {
         })),
       });
 
-      // Google Sheets Ã«ÂÂÃªÂ¸Â°Ã­ÂÂ Ã¬ÂÂ¤Ã­ÂÂ
+      // Google Sheets 동기화 실행
       syncToGoogleSheets(result);
 
       setReportId(result.id);
@@ -590,28 +542,28 @@ export default function TableReport() {
 
       loadedDateRef.current = currentDate;
       setSaved(true);
-      toast.success(`Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂÃ«Â£Â | ÃªÂµÂ¬ÃªÂ¸Â Ã¬ÂÂÃ­ÂÂ¸ Ã«ÂÂÃªÂ¸Â°Ã­ÂÂ Ã¬Â¤Â...`, { duration: 2500 });
+      toast.success(`저장 완료 | 구글 시트 동기화 중...`, { duration: 2500 });
     } catch (e: any) {
-      toast.error('Ã¬Â ÂÃ¬ÂÂ¥ Ã¬ÂÂ¤Ã­ÂÂ¨: ' + (e?.message ?? 'Ã¬ÂÂ Ã¬ÂÂ Ã¬ÂÂÃ«ÂÂ Ã¬ÂÂ¤Ã«Â¥Â'));
+      toast.error('저장 실패: ' + (e?.message ?? '알 수 없는 오류'));
     } finally {
       setIsSaving(false);
     }
   }, [currentDate, teamCount, notes, items, incentives, isSaving, effectiveBranchId, account]);
 
-  // Ã¬ÂÂÃ«ÂÂ Ã¬Â ÂÃ¬ÂÂ¥ Ã­ÂÂ¸Ã«Â¦Â¬ÃªÂ±Â°
+  // 자동 저장 트리거
   const scheduleAutoSave = useCallback(() => {
     setSaved(false);
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => handleSave(), 5000);
   }, [handleSave]);
 
-  // Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã­ÂÂ­Ã«ÂªÂ© Ã¬ÂÂÃ«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ¸
+  // 테이블 항목 업데이트
   const updateItemField = (localId: string, field: keyof TableItemLocal, value: string) => {
     setItems(prev => prev.map(it => it.localId === localId ? { ...it, [field]: value } : it));
     scheduleAutoSave();
   };
 
-  // Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã­ÂÂ­Ã«ÂªÂ© Ã¬ÂÂ­Ã¬Â Â
+  // 테이블 항목 삭제
   const removeItem = async (item: TableItemLocal) => {
     if (item.id) {
       try { await deleteItem.mutateAsync({ id: item.id }); } catch {}
@@ -622,13 +574,13 @@ export default function TableReport() {
     });
   };
 
-  // Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â Ã¬ÂÂÃ«ÂÂ°Ã¬ÂÂ´Ã­ÂÂ¸
+  // 인센티브 업데이트
   const updateIncentiveField = (localId: string, field: keyof IncentiveLocal, value: string | number) => {
     setIncentives(prev => prev.map(inc => inc.localId === localId ? { ...inc, [field]: value } : inc));
     scheduleAutoSave();
   };
 
-  // Ã¬ÂÂ¸Ã¬ÂÂ¼Ã­ÂÂ°Ã«Â¸Â Ã¬ÂÂ­Ã¬Â Â
+  // 인센티브 삭제
   const removeIncentive = async (inc: IncentiveLocal) => {
     if (inc.id) {
       try { await deleteIncentive.mutateAsync({ id: inc.id }); } catch {}
@@ -639,7 +591,7 @@ export default function TableReport() {
     });
   };
 
-  // Ã¬ÂÂ¬Ã¬Â§Â Ã¬Â°ÂÃ¬ÂÂ´Ã¬ÂÂ Ã«Â©ÂÃ«ÂªÂ¨ Ã¬ÂÂÃ«ÂÂ Ã¬ÂÂÃ«Â Â¥
+  // 사진 찍어서 메모 자동 입력
   const [analyzingLocalId, setAnalyzingLocalId] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const pendingAnalyzeLocalIdRef = useRef<string | null>(null);
@@ -684,17 +636,17 @@ export default function TableReport() {
       if (memo) {
         updateItemField(localId, 'memo', memo);
         if (amount) updateItemField(localId, 'amount', amount);
-        toast.success('Ã«Â¶ÂÃ¬ÂÂ Ã¬ÂÂÃ«Â£Â');
+        toast.success('분석 완료');
       }
     } catch (err: any) {
-      toast.error('Ã«Â¶ÂÃ¬ÂÂ Ã¬ÂÂ¤Ã­ÂÂ¨');
+      toast.error('분석 실패');
     } finally {
       setAnalyzingLocalId(null);
     }
   }, [analyzeOrderMemo, updateItemField, effectiveBranchId, currentDate, highlightPatterns]);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center">Ã«Â¡ÂÃ«ÂÂ© Ã¬Â¤Â...</div>;
-  if (!account) return <div className="min-h-screen flex items-center justify-center">Ã«Â¡ÂÃªÂ·Â¸Ã¬ÂÂ¸Ã¬ÂÂ´ Ã­ÂÂÃ¬ÂÂÃ­ÂÂ©Ã«ÂÂÃ«ÂÂ¤</div>;
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
+  if (!account) return <div className="min-h-screen flex items-center justify-center">로그인이 필요합니다</div>;
 
   const cashTotal = items.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
   const cardTotal = items.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
@@ -705,52 +657,52 @@ export default function TableReport() {
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageFileChange} />
       <header className="sticky top-0 z-10 bg-white border-b px-4 py-2.5 flex items-center justify-between">
         <div>
-          <div className="text-sm font-bold">Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â ÃªÂ¸Â°Ã«Â¡Â</div>
+          <div className="text-sm font-bold">테이블 기록</div>
           <div className="text-xs text-gray-500">{account.branch?.name}</div>
         </div>
         <div className="flex items-center gap-2">
-          {saved && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 size={13} />Ã¬Â ÂÃ¬ÂÂ¥Ã«ÂÂ¨</span>}
+          {saved && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 size={13} />저장됨</span>}
           <button onClick={handleSave} disabled={isSaving} className="bg-black text-white px-3 py-1.5 rounded text-xs">
-            {isSaving ? 'Ã¬Â ÂÃ¬ÂÂ¥ Ã¬Â¤Â...' : 'Ã¬Â ÂÃ¬ÂÂ¥'}
+            {isSaving ? '저장 중...' : '저장'}
           </button>
         </div>
       </header>
 
       <main className="p-4 space-y-4 max-w-lg mx-auto">
-        {/* Ã¬ÂÂÃ¬ÂÂ½ */}
+        {/* 요약 */}
         <div className="bg-white rounded-lg border p-4">
           <div className="flex justify-between items-center mb-4">
-            <span className="font-bold">Ã­ÂÂÃ¬ÂÂ</span>
+            <span className="font-bold">팀수</span>
             <div className="flex items-center gap-4">
-              <button onClick={() => setTeamCount(c => Math.max(0, c - 1))} className="w-8 h-8 rounded-full bg-gray-100">Ã¢ÂÂ</button>
+              <button onClick={() => setTeamCount(c => Math.max(0, c - 1))} className="w-8 h-8 rounded-full bg-gray-100">−</button>
               <span className="font-bold">{teamCount}</span>
               <button onClick={() => setTeamCount(c => c + 1)} className="w-8 h-8 rounded-full bg-black text-white">+</button>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div><div className="text-gray-500">Ã­ÂÂÃªÂ¸Â</div><div className="font-bold">Ã¢ÂÂ©{cashTotal.toLocaleString()}</div></div>
-            <div><div className="text-gray-500">Ã¬Â¹Â´Ã«ÂÂ</div><div className="font-bold">Ã¢ÂÂ©{cardTotal.toLocaleString()}</div></div>
-            <div><div className="text-gray-500">Ã­ÂÂ©ÃªÂ³Â</div><div className="font-bold">Ã¢ÂÂ©{totalAll.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">현금</div><div className="font-bold">₩{cashTotal.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">카드</div><div className="font-bold">₩{cardTotal.toLocaleString()}</div></div>
+            <div><div className="text-gray-500">합계</div><div className="font-bold">₩{totalAll.toLocaleString()}</div></div>
           </div>
         </div>
 
-        {/* Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â Ã«ÂªÂ©Ã«Â¡Â */}
+        {/* 테이블 목록 */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="font-bold">Ã¢ÂÂ  Ã­ÂÂÃ¬ÂÂ´Ã«Â¸Â ÃªÂ¸Â°Ã«Â¡Â</span>
-            <button onClick={() => setItems([...items, emptyItem()])} className="text-xs border px-2 py-1 rounded">+ Ã¬Â¶ÂÃªÂ°Â</button>
+            <span className="font-bold">■ 테이블 기록</span>
+            <button onClick={() => setItems([...items, emptyItem()])} className="text-xs border px-2 py-1 rounded">+ 추가</button>
           </div>
           {items.map((item, idx) => (
             <div key={item.localId} className="bg-white rounded-lg border p-3 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400">{idx + 1}</span>
-                <input value={item.tableNumber} onChange={e => updateItemField(item.localId, 'tableNumber', e.target.value)} placeholder="Ã«Â²ÂÃ­ÂÂ¸" className="text-sm font-bold outline-none" />
+                <input value={item.tableNumber} onChange={e => updateItemField(item.localId, 'tableNumber', e.target.value)} placeholder="번호" className="text-sm font-bold outline-none" />
                 <button onClick={() => removeItem(item)}><Trash2 size={14} className="text-red-400" /></button>
               </div>
               <div className="flex gap-2">
                 <AmountInput value={item.amount} onChange={v => updateItemField(item.localId, 'amount', v)} className="flex-1 text-right font-bold" />
                 <button onClick={() => updateItemField(item.localId, 'paymentMethod', item.paymentMethod === 'card' ? 'cash' : 'card')} className="text-xs border px-2 py-1 rounded">
-                  {item.paymentMethod === 'card' ? 'Ã¬Â¹Â´Ã«ÂÂ' : 'Ã­ÂÂÃªÂ¸Â'}
+                  {item.paymentMethod === 'card' ? '카드' : '현금'}
                 </button>
               </div>
               <MemoEditor value={item.memo} onChange={v => updateItemField(item.localId, 'memo', v)} />
