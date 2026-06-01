@@ -6775,9 +6775,16 @@ async function setupVite(app, server) {
     server: serverOptions,
     appType: "custom"
   });
+  const distPath = path2.resolve(import.meta.dirname, "../..", "dist", "public");
+  if (fs.existsSync(distPath)) {
+    app.use("/assets", express.static(path2.join(distPath, "assets")));
+  }
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+    if (req.path.startsWith("/assets/") || req.path.startsWith("/manifest") || req.path.includes(".")) {
+      return next();
+    }
     try {
       const clientTemplate = path2.resolve(
         import.meta.dirname,
@@ -6808,7 +6815,10 @@ function serveStatic(app) {
     );
   }
   app.use(express.static(distPath));
-  app.use("*", (_req, res) => {
+  app.use("*", (req, res) => {
+    if (req.path.startsWith("/assets/") || req.path.startsWith("/manifest") || req.path.includes(".")) {
+      return res.status(404).end();
+    }
     res.setHeader("Content-Type", "text/html; charset=UTF-8");
     res.sendFile(path2.resolve(distPath, "index.html"));
   });
