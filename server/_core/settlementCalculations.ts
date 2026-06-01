@@ -291,7 +291,7 @@ export async function calculateMonthlySummary(
   const db = await getDb();
   const zero = {
     totalRevenue: 0, commissionExpense: 0, rentExpense: 0,
-    managementFeeExpense: 0, staffWageExpense: 0, partTimeWageExpense: 0,
+    managementFeeExpense: 0, staffWageExpense: 0, managerWageExpense: 0, partTimeWageExpense: 0,
     liquorCostExpense: 0, staffDrinkExpense: 0, otherExpense: 0,
     totalExpenses: 0, netProfit: 0, ratios: {},
   };
@@ -309,7 +309,7 @@ export async function calculateMonthlySummary(
   );
 
   let totalRevenue = 0, commissionExpense = 0, rentExpense = 0;
-  let managementFeeExpense = 0, staffWageExpense = 0, partTimeWageExpense = 0;
+  let managementFeeExpense = 0, staffWageExpense = 0, managerWageExpense = 0, partTimeWageExpense = 0;
   let liquorCostExpense = 0, staffDrinkExpense = 0, otherExpense = 0;
   let totalExpenses = 0, netProfit = 0;
 
@@ -319,6 +319,7 @@ export async function calculateMonthlySummary(
     rentExpense       += Number(record.rentExpense || 0);
     managementFeeExpense += Number(record.managementFeeExpense || 0);
     staffWageExpense  += Number(record.staffWageExpense || 0);
+    managerWageExpense += Number((record as any).managerWageExpense || 0);
     partTimeWageExpense += Number(record.partTimeWageExpense || 0);
     liquorCostExpense += Number(record.liquorCostExpense || 0);
     staffDrinkExpense += Number(record.staffDrinkExpense || 0);
@@ -333,6 +334,7 @@ export async function calculateMonthlySummary(
     ratios.rent          = Math.round((rentExpense / totalRevenue) * 100);
     ratios.managementFee = Math.round((managementFeeExpense / totalRevenue) * 100);
     ratios.staffWage     = Math.round((staffWageExpense / totalRevenue) * 100);
+    ratios.managerWage   = Math.round((managerWageExpense / totalRevenue) * 100);
     ratios.partTimeWage  = Math.round((partTimeWageExpense / totalRevenue) * 100);
     ratios.liquorCost    = Math.round((liquorCostExpense / totalRevenue) * 100);
     ratios.staffDrink    = Math.round((staffDrinkExpense / totalRevenue) * 100);
@@ -342,7 +344,7 @@ export async function calculateMonthlySummary(
 
   return {
     totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
-    staffWageExpense, partTimeWageExpense, liquorCostExpense, staffDrinkExpense,
+    staffWageExpense, managerWageExpense, partTimeWageExpense, liquorCostExpense, staffDrinkExpense,
     otherExpense, totalExpenses, netProfit, ratios,
   };
 }
