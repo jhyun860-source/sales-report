@@ -3241,11 +3241,12 @@ export const appRouter = router({
             : [];
           const staffCount = (staffRows ?? []).filter((i: any) => i.staffType === 'staff').length;
           const partTimeCount = (staffRows ?? []).filter((i: any) => i.staffType === 'parttime').length;
+          const managerCount2 = (staffRows ?? []).filter((i: any) => i.staffType === 'manager').length;
           const cash = parseInt(input.cash || '0') || 0;
           const card = parseInt(input.card || '0') || 0;
           const settlement = await calculateDailySettlement(
             input.branchId, input.date, cash, card,
-            staffCount, partTimeCount, input.expenses, tableReportId, managerCount
+            staffCount, partTimeCount, input.expenses, tableReportId, managerCount2
           );
           await saveDailySettlementRecord(input.branchId, input.date, settlement);
         } catch (e) { console.error('[정산 자동 계산 오류]', e); }
