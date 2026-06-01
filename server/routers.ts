@@ -3087,6 +3087,22 @@ export const appRouter = router({
 
   // 매출 기록 API (storeAccount 기반)
   storeSales: router({
+    getBranches: publicProcedure
+      .query(async ({ ctx }) => {
+        const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
+        if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+        const account = await getStoreAccountById(payload.accountId);
+        if (!account) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        if (account.role === 'admin') {
+          return await db.select().from(branches).orderBy(branches.name);
+        }
+        if (account.branchId) {
+          return await db.select().from(branches).where(eq(branches.id, account.branchId));
+        }
+        return [];
+      }),
     getRecord: publicProcedure
       .input(z.object({ branchId: z.number(), date: z.string() }))
       .query(async ({ ctx, input }) => {
