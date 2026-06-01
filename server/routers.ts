@@ -3978,7 +3978,14 @@ export const appRouter = router({
           if (existing) {
             await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
           } else {
-            await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
+            // [버그수정] 삭제(hidden)된 제품은 재고 row 재생성 금지
+            // hidden 여부 확인 후 숨겨진 제품이면 INSERT 스킵
+            const hiddenCheck: any = await db.execute(sql\`SELECT id FROM liquorHiddenItems WHERE branchId = \${input.branchId} AND liquorItemId = \${row.liquorItemId} LIMIT 1\`);
+            const hiddenRows = Array.isArray(hiddenCheck) ? (Array.isArray(hiddenCheck[0]) ? hiddenCheck[0] : hiddenCheck) : ((hiddenCheck as any)?.rows ?? []);
+            const isHidden = Array.isArray(hiddenRows) && hiddenRows.length > 0;
+            if (!isHidden) {
+              await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
+            }
           }
         }
         return { success: true };
@@ -4189,8 +4196,17 @@ export const appRouter = router({
         const [existing] = await db.select().from(liquorInventories).where(and(eq(liquorInventories.branchId, input.branchId), eq(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
         const prevStock = Number(existing?.currentStock || 0);
         const diff = input.currentStock - prevStock;
-        if (existing) await db.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq(liquorInventories.id, existing.id));
-        else await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
+        if (existing) {
+          await db.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq(liquorInventories.id, existing.id));
+        } else {
+          // [버그수정] 삭제(hidden)된 제품은 재고 row 재생성 금지
+          const hiddenCheck2: any = await db.execute(sql\`SELECT id FROM liquorHiddenItems WHERE branchId = \${input.branchId} AND liquorItemId = \${input.liquorItemId} LIMIT 1\`);
+          const hiddenRows2 = Array.isArray(hiddenCheck2) ? (Array.isArray(hiddenCheck2[0]) ? hiddenCheck2[0] : hiddenCheck2) : ((hiddenCheck2 as any)?.rows ?? []);
+          const isHidden2 = Array.isArray(hiddenRows2) && hiddenRows2.length > 0;
+          if (!isHidden2) {
+            await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
+          }
+        }
         if (diff !== 0) {
           const unitCost = Number(item.unitCost || 0);
           await db.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: todayKstString(), type: 'ADJUST', quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || `재고수정: ${prevStock}개 → ${input.currentStock}개 (${diff > 0 ? '+' : ''}${diff})`, createdBy: account.id });
