@@ -28,13 +28,13 @@ function formatWon(n: number) {
   if (n === 0) return '0';
   const abs = Math.abs(n);
   const formatted = abs >= 10000
-    ? Math.round(abs / 1000) + '\ucc9c'
+    ? Math.round(abs / 1000) + '천'
     : abs.toLocaleString();
   return (n < 0 ? '-' : '') + formatted;
 }
 
 function formatWonFull(n: number) {
-  return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString() + '\uc6d0';
+  return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString() + '원';
 }
 
 export default function SettlementDashboard() {
@@ -93,9 +93,9 @@ export default function SettlementDashboard() {
     return (allBranchesToday as any[]).reduce((sum: number, b: any) => sum + Number(b.netProfit || 0), 0);
   }, [allBranchesToday]);
 
-  if (authLoading) return <div className="flex items-center justify-center min-h-screen text-gray-500">\ub85c\ub529 \uc911...</div>;
+  if (authLoading) return <div className="flex items-center justify-center min-h-screen text-gray-500">로딩 중...</div>;
   if (!user || user.role !== 'admin') {
-    return <div className="flex items-center justify-center min-h-screen text-gray-500">\uad00\ub9ac\uc790\ub9cc \uc811\uadfc \uac00\ub2a5\ud569\ub2c8\ub2e4.</div>;
+    return <div className="flex items-center justify-center min-h-screen text-gray-500">관리자만 접근 가능합니다.</div>;
   }
 
   const selectedBranch = (branches as any[]).find((b: any) => b.id === selectedBranchId);
@@ -107,17 +107,17 @@ export default function SettlementDashboard() {
           <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700">
             <ChevronLeft size={20} />
           </button>
-          <h1 className="text-lg font-bold text-gray-800">\uc815\uc0b0 \uad00\ub9ac</h1>
+          <h1 className="text-lg font-bold text-gray-800">정산 관리</h1>
         </div>
         <button onClick={logout} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
           <LogOut size={16} />
-          \ub85c\uadf8\uc544\uc6c3
+          로그아웃
         </button>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-3">\uc624\ub298 \uc804 \uc9c0\uc810 \uc21c\uc218\uc775</p>
+          <p className="text-xs text-gray-500 mb-3">오늘 전 지점 순수익</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {(allBranchesToday as any[]).map((b: any) => (
               <div key={b.branchId} className="text-center">
@@ -129,7 +129,7 @@ export default function SettlementDashboard() {
             ))}
           </div>
           <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
-            <span className="text-xs text-gray-500">\ud569\uacc4</span>
+            <span className="text-xs text-gray-500">합계</span>
             <span className={`text-base font-bold ${todayAllTotal >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
               {formatWonFull(todayAllTotal)}
             </span>
@@ -137,7 +137,7 @@ export default function SettlementDashboard() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-2">\uc9c0\uc810 \uc120\ud0dd</p>
+          <p className="text-xs text-gray-500 mb-2">지점 선택</p>
           <div className="flex flex-wrap gap-2">
             {(branches as any[]).map((b: any) => (
               <button
@@ -164,7 +164,7 @@ export default function SettlementDashboard() {
               <ChevronLeft size={18} />
             </button>
             <h2 className="text-sm font-bold text-gray-800">
-              {selectedYear}\ub144 {selectedMonth}\uc6d4 \u2014 {selectedBranch?.name || ''}
+              {selectedYear}년 {selectedMonth}월 — {selectedBranch?.name || ''}
             </h2>
             <button
               onClick={() => { const {year: y, month: m} = moveMonth(selectedYear, selectedMonth, 1); setSelectedYear(y); setSelectedMonth(m); }}
@@ -176,11 +176,11 @@ export default function SettlementDashboard() {
 
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">\uc6d4 \uc2d9\ub9e4\uc635</p>
+              <p className="text-xs text-gray-500">월 싙매옵</p>
               <p className="text-base font-bold text-gray-800">{formatWonFull(monthlyTotal.totalRevenue)}</p>
             </div>
             <div className={`rounded-lg p-3 ${monthlyTotal.netProfit >= 0 ? 'bg-blue-50' : 'bg-red-50'}`}>
-              <p className="text-xs text-gray-500">\uc6d4 \uc21c\uc218\uc775</p>
+              <p className="text-xs text-gray-500">월 순수익</p>
               <p className={`text-base font-bold ${monthlyTotal.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                 {formatWonFull(monthlyTotal.netProfit)}
               </p>
@@ -189,15 +189,15 @@ export default function SettlementDashboard() {
 
           <div className="space-y-1 text-sm border-t border-gray-100 pt-3">
             {[
-              { label: '\uc218\uc218\ub8cc/\uc8fc\ubc29', value: monthlyTotal.commissionExpense },
-              { label: '\uc784\ub300\ub8cc', value: monthlyTotal.rentExpense },
-              { label: '\uad00\ub9ac\ube44', value: monthlyTotal.managementFeeExpense },
-              { label: '\uc5ec\uc9c1\uc6d0 \uc778\uac74\ube44', value: monthlyTotal.staffWageExpense },
-              { label: '\uc810\uc7a5 \uc778\uac74\ube44', value: monthlyTotal.managerWageExpense },
-              { label: '\uc54c\ubc14 \uc778\uac74\ube44', value: monthlyTotal.partTimeWageExpense },
-              { label: '\uc8fc\ub958\ub2e8\uac00', value: monthlyTotal.liquorCostExpense },
-              { label: '\uc2a4\ud0ed\uc74c\ub8cc', value: monthlyTotal.staffDrinkExpense },
-              { label: '\uae30\ud0c0', value: monthlyTotal.otherExpense },
+              { label: '수수료/주방', value: monthlyTotal.commissionExpense },
+              { label: '임대료', value: monthlyTotal.rentExpense },
+              { label: '관리비', value: monthlyTotal.managementFeeExpense },
+              { label: '여직원 인건비', value: monthlyTotal.staffWageExpense },
+              { label: '점장 인건비', value: monthlyTotal.managerWageExpense },
+              { label: '알바 인건비', value: monthlyTotal.partTimeWageExpense },
+              { label: '주류단가', value: monthlyTotal.liquorCostExpense },
+              { label: '스탭음료', value: monthlyTotal.staffDrinkExpense },
+              { label: '기타', value: monthlyTotal.otherExpense },
             ].filter(item => item.value > 0).map(item => (
               <div key={item.label} className="flex justify-between text-gray-600">
                 <span>{item.label}</span>
@@ -209,24 +209,24 @@ export default function SettlementDashboard() {
 
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-800">\uc77c\ubcc4 \uc815\uc0b0</h3>
+            <h3 className="text-sm font-bold text-gray-800">일별 정산</h3>
           </div>
           {settlementsLoading ? (
-            <div className="p-6 text-center text-gray-400 text-sm">\ubd88\ub7ec\uc624\ub294 \uc911...</div>
+            <div className="p-6 text-center text-gray-400 text-sm">불러오는 중...</div>
           ) : (settlements as any[]).length === 0 ? (
-            <div className="p-6 text-center text-gray-400 text-sm">\ub370\uc774\ud130 \uc5c6\uc74c</div>
+            <div className="p-6 text-center text-gray-400 text-sm">데이터 없음</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-2 text-left text-gray-500 font-medium">\ub0a0\uc9dc</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">\uc2d9\ub9e4\uc635</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">\uc218\uc218\ub8cc</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">\uc784\ub300\ub8cc</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">\uc778\uac74\ube44</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">\uc8fc\ub958</th>
-                    <th className="px-2 py-2 text-right font-bold text-gray-700">\uc21c\uc218\uc775</th>
+                    <th className="px-3 py-2 text-left text-gray-500 font-medium">날짜</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium">싙매옵</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium">수수료</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium">임대료</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium">인건비</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium">주류</th>
+                    <th className="px-2 py-2 text-right font-bold text-gray-700">순수익</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -250,7 +250,7 @@ export default function SettlementDashboard() {
                 </tbody>
                 <tfoot className="bg-gray-50 border-t-2 border-gray-200">
                   <tr>
-                    <td className="px-3 py-2 font-bold text-gray-700">\ud569\uacc4</td>
+                    <td className="px-3 py-2 font-bold text-gray-700">합계</td>
                     <td className="px-2 py-2 text-right font-bold text-gray-700">{formatWon(monthlyTotal.totalRevenue)}</td>
                     <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.commissionExpense)}</td>
                     <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.rentExpense)}</td>
