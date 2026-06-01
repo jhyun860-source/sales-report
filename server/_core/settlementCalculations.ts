@@ -230,17 +230,9 @@ export async function calculateDailySettlement(
   const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
   const staffWageExpense = staffCount * staffDailyWage;
 
-  // 6. 점장 인건비
-  // managerCount > 0 이면 테이블 보고에 점장 출근 기록 있음 → 점장 일급 반영
-  // managerCount 없으면 hasManager 설정 기반으로 월~금 자동 계산 (기존 로직 유지)
-  const hasManager = config?.hasManager ?? Number(branchData[0].hasManager ?? 1) === 1;
+  // 6. 점장 인건비 - 테이블 기록에 직접 추가했을 때만 반영 (자동 계산 없음)
   const managerDailyWage = config?.managerDailyWage ?? 0;
-  const dateObj = new Date(date);
-  const dayOfWeek = dateObj.getDay();
-  const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
-  const managerWageExpense = managerCount > 0
-    ? managerCount * managerDailyWage
-    : (hasManager && isManagerWorkday ? managerDailyWage : 0);
+  const managerWageExpense = managerCount > 0 ? managerCount * managerDailyWage : 0;
 
   // 7. 알바 인건비 (일급)
   const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 20000);
