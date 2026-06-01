@@ -1579,12 +1579,8 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const managementFeeExpense = config?.managementFee ?? Number(branchData[0].managementFee || 0);
   const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
   const staffWageExpense = staffCount * staffDailyWage;
-  const hasManager = config?.hasManager ?? Number(branchData[0].hasManager ?? 1) === 1;
   const managerDailyWage = config?.managerDailyWage ?? 0;
-  const dateObj = new Date(date);
-  const dayOfWeek = dateObj.getDay();
-  const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
-  const managerWageExpense = managerCount > 0 ? managerCount * managerDailyWage : hasManager && isManagerWorkday ? managerDailyWage : 0;
+  const managerWageExpense = managerCount > 0 ? managerCount * managerDailyWage : 0;
   const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 2e4);
   const partTimeWageExpense = partTimeCount * partTimeDailyWage;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
