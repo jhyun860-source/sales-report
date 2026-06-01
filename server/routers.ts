@@ -3229,7 +3229,7 @@ export const appRouter = router({
           const card = parseInt(input.card || '0') || 0;
           const settlement = await calculateDailySettlement(
             input.branchId, input.date, cash, card,
-            staffCount, partTimeCount, input.expenses, tableReportId
+            staffCount, partTimeCount, input.expenses, tableReportId, managerCount
           );
           await saveDailySettlementRecord(input.branchId, input.date, settlement);
         } catch (e) { console.error('[정산 자동 계산 오류]', e); }
