@@ -72,6 +72,8 @@ export default function SettlementDashboard() {
     const result = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayOfWeek = new Date(dateStr + 'T12:00:00').getDay();
+      if (dayOfWeek === 0) continue; // 일요일 제외
       if (settlementMap.has(dateStr)) {
         result.push(settlementMap.get(dateStr));
       } else {
