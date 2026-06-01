@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "76d625c7-a677-459f-8599-edd40dd69bf6",
-  "prevId": "25c4b0d8-a5d5-4ead-a36c-e336506a8abf",
+  "id": "8485db8b-a78b-44cd-a338-d3a37e56dfc2",
+  "prevId": "28ec0e2d-a477-4c5f-a0b4-e08f07c9e831",
   "tables": {
     "branchManagers": {
       "name": "branchManagers",
@@ -97,78 +97,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "monthlyRent": {
-          "name": "monthlyRent",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "managementFee": {
-          "name": "managementFee",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "staffDailyWage": {
-          "name": "staffDailyWage",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "partTimeHourlyWage": {
-          "name": "partTimeHourlyWage",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "commissionRate": {
-          "name": "commissionRate",
-          "type": "decimal(5,4)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0.05'"
-        },
-        "hasManager": {
-          "name": "hasManager",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 1
-        },
-        "glassUnitPrice": {
-          "name": "glassUnitPrice",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'5000'"
-        },
-        "bottleUnitPrice": {
-          "name": "bottleUnitPrice",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'10000'"
-        },
-        "beerBottleUnitPrice": {
-          "name": "beerBottleUnitPrice",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'3000'"
         },
         "createdAt": {
           "name": "createdAt",
@@ -331,110 +259,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "totalRevenue": {
-          "name": "totalRevenue",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "commissionExpense": {
-          "name": "commissionExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "rentExpense": {
-          "name": "rentExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "managementFeeExpense": {
-          "name": "managementFeeExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "staffWageExpense": {
-          "name": "staffWageExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "partTimeWageExpense": {
-          "name": "partTimeWageExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "liquorCostExpense": {
-          "name": "liquorCostExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "staffDrinkExpense": {
-          "name": "staffDrinkExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "otherExpense": {
-          "name": "otherExpense",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "totalExpenses": {
-          "name": "totalExpenses",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "netProfit": {
-          "name": "netProfit",
-          "type": "decimal(15,0)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "staffCount": {
-          "name": "staffCount",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "partTimeCount": {
-          "name": "partTimeCount",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
         },
         "createdAt": {
           "name": "createdAt",

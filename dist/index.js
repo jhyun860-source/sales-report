@@ -1467,12 +1467,12 @@ var BRANCH_CONFIG = {
   },
   "\uBB38\uC8152\uD638\uC810": {
     monthlyRent: 45e5,
-    managementFee: 3e4,
+    managementFee: 0,
     staffDailyWage: 136363,
     partTimeDailyWage: 2e4,
     commissionRate: 0.17,
-    hasManager: false,
-    managerDailyWage: 0,
+    hasManager: true,
+    managerDailyWage: 181818,
     glassUnitPrice: 5e3,
     bottleUnitPrice: 1e4,
     beerBottleUnitPrice: 3e3
@@ -1499,7 +1499,8 @@ async function getStaffCounts(tableReportId) {
   const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
   const staffCount = incentives.filter((i) => i.staffType === "staff").length;
   const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
-  return { staffCount, partTimeCount };
+  const managerCount2 = incentives.filter((i) => i.staffType === "manager").length;
+  return { staffCount, partTimeCount, managerCount: managerCount2 };
 }
 async function calculateStaffDrinkExpense(tableReportId, branchName) {
   const db2 = await getDb();
@@ -1533,7 +1534,7 @@ function calculateOtherExpenses(expenses) {
   if (!Array.isArray(expenses)) return 0;
   return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 }
-async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId) {
+async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount2 = 0) {
   const zero = {
     totalRevenue: 0,
     commissionExpense: 0,
@@ -1568,7 +1569,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const dateObj = new Date(date);
   const dayOfWeek = dateObj.getDay();
   const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
-  const managerWageExpense = hasManager && isManagerWorkday ? managerDailyWage : 0;
+  const managerWageExpense = managerCount2 > 0 ? managerCount2 * managerDailyWage : hasManager && isManagerWorkday ? managerDailyWage : 0;
   const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 2e4);
   const partTimeWageExpense = partTimeCount * partTimeDailyWage;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
@@ -1806,7 +1807,7 @@ var settlementRouter = router({
     if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
     const tableReport = await db2.select().from(tableReports).where(and4(eq4(tableReports.branchId, input.branchId), eq4(tableReports.date, input.date))).limit(1);
     const tableReportId = tableReport && tableReport.length > 0 ? tableReport[0].id : null;
-    const { staffCount, partTimeCount } = tableReportId ? await getStaffCounts(tableReportId) : { staffCount: 0, partTimeCount: 0 };
+    const { staffCount, partTimeCount, managerCount: managerCount2 } = tableReportId ? await getStaffCounts(tableReportId) : { staffCount: 0, partTimeCount: 0, managerCount: 0 };
     const cash = Number(input.cash || 0);
     const card = Number(input.card || 0);
     const [year, month] = input.date.split("-").map(Number);
@@ -1818,7 +1819,8 @@ var settlementRouter = router({
       staffCount,
       partTimeCount,
       input.expenses,
-      tableReportId
+      tableReportId,
+      managerCount2
     );
     const existing = await db2.select().from(dailySalesRecords).where(and4(eq4(dailySalesRecords.branchId, input.branchId), eq4(dailySalesRecords.date, input.date))).limit(1);
     let result;
@@ -5064,7 +5066,8 @@ var appRouter = router({
           staffCount,
           partTimeCount,
           input.expenses,
-          tableReportId
+          tableReportId,
+          managerCount
         );
         await saveDailySettlementRecord(input.branchId, input.date, settlement);
       } catch (e) {
