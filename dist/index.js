@@ -4920,6 +4920,21 @@ var appRouter = router({
   }),
   // 매출 기록 API (storeAccount 기반)
   storeSales: router({
+    getBranches: publicProcedure.query(async ({ ctx }) => {
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const account = await getStoreAccountById(payload.accountId);
+      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED" });
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (account.role === "admin") {
+        return await db2.select().from(branches).orderBy(branches.name);
+      }
+      if (account.branchId) {
+        return await db2.select().from(branches).where(eq5(branches.id, account.branchId));
+      }
+      return [];
+    }),
     getRecord: publicProcedure.input(z3.object({ branchId: z3.number(), date: z3.string() })).query(async ({ ctx, input }) => {
       const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
