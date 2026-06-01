@@ -6734,13 +6734,7 @@ var vite_config_default = defineConfig({
   publicDir: path.resolve(import.meta.dirname, "client", "public"),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true,
-    cssCodeSplit: false,
-    rollupOptions: {
-      output: {
-        manualChunks: void 0
-      }
-    }
+    emptyOutDir: true
   },
   server: {
     host: true,
@@ -6751,9 +6745,7 @@ var vite_config_default = defineConfig({
       ".manuscomputer.ai",
       ".manusvm.computer",
       "localhost",
-      "127.0.0.1",
-      ".railway.app",
-      ".up.railway.app"
+      "127.0.0.1"
     ],
     fs: {
       strict: true,
