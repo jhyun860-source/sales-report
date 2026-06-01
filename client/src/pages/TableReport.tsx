@@ -1115,10 +1115,10 @@ export default function TableReport() {
                       </div>
                     </div>
                   ))}
-                </div>
+                </div>}
 
                 {/* 3행: 영업인센 금액 - 점장은 미표시 */}
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}`, display: inc.staffType === 'manager' ? 'none' : undefined }}>
+                {inc.staffType !== 'manager' && <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
                   <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
                   <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
                   <AmountInput
@@ -1127,7 +1127,7 @@ export default function TableReport() {
                     placeholder="금액 입력"
                     className="flex-1 text-sm font-semibold"
                   />
-                </div>
+                </div>}
 
                 {/* 4행: 근무 시간 - 점장은 미표시 */}
                 {inc.staffType !== 'manager' && <div className="px-3 py-2 space-y-1.5">
