@@ -5821,12 +5821,12 @@ var appRouter = router({
       const staffWeeklyMap = {};
       const staffTotalMinutes = {};
       for (const row of detailRows) {
-        const name = row.staffName;
+        const key = `${row.staffName}__${row.staffType}`;
         const mins = calcWorkMinutes(row.workStart, row.workEnd);
-        if (!staffWeeklyMap[name]) staffWeeklyMap[name] = {};
+        if (!staffWeeklyMap[key]) staffWeeklyMap[key] = {};
         const weekLabel = getWeekLabel(row.date);
-        staffWeeklyMap[name][weekLabel] = (staffWeeklyMap[name][weekLabel] || 0) + mins;
-        staffTotalMinutes[name] = (staffTotalMinutes[name] || 0) + mins;
+        staffWeeklyMap[key][weekLabel] = (staffWeeklyMap[key][weekLabel] || 0) + mins;
+        staffTotalMinutes[key] = (staffTotalMinutes[key] || 0) + mins;
       }
       const GLASS_PRICE = 5e3;
       const BOTTLE_PRICE = 1e4;
@@ -5839,13 +5839,14 @@ var appRouter = router({
       });
       const result = rows.map((row) => {
         const name = row.staffName;
+        const key = `${name}__${row.staffType}`;
         const glass = Number(row.totalGlass) || 0;
         const bottle = Number(row.totalBottle) || 0;
         const beer = Number(row.totalBeerBottle) || 0;
         const salesInc = Number(row.totalSalesIncentive) || 0;
         const incentiveAmount = glass * GLASS_PRICE + bottle * BOTTLE_PRICE + beer * BEER_PRICE + salesInc;
-        const totalMins = staffTotalMinutes[name] || 0;
-        const weeklyHours = staffWeeklyMap[name] || {};
+        const totalMins = staffTotalMinutes[key] || 0;
+        const weeklyHours = staffWeeklyMap[key] || {};
         const weekCount = Object.keys(weeklyHours).length || 1;
         const avgWeeklyIncentive = Math.round(incentiveAmount / weekCount);
         const workDays = Number(row.workDays) || 0;
