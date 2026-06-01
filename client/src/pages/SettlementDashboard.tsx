@@ -75,21 +75,27 @@ export default function SettlementDashboard() {
       if (settlementMap.has(dateStr)) {
         result.push(settlementMap.get(dateStr));
       } else {
-        // DB에 없는 날 - 임대료만 있는 빈 레코드
+        // DB에 없는 날 - 임대료/관리비는 나가므로 순수익 반영
+        // 기존 데이터에서 임대료 추출 (월 임대료는 고정이므로 첫 번째 데이터 참조)
+        const refRecord = Array.from(settlementMap.values())[0];
+        const dailyRent = refRecord ? Number(refRecord.rentExpense || 0) : 0;
+        const dailyMgmt = refRecord ? Number(refRecord.managementFeeExpense || 0) : 0;
+        const emptyTotalExpenses = dailyRent + dailyMgmt;
+        const emptyNetProfit = -emptyTotalExpenses;
         result.push({
           date: dateStr,
           totalRevenue: '0',
           commissionExpense: '0',
-          rentExpense: '0',
-          managementFeeExpense: '0',
+          rentExpense: String(dailyRent),
+          managementFeeExpense: String(dailyMgmt),
           staffWageExpense: '0',
           managerWageExpense: '0',
           partTimeWageExpense: '0',
           liquorCostExpense: '0',
           staffDrinkExpense: '0',
           otherExpense: '0',
-          totalExpenses: '0',
-          netProfit: '0',
+          totalExpenses: String(emptyTotalExpenses),
+          netProfit: String(emptyNetProfit),
           _empty: true,
         });
       }
@@ -98,7 +104,7 @@ export default function SettlementDashboard() {
   }, [settlements, selectedYear, selectedMonth]);
 
   const monthlyTotal = useMemo(() => {
-    return (settlements as any[]).reduce((acc: any, s: any) => ({
+    return (allDaysSettlements as any[]).reduce((acc: any, s: any) => ({
       totalRevenue: acc.totalRevenue + Number(s.totalRevenue || 0),
       commissionExpense: acc.commissionExpense + Number(s.commissionExpense || 0),
       rentExpense: acc.rentExpense + Number(s.rentExpense || 0),
