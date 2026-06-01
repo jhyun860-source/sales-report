@@ -1514,8 +1514,8 @@ async function getStaffCounts(tableReportId) {
   const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
   const staffCount = incentives.filter((i) => i.staffType === "staff").length;
   const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
-  const managerCount2 = incentives.filter((i) => i.staffType === "manager").length;
-  return { staffCount, partTimeCount, managerCount: managerCount2 };
+  const managerCount = incentives.filter((i) => i.staffType === "manager").length;
+  return { staffCount, partTimeCount, managerCount };
 }
 async function calculateStaffDrinkExpense(tableReportId, branchName) {
   const db2 = await getDb();
@@ -1549,7 +1549,7 @@ function calculateOtherExpenses(expenses) {
   if (!Array.isArray(expenses)) return 0;
   return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 }
-async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount2 = 0) {
+async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount = 0) {
   const zero = {
     totalRevenue: 0,
     commissionExpense: 0,
@@ -1584,7 +1584,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const dateObj = new Date(date);
   const dayOfWeek = dateObj.getDay();
   const isManagerWorkday = dayOfWeek >= 1 && dayOfWeek <= 5;
-  const managerWageExpense = managerCount2 > 0 ? managerCount2 * managerDailyWage : hasManager && isManagerWorkday ? managerDailyWage : 0;
+  const managerWageExpense = managerCount > 0 ? managerCount * managerDailyWage : hasManager && isManagerWorkday ? managerDailyWage : 0;
   const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 2e4);
   const partTimeWageExpense = partTimeCount * partTimeDailyWage;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
@@ -1822,7 +1822,7 @@ var settlementRouter = router({
     if (!db2) throw new TRPCError3({ code: "INTERNAL_SERVER_ERROR", message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" });
     const tableReport = await db2.select().from(tableReports).where(and4(eq4(tableReports.branchId, input.branchId), eq4(tableReports.date, input.date))).limit(1);
     const tableReportId = tableReport && tableReport.length > 0 ? tableReport[0].id : null;
-    const { staffCount, partTimeCount, managerCount: managerCount2 } = tableReportId ? await getStaffCounts(tableReportId) : { staffCount: 0, partTimeCount: 0, managerCount: 0 };
+    const { staffCount, partTimeCount, managerCount } = tableReportId ? await getStaffCounts(tableReportId) : { staffCount: 0, partTimeCount: 0, managerCount: 0 };
     const cash = Number(input.cash || 0);
     const card = Number(input.card || 0);
     const [year, month] = input.date.split("-").map(Number);
@@ -1835,7 +1835,7 @@ var settlementRouter = router({
       partTimeCount,
       input.expenses,
       tableReportId,
-      managerCount2
+      managerCount
     );
     const existing = await db2.select().from(dailySalesRecords).where(and4(eq4(dailySalesRecords.branchId, input.branchId), eq4(dailySalesRecords.date, input.date))).limit(1);
     let result;
@@ -5086,6 +5086,7 @@ var appRouter = router({
         const staffRows = tableReportId ? await db?.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, tableReportId)) : [];
         const staffCount = (staffRows ?? []).filter((i) => i.staffType === "staff").length;
         const partTimeCount = (staffRows ?? []).filter((i) => i.staffType === "parttime").length;
+        const managerCount2 = (staffRows ?? []).filter((i) => i.staffType === "manager").length;
         const cash = parseInt(input.cash || "0") || 0;
         const card = parseInt(input.card || "0") || 0;
         const settlement = await calculateDailySettlement(
@@ -5097,7 +5098,7 @@ var appRouter = router({
           partTimeCount,
           input.expenses,
           tableReportId,
-          managerCount
+          managerCount2
         );
         await saveDailySettlementRecord(input.branchId, input.date, settlement);
       } catch (e) {
@@ -6043,6 +6044,33 @@ var appRouter = router({
       } catch (e) {
         console.error("[cascadeUpdatePosAmounts \uC624\uB958]", e);
       }
+      try {
+        const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq5(dailySalesRecords.branchId, effectiveBranchId), eq5(dailySalesRecords.date, input.date))).limit(1);
+        if (salesRec && salesRec.length > 0) {
+          const rec = salesRec[0];
+          const allInc = await db2?.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, reportId));
+          const sc = (allInc ?? []).filter((i) => i.staffType === "staff").length;
+          const pc = (allInc ?? []).filter((i) => i.staffType === "parttime").length;
+          const mc = (allInc ?? []).filter((i) => i.staffType === "manager").length;
+          const cash = parseInt(rec.cash || "0") || 0;
+          const card = parseInt(rec.card || "0") || 0;
+          const expenses = Array.isArray(rec.expenses) ? rec.expenses : [];
+          const settlement = await calculateDailySettlement(
+            effectiveBranchId,
+            input.date,
+            cash,
+            card,
+            sc,
+            pc,
+            expenses,
+            reportId,
+            mc
+          );
+          await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
+        }
+      } catch (e) {
+        console.error("[\uD14C\uC774\uBE14 \uC800\uC7A5 \uD6C4 \uC815\uC0B0 \uC7AC\uACC4\uC0B0 \uC624\uB958]", e);
+      }
       return { id: reportId, cashSum, cardSum };
     }),
     // 테이블 항목 추가
@@ -6376,6 +6404,33 @@ var appRouter = router({
         await cascadeUpdatePosAmounts(effectiveBranchId, input.date);
       } catch (e) {
         console.error("[cascadeUpdatePosAmounts \uC624\uB958]", e);
+      }
+      try {
+        const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq5(dailySalesRecords.branchId, effectiveBranchId), eq5(dailySalesRecords.date, input.date))).limit(1);
+        if (salesRec && salesRec.length > 0) {
+          const rec = salesRec[0];
+          const allInc = await db2?.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, reportId));
+          const sc = (allInc ?? []).filter((i) => i.staffType === "staff").length;
+          const pc = (allInc ?? []).filter((i) => i.staffType === "parttime").length;
+          const mc = (allInc ?? []).filter((i) => i.staffType === "manager").length;
+          const cash = parseInt(rec.cash || "0") || 0;
+          const card = parseInt(rec.card || "0") || 0;
+          const expenses = Array.isArray(rec.expenses) ? rec.expenses : [];
+          const settlement = await calculateDailySettlement(
+            effectiveBranchId,
+            input.date,
+            cash,
+            card,
+            sc,
+            pc,
+            expenses,
+            reportId,
+            mc
+          );
+          await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
+        }
+      } catch (e) {
+        console.error("[\uD14C\uC774\uBE14 \uC800\uC7A5 \uD6C4 \uC815\uC0B0 \uC7AC\uACC4\uC0B0 \uC624\uB958]", e);
       }
       return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
     }),
