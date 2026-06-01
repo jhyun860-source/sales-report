@@ -20,9 +20,13 @@ function moveMonth(year: number, month: number, delta: number) {
 
 function formatWon(n: number) {
   if (n === 0) return '0';
-  const abs = Math.abs(n);
-  const formatted = abs >= 10000 ? Math.round(abs / 1000) + '천' : abs.toLocaleString();
-  return (n < 0 ? '-' : '') + formatted;
+  return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString();
+}
+
+const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+function getDayOfWeek(dateStr: string) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return DAYS[d.getDay()];
 }
 
 function formatWonFull(n: number) {
@@ -211,11 +215,12 @@ export default function SettlementDashboard() {
                   <tr>
                     <th className="px-3 py-2 text-left text-gray-500 font-medium">날짜</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium">총매출</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">수수료</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium">세금17%</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium">임대료</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium">인건비</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium">주류</th>
                     <th className="px-2 py-2 text-right font-bold text-gray-700">순수익</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium">수익률</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -224,7 +229,7 @@ export default function SettlementDashboard() {
                     const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0);
                     return (
                       <tr key={s.date} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 text-gray-700">{s.date?.slice(5)}</td>
+                        <td className="px-3 py-2 text-gray-700">{s.date?.slice(5)} ({getDayOfWeek(s.date)})</td>
                         <td className="px-2 py-2 text-right text-gray-600">{formatWon(Number(s.totalRevenue || 0))}</td>
                         <td className="px-2 py-2 text-right text-gray-500">{formatWon(Number(s.commissionExpense || 0))}</td>
                         <td className="px-2 py-2 text-right text-gray-500">{formatWon(Number(s.rentExpense || 0))}</td>
