@@ -4330,6 +4330,26 @@ export const appRouter = router({
         try { await cascadeUpdateCumulativeAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdateCumulativeAmounts 오류]', e); }
         try { await cascadeUpdatePosAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdatePosAmounts 오류]', e); }
 
+        // 테이블 기록 저장 후 정산 자동 재계산
+        try {
+          const salesRec = await db?.select().from(dailySalesRecords)
+            .where(and(eq(dailySalesRecords.branchId, effectiveBranchId), eq(dailySalesRecords.date, input.date)))
+            .limit(1);
+          if (salesRec && salesRec.length > 0) {
+            const rec = salesRec[0];
+            const allInc = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
+            const sc = (allInc ?? []).filter((i: any) => i.staffType === 'staff').length;
+            const pc = (allInc ?? []).filter((i: any) => i.staffType === 'parttime').length;
+            const mc = (allInc ?? []).filter((i: any) => i.staffType === 'manager').length;
+            const cash = parseInt(rec.cash || '0') || 0;
+            const card = parseInt(rec.card || '0') || 0;
+            const expenses = Array.isArray(rec.expenses) ? rec.expenses as Array<{id:string;description:string;amount:string}> : [];
+            const settlement = await calculateDailySettlement(
+              effectiveBranchId, input.date, cash, card, sc, pc, expenses, reportId, mc
+            );
+            await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
+          }
+        } catch (e) { console.error('[테이블 저장 후 정산 재계산 오류]', e); }
         return { id: reportId, cashSum, cardSum };
       }),
     // 테이블 항목 추가
@@ -4702,6 +4722,26 @@ export const appRouter = router({
         try { await cascadeUpdateCumulativeAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdateCumulativeAmounts 오류]', e); }
         try { await cascadeUpdatePosAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdatePosAmounts 오류]', e); }
 
+        // 테이블 기록 저장 후 정산 자동 재계산
+        try {
+          const salesRec = await db?.select().from(dailySalesRecords)
+            .where(and(eq(dailySalesRecords.branchId, effectiveBranchId), eq(dailySalesRecords.date, input.date)))
+            .limit(1);
+          if (salesRec && salesRec.length > 0) {
+            const rec = salesRec[0];
+            const allInc = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
+            const sc = (allInc ?? []).filter((i: any) => i.staffType === 'staff').length;
+            const pc = (allInc ?? []).filter((i: any) => i.staffType === 'parttime').length;
+            const mc = (allInc ?? []).filter((i: any) => i.staffType === 'manager').length;
+            const cash = parseInt(rec.cash || '0') || 0;
+            const card = parseInt(rec.card || '0') || 0;
+            const expenses = Array.isArray(rec.expenses) ? rec.expenses as Array<{id:string;description:string;amount:string}> : [];
+            const settlement = await calculateDailySettlement(
+              effectiveBranchId, input.date, cash, card, sc, pc, expenses, reportId, mc
+            );
+            await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
+          }
+        } catch (e) { console.error('[테이블 저장 후 정산 재계산 오류]', e); }
         return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
       }),
 
