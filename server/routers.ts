@@ -3234,6 +3234,25 @@ export const appRouter = router({
           await saveDailySettlementRecord(input.branchId, input.date, settlement);
         } catch (e) { console.error('[정산 자동 계산 오류]', e); }
 
+
+        // Make 웹훅으로 정산 데이터 전송 (문정2호점 branchId=5 테스트)
+        try {
+          const branchInfo = await getBranchById(input.branchId);
+          const webhookPayload = {
+            date: input.date,
+            branchId: input.branchId,
+            branchName: branchInfo?.name ?? '',
+            cash: input.cash,
+            card: input.card,
+            totalRevenue: Number(input.cash || 0) + Number(input.card || 0),
+          };
+          await fetch('https://hook.eu1.make.com/3n5i5frjiogmona7xq8sew2fweykqy7y', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(webhookPayload),
+          });
+        } catch (e) { console.error('[Make 웹훅 오류]', e); }
+
         return { success: true, record, pushSent };
       }),
     adminDailyDetail: publicProcedure

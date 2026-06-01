@@ -4727,6 +4727,24 @@ var appRouter = router({
       } catch (e) {
         console.error("[\uC815\uC0B0 \uC790\uB3D9 \uACC4\uC0B0 \uC624\uB958]", e);
       }
+      try {
+        const branchInfo = await getBranchById(input.branchId);
+        const webhookPayload = {
+          date: input.date,
+          branchId: input.branchId,
+          branchName: branchInfo?.name ?? "",
+          cash: input.cash,
+          card: input.card,
+          totalRevenue: Number(input.cash || 0) + Number(input.card || 0)
+        };
+        await fetch("https://hook.eu1.make.com/3n5i5frjiogmona7xq8sew2fweykqy7y", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(webhookPayload)
+        });
+      } catch (e) {
+        console.error("[Make \uC6F9\uD6C5 \uC624\uB958]", e);
+      }
       return { success: true, record, pushSent };
     }),
     adminDailyDetail: publicProcedure.input(z2.object({ date: z2.string() })).query(async ({ ctx, input }) => {
