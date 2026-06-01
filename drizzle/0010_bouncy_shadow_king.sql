@@ -1,0 +1,22 @@
+ALTER TABLE `branches` DROP COLUMN `monthlyRent`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `managementFee`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `staffDailyWage`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `partTimeHourlyWage`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `commissionRate`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `hasManager`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `glassUnitPrice`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `bottleUnitPrice`;--> statement-breakpoint
+ALTER TABLE `branches` DROP COLUMN `beerBottleUnitPrice`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `totalRevenue`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `commissionExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `rentExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `managementFeeExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `staffWageExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `partTimeWageExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `liquorCostExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `staffDrinkExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `otherExpense`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `totalExpenses`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `netProfit`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `staffCount`;--> statement-breakpoint
+ALTER TABLE `dailySalesRecords` DROP COLUMN `partTimeCount`;
