@@ -171,9 +171,9 @@ export const settlementRouter = router({
         .limit(1);
 
       const tableReportId = tableReport && tableReport.length > 0 ? tableReport[0].id : null;
-      const { staffCount, partTimeCount } = tableReportId
+      const { staffCount, partTimeCount, managerCount } = tableReportId
         ? await getStaffCounts(tableReportId)
-        : { staffCount: 0, partTimeCount: 0 };
+        : { staffCount: 0, partTimeCount: 0, managerCount: 0 };
 
       // 정산 계산
       const cash = Number(input.cash || 0);
@@ -188,7 +188,8 @@ export const settlementRouter = router({
         staffCount,
         partTimeCount,
         input.expenses,
-        tableReportId
+        tableReportId,
+        managerCount
       );
 
       // 기존 레코드 확인
