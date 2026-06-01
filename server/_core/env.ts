@@ -10,4 +10,5 @@ export const ENV = {
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
   settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me",
+  githubBackupToken: process.env.GITHUB_BACKUP_TOKEN ?? "",
 };
