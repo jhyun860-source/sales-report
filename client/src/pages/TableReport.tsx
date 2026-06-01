@@ -1091,8 +1091,8 @@ export default function TableReport() {
                   </button>
                 </div>
 
-                {/* 2행: 잔추가 / 병추가 / 맥주병 */}
-                <div className="grid grid-cols-3 divide-x" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                {/* 2행: 잔추가 / 병추가 / 맥주병 - 점장은 미표시 */}
+                {inc.staffType !== 'manager' && <div className="grid grid-cols-3 divide-x" style={{ borderBottom: `1px solid ${BORDER}` }}>
                   {([
                     { field: 'glassCount' as const, label: '잔추가' },
                     { field: 'bottleCount' as const, label: '병추가' },
