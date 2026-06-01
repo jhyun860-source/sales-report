@@ -681,6 +681,22 @@ export default function Home() {
             </button>
           )}
 
+          {/* 정산 버튼 (관리자만) */}
+          {user.role === 'admin' && (
+            <button
+              onClick={() => navigate('/settlement')}
+              className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+              style={{
+                background: 'oklch(0.25 0.01 50)',
+                color: 'oklch(0.98 0.01 85)',
+                borderColor: 'oklch(0.25 0.01 50)',
+              }}
+            >
+              <BarChart2 size={14} />
+              정산
+            </button>
+          )}
+
           {/* 테이블 기록 버튼 */}
           {!isStaffOnly && <button
             onClick={() => navigate(`/table-report${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
