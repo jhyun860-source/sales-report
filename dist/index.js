@@ -75,7 +75,22 @@ var dailySalesRecords = mysqlTable("dailySalesRecords", {
   submittedBy: int("submittedBy"),
   submittedAt: timestamp("submittedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  // 정산 컬럼 (매출 저장 시 자동 계산)
+  totalRevenue: decimal("totalRevenue", { precision: 15, scale: 0 }).default("0").notNull(),
+  commissionExpense: decimal("commissionExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  rentExpense: decimal("rentExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  managementFeeExpense: decimal("managementFeeExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  staffWageExpense: decimal("staffWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  managerWageExpense: decimal("managerWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+  totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(),
+  netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(),
+  staffCount: int("staffCount").default(0).notNull(),
+  partTimeCount: int("partTimeCount").default(0).notNull()
 });
 var usersRelations = relations(users, ({ many }) => ({
   ownedBranches: many(branches),
