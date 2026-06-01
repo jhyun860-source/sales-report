@@ -88,34 +88,34 @@ export default function AdminDashboard() {
         className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
         style={{ background: 'oklch(0.98 0.01 85)', borderColor: 'oklch(0.7 0.015 85)', boxShadow: '0 1px 4px oklch(0 0 0 / 0.08)' }}
       >
-        <div className="flex items-center gap-3">
-          <span className="text-base font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
+        <div className="flex items-center min-w-0">
+          <span className="text-sm font-bold whitespace-nowrap" style={{ fontFamily: "'Noto Serif KR', serif", color: 'oklch(0.25 0.01 50)' }}>
             전지점 통합 현황
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => navigate('/admin/manage')}
-            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            className="flex items-center gap-0.5 px-2 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap"
             style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
           >
-            <Settings size={15} />
+            <Settings size={13} />
             관리
           </button>
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            className="flex items-center gap-0.5 px-2 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap"
             style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.25 0.01 50)', border: '1px solid oklch(0.75 0.015 85)' }}
           >
-            <FileText size={15} />
+            <FileText size={13} />
             입력
           </button>
           <button
             onClick={logout}
-            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            className="flex items-center gap-0.5 px-2 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap"
             style={{ background: 'oklch(0.92 0.015 85)', color: 'oklch(0.45 0.18 25)', border: '1px solid oklch(0.75 0.015 85)' }}
           >
-            <LogOut size={15} />
+            <LogOut size={13} />
             로그아웃
           </button>
         </div>
