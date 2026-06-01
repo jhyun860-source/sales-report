@@ -3980,7 +3980,7 @@ export const appRouter = router({
           } else {
             // [버그수정] 삭제(hidden)된 제품은 재고 row 재생성 금지
             // hidden 여부 확인 후 숨겨진 제품이면 INSERT 스킵
-            const hiddenCheck: any = await db.execute(sql\`SELECT id FROM liquorHiddenItems WHERE branchId = \${input.branchId} AND liquorItemId = \${row.liquorItemId} LIMIT 1\`);
+            const hiddenCheck: any = await db.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${input.branchId} AND liquorItemId = ${row.liquorItemId} LIMIT 1`);
             const hiddenRows = Array.isArray(hiddenCheck) ? (Array.isArray(hiddenCheck[0]) ? hiddenCheck[0] : hiddenCheck) : ((hiddenCheck as any)?.rows ?? []);
             const isHidden = Array.isArray(hiddenRows) && hiddenRows.length > 0;
             if (!isHidden) {
@@ -4200,7 +4200,7 @@ export const appRouter = router({
           await db.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq(liquorInventories.id, existing.id));
         } else {
           // [버그수정] 삭제(hidden)된 제품은 재고 row 재생성 금지
-          const hiddenCheck2: any = await db.execute(sql\`SELECT id FROM liquorHiddenItems WHERE branchId = \${input.branchId} AND liquorItemId = \${input.liquorItemId} LIMIT 1\`);
+          const hiddenCheck2: any = await db.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${input.branchId} AND liquorItemId = ${input.liquorItemId} LIMIT 1`);
           const hiddenRows2 = Array.isArray(hiddenCheck2) ? (Array.isArray(hiddenCheck2[0]) ? hiddenCheck2[0] : hiddenCheck2) : ((hiddenCheck2 as any)?.rows ?? []);
           const isHidden2 = Array.isArray(hiddenRows2) && hiddenRows2.length > 0;
           if (!isHidden2) {

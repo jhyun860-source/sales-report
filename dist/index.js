@@ -5728,7 +5728,12 @@ var appRouter = router({
         if (existing) {
           await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
         } else {
-          await db2.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
+          const hiddenCheck = await db2.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${input.branchId} AND liquorItemId = ${row.liquorItemId} LIMIT 1`);
+          const hiddenRows = Array.isArray(hiddenCheck) ? Array.isArray(hiddenCheck[0]) ? hiddenCheck[0] : hiddenCheck : hiddenCheck?.rows ?? [];
+          const isHidden = Array.isArray(hiddenRows) && hiddenRows.length > 0;
+          if (!isHidden) {
+            await db2.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
+          }
         }
       }
       return { success: true };
@@ -5901,8 +5906,16 @@ var appRouter = router({
       const [existing] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, input.branchId), eq5(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
       const prevStock = Number(existing?.currentStock || 0);
       const diff = input.currentStock - prevStock;
-      if (existing) await db2.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq5(liquorInventories.id, existing.id));
-      else await db2.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
+      if (existing) {
+        await db2.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq5(liquorInventories.id, existing.id));
+      } else {
+        const hiddenCheck2 = await db2.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${input.branchId} AND liquorItemId = ${input.liquorItemId} LIMIT 1`);
+        const hiddenRows2 = Array.isArray(hiddenCheck2) ? Array.isArray(hiddenCheck2[0]) ? hiddenCheck2[0] : hiddenCheck2 : hiddenCheck2?.rows ?? [];
+        const isHidden2 = Array.isArray(hiddenRows2) && hiddenRows2.length > 0;
+        if (!isHidden2) {
+          await db2.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, currentStock: String(input.currentStock) });
+        }
+      }
       if (diff !== 0) {
         const unitCost = Number(item.unitCost || 0);
         await db2.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: input.liquorItemId, date: todayKstString(), type: "ADJUST", quantity: String(diff), unitCost: String(unitCost), totalCost: String(Math.abs(diff) * unitCost), memo: input.memo || `\uC7AC\uACE0\uC218\uC815: ${prevStock}\uAC1C \u2192 ${input.currentStock}\uAC1C (${diff > 0 ? "+" : ""}${diff})`, createdBy: account.id });
