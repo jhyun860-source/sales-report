@@ -210,45 +210,44 @@ export default function SettlementDashboard() {
             <div className="p-6 text-center text-gray-400 text-sm">데이터 없음</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs" style={{ minWidth: '700px' }}>
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-2 text-left text-gray-500 font-medium">날짜</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">총매출</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">세금17%</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">임대료</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">인건비</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">주류</th>
-                    <th className="px-2 py-2 text-right font-bold text-gray-700">순수익</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium">수익률</th>
+                    <th className="px-2 py-2 text-left text-gray-500 font-medium whitespace-nowrap">날짜</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">총매출</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">세금17%</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">임대료</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">주류</th>
+                    <th className="px-2 py-2 text-right font-bold text-gray-700 whitespace-nowrap">순수익</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">수익률</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {(settlements as any[]).map((s: any) => {
                     const net = Number(s.netProfit || 0);
+                    const rev = Number(s.totalRevenue || 0);
                     const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0);
+                    const liquor = Number(s.liquorCostExpense || 0);
                     return (
                       <tr key={s.date} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 text-gray-700">{s.date?.slice(5)} ({getDayOfWeek(s.date)})</td>
-                        <td className="px-2 py-2 text-right text-gray-600">{formatWon(Number(s.totalRevenue || 0))}</td>
-                        <td className="px-2 py-2 text-right text-gray-500">{formatWon(Number(s.commissionExpense || 0))}</td>
-                        <td className="px-2 py-2 text-right text-gray-500">
-                          {formatWon(Number(s.rentExpense || 0))}
-                          {Number(s.totalRevenue) > 0 && <span className="text-xs text-gray-400 ml-1">({(Number(s.rentExpense || 0) / Number(s.totalRevenue) * 100).toFixed(0)}%)</span>}
-                        </td>
-                        <td className="px-2 py-2 text-right text-gray-500">
+                        <td className="px-2 py-2 text-gray-700 whitespace-nowrap">{s.date?.slice(5)} ({getDayOfWeek(s.date)})</td>
+                        <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{formatWon(rev)}</td>
+                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.commissionExpense || 0))}</td>
+                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.rentExpense || 0))}</td>
+                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">
                           {formatWon(totalWage)}
-                          {Number(s.totalRevenue) > 0 && totalWage > 0 && <span className="text-xs text-gray-400 ml-1">({(totalWage / Number(s.totalRevenue) * 100).toFixed(0)}%)</span>}
+                          {rev > 0 && totalWage > 0 && <span className="text-gray-400 ml-1">({(totalWage / rev * 100).toFixed(0)}%)</span>}
                         </td>
-                        <td className="px-2 py-2 text-right text-gray-500">
-                          {formatWon(Number(s.liquorCostExpense || 0))}
-                          {Number(s.totalRevenue) > 0 && Number(s.liquorCostExpense) > 0 && <span className="text-xs text-gray-400 ml-1">({(Number(s.liquorCostExpense || 0) / Number(s.totalRevenue) * 100).toFixed(0)}%)</span>}
+                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">
+                          {formatWon(liquor)}
+                          {rev > 0 && liquor > 0 && <span className="text-gray-400 ml-1">({(liquor / rev * 100).toFixed(0)}%)</span>}
                         </td>
-                        <td className={`px-2 py-2 text-right font-bold ${net >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                        <td className={`px-2 py-2 text-right font-bold whitespace-nowrap ${net >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                           {formatWon(net)}
                         </td>
-                        <td className={`px-2 py-2 text-right text-xs ${net >= 0 ? 'text-blue-500' : 'text-red-400'}`}>
-                          {Number(s.totalRevenue) > 0 ? (net / Number(s.totalRevenue) * 100).toFixed(1) + '%' : '-'}
+                        <td className={`px-2 py-2 text-right whitespace-nowrap ${net >= 0 ? 'text-blue-500' : 'text-red-400'}`}>
+                          {rev > 0 ? (net / rev * 100).toFixed(1) + '%' : '-'}
                         </td>
                       </tr>
                     );
