@@ -6,7 +6,7 @@
  * - 복구: Claude에게 "YYYY-MM-DD로 복구해줘" 요청
  */
 
-import { getDb } from '../db';
+import { getDb } from './db';
 import { sql } from 'drizzle-orm';
 
 const GITHUB_TOKEN = process.env.GITHUB_BACKUP_TOKEN ?? '';

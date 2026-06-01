@@ -273,7 +273,8 @@ var ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
-  settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me"
+  settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me",
+  githubBackupToken: process.env.GITHUB_BACKUP_TOKEN ?? ""
 };
 
 // server/db.ts
@@ -4629,9 +4630,7 @@ async function ensureBoxHeroBranchStockSeeded(db2) {
       const item = await getOrCreateItem(row.name, row.category);
       const qty = Number(row.quantity || 0);
       const [existingInventory] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, branch.id), eq5(liquorInventories.liquorItemId, item.id))).limit(1);
-      if (existingInventory) {
-        await db2.update(liquorInventories).set({ currentStock: String(qty) }).where(eq5(liquorInventories.id, existingInventory.id));
-      } else {
+      if (!existingInventory) {
         await db2.insert(liquorInventories).values({ branchId: branch.id, liquorItemId: item.id, currentStock: String(qty) });
       }
     }
@@ -6929,6 +6928,146 @@ function serveStatic(app) {
   });
 }
 
+// server/backup-scheduler.ts
+import { sql as sql2 } from "drizzle-orm";
+var GITHUB_TOKEN = process.env.GITHUB_BACKUP_TOKEN ?? "";
+var GITHUB_REPO = "jhyun860-source/sales-report";
+var BACKUP_BRANCH = "main";
+function todayKST() {
+  const now = /* @__PURE__ */ new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1e3);
+  return kst.toISOString().slice(0, 10);
+}
+async function getFileSha(path3) {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${path3}?ref=${BACKUP_BRANCH}`,
+      { headers: { Authorization: `token ${GITHUB_TOKEN}`, Accept: "application/vnd.github+json" } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.sha ?? null;
+  } catch {
+    return null;
+  }
+}
+async function pushToGitHub(path3, content, message) {
+  if (!GITHUB_TOKEN) {
+    console.warn("[backup] GITHUB_BACKUP_TOKEN \uBBF8\uC124\uC815 - \uBC31\uC5C5 \uC2A4\uD0B5");
+    return false;
+  }
+  const sha = await getFileSha(path3);
+  const body = {
+    message,
+    content: Buffer.from(content, "utf-8").toString("base64"),
+    branch: BACKUP_BRANCH
+  };
+  if (sha) body.sha = sha;
+  const res = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${path3}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    }
+  );
+  return res.ok;
+}
+async function takeSnapshot() {
+  const db2 = await getDb();
+  if (!db2) throw new Error("DB \uC5F0\uACB0 \uC2E4\uD328");
+  const tables = [
+    "branches",
+    "dailySalesRecords",
+    "tableReports",
+    "tableItems",
+    "staffIncentives",
+    "liquorItems",
+    "liquorInventories",
+    "liquorStockMovements",
+    "liquorHiddenItems"
+  ];
+  const snapshot = {};
+  for (const table of tables) {
+    const rows = await db2.execute(sql2.raw(`SELECT * FROM \`${table}\``));
+    const data = Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : rows;
+    snapshot[table] = data;
+  }
+  return snapshot;
+}
+async function runDailyBackup() {
+  const dateStr = todayKST();
+  console.log(`[backup] ${dateStr} \uBC31\uC5C5 \uC2DC\uC791`);
+  try {
+    const snapshot = await takeSnapshot();
+    const json2 = JSON.stringify(snapshot, null, 2);
+    const dailyPath = `backups/${dateStr}.json`;
+    const ok1 = await pushToGitHub(
+      dailyPath,
+      json2,
+      `[backup] ${dateStr} \uC790\uB3D9 DB \uC2A4\uB0C5\uC0F7`
+    );
+    const ok2 = await pushToGitHub(
+      "backups/latest.json",
+      json2,
+      `[backup] latest \uAC31\uC2E0 (${dateStr})`
+    );
+    const indexPath = "backups/index.json";
+    const existingIndexSha = await getFileSha(indexPath);
+    let indexData = [];
+    if (existingIndexSha) {
+      const res = await fetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/contents/${indexPath}?ref=${BACKUP_BRANCH}`,
+        { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+      );
+      const d = await res.json();
+      try {
+        indexData = JSON.parse(Buffer.from(d.content, "base64").toString("utf-8"));
+      } catch {
+      }
+    }
+    indexData = indexData.filter((e) => e.date !== dateStr);
+    indexData.unshift({ date: dateStr, file: dailyPath, createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+    indexData = indexData.slice(0, 90);
+    await pushToGitHub(
+      indexPath,
+      JSON.stringify(indexData, null, 2),
+      `[backup] index \uAC31\uC2E0 (${dateStr})`
+    );
+    if (ok1 && ok2) {
+      console.log(`[backup] ${dateStr} \uBC31\uC5C5 \uC644\uB8CC \u2192 backups/${dateStr}.json`);
+    } else {
+      console.error(`[backup] ${dateStr} \uBC31\uC5C5 \uC77C\uBD80 \uC2E4\uD328 (ok1=${ok1}, ok2=${ok2})`);
+    }
+  } catch (err) {
+    console.error("[backup] \uBC31\uC5C5 \uC624\uB958:", err);
+  }
+}
+function startBackupScheduler() {
+  console.log("[backup] \uC790\uB3D9 \uBC31\uC5C5 \uC2A4\uCF00\uC904\uB7EC \uC2DC\uC791");
+  function scheduleNext() {
+    const now = /* @__PURE__ */ new Date();
+    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1e3);
+    const nextRun = new Date(kstNow);
+    nextRun.setUTCHours(0, 5, 0, 0);
+    if (nextRun <= kstNow) {
+      nextRun.setUTCDate(nextRun.getUTCDate() + 1);
+    }
+    const nextRunUTC = new Date(nextRun.getTime() - 9 * 60 * 60 * 1e3);
+    const msUntilRun = nextRunUTC.getTime() - now.getTime();
+    console.log(`[backup] \uB2E4\uC74C \uBC31\uC5C5 \uC608\uC815: ${nextRun.toISOString().slice(0, 16)} KST (${Math.round(msUntilRun / 6e4)}\uBD84 \uD6C4)`);
+    setTimeout(async () => {
+      await runDailyBackup();
+      scheduleNext();
+    }, msUntilRun);
+  }
+  scheduleNext();
+}
+
 // server/_core/index.ts
 function isPortAvailable(port) {
   return new Promise((resolve) => {
@@ -6973,6 +7112,9 @@ async function startServer() {
   }
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    if (process.env.NODE_ENV === "production") {
+      startBackupScheduler();
+    }
   });
 }
 startServer().catch(console.error);
