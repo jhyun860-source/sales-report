@@ -1036,7 +1036,7 @@ export default function TableReport() {
                       )}
                     </button>
                   </div>
-                </div>
+                </div>}
               </div>
             ))}
           </div>
