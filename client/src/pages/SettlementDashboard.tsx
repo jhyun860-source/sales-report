@@ -65,6 +65,38 @@ export default function SettlementDashboard() {
     { enabled: !!user && user.role === 'admin' && selectedBranchId !== null }
   );
 
+  // 해당 월 전체 날짜 생성 (매출 0인 날도 포함)
+  const allDaysSettlements = useMemo(() => {
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    const settlementMap = new Map((settlements as any[]).map((s: any) => [s.date, s]));
+    const result = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      if (settlementMap.has(dateStr)) {
+        result.push(settlementMap.get(dateStr));
+      } else {
+        // DB에 없는 날 - 임대료만 있는 빈 레코드
+        result.push({
+          date: dateStr,
+          totalRevenue: '0',
+          commissionExpense: '0',
+          rentExpense: '0',
+          managementFeeExpense: '0',
+          staffWageExpense: '0',
+          managerWageExpense: '0',
+          partTimeWageExpense: '0',
+          liquorCostExpense: '0',
+          staffDrinkExpense: '0',
+          otherExpense: '0',
+          totalExpenses: '0',
+          netProfit: '0',
+          _empty: true,
+        });
+      }
+    }
+    return result.reverse(); // 최신 날짜 위로
+  }, [settlements, selectedYear, selectedMonth]);
+
   const monthlyTotal = useMemo(() => {
     return (settlements as any[]).reduce((acc: any, s: any) => ({
       totalRevenue: acc.totalRevenue + Number(s.totalRevenue || 0),
@@ -224,13 +256,13 @@ export default function SettlementDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {(settlements as any[]).map((s: any) => {
+                  {(allDaysSettlements as any[]).map((s: any) => {
                     const net = Number(s.netProfit || 0);
                     const rev = Number(s.totalRevenue || 0);
                     const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0);
                     const liquor = Number(s.liquorCostExpense || 0);
                     return (
-                      <tr key={s.date} className="hover:bg-gray-50">
+                      <tr key={s.date} className={`hover:bg-gray-50 ${(s as any)._empty ? 'opacity-40' : ''}`}>
                         <td className="px-2 py-2 text-gray-700 whitespace-nowrap">{s.date?.slice(5)} ({getDayOfWeek(s.date)})</td>
                         <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{formatWon(rev)}</td>
                         <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.commissionExpense || 0))}</td>
