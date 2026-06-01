@@ -2769,13 +2769,12 @@ async function ensureBoxHeroBranchStockSeeded(db: Awaited<ReturnType<typeof getD
       const [existingInventory] = await db.select().from(liquorInventories)
         .where(and(eq(liquorInventories.branchId, branch.id), eq(liquorInventories.liquorItemId, item.id)))
         .limit(1);
-      if (existingInventory) {
-        await db.update(liquorInventories)
-          .set({ currentStock: String(qty) })
-          .where(eq(liquorInventories.id, existingInventory.id));
-      } else {
+      if (!existingInventory) {
+        // 재고 row가 없는 경우만 초기값 INSERT
+        // 기존 운영 재고는 절대 덮어쓰지 않음 (코드 배포/롤백 시 재고 보호)
         await db.insert(liquorInventories).values({ branchId: branch.id, liquorItemId: item.id, currentStock: String(qty) });
       }
+      // existingInventory 있으면 → 운영 재고 보존, 수정하지 않음
     }
   }
 
