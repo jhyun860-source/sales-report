@@ -202,8 +202,8 @@ var staffIncentives = mysqlTable("staffIncentives", {
   // 맥주 병추가 수
   salesIncentive: decimal("salesIncentive", { precision: 15, scale: 0 }).default("0").notNull(),
   // 영업 인센티브 금액
-  staffType: mysqlEnum("staffType", ["staff", "parttime"]).default("staff").notNull(),
-  // 직원/아르바이트
+  staffType: mysqlEnum("staffType", ["staff", "parttime", "manager"]).default("staff").notNull(),
+  // 직원/아르바이트/점장
   workStart: varchar("workStart", { length: 5 }),
   // 근무 시작 시간 (HH:mm)
   workEnd: varchar("workEnd", { length: 5 }),
@@ -6228,7 +6228,7 @@ var appRouter = router({
         id: z3.number().optional(),
         localId: z3.string(),
         staffName: z3.string(),
-        staffType: z3.enum(["staff", "parttime"]).default("staff"),
+        staffType: z3.enum(["staff", "parttime", "manager"]).default("staff"),
         glassCount: z3.number().default(0),
         bottleCount: z3.number().default(0),
         beerBottleCount: z3.number().default(0),
