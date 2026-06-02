@@ -244,6 +244,19 @@ export default function SettlementDashboard() {
                 </span>
               </div>
             ))}
+            {monthlyTotal.totalExpenses > 0 && (
+              <div className="flex justify-between text-gray-800 font-bold border-t border-gray-200 pt-2 mt-1">
+                <span>총 지출</span>
+                <span>
+                  {formatWonFull(monthlyTotal.totalExpenses)}
+                  {monthlyTotal.totalRevenue > 0 && (
+                    <span className="text-xs text-gray-500 ml-1">
+                      ({(monthlyTotal.totalExpenses / monthlyTotal.totalRevenue * 100).toFixed(1)}%)
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
