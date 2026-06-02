@@ -110,14 +110,29 @@ export function calculateDailyRent(monthlyRent: number, year: number, month: num
 /**
  * 직원 수 조회
  */
-export async function getStaffCounts(tableReportId: number): Promise<{ staffCount: number; partTimeCount: number }> {
+export async function getStaffCounts(tableReportId: number): Promise<{ staffCount: number; partTimeCount: number; managerCount: number; partTimeTotalHours: number }> {
   const db = await getDb();
-  if (!db) return { staffCount: 0, partTimeCount: 0 };
+  if (!db) return { staffCount: 0, partTimeCount: 0, managerCount: 0, partTimeTotalHours: 0 };
   const incentives = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
   const staffCount = incentives.filter(i => i.staffType === 'staff').length;
   const partTimeCount = incentives.filter(i => i.staffType === 'parttime').length;
   const managerCount = incentives.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length;
-  return { staffCount, partTimeCount, managerCount };
+
+  // 알바 총 근무시간 계산 (출퇴근 시간 기반)
+  let partTimeTotalHours = 0;
+  for (const inc of incentives.filter(i => i.staffType === 'parttime')) {
+    if (inc.workStart && inc.workEnd) {
+      try {
+        const [sh, sm] = (inc.workStart as string).split(':').map(Number);
+        const [eh, em] = (inc.workEnd as string).split(':').map(Number);
+        let startMin = sh * 60 + sm;
+        let endMin = eh * 60 + em;
+        if (endMin <= startMin) endMin += 24 * 60; // 자정 넘김
+        partTimeTotalHours += (endMin - startMin) / 60;
+      } catch {}
+    }
+  }
+  return { staffCount, partTimeCount, managerCount, partTimeTotalHours };
 }
 
 /**
@@ -178,7 +193,8 @@ export async function calculateDailySettlement(
   partTimeCount: number,
   expenses: Array<{ id: string; description: string; amount: string }>,
   tableReportId: number | null,
-  managerCount: number = 0
+  managerCount: number = 0,
+  partTimeTotalHours: number = 0
 ): Promise<{
   totalRevenue: number;
   commissionExpense: number;
@@ -240,8 +256,11 @@ export async function calculateDailySettlement(
   const managerWageExpense = (pureManagerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
   // 7. 알바 인건비 (일급)
-  const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 20000);
-  const partTimeWageExpense = partTimeCount * partTimeDailyWage;
+  const partTimeHourlyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 9860);
+  // 알바: 시급 × 총 근무시간 (출퇴근 시간 기록 있으면 시간 계산, 없으면 인원수 × 시급 × 8시간)
+  const partTimeWageExpense = partTimeTotalHours > 0
+    ? Math.round(partTimeHourlyWage * partTimeTotalHours)
+    : partTimeCount * partTimeHourlyWage * 8;
 
   // 8. 주류/단가
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
