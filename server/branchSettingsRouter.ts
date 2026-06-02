@@ -41,7 +41,7 @@ export const branchSettingsRouter = router({
       deputyMonthlySalary: z.number().min(0).default(0),
       deputyDailyWage: z.number().min(0).default(0),
       staffDailyWage: z.number().min(0),
-      partTimeDailyWage: z.number().min(0),
+      partTimeHourlyWage: z.number().min(0),
       commissionRate: z.number().min(0).max(1).default(0.17),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -72,7 +72,7 @@ export const branchSettingsRouter = router({
           deputyMonthlySalary: String(input.deputyMonthlySalary),
           deputyDailyWage: String(computedDeputyDailyWage),
           staffDailyWage: String(input.staffDailyWage),
-          partTimeDailyWage: String(input.partTimeDailyWage),
+          partTimeHourlyWage: String(input.partTimeHourlyWage),
           commissionRate: String(input.commissionRate),
         }).where(eq(branchSettings.branchId, input.branchId));
       } else {
@@ -84,7 +84,7 @@ export const branchSettingsRouter = router({
           deputyMonthlySalary: String(input.deputyMonthlySalary),
           deputyDailyWage: String(computedDeputyDailyWage),
           staffDailyWage: String(input.staffDailyWage),
-          partTimeDailyWage: String(input.partTimeDailyWage),
+          partTimeHourlyWage: String(input.partTimeHourlyWage),
           commissionRate: String(input.commissionRate),
         });
       }
