@@ -116,7 +116,7 @@ export async function getStaffCounts(tableReportId: number): Promise<{ staffCoun
   const incentives = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
   const staffCount = incentives.filter(i => i.staffType === 'staff').length;
   const partTimeCount = incentives.filter(i => i.staffType === 'parttime').length;
-  const managerCount = incentives.filter(i => i.staffType === 'manager').length;
+  const managerCount = incentives.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length;
   return { staffCount, partTimeCount, managerCount };
 }
 
