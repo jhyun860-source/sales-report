@@ -151,6 +151,8 @@ var branchSettings = mysqlTable("branchSettings", {
   managerDailyWage: decimal("managerDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
   staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
   partTimeDailyWage: decimal("partTimeDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+  deputyMonthlySalary: decimal("deputyMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
+  deputyDailyWage: decimal("deputyDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
   commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.1700").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
@@ -948,8 +950,8 @@ async function getSettlementByDate(branchId, date) {
     let staffWages = 0;
     let parttimeWages = 0;
     if (tableReportId > 0) {
-      const incentives = await db2.select().from(staffIncentives).where(eq2(staffIncentives.tableReportId, tableReportId));
-      for (const incentive of incentives) {
+      const incentives2 = await db2.select().from(staffIncentives).where(eq2(staffIncentives.tableReportId, tableReportId));
+      for (const incentive of incentives2) {
         const amount = Number(incentive.salesIncentive || 0);
         if (incentive.staffType === "staff") {
           staffWages += amount;
@@ -1523,10 +1525,10 @@ function calculateDailyRent(monthlyRent, year, month) {
 async function getStaffCounts(tableReportId) {
   const db2 = await getDb();
   if (!db2) return { staffCount: 0, partTimeCount: 0 };
-  const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
-  const staffCount = incentives.filter((i) => i.staffType === "staff").length;
-  const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
-  const managerCount = incentives.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
+  const incentives2 = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
+  const staffCount = incentives2.filter((i) => i.staffType === "staff").length;
+  const partTimeCount = incentives2.filter((i) => i.staffType === "parttime").length;
+  const managerCount = incentives2.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
   return { staffCount, partTimeCount, managerCount };
 }
 async function calculateStaffDrinkExpense(tableReportId, branchName) {
@@ -1536,9 +1538,9 @@ async function calculateStaffDrinkExpense(tableReportId, branchName) {
   const glassPrice = config?.glassUnitPrice ?? 5e3;
   const bottlePrice = config?.bottleUnitPrice ?? 1e4;
   const beerBottlePrice = config?.beerBottleUnitPrice ?? 3e3;
-  const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
+  const incentives2 = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
   let total = 0;
-  incentives.forEach((inc) => {
+  incentives2.forEach((inc) => {
     total += Number(inc.glassCount || 0) * glassPrice;
     total += Number(inc.bottleCount || 0) * bottlePrice;
     total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
@@ -1593,7 +1595,10 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
   const staffWageExpense = staffCount * staffDailyWage;
   const managerDailyWage = config?.managerDailyWage ?? 0;
-  const managerWageExpense = managerCount > 0 ? managerCount * managerDailyWage : 0;
+  const deputyDailyWage = config?.deputyDailyWage ?? managerDailyWage;
+  const pureManagerCount = incentives.filter((i) => i.staffType === "manager").length;
+  const deputyCount = incentives.filter((i) => i.staffType === "deputy").length;
+  const managerWageExpense = pureManagerCount * managerDailyWage + deputyCount * deputyDailyWage;
   const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 2e4);
   const partTimeWageExpense = partTimeCount * partTimeDailyWage;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
@@ -5980,8 +5985,8 @@ var appRouter = router({
       const [report] = await db2.select().from(tableReports).where(and5(eq5(tableReports.branchId, effectiveBranchId), eq5(tableReports.date, input.date))).limit(1);
       if (!report) return null;
       const items = await db2.select().from(tableItems).where(eq5(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
-      const incentives = await db2.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
-      return { ...report, items, incentives };
+      const incentives2 = await db2.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
+      return { ...report, items, incentives: incentives2 };
     }),
     // 기록 생성 또는 업데이트
     upsert: publicProcedure.input(z3.object({
