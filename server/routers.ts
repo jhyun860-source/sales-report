@@ -4573,7 +4573,7 @@ export const appRouter = router({
           id: z.number().optional(),
           localId: z.string(),
           staffName: z.string(),
-          staffType: z.enum(['staff', 'parttime', 'manager']).default('staff'),
+          staffType: z.enum(['staff', 'parttime', 'manager', 'deputy']).default('staff'),
           glassCount: z.number().default(0),
           bottleCount: z.number().default(0),
           beerBottleCount: z.number().default(0),
