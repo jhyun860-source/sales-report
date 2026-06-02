@@ -13,37 +13,18 @@ function parseAmount(s: string) {
   return parseInt(s.replace(/,/g, '')) || 0;
 }
 
-// 숫자 입력 컴포넌트 - 콤마 포맷 지원
+// 숫자 입력 컴포넌트 - 단순 number input
 function NumberInput({ value, onChange, placeholder = '0' }: { value: number; onChange: (v: number) => void; placeholder?: string }) {
-  const [display, setDisplay] = React.useState(value > 0 ? value.toLocaleString() : '');
-  const prevValueRef = React.useRef(value);
-
-  // 외부에서 value가 바뀌면 (지점 전환 등) display 강제 업데이트
-  React.useEffect(() => {
-    if (prevValueRef.current !== value) {
-      prevValueRef.current = value;
-      setDisplay(value > 0 ? value.toLocaleString() : '');
-    }
-  }, [value]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/,/g, '');
-    if (raw === '' || /^\d+$/.test(raw)) {
-      const num = parseInt(raw) || 0;
-      prevValueRef.current = num;
-      setDisplay(num > 0 ? num.toLocaleString() : raw);
-      onChange(num);
-    }
-  };
-
   return (
     <input
-      type="text"
+      type="number"
       inputMode="numeric"
-      value={display}
-      onChange={handleChange}
+      value={value === 0 ? '' : value}
+      onChange={e => onChange(parseInt(e.target.value) || 0)}
       placeholder={placeholder}
       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+      min="0"
+      style={{ appearance: 'none', MozAppearance: 'textfield' } as any}
     />
   );
 }
