@@ -56,6 +56,11 @@ export default function BranchSettings() {
     },
   });
 
+  // 선택된 지점의 DB 설정값 실시간 계산 (Number()로 타입 통일)
+  const dbSetting = (allSettings as any[]).find(
+    (s: any) => Number(s.branchId) === Number(selectedBranchId)
+  );
+
   // form = customForm(수정중) ?? dbSetting(DB값) ?? 기본값0
   const form = {
     monthlyRent: customForm?.monthlyRent ?? Number(dbSetting?.monthlyRent ?? 0),
@@ -70,11 +75,6 @@ export default function BranchSettings() {
   const setForm = (updater: any) => {
     setCustomForm(prev => typeof updater === 'function' ? updater(prev ?? form) : { ...(prev ?? form), ...updater });
   };
-
-  // 선택된 지점의 DB 설정값 실시간 계산 (Number()로 타입 통일)
-  const dbSetting = (allSettings as any[]).find(
-    (s: any) => Number(s.branchId) === Number(selectedBranchId)
-  );
 
   // 지점 전환 핸들러 - customForm 초기화
   const handleBranchChange = (branchId: number) => {
