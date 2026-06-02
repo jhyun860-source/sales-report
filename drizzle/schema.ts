@@ -234,7 +234,7 @@ export const staffIncentives = mysqlTable("staffIncentives", {
   bottleCount: int("bottleCount").default(0).notNull(), // 병추가 수
   beerBottleCount: int("beerBottleCount").default(0).notNull(), // 맥주 병추가 수
   salesIncentive: decimal("salesIncentive", { precision: 15, scale: 0 }).default("0").notNull(), // 영업 인센티브 금액
-  staffType: mysqlEnum("staffType", ["staff", "parttime", "manager"]).default("staff").notNull(), // 직원/아르바이트/점장
+  staffType: mysqlEnum("staffType", ["staff", "parttime", "manager", "deputy"]).default("staff").notNull(), // 직원/아르바이트/점장
   workStart: varchar("workStart", { length: 5 }), // 근무 시작 시간 (HH:mm)
   workEnd: varchar("workEnd", { length: 5 }), // 근무 종료 시간 (HH:mm)
   sortOrder: int("sortOrder").default(0).notNull(),
