@@ -1075,16 +1075,16 @@ export default function TableReport() {
                   />
                   <button
                     onClick={() => {
-                      const next = inc.staffType === 'staff' ? 'parttime' : inc.staffType === 'parttime' ? 'manager' : inc.staffType === 'manager' ? 'deputy' : 'staff';
+                      const next = inc.staffType === 'staff' ? 'parttime' : inc.staffType === 'parttime' ? 'manager' : (inc.staffType === 'manager' || inc.staffType === 'deputy') ? 'deputy' : 'staff';
                       updateIncentiveField(inc.localId, 'staffType', next);
                     }}
                     className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap"
                     style={{
-                      background: inc.staffType === 'staff' ? PRIMARY : inc.staffType === 'parttime' ? 'oklch(0.65 0.12 200)' : inc.staffType === 'manager' ? 'oklch(0.60 0.15 30)' : 'oklch(0.55 0.18 270)',
+                      background: inc.staffType === 'staff' ? PRIMARY : inc.staffType === 'parttime' ? 'oklch(0.65 0.12 200)' : (inc.staffType === 'manager' || inc.staffType === 'deputy') ? 'oklch(0.60 0.15 30)' : 'oklch(0.55 0.18 270)',
                       color: 'white',
                     }}
                   >
-                    {inc.staffType === 'staff' ? '직원' : inc.staffType === 'parttime' ? '아르바' : inc.staffType === 'manager' ? '점장' : '매니저'}
+                    {inc.staffType === 'staff' ? '직원' : inc.staffType === 'parttime' ? '아르바' : (inc.staffType === 'manager' || inc.staffType === 'deputy') ? '점장' : '매니저'}
                   </button>
                   <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
@@ -1092,7 +1092,7 @@ export default function TableReport() {
                 </div>
 
                 {/* 2행: 잔추가 / 병추가 / 맥주병 - 점장은 미표시 */}
-                {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && <div className="grid grid-cols-3 divide-x" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                {((inc.staffType !== 'manager' && inc.staffType !== 'deputy') && inc.staffType !== 'deputy') && <div className="grid grid-cols-3 divide-x" style={{ borderBottom: `1px solid ${BORDER}` }}>
                   {([
                     { field: 'glassCount' as const, label: '잔추가' },
                     { field: 'bottleCount' as const, label: '병추가' },
@@ -1118,7 +1118,7 @@ export default function TableReport() {
                 </div>}
 
                 {/* 3행: 영업인센 금액 - 점장은 미표시 */}
-                {inc.staffType !== 'manager' && (
+                {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && (
                 <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
                   <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
                   <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
@@ -1132,7 +1132,7 @@ export default function TableReport() {
                 )}
 
                 {/* 4행: 근무 시간 - 점장은 미표시 */}
-                {inc.staffType !== 'manager' && (
+                {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && (
                 <div className="px-3 py-2 space-y-1.5">
                   {/* 시작 시간 - 출근은 오후(PM) 고정 */}
                   <div className="flex items-center gap-1.5">
