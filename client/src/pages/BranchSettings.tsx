@@ -7,14 +7,24 @@ const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm t
 
 // MoneyInput을 컴포넌트 밖에 선언 - 안에 있으면 매 렌더마다 재생성되어 커서 튐
 function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [display, setDisplay] = React.useState(value === 0 ? '' : value.toLocaleString());
+
+  React.useEffect(() => {
+    setDisplay(value === 0 ? '' : value.toLocaleString());
+  }, [value]);
+
   return (
     <input
-      type="number"
+      type="text"
+      inputMode="numeric"
       className={inputClass}
-      value={value === 0 ? '' : value}
-      onChange={e => onChange(parseInt(e.target.value) || 0)}
+      value={display}
+      onChange={e => {
+        const raw = e.target.value.replace(/[^0-9]/g, '');
+        setDisplay(raw === '' ? '' : parseInt(raw).toLocaleString());
+        onChange(parseInt(raw) || 0);
+      }}
       placeholder="0"
-      min="0"
     />
   );
 }
