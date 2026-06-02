@@ -49,9 +49,10 @@ export default function BranchSettings() {
     commissionRate: 0.17,
   });
 
-  // 지점 선택 시 기존 설정값 로드 (없으면 0으로 초기화)
+  // 지점 선택 시 기존 설정값 로드
+  // allSettings 로딩 완료 후에만 실행 (로딩 전 0 초기화 방지)
   useEffect(() => {
-    if (selectedBranchId !== null) {
+    if (selectedBranchId !== null && allSettings.length > 0) {
       const setting = (allSettings as any[]).find((s: any) => s.branchId === selectedBranchId);
       if (setting) {
         setForm({
@@ -65,7 +66,7 @@ export default function BranchSettings() {
           commissionRate: Number(setting.commissionRate || 0.17),
         });
       } else {
-        // 해당 지점 설정 없으면 전부 0으로 초기화
+        // DB에 해당 지점 설정이 아예 없을 때만 0으로 초기화
         setForm({
           monthlyRent: 0,
           managerMonthlySalary: 0,
