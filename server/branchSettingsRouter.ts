@@ -38,6 +38,8 @@ export const branchSettingsRouter = router({
       monthlyRent: z.number().min(0),
       managerMonthlySalary: z.number().min(0),
       managerDailyWage: z.number().min(0),
+      deputyMonthlySalary: z.number().min(0).default(0),
+      deputyDailyWage: z.number().min(0).default(0),
       staffDailyWage: z.number().min(0),
       partTimeDailyWage: z.number().min(0),
       commissionRate: z.number().min(0).max(1).default(0.17),
@@ -50,10 +52,14 @@ export const branchSettingsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      // managerMonthlySalary > 0 이면 일급 자동 계산 (÷ 22)
+      // 점장: 월급 입력 시 ÷22 자동 계산
       const computedDailyWage = input.managerMonthlySalary > 0
         ? Math.round(input.managerMonthlySalary / 22)
         : input.managerDailyWage;
+      // 매니저: 월급 입력 시 ÷22 자동 계산
+      const computedDeputyDailyWage = input.deputyMonthlySalary > 0
+        ? Math.round(input.deputyMonthlySalary / 22)
+        : input.deputyDailyWage;
 
       const [existing] = await db.select().from(branchSettings)
         .where(eq(branchSettings.branchId, input.branchId)).limit(1);
@@ -63,6 +69,8 @@ export const branchSettingsRouter = router({
           monthlyRent: String(input.monthlyRent),
           managerMonthlySalary: String(input.managerMonthlySalary),
           managerDailyWage: String(computedDailyWage),
+          deputyMonthlySalary: String(input.deputyMonthlySalary),
+          deputyDailyWage: String(computedDeputyDailyWage),
           staffDailyWage: String(input.staffDailyWage),
           partTimeDailyWage: String(input.partTimeDailyWage),
           commissionRate: String(input.commissionRate),
@@ -73,11 +81,13 @@ export const branchSettingsRouter = router({
           monthlyRent: String(input.monthlyRent),
           managerMonthlySalary: String(input.managerMonthlySalary),
           managerDailyWage: String(computedDailyWage),
+          deputyMonthlySalary: String(input.deputyMonthlySalary),
+          deputyDailyWage: String(computedDeputyDailyWage),
           staffDailyWage: String(input.staffDailyWage),
           partTimeDailyWage: String(input.partTimeDailyWage),
           commissionRate: String(input.commissionRate),
         });
       }
-      return { success: true, managerDailyWage: computedDailyWage };
+      return { success: true, managerDailyWage: computedDailyWage, deputyDailyWage: computedDeputyDailyWage };
     }),
 });
