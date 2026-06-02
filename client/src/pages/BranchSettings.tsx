@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { useLocation } from 'wouter';
@@ -13,16 +13,31 @@ function parseAmount(s: string) {
   return parseInt(s.replace(/,/g, '')) || 0;
 }
 
-// 숫자 입력 컴포넌트
+// 숫자 입력 컴포넌트 - 콤마 포맷 지원
 function NumberInput({ value, onChange, placeholder = '0' }: { value: number; onChange: (v: number) => void; placeholder?: string }) {
+  const [display, setDisplay] = React.useState(value > 0 ? value.toLocaleString() : '');
+
+  React.useEffect(() => {
+    setDisplay(value > 0 ? value.toLocaleString() : '');
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/,/g, '');
+    if (raw === '' || /^\d+$/.test(raw)) {
+      const num = parseInt(raw) || 0;
+      setDisplay(num > 0 ? num.toLocaleString() : raw);
+      onChange(num);
+    }
+  };
+
   return (
     <input
-      type="number"
-      value={value || ''}
-      onChange={e => onChange(parseInt(e.target.value) || 0)}
+      type="text"
+      inputMode="numeric"
+      value={display}
+      onChange={handleChange}
       placeholder={placeholder}
       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-      min="0"
     />
   );
 }
