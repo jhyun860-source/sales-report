@@ -45,7 +45,7 @@ export default function BranchSettings() {
     deputyMonthlySalary: 0,
     deputyDailyWage: 0,
     staffDailyWage: 0,
-    partTimeDailyWage: 0,
+    partTimeHourlyWage: 0,
     commissionRate: 0.17,
   });
 
@@ -61,7 +61,7 @@ export default function BranchSettings() {
           deputyMonthlySalary: Number(setting.deputyMonthlySalary || 0),
           deputyDailyWage: Number(setting.deputyDailyWage || 0),
           staffDailyWage: Number(setting.staffDailyWage || 0),
-          partTimeDailyWage: Number(setting.partTimeDailyWage || 0),
+          partTimeHourlyWage: Number(setting.partTimeHourlyWage || 0),
           commissionRate: Number(setting.commissionRate || 0.17),
         });
       }
@@ -197,7 +197,7 @@ export default function BranchSettings() {
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                       placeholder="0"
                     />
-                    <span className="text-xs text-gray-500">원/일</span>
+                    <span className="text-xs text-gray-500">원/시간</span>
                   </div>
                 </div>
               </div>
@@ -231,7 +231,7 @@ export default function BranchSettings() {
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                       placeholder="0"
                     />
-                    <span className="text-xs text-gray-500">원/일</span>
+                    <span className="text-xs text-gray-500">원/시간</span>
                   </div>
                 </div>
               </div>
@@ -247,22 +247,22 @@ export default function BranchSettings() {
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                     placeholder="0"
                   />
-                  <span className="text-xs text-gray-500">원/일</span>
+                  <span className="text-xs text-gray-500">원/시간</span>
                 </div>
               </div>
 
               {/* 알바 */}
               <div className="space-y-2 border-t pt-3">
-                <p className="text-xs font-semibold text-gray-600">알바 일급</p>
+                <p className="text-xs font-semibold text-gray-600">알바 시급</p>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={formatNumber(form.partTimeDailyWage)}
-                    onChange={e => setForm(prev => ({ ...prev, partTimeDailyWage: parseAmount(e.target.value) }))}
+                    value={formatNumber(form.partTimeHourlyWage)}
+                    onChange={e => setForm(prev => ({ ...prev, partTimeHourlyWage: parseAmount(e.target.value) }))}
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                     placeholder="0"
                   />
-                  <span className="text-xs text-gray-500">원/일</span>
+                  <span className="text-xs text-gray-500">원/시간</span>
                 </div>
               </div>
             </div>
@@ -293,7 +293,7 @@ export default function BranchSettings() {
                 <div className="flex justify-between"><span>점장 일급</span><span>{computedDailyWage.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>매니저 일급</span><span>{computedDeputyDailyWage.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>여직원 일급</span><span>{form.staffDailyWage.toLocaleString()}원</span></div>
-                <div className="flex justify-between"><span>알바 일급</span><span>{form.partTimeDailyWage.toLocaleString()}원</span></div>
+                <div className="flex justify-between"><span>알바 시급</span><span>{form.partTimeHourlyWage.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>수수료율</span><span>{(form.commissionRate * 100).toFixed(0)}%</span></div>
               </div>
             </div>
