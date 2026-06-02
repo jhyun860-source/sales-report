@@ -271,8 +271,11 @@ export async function calculateDailySettlement(
     ? await calculateStaffDrinkExpense(tableReportId, branchName)
     : 0;
 
-  // 10. 기타비용
-  const otherExpense = calculateOtherExpenses(expenses);
+  // 10. 기타비용 = 월 고정지출(일할) + 웹앱 지출내역
+  const monthlyFixedExpense = bsData ? Number(bsData.monthlyFixedExpense || 0) : 0;
+  const dailyFixedExpense = monthlyFixedExpense > 0 ? calculateDailyRent(monthlyFixedExpense, year, month) : 0;
+  const webExpense = calculateOtherExpenses(expenses);
+  const otherExpense = dailyFixedExpense + webExpense;
 
   // 11. 총 지출
   const totalExpenses =
