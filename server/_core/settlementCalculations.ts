@@ -232,9 +232,12 @@ export async function calculateDailySettlement(
   const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
   const staffWageExpense = staffCount * staffDailyWage;
 
-  // 6. 점장 인건비 - 테이블 기록에 직접 추가했을 때만 반영 (자동 계산 없음)
+  // 6. 점장/매니저 인건비 - 테이블 기록에 직접 추가했을 때만 반영
   const managerDailyWage = config?.managerDailyWage ?? 0;
-  const managerWageExpense = managerCount > 0 ? managerCount * managerDailyWage : 0;
+  const deputyDailyWage = config?.deputyDailyWage ?? managerDailyWage; // 매니저 일급 (없으면 점장 일급 사용)
+  const pureManagerCount = incentives.filter(i => i.staffType === 'manager').length;
+  const deputyCount = incentives.filter(i => i.staffType === 'deputy').length;
+  const managerWageExpense = (pureManagerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
   // 7. 알바 인건비 (일급)
   const partTimeDailyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 20000);
