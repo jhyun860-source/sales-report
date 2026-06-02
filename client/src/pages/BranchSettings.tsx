@@ -13,6 +13,20 @@ function parseAmount(s: string) {
   return parseInt(s.replace(/,/g, '')) || 0;
 }
 
+// 숫자 입력 컴포넌트
+function NumberInput({ value, onChange, placeholder = '0' }: { value: number; onChange: (v: number) => void; placeholder?: string }) {
+  return (
+    <input
+      type="number"
+      value={value || ''}
+      onChange={e => onChange(parseInt(e.target.value) || 0)}
+      placeholder={placeholder}
+      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+      min="0"
+    />
+  );
+}
+
 export default function BranchSettings() {
   const { user, loading } = useStoreAuth();
   const [, navigate] = useLocation();
@@ -161,12 +175,7 @@ export default function BranchSettings() {
               <div>
                 <label className="text-xs text-gray-500">월 임대료</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="text"
-                    value={formatNumber(form.monthlyRent)}
-                    onChange={e => setForm(prev => ({ ...prev, monthlyRent: parseAmount(e.target.value) }))}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                  />
+                  <NumberInput value={form.monthlyRent} onChange={v => setForm(prev => ({ ...prev, monthlyRent: v }))} />
                   <span className="text-xs text-gray-500">원</span>
                 </div>
                 <p className="text-xs text-blue-500 mt-1">
@@ -185,13 +194,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">월급 입력 (자동 계산)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input
-                      type="text"
-                      value={formatNumber(form.managerMonthlySalary)}
-                      onChange={e => setForm(prev => ({ ...prev, managerMonthlySalary: parseAmount(e.target.value), managerDailyWage: 0 }))}
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                      placeholder="0"
-                    />
+                    <NumberInput value={form.managerMonthlySalary} onChange={v => setForm(prev => ({ ...prev, managerMonthlySalary: v, managerDailyWage: 0 }))} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
                   {form.managerMonthlySalary > 0 && (
@@ -203,13 +206,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력 (월급 입력 시 자동 계산됨)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input
-                      type="text"
-                      value={formatNumber(computedDailyWage)}
-                      onChange={e => setForm(prev => ({ ...prev, managerDailyWage: parseAmount(e.target.value), managerMonthlySalary: 0 }))}
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                      placeholder="0"
-                    />
+                    <NumberInput value={computedDailyWage} onChange={v => setForm(prev => ({ ...prev, managerDailyWage: v, managerMonthlySalary: 0 }))} />
                     <span className="text-xs text-gray-500">원/시간</span>
                   </div>
                 </div>
@@ -221,13 +218,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">월급 입력 (자동 계산)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input
-                      type="text"
-                      value={formatNumber(form.deputyMonthlySalary)}
-                      onChange={e => setForm(prev => ({ ...prev, deputyMonthlySalary: parseAmount(e.target.value), deputyDailyWage: 0 }))}
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                      placeholder="0"
-                    />
+                    <NumberInput value={form.deputyMonthlySalary} onChange={v => setForm(prev => ({ ...prev, deputyMonthlySalary: v, deputyDailyWage: 0 }))} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
                   {form.deputyMonthlySalary > 0 && (
@@ -237,13 +228,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input
-                      type="text"
-                      value={formatNumber(computedDeputyDailyWage)}
-                      onChange={e => setForm(prev => ({ ...prev, deputyDailyWage: parseAmount(e.target.value), deputyMonthlySalary: 0 }))}
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                      placeholder="0"
-                    />
+                    <NumberInput value={computedDeputyDailyWage} onChange={v => setForm(prev => ({ ...prev, deputyDailyWage: v, deputyMonthlySalary: 0 }))} />
                     <span className="text-xs text-gray-500">원/시간</span>
                   </div>
                 </div>
@@ -253,13 +238,7 @@ export default function BranchSettings() {
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">여직원 일급</p>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={formatNumber(form.staffDailyWage)}
-                    onChange={e => setForm(prev => ({ ...prev, staffDailyWage: parseAmount(e.target.value) }))}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                    placeholder="0"
-                  />
+                  <NumberInput value={form.staffDailyWage} onChange={v => setForm(prev => ({ ...prev, staffDailyWage: v }))} />
                   <span className="text-xs text-gray-500">원/시간</span>
                 </div>
               </div>
@@ -268,13 +247,7 @@ export default function BranchSettings() {
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">알바 시급</p>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={formatNumber(form.partTimeHourlyWage)}
-                    onChange={e => setForm(prev => ({ ...prev, partTimeHourlyWage: parseAmount(e.target.value) }))}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                    placeholder="0"
-                  />
+                  <NumberInput value={form.partTimeHourlyWage} onChange={v => setForm(prev => ({ ...prev, partTimeHourlyWage: v }))} />
                   <span className="text-xs text-gray-500">원/시간</span>
                 </div>
               </div>
