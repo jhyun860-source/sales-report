@@ -3246,7 +3246,7 @@ export const appRouter = router({
           const card = parseInt(input.card || '0') || 0;
           const settlement = await calculateDailySettlement(
             input.branchId, input.date, cash, card,
-            staffCount, partTimeCount, input.expenses, tableReportId, managerCount2
+            staffCount, partTimeCount, input.expenses, tableReportId, managerCount2, partTimeTotalHours
           );
           await saveDailySettlementRecord(input.branchId, input.date, settlement);
         } catch (e) { console.error('[정산 자동 계산 오류]', e); }
@@ -4345,7 +4345,7 @@ export const appRouter = router({
             const card = parseInt(rec.card || '0') || 0;
             const expenses = Array.isArray(rec.expenses) ? rec.expenses as Array<{id:string;description:string;amount:string}> : [];
             const settlement = await calculateDailySettlement(
-              effectiveBranchId, input.date, cash, card, sc, pc, expenses, reportId, mc
+              effectiveBranchId, input.date, cash, card, sc, pc, expenses, reportId, mc, pth
             );
             await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
           }
