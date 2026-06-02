@@ -231,7 +231,7 @@ export default function SettlementDashboard() {
               { label: '주류단가', value: monthlyTotal.liquorCostExpense },
               { label: '스탭음료', value: monthlyTotal.staffDrinkExpense },
               { label: '기타', value: monthlyTotal.otherExpense },
-            ].filter(item => item.value > 0).map(item => (
+            ].map(item => (
               <div key={item.label} className="flex justify-between text-gray-600">
                 <span>{item.label}</span>
                 <span>
@@ -244,7 +244,7 @@ export default function SettlementDashboard() {
                 </span>
               </div>
             ))}
-            {monthlyTotal.totalExpenses > 0 && (
+            {(
               <div className="flex justify-between text-gray-800 font-bold border-t border-gray-200 pt-2 mt-1">
                 <span>총 지출</span>
                 <span>
