@@ -234,7 +234,14 @@ export default function SettlementDashboard() {
             ].filter(item => item.value > 0).map(item => (
               <div key={item.label} className="flex justify-between text-gray-600">
                 <span>{item.label}</span>
-                <span>{formatWonFull(item.value)}</span>
+                <span>
+                  {formatWonFull(item.value)}
+                  {monthlyTotal.totalRevenue > 0 && (
+                    <span className="text-xs text-gray-400 ml-1">
+                      ({(item.value / monthlyTotal.totalRevenue * 100).toFixed(1)}%)
+                    </span>
+                  )}
+                </span>
               </div>
             ))}
           </div>
