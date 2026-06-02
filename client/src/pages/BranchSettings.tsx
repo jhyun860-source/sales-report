@@ -95,33 +95,17 @@ export default function BranchSettings() {
 
   const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
 
-  // 콤마 포맷 입력 컴포넌트 - 입력 중에도 콤마 유지
-  const MoneyInput = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => {
-    const [raw, setRaw] = React.useState(value === 0 ? '' : String(value));
-    
-    React.useEffect(() => {
-      setRaw(value === 0 ? '' : String(value));
-    }, [value]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const onlyNums = e.target.value.replace(/[^0-9]/g, '');
-      setRaw(onlyNums);
-      onChange(parseInt(onlyNums) || 0);
-    };
-
-    const display = raw === '' ? '' : parseInt(raw).toLocaleString();
-
-    return (
-      <input
-        type="text"
-        inputMode="numeric"
-        className={inputClass}
-        value={display}
-        onChange={handleChange}
-        placeholder="0"
-      />
-    );
-  };
+  // 숫자 입력 컴포넌트
+  const MoneyInput = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => (
+    <input
+      type="number"
+      className={inputClass}
+      value={value || ''}
+      onChange={e => onChange(parseInt(e.target.value) || 0)}
+      placeholder="0"
+      min="0"
+    />
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
