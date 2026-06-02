@@ -45,6 +45,7 @@ export default function BranchSettings() {
   const [deputyDailyWage, setDeputyDailyWage] = useState(0);
   const [staffDailyWage, setStaffDailyWage] = useState(0);
   const [partTimeHourlyWage, setPartTimeHourlyWage] = useState(0);
+  const [monthlyFixedExpense, setMonthlyFixedExpense] = useState(0);
   const [commissionRate, setCommissionRate] = useState(17);
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
@@ -73,6 +74,7 @@ export default function BranchSettings() {
     setDeputyDailyWage(Number(s?.deputyDailyWage ?? 0));
     setStaffDailyWage(Number(s?.staffDailyWage ?? 0));
     setPartTimeHourlyWage(Number(s?.partTimeHourlyWage ?? 0));
+    setMonthlyFixedExpense(Number(s?.monthlyFixedExpense ?? 0));
     setCommissionRate(Math.round(Number(s?.commissionRate ?? 0.17) * 100));
   };
 
@@ -102,6 +104,7 @@ export default function BranchSettings() {
       deputyDailyWage: deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / 22) : deputyDailyWage,
       staffDailyWage,
       partTimeHourlyWage,
+      monthlyFixedExpense,
       commissionRate: commissionRate / 100,
     });
   };
@@ -171,6 +174,19 @@ export default function BranchSettings() {
             </div>
 
             {/* 인건비 */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+              <h3 className="text-sm font-bold text-gray-800 border-b pb-2">💰 월 고정지출</h3>
+              <div>
+                <label className="text-xs text-gray-500">월 고정지출 (청소비, 소모품비 등)</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <MoneyInput value={monthlyFixedExpense} onChange={setMonthlyFixedExpense} />
+                  <span className="text-xs text-gray-500">원</span>
+                </div>
+                <p className="text-xs text-blue-500 mt-1">→ 일 고정지출: {monthlyFixedExpense > 0 ? `약 ${Math.round(monthlyFixedExpense / 26).toLocaleString()}원` : '-'} (해당 월 월~토 일수로 자동 계산)</p>
+                <p className="text-xs text-gray-400 mt-0.5">* 웹앱 지출내역과 합산되어 정산에 반영됩니다</p>
+              </div>
+            </div>
+
             <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
               <h3 className="text-sm font-bold text-gray-800 border-b pb-2">👥 인건비 설정</h3>
 
@@ -251,6 +267,7 @@ export default function BranchSettings() {
                 <div className="flex justify-between"><span>매니저 일급</span><span>{computedDeputyDaily.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>여직원 일급</span><span>{staffDailyWage.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>알바 시급</span><span>{partTimeHourlyWage.toLocaleString()}원</span></div>
+                <div className="flex justify-between"><span>월 고정지출</span><span>{monthlyFixedExpense.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>수수료율</span><span>{commissionRate}%</span></div>
               </div>
             </div>
