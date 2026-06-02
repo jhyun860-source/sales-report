@@ -76,10 +76,27 @@ export default function BranchSettings() {
     setCustomForm(prev => typeof updater === 'function' ? updater(prev ?? form) : { ...(prev ?? form), ...updater });
   };
 
-  // 지점 전환 핸들러 - customForm 초기화
+  // 지점 전환 핸들러 - 해당 지점 설정값으로 customForm 직접 세팅
   const handleBranchChange = (branchId: number) => {
     setSelectedBranchId(branchId);
-    setCustomForm(null);
+    // 해당 지점 설정값이 있으면 그걸로, 없으면 null(0으로 표시)
+    const setting = (allSettings as any[]).find(
+      (s: any) => Number(s.branchId) === Number(branchId)
+    );
+    if (setting) {
+      setCustomForm({
+        monthlyRent: Number(setting.monthlyRent ?? 0),
+        managerMonthlySalary: Number(setting.managerMonthlySalary ?? 0),
+        managerDailyWage: Number(setting.managerDailyWage ?? 0),
+        deputyMonthlySalary: Number(setting.deputyMonthlySalary ?? 0),
+        deputyDailyWage: Number(setting.deputyDailyWage ?? 0),
+        staffDailyWage: Number(setting.staffDailyWage ?? 0),
+        partTimeHourlyWage: Number(setting.partTimeHourlyWage ?? 0),
+        commissionRate: Number(setting.commissionRate ?? 0.17),
+      });
+    } else {
+      setCustomForm(null);
+    }
   };
 
   // 첫 지점 자동 선택
