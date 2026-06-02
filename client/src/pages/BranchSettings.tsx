@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { useLocation } from 'wouter';
@@ -95,6 +95,26 @@ export default function BranchSettings() {
 
   const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
 
+  // 콤마 포맷 입력 컴포넌트
+  const MoneyInput = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => {
+    const [focused, setFocused] = React.useState(false);
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        className={inputClass}
+        value={focused ? (value === 0 ? '' : String(value)) : (value === 0 ? '' : value.toLocaleString())}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onChange={e => {
+          const raw = e.target.value.replace(/[^0-9]/g, '');
+          onChange(parseInt(raw) || 0);
+        }}
+        placeholder="0"
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
@@ -142,7 +162,7 @@ export default function BranchSettings() {
               <div>
                 <label className="text-xs text-gray-500">월 임대료</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <input type="number" className={inputClass} value={monthlyRent || ''} onChange={e => setMonthlyRent(Number(e.target.value) || 0)} placeholder="0" min="0" />
+                  <MoneyInput value={monthlyRent} onChange={setMonthlyRent} />
                   <span className="text-xs text-gray-500">원</span>
                 </div>
                 <p className="text-xs text-blue-500 mt-1">→ 일 임대료: {monthlyRent > 0 ? `약 ${Math.round(monthlyRent / 26).toLocaleString()}원` : '-'} (해당 월 월~토 일수로 자동 계산)</p>
@@ -159,7 +179,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">월급 (÷22일 자동계산)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input type="number" className={inputClass} value={managerMonthlySalary || ''} onChange={e => { setManagerMonthlySalary(Number(e.target.value) || 0); setManagerDailyWage(0); }} placeholder="0" min="0" />
+                    <MoneyInput value={managerMonthlySalary} onChange={v => { setManagerMonthlySalary(v); setManagerDailyWage(0); }} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
                   {managerMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedManagerDaily.toLocaleString()}원</p>}
@@ -167,7 +187,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input type="number" className={inputClass} value={computedManagerDaily || ''} onChange={e => { setManagerDailyWage(Number(e.target.value) || 0); setManagerMonthlySalary(0); }} placeholder="0" min="0" />
+                    <MoneyInput value={computedManagerDaily} onChange={v => { setManagerDailyWage(v); setManagerMonthlySalary(0); }} />
                     <span className="text-xs text-gray-500">원/일</span>
                   </div>
                 </div>
@@ -179,7 +199,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">월급 (÷22일 자동계산)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input type="number" className={inputClass} value={deputyMonthlySalary || ''} onChange={e => { setDeputyMonthlySalary(Number(e.target.value) || 0); setDeputyDailyWage(0); }} placeholder="0" min="0" />
+                    <MoneyInput value={deputyMonthlySalary} onChange={v => { setDeputyMonthlySalary(v); setDeputyDailyWage(0); }} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
                   {deputyMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedDeputyDaily.toLocaleString()}원</p>}
@@ -187,7 +207,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <input type="number" className={inputClass} value={computedDeputyDaily || ''} onChange={e => { setDeputyDailyWage(Number(e.target.value) || 0); setDeputyMonthlySalary(0); }} placeholder="0" min="0" />
+                    <MoneyInput value={computedDeputyDaily} onChange={v => { setDeputyDailyWage(v); setDeputyMonthlySalary(0); }} />
                     <span className="text-xs text-gray-500">원/일</span>
                   </div>
                 </div>
@@ -197,7 +217,7 @@ export default function BranchSettings() {
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">여직원 일급</p>
                 <div className="flex items-center gap-2">
-                  <input type="number" className={inputClass} value={staffDailyWage || ''} onChange={e => setStaffDailyWage(Number(e.target.value) || 0)} placeholder="0" min="0" />
+                  <MoneyInput value={staffDailyWage} onChange={setStaffDailyWage} />
                   <span className="text-xs text-gray-500">원/일</span>
                 </div>
               </div>
@@ -206,7 +226,7 @@ export default function BranchSettings() {
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">알바 시급</p>
                 <div className="flex items-center gap-2">
-                  <input type="number" className={inputClass} value={partTimeHourlyWage || ''} onChange={e => setPartTimeHourlyWage(Number(e.target.value) || 0)} placeholder="0" min="0" />
+                  <MoneyInput value={partTimeHourlyWage} onChange={setPartTimeHourlyWage} />
                   <span className="text-xs text-gray-500">원/시간</span>
                 </div>
               </div>
