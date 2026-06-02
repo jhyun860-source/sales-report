@@ -99,6 +99,27 @@ export default function BranchSettings() {
     }
   };
 
+  // allSettings 로드 완료 시 현재 지점 값 채우기
+  useEffect(() => {
+    if ((allSettings as any[]).length > 0 && selectedBranchId !== null) {
+      const setting = (allSettings as any[]).find(
+        (s: any) => Number(s.branchId) === Number(selectedBranchId)
+      );
+      if (setting) {
+        setCustomForm({
+          monthlyRent: Number(setting.monthlyRent ?? 0),
+          managerMonthlySalary: Number(setting.managerMonthlySalary ?? 0),
+          managerDailyWage: Number(setting.managerDailyWage ?? 0),
+          deputyMonthlySalary: Number(setting.deputyMonthlySalary ?? 0),
+          deputyDailyWage: Number(setting.deputyDailyWage ?? 0),
+          staffDailyWage: Number(setting.staffDailyWage ?? 0),
+          partTimeHourlyWage: Number(setting.partTimeHourlyWage ?? 0),
+          commissionRate: Number(setting.commissionRate ?? 0.17),
+        });
+      }
+    }
+  }, [allSettings]);
+
   // 첫 지점 자동 선택
   useEffect(() => {
     if ((branches as any[]).length > 0 && !selectedBranchId) {
