@@ -66,37 +66,41 @@ export default function BranchSettings() {
     commissionRate: 0.17,
   });
 
-  // 지점 선택 시 기존 설정값 로드
-  // allSettings 로딩 완료 후에만 실행 (로딩 전 0 초기화 방지)
+  // allSettings를 ref로 항상 최신값 유지
+  const allSettingsRef = React.useRef<any[]>([]);
   useEffect(() => {
-    if (selectedBranchId !== null && allSettings.length > 0) {
-      const setting = (allSettings as any[]).find((s: any) => s.branchId === selectedBranchId);
-      if (setting) {
-        setForm({
-          monthlyRent: Number(setting.monthlyRent || 0),
-          managerMonthlySalary: Number(setting.managerMonthlySalary || 0),
-          managerDailyWage: Number(setting.managerDailyWage || 0),
-          deputyMonthlySalary: Number(setting.deputyMonthlySalary || 0),
-          deputyDailyWage: Number(setting.deputyDailyWage || 0),
-          staffDailyWage: Number(setting.staffDailyWage || 0),
-          partTimeHourlyWage: Number(setting.partTimeHourlyWage || 0),
-          commissionRate: Number(setting.commissionRate || 0.17),
-        });
-      } else {
-        // DB에 해당 지점 설정이 아예 없을 때만 0으로 초기화
-        setForm({
-          monthlyRent: 0,
-          managerMonthlySalary: 0,
-          managerDailyWage: 0,
-          deputyMonthlySalary: 0,
-          deputyDailyWage: 0,
-          staffDailyWage: 0,
-          partTimeHourlyWage: 0,
-          commissionRate: 0.17,
-        });
-      }
+    allSettingsRef.current = allSettings as any[];
+  }, [allSettings]);
+
+  // 지점 선택 시 form 즉시 업데이트 (selectedBranchId 변경만 감지)
+  useEffect(() => {
+    if (selectedBranchId === null) return;
+    const settings = allSettingsRef.current;
+    const setting = settings.find((s: any) => s.branchId === selectedBranchId);
+    if (setting) {
+      setForm({
+        monthlyRent: Number(setting.monthlyRent || 0),
+        managerMonthlySalary: Number(setting.managerMonthlySalary || 0),
+        managerDailyWage: Number(setting.managerDailyWage || 0),
+        deputyMonthlySalary: Number(setting.deputyMonthlySalary || 0),
+        deputyDailyWage: Number(setting.deputyDailyWage || 0),
+        staffDailyWage: Number(setting.staffDailyWage || 0),
+        partTimeHourlyWage: Number(setting.partTimeHourlyWage || 0),
+        commissionRate: Number(setting.commissionRate || 0.17),
+      });
+    } else if (settings.length > 0) {
+      setForm({
+        monthlyRent: 0,
+        managerMonthlySalary: 0,
+        managerDailyWage: 0,
+        deputyMonthlySalary: 0,
+        deputyDailyWage: 0,
+        staffDailyWage: 0,
+        partTimeHourlyWage: 0,
+        commissionRate: 0.17,
+      });
     }
-  }, [selectedBranchId, allSettings]);
+  }, [selectedBranchId]);
 
   // 첫 지점 자동 선택
   useEffect(() => {
