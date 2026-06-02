@@ -74,12 +74,7 @@ export default function BranchSettings() {
     }
   }, [branches]);
 
-  // selectedBranchId 바뀌면 폼 업데이트 (지점 전환은 handleBranchClick에서만)
-  useEffect(() => {
-    if (selectedBranchId !== null && (allSettings as any[]).length > 0) {
-      loadBranchSettings(selectedBranchId, allSettings as any[]);
-    }
-  }, [selectedBranchId]);
+
 
   const handleBranchClick = (branchId: number) => {
     setSelectedBranchId(branchId);
