@@ -95,21 +95,29 @@ export default function BranchSettings() {
 
   const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
 
-  // 콤마 포맷 입력 컴포넌트
+  // 콤마 포맷 입력 컴포넌트 - 입력 중에도 콤마 유지
   const MoneyInput = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => {
-    const [focused, setFocused] = React.useState(false);
+    const [raw, setRaw] = React.useState(value === 0 ? '' : String(value));
+    
+    React.useEffect(() => {
+      setRaw(value === 0 ? '' : String(value));
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+      setRaw(onlyNums);
+      onChange(parseInt(onlyNums) || 0);
+    };
+
+    const display = raw === '' ? '' : parseInt(raw).toLocaleString();
+
     return (
       <input
         type="text"
         inputMode="numeric"
         className={inputClass}
-        value={focused ? (value === 0 ? '' : String(value)) : (value === 0 ? '' : value.toLocaleString())}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onChange={e => {
-          const raw = e.target.value.replace(/[^0-9]/g, '');
-          onChange(parseInt(raw) || 0);
-        }}
+        value={display}
+        onChange={handleChange}
         placeholder="0"
       />
     );
