@@ -208,16 +208,22 @@ export default function SettlementDashboard() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs text-gray-500">월 총매출</p>
-              <p className="text-base font-bold text-gray-800">{formatWonFull(monthlyTotal.totalRevenue)}</p>
+              <p className="text-sm font-bold text-gray-800">{formatWonFull(monthlyTotal.totalRevenue)}</p>
+            </div>
+            <div className="bg-orange-50 rounded-lg p-3">
+              <p className="text-xs text-gray-500">월 총지출</p>
+              <p className="text-sm font-bold text-gray-700">{formatWonFull(monthlyTotal.totalExpenses)}</p>
+              {monthlyTotal.totalRevenue > 0 && <p className="text-xs text-gray-400">{(monthlyTotal.totalExpenses / monthlyTotal.totalRevenue * 100).toFixed(1)}%</p>}
             </div>
             <div className={`rounded-lg p-3 ${monthlyTotal.netProfit >= 0 ? 'bg-blue-50' : 'bg-red-50'}`}>
               <p className="text-xs text-gray-500">월 순수익</p>
-              <p className={`text-base font-bold ${monthlyTotal.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+              <p className={`text-sm font-bold ${monthlyTotal.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                 {formatWonFull(monthlyTotal.netProfit)}
               </p>
+              {monthlyTotal.totalRevenue > 0 && <p className={`text-xs ${monthlyTotal.netProfit >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{(monthlyTotal.netProfit / monthlyTotal.totalRevenue * 100).toFixed(1)}%</p>}
             </div>
           </div>
 
