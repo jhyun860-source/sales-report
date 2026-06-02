@@ -149,7 +149,7 @@ export default function BranchSettings() {
                   <span className="text-xs text-gray-500">원</span>
                 </div>
                 <p className="text-xs text-blue-500 mt-1">
-                  → 일 임대료: {form.monthlyRent > 0 ? `약 ${Math.round(form.monthlyRent / 26).toLocaleString()}원` : '-'} (÷26일 기준)
+                  → 일 임대료: {form.monthlyRent > 0 ? `약 ${Math.round(form.monthlyRent / 26).toLocaleString()}원` : '-'} (해당 월 월~토 일수로 자동 계산)
                 </p>
               </div>
             </div>
