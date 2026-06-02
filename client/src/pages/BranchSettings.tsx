@@ -19,6 +19,11 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
     />
   );
 }
+<<<<<<< Updated upstream
+=======
+
+const PRIMARY = '#8B0000';
+>>>>>>> Stashed changes
 
 export default function BranchSettings() {
   const { user, loading } = useStoreAuth();
@@ -71,12 +76,20 @@ export default function BranchSettings() {
     }
   }, [branches]);
 
+<<<<<<< Updated upstream
   // allSettings 로드되면 현재 지점 값 채우기
+=======
+  // selectedBranchId 바뀌면 폼 업데이트 (지점 전환은 handleBranchClick에서만)
+>>>>>>> Stashed changes
   useEffect(() => {
     if (selectedBranchId !== null && (allSettings as any[]).length > 0) {
       loadBranchSettings(selectedBranchId, allSettings as any[]);
     }
+<<<<<<< Updated upstream
   }, [allSettings]);
+=======
+  }, [selectedBranchId]);
+>>>>>>> Stashed changes
 
   const handleBranchClick = (branchId: number) => {
     setSelectedBranchId(branchId);
