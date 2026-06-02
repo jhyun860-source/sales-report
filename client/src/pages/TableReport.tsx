@@ -1075,16 +1075,16 @@ export default function TableReport() {
                   />
                   <button
                     onClick={() => {
-                      const next = inc.staffType === 'staff' ? 'parttime' : inc.staffType === 'parttime' ? 'manager' : (inc.staffType === 'manager' || inc.staffType === 'deputy') ? 'deputy' : 'staff';
+                      const next = inc.staffType === 'staff' ? 'parttime' : inc.staffType === 'parttime' ? 'manager' : inc.staffType === 'manager' ? 'deputy' : 'staff';
                       updateIncentiveField(inc.localId, 'staffType', next);
                     }}
                     className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap"
                     style={{
-                      background: inc.staffType === 'staff' ? PRIMARY : inc.staffType === 'parttime' ? 'oklch(0.65 0.12 200)' : (inc.staffType === 'manager' || inc.staffType === 'deputy') ? 'oklch(0.60 0.15 30)' : 'oklch(0.55 0.18 270)',
+                      background: inc.staffType === 'staff' ? PRIMARY : inc.staffType === 'parttime' ? 'oklch(0.65 0.12 200)' : inc.staffType === 'manager' ? 'oklch(0.60 0.15 30)' : 'oklch(0.55 0.18 270)',
                       color: 'white',
                     }}
                   >
-                    {inc.staffType === 'staff' ? '직원' : inc.staffType === 'parttime' ? '아르바' : (inc.staffType === 'manager' || inc.staffType === 'deputy') ? '점장' : '매니저'}
+                    {inc.staffType === 'staff' ? '직원' : inc.staffType === 'parttime' ? '아르바' : inc.staffType === 'manager' ? '점장' : '매니저'}
                   </button>
                   <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
