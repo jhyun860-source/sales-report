@@ -146,9 +146,14 @@ export default function SettlementDashboard() {
           </button>
           <h1 className="text-lg font-bold text-gray-800">정산 관리</h1>
         </div>
-        <button onClick={logout} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate('/branch-settings')} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
+            ⚙️ 설정
+          </button>
+          <button onClick={logout} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
           <LogOut size={16} />로그아웃
-        </button>
+          </button>
+        </div>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
