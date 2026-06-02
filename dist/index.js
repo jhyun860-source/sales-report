@@ -202,7 +202,7 @@ var staffIncentives = mysqlTable("staffIncentives", {
   // 맥주 병추가 수
   salesIncentive: decimal("salesIncentive", { precision: 15, scale: 0 }).default("0").notNull(),
   // 영업 인센티브 금액
-  staffType: mysqlEnum("staffType", ["staff", "parttime", "manager"]).default("staff").notNull(),
+  staffType: mysqlEnum("staffType", ["staff", "parttime", "manager", "deputy"]).default("staff").notNull(),
   // 직원/아르바이트/점장
   workStart: varchar("workStart", { length: 5 }),
   // 근무 시작 시간 (HH:mm)
@@ -1514,7 +1514,7 @@ async function getStaffCounts(tableReportId) {
   const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
   const staffCount = incentives.filter((i) => i.staffType === "staff").length;
   const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
-  const managerCount = incentives.filter((i) => i.staffType === "manager").length;
+  const managerCount = incentives.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
   return { staffCount, partTimeCount, managerCount };
 }
 async function calculateStaffDrinkExpense(tableReportId, branchName) {
@@ -6268,7 +6268,7 @@ var appRouter = router({
         id: z3.number().optional(),
         localId: z3.string(),
         staffName: z3.string(),
-        staffType: z3.enum(["staff", "parttime", "manager"]).default("staff"),
+        staffType: z3.enum(["staff", "parttime", "manager", "deputy"]).default("staff"),
         glassCount: z3.number().default(0),
         bottleCount: z3.number().default(0),
         beerBottleCount: z3.number().default(0),
