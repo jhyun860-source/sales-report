@@ -1,14 +1,39 @@
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { router, publicProcedure } from './_core/trpc';
-import { getDb } from './db';
+import { getDb, getStoreAccountById } from './db';
 import { branchSettings } from '../drizzle/schema';
-import { parseStoreCookie } from './_core/cookies';
-import { getStoreAccountById } from './_core/dataApi';
 import { TRPCError } from '@trpc/server';
+import { COOKIE_NAME } from '@shared/const';
+import { ENV } from './_core/env';
+import { jwtVerify } from 'jose';
+
+async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: string) {
+  let token: string | undefined;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  }
+  if (!token && cookieHeader) {
+    const cookies = Object.fromEntries(
+      cookieHeader.split(';').map(c => {
+        const [k, ...v] = c.trim().split('=');
+        return [k.trim(), v.join('=')];
+      })
+    );
+    token = cookies[COOKIE_NAME];
+  }
+  if (!token) return null;
+  try {
+    const secret = new TextEncoder().encode(ENV.cookieSecret);
+    const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] });
+    if (payload.type !== 'store') return null;
+    return payload as { accountId: number; loginId: string; role: string; type: string };
+  } catch {
+    return null;
+  }
+}
 
 export const branchSettingsRouter = router({
-  // 전체 지점 설정 조회
   getAll: publicProcedure
     .query(async ({ ctx }) => {
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
@@ -20,7 +45,6 @@ export const branchSettingsRouter = router({
       return await db.select().from(branchSettings).orderBy(branchSettings.branchId);
     }),
 
-  // 특정 지점 설정 조회
   getByBranch: publicProcedure
     .input(z.object({ branchId: z.number() }))
     .query(async ({ input }) => {
@@ -31,7 +55,6 @@ export const branchSettingsRouter = router({
       return setting ?? null;
     }),
 
-  // 지점 설정 저장 (관리자만)
   upsert: publicProcedure
     .input(z.object({
       branchId: z.number(),
@@ -52,11 +75,9 @@ export const branchSettingsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      // 점장: 월급 입력 시 ÷22 자동 계산
       const computedDailyWage = input.managerMonthlySalary > 0
         ? Math.round(input.managerMonthlySalary / 22)
         : input.managerDailyWage;
-      // 매니저: 월급 입력 시 ÷22 자동 계산
       const computedDeputyDailyWage = input.deputyMonthlySalary > 0
         ? Math.round(input.deputyMonthlySalary / 22)
         : input.deputyDailyWage;
