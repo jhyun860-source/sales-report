@@ -221,10 +221,12 @@ export async function calculateDailySettlement(
 
   // 3. 임대료 (월 임대료 ÷ 영업일수)
   const monthlyRent = config?.monthlyRent ?? Number(branchData[0].monthlyRent || 0);
-  const rentExpense = calculateDailyRent(monthlyRent, year, month);
+  const managementFeeRaw = config?.managementFee ?? Number(branchData[0].managementFee || 0);
+  // 관리비는 임대료에 합산
+  const rentExpense = calculateDailyRent(monthlyRent, year, month) + managementFeeRaw;
 
-  // 4. 관리비
-  const managementFeeExpense = config?.managementFee ?? Number(branchData[0].managementFee || 0);
+  // 4. 관리비 (임대료에 합산됨)
+  const managementFeeExpense = 0;
 
   // 5. 여직원 인건비
   const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
