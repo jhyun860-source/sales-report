@@ -223,8 +223,7 @@ export default function SettlementDashboard() {
           <div className="space-y-1 text-sm border-t border-gray-100 pt-3">
             {[
               { label: '수수료/주방', value: monthlyTotal.commissionExpense },
-              { label: '임대료', value: monthlyTotal.rentExpense },
-              { label: '관리비', value: monthlyTotal.managementFeeExpense },
+              { label: '임대료', value: monthlyTotal.rentExpense + monthlyTotal.managementFeeExpense },
               { label: '여직원 인건비', value: monthlyTotal.staffWageExpense },
               { label: '점장 인건비', value: monthlyTotal.managerWageExpense },
               { label: '알바 인건비', value: monthlyTotal.partTimeWageExpense },
