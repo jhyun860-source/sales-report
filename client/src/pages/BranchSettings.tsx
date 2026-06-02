@@ -13,18 +13,19 @@ function parseAmount(s: string) {
   return parseInt(s.replace(/,/g, '')) || 0;
 }
 
-// 숫자 입력 컴포넌트 - 단순 number input
+// 숫자 입력 - 완전 Controlled Component (내부 state 없음, 콤마 포맷 지원)
 function NumberInput({ value, onChange, placeholder = '0' }: { value: number; onChange: (v: number) => void; placeholder?: string }) {
   return (
     <input
-      type="number"
+      type="text"
       inputMode="numeric"
-      value={value === 0 ? '' : value}
-      onChange={e => onChange(parseInt(e.target.value) || 0)}
+      value={value === 0 ? '' : value.toLocaleString()}
+      onChange={e => {
+        const raw = e.target.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+        onChange(parseInt(raw) || 0);
+      }}
       placeholder={placeholder}
       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-      min="0"
-      style={{ appearance: 'none', MozAppearance: 'textfield' } as any}
     />
   );
 }
