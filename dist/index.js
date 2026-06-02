@@ -1200,10 +1200,10 @@ var systemRouter = router({
 });
 
 // server/routers.ts
-import { z as z3 } from "zod";
+import { z as z4 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
-import { SignJWT as SignJWT2, jwtVerify as jwtVerify3 } from "jose";
+import { SignJWT as SignJWT2, jwtVerify as jwtVerify4 } from "jose";
 
 // server/_core/llm.ts
 var ensureArray = (value) => Array.isArray(value) ? value : [value];
@@ -1440,8 +1440,8 @@ async function storagePut(relKey, data, contentType = "application/octet-stream"
 }
 
 // server/routers.ts
-import { eq as eq5, and as and5, desc as desc3, asc, like, sql, inArray, gte as gte4, lte as lte4, not } from "drizzle-orm";
-import { TRPCError as TRPCError4 } from "@trpc/server";
+import { eq as eq6, and as and5, desc as desc3, asc, like, sql, inArray, gte as gte4, lte as lte4, not } from "drizzle-orm";
+import { TRPCError as TRPCError5 } from "@trpc/server";
 
 // server/_core/settlementCalculations.ts
 import { eq as eq3, and as and3, gte as gte2, lte as lte2 } from "drizzle-orm";
@@ -1997,6 +1997,99 @@ var settlementRouter = router({
   })
 });
 
+// server/branchSettingsRouter.ts
+import { z as z3 } from "zod";
+import { eq as eq5 } from "drizzle-orm";
+import { TRPCError as TRPCError4 } from "@trpc/server";
+import { jwtVerify as jwtVerify3 } from "jose";
+async function parseStoreCookie2(cookieHeader, authHeader) {
+  let token;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.slice(7).trim();
+  }
+  if (!token && cookieHeader) {
+    const cookies = Object.fromEntries(
+      cookieHeader.split(";").map((c) => {
+        const [k, ...v] = c.trim().split("=");
+        return [k.trim(), v.join("=")];
+      })
+    );
+    token = cookies[COOKIE_NAME];
+  }
+  if (!token) return null;
+  try {
+    const secret = new TextEncoder().encode(ENV.cookieSecret);
+    const { payload } = await jwtVerify3(token, secret, { algorithms: ["HS256"] });
+    if (payload.type !== "store") return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+var branchSettingsRouter = router({
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+    if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED" });
+    const account = await getStoreAccountById(payload.accountId);
+    if (!account || account.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN" });
+    const db2 = await getDb();
+    if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+    return await db2.select().from(branchSettings).orderBy(branchSettings.branchId);
+  }),
+  getByBranch: publicProcedure.input(z3.object({ branchId: z3.number() })).query(async ({ input }) => {
+    const db2 = await getDb();
+    if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+    const [setting] = await db2.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
+    return setting ?? null;
+  }),
+  upsert: publicProcedure.input(z3.object({
+    branchId: z3.number(),
+    monthlyRent: z3.number().min(0),
+    managerMonthlySalary: z3.number().min(0),
+    managerDailyWage: z3.number().min(0),
+    deputyMonthlySalary: z3.number().min(0).default(0),
+    deputyDailyWage: z3.number().min(0).default(0),
+    staffDailyWage: z3.number().min(0),
+    partTimeHourlyWage: z3.number().min(0),
+    commissionRate: z3.number().min(0).max(1).default(0.17)
+  })).mutation(async ({ ctx, input }) => {
+    const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+    if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED" });
+    const account = await getStoreAccountById(payload.accountId);
+    if (!account || account.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN" });
+    const db2 = await getDb();
+    if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+    const computedDailyWage = input.managerMonthlySalary > 0 ? Math.round(input.managerMonthlySalary / 22) : input.managerDailyWage;
+    const computedDeputyDailyWage = input.deputyMonthlySalary > 0 ? Math.round(input.deputyMonthlySalary / 22) : input.deputyDailyWage;
+    const [existing] = await db2.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
+    if (existing) {
+      await db2.update(branchSettings).set({
+        monthlyRent: String(input.monthlyRent),
+        managerMonthlySalary: String(input.managerMonthlySalary),
+        managerDailyWage: String(computedDailyWage),
+        deputyMonthlySalary: String(input.deputyMonthlySalary),
+        deputyDailyWage: String(computedDeputyDailyWage),
+        staffDailyWage: String(input.staffDailyWage),
+        partTimeHourlyWage: String(input.partTimeHourlyWage),
+        commissionRate: String(input.commissionRate)
+      }).where(eq5(branchSettings.branchId, input.branchId));
+    } else {
+      await db2.insert(branchSettings).values({
+        branchId: input.branchId,
+        monthlyRent: String(input.monthlyRent),
+        managerMonthlySalary: String(input.managerMonthlySalary),
+        managerDailyWage: String(computedDailyWage),
+        deputyMonthlySalary: String(input.deputyMonthlySalary),
+        deputyDailyWage: String(computedDeputyDailyWage),
+        staffDailyWage: String(input.staffDailyWage),
+        partTimeHourlyWage: String(input.partTimeHourlyWage),
+        commissionRate: String(input.commissionRate)
+      });
+    }
+    return { success: true, managerDailyWage: computedDailyWage, deputyDailyWage: computedDeputyDailyWage };
+  })
+});
+
 // server/routers.ts
 function formatKstDateString(date) {
   const kst = new Date(date.getTime() + 9 * 60 * 60 * 1e3);
@@ -2016,7 +2109,7 @@ async function normalizeMonthlyCumulativeRecord(record) {
     if (record.cashTotal !== nextCashTotal || record.cardTotal !== nextCardTotal) {
       const db2 = await getDb();
       if (db2 && record.id) {
-        await db2.update(dailySalesRecords).set({ cashTotal: nextCashTotal, cardTotal: nextCardTotal, updatedAt: /* @__PURE__ */ new Date() }).where(eq5(dailySalesRecords.id, record.id));
+        await db2.update(dailySalesRecords).set({ cashTotal: nextCashTotal, cardTotal: nextCardTotal, updatedAt: /* @__PURE__ */ new Date() }).where(eq6(dailySalesRecords.id, record.id));
       }
       return { ...record, cashTotal: nextCashTotal, cardTotal: nextCardTotal };
     }
@@ -4549,11 +4642,11 @@ var BOXHERO_ITEM_ALIASES = {
   "\uD55C\uB9E5\uC0DD\uB9E5": "\uD55C\uB9E5 \uC0DD\uB9E5\uC8FC"
 };
 async function requireStoreAccount(ctx) {
-  const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-  if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+  const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+  if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
   await ensureCanonicalStoreAccounts();
   const account = await getStoreAccountById(payload.accountId);
-  if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+  if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
   return account;
 }
 async function ensureLiquorTables(db2) {
@@ -4653,14 +4746,14 @@ async function ensureBoxHeroBranchStockSeeded(db2) {
     });
     const insertId = Number(result.insertId || 0);
     if (insertId) {
-      const [created] = await db2.select().from(liquorItems).where(eq5(liquorItems.id, insertId)).limit(1);
+      const [created] = await db2.select().from(liquorItems).where(eq6(liquorItems.id, insertId)).limit(1);
       if (created) {
         itemByKey.set(canonicalKey, created);
         itemByKey.set(rawKey, created);
         return created;
       }
     }
-    const [fallback] = await db2.select().from(liquorItems).where(eq5(liquorItems.name, canonicalName)).limit(1);
+    const [fallback] = await db2.select().from(liquorItems).where(eq6(liquorItems.name, canonicalName)).limit(1);
     if (!fallback) throw new Error(`\uC8FC\uB958 \uD488\uBAA9 \uC0DD\uC131 \uC2E4\uD328: ${canonicalName}`);
     itemByKey.set(canonicalKey, fallback);
     itemByKey.set(rawKey, fallback);
@@ -4675,7 +4768,7 @@ async function ensureBoxHeroBranchStockSeeded(db2) {
     for (const row of rows) {
       const item = await getOrCreateItem(row.name, row.category);
       const qty = Number(row.quantity || 0);
-      const [existingInventory] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, branch.id), eq5(liquorInventories.liquorItemId, item.id))).limit(1);
+      const [existingInventory] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, branch.id), eq6(liquorInventories.liquorItemId, item.id))).limit(1);
       if (!existingInventory) {
         await db2.insert(liquorInventories).values({ branchId: branch.id, liquorItemId: item.id, currentStock: String(qty) });
       }
@@ -4699,7 +4792,7 @@ async function ensureLiquorSeeded(db2) {
   }
   await ensureBoxHeroBranchStockSeeded(db2);
 }
-async function parseStoreCookie2(cookieHeader, authHeader) {
+async function parseStoreCookie3(cookieHeader, authHeader) {
   let token;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.slice(7).trim();
@@ -4716,7 +4809,7 @@ async function parseStoreCookie2(cookieHeader, authHeader) {
   if (!token) return null;
   try {
     const secret = new TextEncoder().encode(ENV.cookieSecret);
-    const { payload } = await jwtVerify3(token, secret, { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify4(token, secret, { algorithms: ["HS256"] });
     if (payload.type !== "store") return null;
     return payload;
   } catch {
@@ -4733,18 +4826,18 @@ var appRouter = router({
       return { success: true };
     }),
     // 자체 아이디/비밀번호 로그인
-    loginWithPassword: publicProcedure.input(z3.object({
-      loginId: z3.string().min(1),
-      password: z3.string().min(1)
+    loginWithPassword: publicProcedure.input(z4.object({
+      loginId: z4.string().min(1),
+      password: z4.string().min(1)
     })).mutation(async ({ ctx, input }) => {
       await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountByLoginId(input.loginId);
       if (!account) {
-        throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
       }
       const isValid = await bcrypt.compare(input.password, account.passwordHash);
       if (!isValid) {
-        throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4" });
       }
       const token = await createStoreSessionToken(account.id, account.loginId, account.role);
       const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -4769,7 +4862,7 @@ var appRouter = router({
     }),
     // 자체 계정 현재 사용자 조회
     storeMe: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) return null;
       await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountById(payload.accountId);
@@ -4797,11 +4890,11 @@ var appRouter = router({
     })
   }),
   push: router({
-    subscribe: protectedProcedure.input(z3.object({ endpoint: z3.string(), p256dh: z3.string(), auth: z3.string() })).mutation(async ({ ctx, input }) => {
+    subscribe: protectedProcedure.input(z4.object({ endpoint: z4.string(), p256dh: z4.string(), auth: z4.string() })).mutation(async ({ ctx, input }) => {
       await savePushSubscription({ userId: ctx.user.id, endpoint: input.endpoint, p256dh: input.p256dh, auth: input.auth });
       return { success: true };
     }),
-    unsubscribe: protectedProcedure.input(z3.object({ endpoint: z3.string() })).mutation(async ({ input }) => {
+    unsubscribe: protectedProcedure.input(z4.object({ endpoint: z4.string() })).mutation(async ({ input }) => {
       await deletePushSubscription(input.endpoint);
       return { success: true };
     }),
@@ -4824,7 +4917,7 @@ var appRouter = router({
       const db2 = await getDb();
       if (!db2) return [];
       if (ctx.user.role === "admin") return db2.select().from(branches).orderBy(branches.name);
-      const managed = await db2.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq5(branchManagers.branchId, branches.id)).where(eq5(branchManagers.userId, ctx.user.id));
+      const managed = await db2.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq6(branchManagers.branchId, branches.id)).where(eq6(branchManagers.userId, ctx.user.id));
       return managed.map((r) => r.branch);
     }),
     list: adminProcedure.query(async () => {
@@ -4832,20 +4925,20 @@ var appRouter = router({
       if (!db2) return [];
       return db2.select().from(branches).orderBy(branches.name);
     }),
-    create: adminProcedure.input(z3.object({ name: z3.string().min(1), code: z3.string().min(1) })).mutation(async ({ ctx, input }) => {
+    create: adminProcedure.input(z4.object({ name: z4.string().min(1), code: z4.string().min(1) })).mutation(async ({ ctx, input }) => {
       const branch = await createBranch({ name: input.name, code: input.code, ownerId: ctx.user.id });
       return { success: true, branch };
     }),
-    update: adminProcedure.input(z3.object({ id: z3.number(), name: z3.string().min(1), code: z3.string().min(1) })).mutation(async ({ input }) => {
+    update: adminProcedure.input(z4.object({ id: z4.number(), name: z4.string().min(1), code: z4.string().min(1) })).mutation(async ({ input }) => {
       const db2 = await getDb();
       if (!db2) return { success: false };
-      await db2.update(branches).set({ name: input.name, code: input.code }).where(eq5(branches.id, input.id));
+      await db2.update(branches).set({ name: input.name, code: input.code }).where(eq6(branches.id, input.id));
       return { success: true };
     }),
-    delete: adminProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ input }) => {
+    delete: adminProcedure.input(z4.object({ id: z4.number() })).mutation(async ({ input }) => {
       const db2 = await getDb();
       if (!db2) return { success: false };
-      await db2.delete(branches).where(eq5(branches.id, input.id));
+      await db2.delete(branches).where(eq6(branches.id, input.id));
       return { success: true };
     })
   }),
@@ -4855,37 +4948,37 @@ var appRouter = router({
       if (!db2) return [];
       const allUsers = await db2.select().from(users).orderBy(users.name);
       return Promise.all(allUsers.map(async (u) => {
-        const managed = await db2.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq5(branchManagers.branchId, branches.id)).where(eq5(branchManagers.userId, u.id));
+        const managed = await db2.select({ branch: branches }).from(branchManagers).innerJoin(branches, eq6(branchManagers.branchId, branches.id)).where(eq6(branchManagers.userId, u.id));
         return { ...u, assignedBranches: managed.map((r) => r.branch) };
       }));
     }),
-    updateRole: adminProcedure.input(z3.object({ userId: z3.number(), role: z3.enum(["user", "admin"]) })).mutation(async ({ input }) => {
+    updateRole: adminProcedure.input(z4.object({ userId: z4.number(), role: z4.enum(["user", "admin"]) })).mutation(async ({ input }) => {
       const db2 = await getDb();
       if (!db2) return { success: false };
-      await db2.update(users).set({ role: input.role }).where(eq5(users.id, input.userId));
+      await db2.update(users).set({ role: input.role }).where(eq6(users.id, input.userId));
       return { success: true };
     }),
-    assignBranch: adminProcedure.input(z3.object({ userId: z3.number(), branchId: z3.number() })).mutation(async ({ input }) => {
+    assignBranch: adminProcedure.input(z4.object({ userId: z4.number(), branchId: z4.number() })).mutation(async ({ input }) => {
       const db2 = await getDb();
       if (!db2) return { success: false };
-      const existing = await db2.select().from(branchManagers).where(and5(eq5(branchManagers.userId, input.userId), eq5(branchManagers.branchId, input.branchId))).limit(1);
+      const existing = await db2.select().from(branchManagers).where(and5(eq6(branchManagers.userId, input.userId), eq6(branchManagers.branchId, input.branchId))).limit(1);
       if (existing.length === 0) {
         await db2.insert(branchManagers).values({ userId: input.userId, branchId: input.branchId, role: "manager" });
       }
       return { success: true };
     }),
-    unassignBranch: adminProcedure.input(z3.object({ userId: z3.number(), branchId: z3.number() })).mutation(async ({ input }) => {
+    unassignBranch: adminProcedure.input(z4.object({ userId: z4.number(), branchId: z4.number() })).mutation(async ({ input }) => {
       const db2 = await getDb();
       if (!db2) return { success: false };
-      await db2.delete(branchManagers).where(and5(eq5(branchManagers.userId, input.userId), eq5(branchManagers.branchId, input.branchId)));
+      await db2.delete(branchManagers).where(and5(eq6(branchManagers.userId, input.userId), eq6(branchManagers.branchId, input.branchId)));
       return { success: true };
     })
   }),
   // storeAccount 관리 API
   storeAccount: router({
     list: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const accounts = await getAllStoreAccounts();
       const db2 = await getDb();
       const allBranches = db2 ? await db2.select().from(branches) : [];
@@ -4899,17 +4992,17 @@ var appRouter = router({
         branch: allBranches.find((b) => b.id === acc.branchId) || null
       }));
     }),
-    create: publicProcedure.input(z3.object({
-      loginId: z3.string().min(1).max(50),
-      password: z3.string().min(1),
-      displayName: z3.string().optional(),
-      role: z3.enum(["user", "admin"]).default("user"),
-      branchId: z3.number().optional()
+    create: publicProcedure.input(z4.object({
+      loginId: z4.string().min(1).max(50),
+      password: z4.string().min(1),
+      displayName: z4.string().optional(),
+      role: z4.enum(["user", "admin"]).default("user"),
+      branchId: z4.number().optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const existing = await getStoreAccountByLoginId(input.loginId);
-      if (existing) throw new TRPCError4({ code: "CONFLICT", message: "\uC774\uBBF8 \uC0AC\uC6A9 \uC911\uC778 \uC544\uC774\uB514\uC785\uB2C8\uB2E4" });
+      if (existing) throw new TRPCError5({ code: "CONFLICT", message: "\uC774\uBBF8 \uC0AC\uC6A9 \uC911\uC778 \uC544\uC774\uB514\uC785\uB2C8\uB2E4" });
       const passwordHash = await bcrypt.hash(input.password, 10);
       const account = await createStoreAccount({
         loginId: input.loginId,
@@ -4920,28 +5013,28 @@ var appRouter = router({
       });
       return { success: true, account };
     }),
-    changePassword: publicProcedure.input(z3.object({ accountId: z3.number(), newPassword: z3.string().min(1) })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+    changePassword: publicProcedure.input(z4.object({ accountId: z4.number(), newPassword: z4.string().min(1) })).mutation(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const passwordHash = await bcrypt.hash(input.newPassword, 10);
       await updateStoreAccount(input.accountId, { passwordHash });
       return { success: true };
     }),
-    delete: publicProcedure.input(z3.object({ accountId: z3.number() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+    delete: publicProcedure.input(z4.object({ accountId: z4.number() })).mutation(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await deleteStoreAccount(input.accountId);
       return { success: true };
     }),
-    assignBranch: publicProcedure.input(z3.object({ accountId: z3.number(), branchId: z3.number().nullable() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload || payload.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+    assignBranch: publicProcedure.input(z4.object({ accountId: z4.number(), branchId: z4.number().nullable() })).mutation(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await updateStoreAccount(input.accountId, { branchId: input.branchId });
       return { success: true };
     }),
     branchList: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const db2 = await getDb();
       if (!db2) return [];
       return db2.select().from(branches).orderBy(branches.name);
@@ -4950,27 +5043,27 @@ var appRouter = router({
   // 매출 기록 API (storeAccount 기반)
   storeSales: router({
     getBranches: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED" });
+      if (!account) throw new TRPCError5({ code: "UNAUTHORIZED" });
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
       if (account.role === "admin") {
         return await db2.select().from(branches).orderBy(branches.name);
       }
       if (account.branchId) {
-        return await db2.select().from(branches).where(eq5(branches.id, account.branchId));
+        return await db2.select().from(branches).where(eq6(branches.id, account.branchId));
       }
       return [];
     }),
-    getRecord: publicProcedure.input(z3.object({ branchId: z3.number(), date: z3.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+    getRecord: publicProcedure.input(z4.object({ branchId: z4.number(), date: z4.string() })).query(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       let record = await getDailySalesRecord(input.branchId, input.date);
       if (!record) return null;
@@ -4996,46 +5089,46 @@ var appRouter = router({
       }
       return record;
     }),
-    getPrevRecord: publicProcedure.input(z3.object({ branchId: z3.number(), date: z3.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+    getPrevRecord: publicProcedure.input(z4.object({ branchId: z4.number(), date: z4.string() })).query(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       const prev = await getPrevDailySalesRecordWithPosEnd(input.branchId, input.date);
       return normalizeMonthlyCumulativeRecord(prev);
     }),
-    getRecords: publicProcedure.input(z3.object({ branchId: z3.number(), startDate: z3.string(), endDate: z3.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+    getRecords: publicProcedure.input(z4.object({ branchId: z4.number(), startDate: z4.string(), endDate: z4.string() })).query(async ({ ctx, input }) => {
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       const records = await getDailySalesRecordsByDateRange(input.branchId, input.startDate, input.endDate);
       return Promise.all(records.map((record) => normalizeMonthlyCumulativeRecord(record)));
     }),
-    save: publicProcedure.input(z3.object({
-      branchId: z3.number(),
-      date: z3.string(),
-      posStartAmount: z3.string().default("0"),
-      cash: z3.string().default("0"),
-      card: z3.string().default("0"),
-      cashTotal: z3.string().default("0"),
-      cardTotal: z3.string().default("0"),
-      posEndAmount: z3.string().default("0"),
-      cashDeposit: z3.string().optional(),
-      expenses: z3.array(z3.object({ id: z3.string(), description: z3.string(), amount: z3.string() })).default([])
+    save: publicProcedure.input(z4.object({
+      branchId: z4.number(),
+      date: z4.string(),
+      posStartAmount: z4.string().default("0"),
+      cash: z4.string().default("0"),
+      card: z4.string().default("0"),
+      cashTotal: z4.string().default("0"),
+      cardTotal: z4.string().default("0"),
+      posEndAmount: z4.string().default("0"),
+      cashDeposit: z4.string().optional(),
+      expenses: z4.array(z4.object({ id: z4.string(), description: z4.string(), amount: z4.string() })).default([])
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== input.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       }
       const prevRec = await getPrevDailySalesRecord(input.branchId, input.date);
       const dateObj = /* @__PURE__ */ new Date(input.date + "T12:00:00");
@@ -5110,9 +5203,9 @@ var appRouter = router({
         }
       }
       try {
-        const tableReport = await db?.select().from(tableReports).where(and5(eq5(tableReports.branchId, input.branchId), eq5(tableReports.date, input.date))).limit(1);
+        const tableReport = await db?.select().from(tableReports).where(and5(eq6(tableReports.branchId, input.branchId), eq6(tableReports.date, input.date))).limit(1);
         const tableReportId = tableReport?.[0]?.id ?? null;
-        const staffRows = tableReportId ? await db?.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, tableReportId)) : [];
+        const staffRows = tableReportId ? await db?.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, tableReportId)) : [];
         const staffCount = (staffRows ?? []).filter((i) => i.staffType === "staff").length;
         const partTimeCount = (staffRows ?? []).filter((i) => i.staffType === "parttime").length;
         const managerCount2 = (staffRows ?? []).filter((i) => i.staffType === "manager").length;
@@ -5154,16 +5247,16 @@ var appRouter = router({
       }
       return { success: true, record, pushSent };
     }),
-    adminDailyDetail: publicProcedure.input(z3.object({ date: z3.string() })).query(async ({ ctx, input }) => {
-      const storePayload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+    adminDailyDetail: publicProcedure.input(z4.object({ date: z4.string() })).query(async ({ ctx, input }) => {
+      const storePayload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin = storePayload?.role === "admin";
       const isOAuthAdmin = ctx.user?.role === "admin";
-      if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const db2 = await getDb();
       if (!db2) return [];
       const allBranches = await db2.select().from(branches).orderBy(branches.name);
-      const records = await db2.select().from(dailySalesRecords).where(eq5(dailySalesRecords.date, input.date));
-      const tableReportRows = await db2.select().from(tableReports).where(eq5(tableReports.date, input.date));
+      const records = await db2.select().from(dailySalesRecords).where(eq6(dailySalesRecords.date, input.date));
+      const tableReportRows = await db2.select().from(tableReports).where(eq6(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
       const tableItemRows = reportIds.length > 0 ? await db2.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
       const incentiveRows = reportIds.length > 0 ? await db2.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
@@ -5181,11 +5274,11 @@ var appRouter = router({
         })()
       }));
     }),
-    adminSummary: publicProcedure.input(z3.object({ startDate: z3.string(), endDate: z3.string() })).query(async ({ ctx, input }) => {
-      const storePayload2 = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+    adminSummary: publicProcedure.input(z4.object({ startDate: z4.string(), endDate: z4.string() })).query(async ({ ctx, input }) => {
+      const storePayload2 = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin2 = storePayload2?.role === "admin";
       const isOAuthAdmin2 = ctx.user?.role === "admin";
-      if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError4({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
+      if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const db2 = await getDb();
       if (!db2) return { byBranch: [], byDate: [] };
       const allBranches = await db2.select().from(branches).orderBy(branches.name);
@@ -5208,12 +5301,12 @@ var appRouter = router({
       const byDate = Object.entries(dateMap).map(([date, data]) => ({ date, ...data })).sort((a, b) => b.date.localeCompare(a.date));
       return { byBranch, byDate };
     }),
-    analyzeImage: publicProcedure.input(z3.object({
-      imageBase64: z3.string(),
-      mimeType: z3.string().default("image/jpeg")
+    analyzeImage: publicProcedure.input(z4.object({
+      imageBase64: z4.string(),
+      mimeType: z4.string().default("image/jpeg")
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");
       const ext = input.mimeType.includes("png") ? "png" : "jpg";
@@ -5277,7 +5370,7 @@ var appRouter = router({
         }
       });
       const rawContent = response.choices?.[0]?.message?.content;
-      if (!rawContent) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
+      if (!rawContent) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
       const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
       const result = JSON.parse(content);
       return {
@@ -5295,40 +5388,40 @@ var appRouter = router({
   }),
   // 기존 Manus OAuth 기반 매출 API (하위 호환)
   sales: router({
-    getRecord: protectedProcedure.input(z3.object({ branchId: z3.number(), date: z3.string() })).query(async ({ ctx, input }) => {
+    getRecord: protectedProcedure.input(z4.object({ branchId: z4.number(), date: z4.string() })).query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         const db2 = await getDb();
         if (!db2) return null;
-        const managed = await db2.select().from(branchManagers).where(and5(eq5(branchManagers.userId, ctx.user.id), eq5(branchManagers.branchId, input.branchId))).limit(1);
+        const managed = await db2.select().from(branchManagers).where(and5(eq6(branchManagers.userId, ctx.user.id), eq6(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       return getDailySalesRecord(input.branchId, input.date);
     }),
-    getRecords: protectedProcedure.input(z3.object({ branchId: z3.number(), startDate: z3.string(), endDate: z3.string() })).query(async ({ ctx, input }) => {
+    getRecords: protectedProcedure.input(z4.object({ branchId: z4.number(), startDate: z4.string(), endDate: z4.string() })).query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         const db2 = await getDb();
         if (!db2) return [];
-        const managed = await db2.select().from(branchManagers).where(and5(eq5(branchManagers.userId, ctx.user.id), eq5(branchManagers.branchId, input.branchId))).limit(1);
+        const managed = await db2.select().from(branchManagers).where(and5(eq6(branchManagers.userId, ctx.user.id), eq6(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       return getDailySalesRecordsByDateRange(input.branchId, input.startDate, input.endDate);
     }),
-    save: protectedProcedure.input(z3.object({
-      branchId: z3.number(),
-      date: z3.string(),
-      posStartAmount: z3.string().default("0"),
-      cash: z3.string().default("0"),
-      card: z3.string().default("0"),
-      cashTotal: z3.string().default("0"),
-      cardTotal: z3.string().default("0"),
-      posEndAmount: z3.string().default("0"),
-      cashDeposit: z3.string().optional(),
-      expenses: z3.array(z3.object({ id: z3.string(), description: z3.string(), amount: z3.string() })).default([])
+    save: protectedProcedure.input(z4.object({
+      branchId: z4.number(),
+      date: z4.string(),
+      posStartAmount: z4.string().default("0"),
+      cash: z4.string().default("0"),
+      card: z4.string().default("0"),
+      cashTotal: z4.string().default("0"),
+      cardTotal: z4.string().default("0"),
+      posEndAmount: z4.string().default("0"),
+      cashDeposit: z4.string().optional(),
+      expenses: z4.array(z4.object({ id: z4.string(), description: z4.string(), amount: z4.string() })).default([])
     })).mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         const db2 = await getDb();
         if (!db2) return { success: false };
-        const managed = await db2.select().from(branchManagers).where(and5(eq5(branchManagers.userId, ctx.user.id), eq5(branchManagers.branchId, input.branchId))).limit(1);
+        const managed = await db2.select().from(branchManagers).where(and5(eq6(branchManagers.userId, ctx.user.id), eq6(branchManagers.branchId, input.branchId))).limit(1);
         if (managed.length === 0) throw new Error("\uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4");
       }
       const prevRec2 = await getPrevDailySalesRecord(input.branchId, input.date);
@@ -5404,7 +5497,7 @@ var appRouter = router({
       }
       return { success: true, record, pushSent };
     }),
-    adminSummary: adminProcedure.input(z3.object({ startDate: z3.string(), endDate: z3.string() })).query(async ({ input }) => {
+    adminSummary: adminProcedure.input(z4.object({ startDate: z4.string(), endDate: z4.string() })).query(async ({ input }) => {
       const db2 = await getDb();
       if (!db2) return { byBranch: [], byDate: [] };
       const allBranches = await db2.select().from(branches).orderBy(branches.name);
@@ -5427,12 +5520,12 @@ var appRouter = router({
       const byDate = Object.entries(dateMap).map(([date, data]) => ({ date, ...data })).sort((a, b) => b.date.localeCompare(a.date));
       return { byBranch, byDate };
     }),
-    adminDailyDetail: adminProcedure.input(z3.object({ date: z3.string() })).query(async ({ input }) => {
+    adminDailyDetail: adminProcedure.input(z4.object({ date: z4.string() })).query(async ({ input }) => {
       const db2 = await getDb();
       if (!db2) return [];
       const allBranches = await db2.select().from(branches).orderBy(branches.name);
-      const records = await db2.select().from(dailySalesRecords).where(eq5(dailySalesRecords.date, input.date));
-      const tableReportRows = await db2.select().from(tableReports).where(eq5(tableReports.date, input.date));
+      const records = await db2.select().from(dailySalesRecords).where(eq6(dailySalesRecords.date, input.date));
+      const tableReportRows = await db2.select().from(tableReports).where(eq6(tableReports.date, input.date));
       const reportIds = tableReportRows.map((r) => r.id);
       const tableItemRows = reportIds.length > 0 ? await db2.select().from(tableItems).where(inArray(tableItems.tableReportId, reportIds)).orderBy(asc(tableItems.sortOrder), asc(tableItems.createdAt)) : [];
       const incentiveRows = reportIds.length > 0 ? await db2.select().from(staffIncentives).where(inArray(staffIncentives.tableReportId, reportIds)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt) : [];
@@ -5450,19 +5543,19 @@ var appRouter = router({
         })()
       }));
     }),
-    notify: publicProcedure.input(z3.object({
-      branch: z3.string(),
-      date: z3.string(),
-      cash: z3.string(),
-      card: z3.string(),
-      dailyTotal: z3.string(),
-      cashTotal: z3.string(),
-      cardTotal: z3.string(),
-      grandTotal: z3.string(),
-      posStartAmount: z3.string(),
-      posEndAmount: z3.string(),
-      cashDeposit: z3.string().optional(),
-      expenses: z3.array(z3.object({ description: z3.string(), amount: z3.string() }))
+    notify: publicProcedure.input(z4.object({
+      branch: z4.string(),
+      date: z4.string(),
+      cash: z4.string(),
+      card: z4.string(),
+      dailyTotal: z4.string(),
+      cashTotal: z4.string(),
+      cardTotal: z4.string(),
+      grandTotal: z4.string(),
+      posStartAmount: z4.string(),
+      posEndAmount: z4.string(),
+      cashDeposit: z4.string().optional(),
+      expenses: z4.array(z4.object({ description: z4.string(), amount: z4.string() }))
     })).mutation(async ({ input }) => {
       const fmt = (v) => {
         const n = Number((v || "").replace(/,/g, ""));
@@ -5493,13 +5586,13 @@ var appRouter = router({
     })
   }),
   liquor: router({
-    branchItems: publicProcedure.input(z3.object({ branchId: z3.number().optional() })).query(async ({ ctx, input }) => {
+    branchItems: publicProcedure.input(z4.object({ branchId: z4.number().optional() })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { items: [] };
       await ensureLiquorSeeded(db2);
       const effectiveBranchId = account.role === "admin" ? input.branchId : account.branchId;
-      const itemRows = await db2.select().from(liquorItems).where(eq5(liquorItems.isActive, 1)).orderBy(liquorItems.sortOrder, liquorItems.name);
+      const itemRows = await db2.select().from(liquorItems).where(eq6(liquorItems.isActive, 1)).orderBy(liquorItems.sortOrder, liquorItems.name);
       if (!effectiveBranchId) {
         return { items: itemRows.map((item) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
       }
@@ -5510,12 +5603,12 @@ var appRouter = router({
       if (items.length === 0 && itemRows.length > 0) items = itemRows;
       return { items: items.map((item) => ({ ...item, unitCost: Number(item.unitCost || 0) })) };
     }),
-    overview: publicProcedure.input(z3.object({ date: z3.string(), branchId: z3.number().optional(), includeInactive: z3.boolean().optional() })).query(async ({ ctx, input }) => {
+    overview: publicProcedure.input(z4.object({ date: z4.string(), branchId: z4.number().optional(), includeInactive: z4.boolean().optional() })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { branches: [], items: [], inventories: [], movements: [], branchSummaries: [], totals: { stock: 0, inQty: 0, outQty: 0, outCost: 0 } };
       await ensureLiquorSeeded(db2);
-      const allBranches = account.role === "admin" ? await db2.select().from(branches).orderBy(branches.name) : account.branchId ? await db2.select().from(branches).where(eq5(branches.id, account.branchId)) : [];
+      const allBranches = account.role === "admin" ? await db2.select().from(branches).orderBy(branches.name) : account.branchId ? await db2.select().from(branches).where(eq6(branches.id, account.branchId)) : [];
       const allowedBranchIds = allBranches.map((b) => b.id);
       const selectedBranchIds = account.role === "admin" && input.branchId ? allowedBranchIds.filter((id) => id === input.branchId) : allowedBranchIds;
       if (selectedBranchIds.length === 0) {
@@ -5530,7 +5623,7 @@ var appRouter = router({
         activeItems = activeItems.filter((i) => !hiddenIds.has(Number(i.id)));
       }
       const inventoryRows = await db2.select().from(liquorInventories).where(inArray(liquorInventories.branchId, selectedBranchIds));
-      const movementRows = await db2.select().from(liquorStockMovements).where(and5(inArray(liquorStockMovements.branchId, selectedBranchIds), eq5(liquorStockMovements.date, input.date))).orderBy(desc3(liquorStockMovements.createdAt));
+      const movementRows = await db2.select().from(liquorStockMovements).where(and5(inArray(liquorStockMovements.branchId, selectedBranchIds), eq6(liquorStockMovements.date, input.date))).orderBy(desc3(liquorStockMovements.createdAt));
       const itemById = new Map(itemRows.map((i) => [i.id, i]));
       const branchById = new Map(allBranches.map((b) => [b.id, b]));
       const creatorRows = await db2.select().from(storeAccounts);
@@ -5576,18 +5669,18 @@ var appRouter = router({
       };
       return { branches: allBranches, items: activeItems.map((i) => ({ ...i, unitCost: Number(i.unitCost || 0) })), inventories, movements, branchSummaries, totals };
     }),
-    history: publicProcedure.input(z3.object({
-      startDate: z3.string(),
-      endDate: z3.string(),
-      branchId: z3.number().optional(),
-      keyword: z3.string().optional(),
-      type: z3.enum(["IN", "OUT", "ADJUST"]).optional()
+    history: publicProcedure.input(z4.object({
+      startDate: z4.string(),
+      endDate: z4.string(),
+      branchId: z4.number().optional(),
+      keyword: z4.string().optional(),
+      type: z4.enum(["IN", "OUT", "ADJUST"]).optional()
     })).query(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { movements: [] };
       await ensureLiquorSeeded(db2);
-      const allBranches = account.role === "admin" ? await db2.select().from(branches).orderBy(branches.name) : account.branchId ? await db2.select().from(branches).where(eq5(branches.id, account.branchId)) : [];
+      const allBranches = account.role === "admin" ? await db2.select().from(branches).orderBy(branches.name) : account.branchId ? await db2.select().from(branches).where(eq6(branches.id, account.branchId)) : [];
       const allowedBranchIds = allBranches.map((b) => b.id);
       const selectedBranchIds = account.role === "admin" && input.branchId ? allowedBranchIds.filter((id) => id === input.branchId) : allowedBranchIds;
       if (selectedBranchIds.length === 0) return { movements: [] };
@@ -5601,7 +5694,7 @@ var appRouter = router({
         gte4(liquorStockMovements.date, input.startDate),
         lte4(liquorStockMovements.date, input.endDate)
       ];
-      if (input.type) historyConditions.push(eq5(liquorStockMovements.type, input.type));
+      if (input.type) historyConditions.push(eq6(liquorStockMovements.type, input.type));
       const movementRows = await db2.select().from(liquorStockMovements).where(and5(...historyConditions)).orderBy(desc3(liquorStockMovements.date), desc3(liquorStockMovements.createdAt));
       const keyword = (input.keyword || "").trim().toLowerCase();
       const movements = movementRows.map((m) => {
@@ -5623,14 +5716,14 @@ var appRouter = router({
       }).filter((m) => !keyword || String(m.itemName).toLowerCase().includes(keyword));
       return { movements };
     }),
-    upsertItem: publicProcedure.input(z3.object({
-      id: z3.number().optional(),
-      name: z3.string().min(1),
-      category: z3.string().min(1).default("\uAE30\uD0C0"),
-      unitCost: z3.number().min(0).optional().default(0),
-      isActive: z3.boolean().default(true),
-      branchId: z3.number().optional(),
-      initialStock: z3.number().optional().default(0)
+    upsertItem: publicProcedure.input(z4.object({
+      id: z4.number().optional(),
+      name: z4.string().min(1),
+      category: z4.string().min(1).default("\uAE30\uD0C0"),
+      unitCost: z4.number().min(0).optional().default(0),
+      isActive: z4.boolean().default(true),
+      branchId: z4.number().optional(),
+      initialStock: z4.number().optional().default(0)
     })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
@@ -5638,7 +5731,7 @@ var appRouter = router({
       await ensureLiquorSeeded(db2);
       const effectiveBranchId = account.role === "admin" ? input.branchId : account.branchId;
       if (!effectiveBranchId) {
-        throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC8FC\uB958 \uD488\uBAA9\uC744 \uCD94\uAC00/\uC218\uC815\uD558\uB824\uBA74 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
+        throw new TRPCError5({ code: "BAD_REQUEST", message: "\uC8FC\uB958 \uD488\uBAA9\uC744 \uCD94\uAC00/\uC218\uC815\uD558\uB824\uBA74 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       }
       if (input.id) {
         if (account.role === "admin") {
@@ -5647,11 +5740,11 @@ var appRouter = router({
             category: input.category,
             unitCost: String(input.unitCost || 0),
             isActive: input.isActive ? 1 : 0
-          }).where(eq5(liquorItems.id, input.id));
+          }).where(eq6(liquorItems.id, input.id));
           const newUnitCost = Number(input.unitCost || 0);
           if (newUnitCost > 0) {
             const staleMovements = await db2.select().from(liquorStockMovements).where(and5(
-              eq5(liquorStockMovements.liquorItemId, input.id),
+              eq6(liquorStockMovements.liquorItemId, input.id),
               sql`(CAST(${liquorStockMovements.unitCost} AS DECIMAL) = 0 OR CAST(${liquorStockMovements.totalCost} AS DECIMAL) = 0)`
             ));
             for (const mv of staleMovements) {
@@ -5659,7 +5752,7 @@ var appRouter = router({
               await db2.update(liquorStockMovements).set({
                 unitCost: String(newUnitCost),
                 totalCost: String(newTotalCost)
-              }).where(eq5(liquorStockMovements.id, mv.id));
+              }).where(eq6(liquorStockMovements.id, mv.id));
             }
           }
         } else {
@@ -5667,17 +5760,17 @@ var appRouter = router({
             name: input.name,
             category: input.category,
             isActive: input.isActive ? 1 : 0
-          }).where(eq5(liquorItems.id, input.id));
+          }).where(eq6(liquorItems.id, input.id));
         }
         if (effectiveBranchId && input.initialStock !== void 0) {
-          const [existingInventory] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, effectiveBranchId), eq5(liquorInventories.liquorItemId, input.id))).limit(1);
+          const [existingInventory] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, effectiveBranchId), eq6(liquorInventories.liquorItemId, input.id))).limit(1);
           const prevStock = Number(existingInventory?.currentStock || 0);
           const nextStock = Number(input.initialStock || 0);
           const diff = nextStock - prevStock;
-          if (existingInventory) await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existingInventory.id));
+          if (existingInventory) await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq6(liquorInventories.id, existingInventory.id));
           else await db2.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
           if (diff !== 0) {
-            const [stockItem] = await db2.select().from(liquorItems).where(eq5(liquorItems.id, input.id)).limit(1);
+            const [stockItem] = await db2.select().from(liquorItems).where(eq6(liquorItems.id, input.id)).limit(1);
             const unitCost = Number(stockItem?.unitCost || 0);
             await db2.insert(liquorStockMovements).values({
               branchId: effectiveBranchId,
@@ -5704,10 +5797,10 @@ var appRouter = router({
       });
       let itemId = Number(result.insertId || 0);
       if (!itemId) {
-        const [created] = await db2.select().from(liquorItems).where(eq5(liquorItems.name, cleanName)).orderBy(desc3(liquorItems.id)).limit(1);
+        const [created] = await db2.select().from(liquorItems).where(eq6(liquorItems.name, cleanName)).orderBy(desc3(liquorItems.id)).limit(1);
         itemId = created?.id;
       }
-      if (!itemId) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "\uD488\uBAA9 \uB4F1\uB85D\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4" });
+      if (!itemId) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "\uD488\uBAA9 \uB4F1\uB85D\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4" });
       const allBranchRows = await db2.select().from(branches);
       for (const branch of allBranchRows) {
         if (Number(branch.id) !== Number(effectiveBranchId)) {
@@ -5737,41 +5830,41 @@ var appRouter = router({
       }
       return { success: true, id: itemId };
     }),
-    deleteItem: publicProcedure.input(z3.object({ id: z3.number(), branchId: z3.number().optional() })).mutation(async ({ ctx, input }) => {
+    deleteItem: publicProcedure.input(z4.object({ id: z4.number(), branchId: z4.number().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
       const branchId = account.role === "admin" ? input.branchId : account.branchId;
-      if (!branchId) throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
+      if (!branchId) throw new TRPCError5({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       if (account.role !== "admin" && Number(account.branchId) !== Number(branchId)) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       await db2.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${input.id})`);
-      await db2.delete(liquorInventories).where(and5(eq5(liquorInventories.branchId, branchId), eq5(liquorInventories.liquorItemId, input.id)));
+      await db2.delete(liquorInventories).where(and5(eq6(liquorInventories.branchId, branchId), eq6(liquorInventories.liquorItemId, input.id)));
       return { success: true, mode: "branch" };
     }),
-    bulkDeleteItems: publicProcedure.input(z3.object({ ids: z3.array(z3.number()).min(1), branchId: z3.number().optional() })).mutation(async ({ ctx, input }) => {
+    bulkDeleteItems: publicProcedure.input(z4.object({ ids: z4.array(z4.number()).min(1), branchId: z4.number().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
       const branchId = account.role === "admin" ? input.branchId : account.branchId;
-      if (!branchId) throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
+      if (!branchId) throw new TRPCError5({ code: "BAD_REQUEST", message: "\uC0AD\uC81C\uD560 \uC9C0\uC810\uC744 \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694" });
       if (account.role !== "admin" && Number(account.branchId) !== Number(branchId)) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uD488\uBAA9\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const ids = Array.from(new Set(input.ids.map(Number).filter(Boolean)));
       if (!ids.length) return { success: true, count: 0 };
       for (const id of ids) {
         await db2.execute(sql`INSERT IGNORE INTO liquorHiddenItems (branchId, liquorItemId) VALUES (${branchId}, ${id})`);
       }
-      await db2.delete(liquorInventories).where(and5(eq5(liquorInventories.branchId, branchId), inArray(liquorInventories.liquorItemId, ids)));
+      await db2.delete(liquorInventories).where(and5(eq6(liquorInventories.branchId, branchId), inArray(liquorInventories.liquorItemId, ids)));
       return { success: true, count: ids.length, mode: "branch" };
     }),
-    recordMovement: publicProcedure.input(z3.object({ branchId: z3.number(), date: z3.string(), type: z3.enum(["IN", "OUT", "ADJUST"]), items: z3.array(z3.object({ liquorItemId: z3.number(), quantity: z3.number(), memo: z3.string().optional() })).min(1), memo: z3.string().optional() })).mutation(async ({ ctx, input }) => {
+    recordMovement: publicProcedure.input(z4.object({ branchId: z4.number(), date: z4.string(), type: z4.enum(["IN", "OUT", "ADJUST"]), items: z4.array(z4.object({ liquorItemId: z4.number(), quantity: z4.number(), memo: z4.string().optional() })).min(1), memo: z4.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
@@ -5787,10 +5880,10 @@ var appRouter = router({
         const signedQty = input.type === "OUT" ? -Math.abs(rawQty) : input.type === "IN" ? Math.abs(rawQty) : rawQty;
         const totalCost = Math.abs(signedQty) * unitCost;
         await db2.insert(liquorStockMovements).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, date: input.date, type: input.type, quantity: String(signedQty), unitCost: String(unitCost), totalCost: String(totalCost), memo: row.memo || input.memo || null, createdBy: account.id });
-        const [existing] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, input.branchId), eq5(liquorInventories.liquorItemId, row.liquorItemId))).limit(1);
+        const [existing] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, input.branchId), eq6(liquorInventories.liquorItemId, row.liquorItemId))).limit(1);
         const nextStock = Number(existing?.currentStock || 0) + signedQty;
         if (existing) {
-          await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+          await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq6(liquorInventories.id, existing.id));
         } else {
           const hiddenCheck = await db2.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${input.branchId} AND liquorItemId = ${row.liquorItemId} LIMIT 1`);
           const hiddenRows = Array.isArray(hiddenCheck) ? Array.isArray(hiddenCheck[0]) ? hiddenCheck[0] : hiddenCheck : hiddenCheck?.rows ?? [];
@@ -5802,23 +5895,23 @@ var appRouter = router({
       }
       return { success: true };
     }),
-    updateMovement: publicProcedure.input(z3.object({ id: z3.number(), date: z3.string(), type: z3.enum(["IN", "OUT", "ADJUST"]).optional(), quantity: z3.number(), memo: z3.string().optional() })).mutation(async ({ ctx, input }) => {
+    updateMovement: publicProcedure.input(z4.object({ id: z4.number(), date: z4.string(), type: z4.enum(["IN", "OUT", "ADJUST"]).optional(), quantity: z4.number(), memo: z4.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
-      const [movement] = await db2.select().from(liquorStockMovements).where(eq5(liquorStockMovements.id, input.id)).limit(1);
-      if (!movement) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [movement] = await db2.select().from(liquorStockMovements).where(eq6(liquorStockMovements.id, input.id)).limit(1);
+      if (!movement) throw new TRPCError5({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== movement.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const rawQty = Number(input.quantity || 0);
       const nextType = input.type || movement.type;
-      if (!rawQty && nextType !== "ADJUST") throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
+      if (!rawQty && nextType !== "ADJUST") throw new TRPCError5({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
       const newSignedQty = nextType === "OUT" ? -Math.abs(rawQty) : nextType === "IN" ? Math.abs(rawQty) : rawQty;
       const oldSignedQty = Number(movement.quantity || 0);
       const diff = newSignedQty - oldSignedQty;
-      const [itemForCost] = await db2.select().from(liquorItems).where(eq5(liquorItems.id, movement.liquorItemId)).limit(1);
+      const [itemForCost] = await db2.select().from(liquorItems).where(eq6(liquorItems.id, movement.liquorItemId)).limit(1);
       const unitCost = Number(movement.unitCost || itemForCost?.unitCost || 0);
       const totalCost = Math.abs(newSignedQty) * unitCost;
       await db2.update(liquorStockMovements).set({
@@ -5828,32 +5921,32 @@ var appRouter = router({
         totalCost: String(totalCost),
         memo: input.memo || null,
         updatedAt: /* @__PURE__ */ new Date()
-      }).where(eq5(liquorStockMovements.id, input.id));
+      }).where(eq6(liquorStockMovements.id, input.id));
       if (diff !== 0) {
-        const [existing] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, movement.branchId), eq5(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+        const [existing] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, movement.branchId), eq6(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
         if (existing) {
           const nextStock = Number(existing.currentStock || 0) + diff;
-          await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+          await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq6(liquorInventories.id, existing.id));
         } else {
           await db2.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
         }
       }
       return { success: true };
     }),
-    updateMovementGroup: publicProcedure.input(z3.object({ ids: z3.array(z3.number()).min(1), date: z3.string(), type: z3.enum(["IN", "OUT", "ADJUST"]), memo: z3.string().optional(), mergeSameDate: z3.boolean().optional() })).mutation(async ({ ctx, input }) => {
+    updateMovementGroup: publicProcedure.input(z4.object({ ids: z4.array(z4.number()).min(1), date: z4.string(), type: z4.enum(["IN", "OUT", "ADJUST"]), memo: z4.string().optional(), mergeSameDate: z4.boolean().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
       const rows = await db2.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.ids));
-      if (rows.length === 0) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (rows.length === 0) throw new TRPCError5({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && rows.some((m) => Number(m.branchId) !== Number(account.branchId))) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const mergeTarget = input.mergeSameDate ? (await db2.select().from(liquorStockMovements).where(and5(
-        eq5(liquorStockMovements.branchId, rows[0].branchId),
-        eq5(liquorStockMovements.date, input.date),
-        eq5(liquorStockMovements.type, input.type),
+        eq6(liquorStockMovements.branchId, rows[0].branchId),
+        eq6(liquorStockMovements.date, input.date),
+        eq6(liquorStockMovements.type, input.type),
         not(inArray(liquorStockMovements.id, input.ids))
       )).orderBy(desc3(liquorStockMovements.createdAt)).limit(1))[0] : null;
       const mergedCreatedAt = mergeTarget?.createdAt ? new Date(mergeTarget.createdAt) : void 0;
@@ -5864,10 +5957,10 @@ var appRouter = router({
           memo: mergedMemo,
           updatedAt: /* @__PURE__ */ new Date()
         }).where(and5(
-          eq5(liquorStockMovements.branchId, rows[0].branchId),
-          eq5(liquorStockMovements.date, input.date),
-          eq5(liquorStockMovements.type, input.type),
-          eq5(liquorStockMovements.createdAt, mergeTarget.createdAt)
+          eq6(liquorStockMovements.branchId, rows[0].branchId),
+          eq6(liquorStockMovements.date, input.date),
+          eq6(liquorStockMovements.type, input.type),
+          eq6(liquorStockMovements.createdAt, mergeTarget.createdAt)
         ));
       }
       for (const movement of rows) {
@@ -5884,12 +5977,12 @@ var appRouter = router({
           memo: mergedMemo,
           ...mergedCreatedAt ? { createdAt: mergedCreatedAt, createdBy: mergedCreatedBy } : {},
           updatedAt: /* @__PURE__ */ new Date()
-        }).where(eq5(liquorStockMovements.id, movement.id));
+        }).where(eq6(liquorStockMovements.id, movement.id));
         if (diff !== 0) {
-          const [existing] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, movement.branchId), eq5(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+          const [existing] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, movement.branchId), eq6(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
           if (existing) {
             const nextStock = Number(existing.currentStock || 0) + diff;
-            await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+            await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq6(liquorInventories.id, existing.id));
           } else {
             await db2.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
           }
@@ -5897,28 +5990,28 @@ var appRouter = router({
       }
       return { success: true };
     }),
-    addMovementToGroup: publicProcedure.input(z3.object({
-      groupIds: z3.array(z3.number()).min(1),
-      liquorItemId: z3.number(),
-      quantity: z3.number(),
-      type: z3.enum(["IN", "OUT", "ADJUST"]),
-      date: z3.string(),
-      memo: z3.string().optional()
+    addMovementToGroup: publicProcedure.input(z4.object({
+      groupIds: z4.array(z4.number()).min(1),
+      liquorItemId: z4.number(),
+      quantity: z4.number(),
+      type: z4.enum(["IN", "OUT", "ADJUST"]),
+      date: z4.string(),
+      memo: z4.string().optional()
     })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
       const groupRows = await db2.select().from(liquorStockMovements).where(inArray(liquorStockMovements.id, input.groupIds));
-      if (groupRows.length === 0) throw new TRPCError4({ code: "NOT_FOUND", message: "\uAE30\uC900 \uD788\uC2A4\uD1A0\uB9AC\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (groupRows.length === 0) throw new TRPCError5({ code: "NOT_FOUND", message: "\uAE30\uC900 \uD788\uC2A4\uD1A0\uB9AC\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const base = groupRows[0];
       if (account.role !== "admin" && Number(account.branchId) !== Number(base.branchId)) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
-      const [item] = await db2.select().from(liquorItems).where(eq5(liquorItems.id, input.liquorItemId)).limit(1);
-      if (!item) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [item] = await db2.select().from(liquorItems).where(eq6(liquorItems.id, input.liquorItemId)).limit(1);
+      if (!item) throw new TRPCError5({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       const rawQty = Number(input.quantity || 0);
-      if (!rawQty && input.type !== "ADJUST") throw new TRPCError4({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
+      if (!rawQty && input.type !== "ADJUST") throw new TRPCError5({ code: "BAD_REQUEST", message: "\uC218\uB7C9\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694" });
       const signedQty = input.type === "OUT" ? -Math.abs(rawQty) : input.type === "IN" ? Math.abs(rawQty) : rawQty;
       const unitCost = Number(item.unitCost || 0);
       const totalCost = Math.abs(signedQty) * unitCost;
@@ -5934,44 +6027,44 @@ var appRouter = router({
         createdBy: base.createdBy,
         createdAt: base.createdAt
       });
-      const [existing] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, base.branchId), eq5(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
+      const [existing] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, base.branchId), eq6(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
       const nextStock = Number(existing?.currentStock || 0) + signedQty;
-      if (existing) await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+      if (existing) await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq6(liquorInventories.id, existing.id));
       else await db2.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
       return { success: true };
     }),
-    deleteMovement: publicProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ ctx, input }) => {
+    deleteMovement: publicProcedure.input(z4.object({ id: z4.number() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
-      const [movement] = await db2.select().from(liquorStockMovements).where(eq5(liquorStockMovements.id, input.id)).limit(1);
-      if (!movement) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [movement] = await db2.select().from(liquorStockMovements).where(eq6(liquorStockMovements.id, input.id)).limit(1);
+      if (!movement) throw new TRPCError5({ code: "NOT_FOUND", message: "\uD788\uC2A4\uD1A0\uB9AC \uB0B4\uC5ED\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (account.role !== "admin" && account.branchId !== movement.branchId) {
-        throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uB0B4\uC5ED\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const signedQty = Number(movement.quantity || 0);
-      const [existing] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, movement.branchId), eq5(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
+      const [existing] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, movement.branchId), eq6(liquorInventories.liquorItemId, movement.liquorItemId))).limit(1);
       if (existing) {
         const nextStock = Number(existing.currentStock || 0) - signedQty;
-        await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq5(liquorInventories.id, existing.id));
+        await db2.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq6(liquorInventories.id, existing.id));
       }
-      await db2.delete(liquorStockMovements).where(eq5(liquorStockMovements.id, input.id));
+      await db2.delete(liquorStockMovements).where(eq6(liquorStockMovements.id, input.id));
       return { success: true };
     }),
-    setStock: publicProcedure.input(z3.object({ branchId: z3.number(), liquorItemId: z3.number(), currentStock: z3.number(), memo: z3.string().optional() })).mutation(async ({ ctx, input }) => {
+    setStock: publicProcedure.input(z4.object({ branchId: z4.number(), liquorItemId: z4.number(), currentStock: z4.number(), memo: z4.string().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireStoreAccount(ctx);
-      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uC7AC\uACE0\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+      if (account.role !== "admin" && account.branchId !== input.branchId) throw new TRPCError5({ code: "FORBIDDEN", message: "\uD574\uB2F9 \uC9C0\uC810 \uC7AC\uACE0\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       const db2 = await getDb();
       if (!db2) return { success: false };
       await ensureLiquorSeeded(db2);
-      const [item] = await db2.select().from(liquorItems).where(eq5(liquorItems.id, input.liquorItemId)).limit(1);
-      if (!item) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
-      const [existing] = await db2.select().from(liquorInventories).where(and5(eq5(liquorInventories.branchId, input.branchId), eq5(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
+      const [item] = await db2.select().from(liquorItems).where(eq6(liquorItems.id, input.liquorItemId)).limit(1);
+      if (!item) throw new TRPCError5({ code: "NOT_FOUND", message: "\uD488\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      const [existing] = await db2.select().from(liquorInventories).where(and5(eq6(liquorInventories.branchId, input.branchId), eq6(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
       const prevStock = Number(existing?.currentStock || 0);
       const diff = input.currentStock - prevStock;
       if (existing) {
-        await db2.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq5(liquorInventories.id, existing.id));
+        await db2.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq6(liquorInventories.id, existing.id));
       } else {
         const hiddenCheck2 = await db2.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${input.branchId} AND liquorItemId = ${input.liquorItemId} LIMIT 1`);
         const hiddenRows2 = Array.isArray(hiddenCheck2) ? Array.isArray(hiddenCheck2[0]) ? hiddenCheck2[0] : hiddenCheck2 : hiddenCheck2?.rows ?? [];
@@ -5989,43 +6082,43 @@ var appRouter = router({
   }),
   tableReport: router({
     // 날짜별 테이블 기록 조회 (없으면 null 반환)
-    getByDate: publicProcedure.input(z3.object({ date: z3.string(), branchId: z3.number().optional() })).query(async ({ ctx, input }) => {
+    getByDate: publicProcedure.input(z4.object({ date: z4.string(), branchId: z4.number().optional() })).query(async ({ ctx, input }) => {
       const db2 = await getDb();
       if (!db2) return null;
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) return null;
       const effectiveBranchId = account.branchId ?? input.branchId;
       if (!effectiveBranchId) return null;
-      const [report] = await db2.select().from(tableReports).where(and5(eq5(tableReports.branchId, effectiveBranchId), eq5(tableReports.date, input.date))).limit(1);
+      const [report] = await db2.select().from(tableReports).where(and5(eq6(tableReports.branchId, effectiveBranchId), eq6(tableReports.date, input.date))).limit(1);
       if (!report) return null;
-      const items = await db2.select().from(tableItems).where(eq5(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
-      const incentives2 = await db2.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
+      const items = await db2.select().from(tableItems).where(eq6(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
+      const incentives2 = await db2.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
       return { ...report, items, incentives: incentives2 };
     }),
     // 기록 생성 또는 업데이트
-    upsert: publicProcedure.input(z3.object({
-      date: z3.string(),
-      teamCount: z3.number().default(0),
-      notes: z3.string().optional(),
-      branchId: z3.number().optional()
+    upsert: publicProcedure.input(z4.object({
+      date: z4.string(),
+      teamCount: z4.number().default(0),
+      notes: z4.string().optional(),
+      branchId: z4.number().optional()
     })).mutation(async ({ ctx, input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const effectiveBranchId = account.branchId ?? input.branchId;
-      if (!effectiveBranchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const [existing] = await db2.select().from(tableReports).where(and5(eq5(tableReports.branchId, effectiveBranchId), eq5(tableReports.date, input.date))).limit(1);
+      if (!effectiveBranchId) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const [existing] = await db2.select().from(tableReports).where(and5(eq6(tableReports.branchId, effectiveBranchId), eq6(tableReports.date, input.date))).limit(1);
       let reportId;
       if (existing) {
         await db2.update(tableReports).set({
           teamCount: input.teamCount,
           notes: input.notes || null
-        }).where(eq5(tableReports.id, existing.id));
+        }).where(eq6(tableReports.id, existing.id));
         reportId = existing.id;
       } else {
         const [result] = await db2.insert(tableReports).values({
@@ -6036,13 +6129,13 @@ var appRouter = router({
         });
         reportId = result.insertId;
       }
-      const allItems = await db2.select().from(tableItems).where(eq5(tableItems.tableReportId, reportId));
+      const allItems = await db2.select().from(tableItems).where(eq6(tableItems.tableReportId, reportId));
       const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((sum, it) => sum + Number(it.amount || 0), 0);
       const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((sum, it) => sum + Number(it.amount || 0), 0);
       await db2.update(tableReports).set({
         cashAmount: String(cashSum),
         cardAmount: String(cardSum)
-      }).where(eq5(tableReports.id, reportId));
+      }).where(eq6(tableReports.id, reportId));
       const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
       const prevRec2 = await getPrevDailySalesRecord(effectiveBranchId, input.date);
       const { cashTotal: computedCashTotal2, cardTotal: computedCardTotal2 } = await computeCumulativesForDate(
@@ -6075,10 +6168,10 @@ var appRouter = router({
         console.error("[cascadeUpdatePosAmounts \uC624\uB958]", e);
       }
       try {
-        const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq5(dailySalesRecords.branchId, effectiveBranchId), eq5(dailySalesRecords.date, input.date))).limit(1);
+        const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq6(dailySalesRecords.branchId, effectiveBranchId), eq6(dailySalesRecords.date, input.date))).limit(1);
         if (salesRec && salesRec.length > 0) {
           const rec = salesRec[0];
-          const allInc = await db2?.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, reportId));
+          const allInc = await db2?.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, reportId));
           const sc = (allInc ?? []).filter((i) => i.staffType === "staff").length;
           const pc = (allInc ?? []).filter((i) => i.staffType === "parttime").length;
           const mc = (allInc ?? []).filter((i) => i.staffType === "manager").length;
@@ -6105,18 +6198,18 @@ var appRouter = router({
       return { id: reportId, cashSum, cardSum };
     }),
     // 테이블 항목 추가
-    addItem: publicProcedure.input(z3.object({
-      tableReportId: z3.number(),
-      tableNumber: z3.string(),
-      guestType: z3.enum(["walking", "regular", "named"]).default("walking"),
-      guestName: z3.string().optional(),
-      amount: z3.string().default("0"),
-      paymentMethod: z3.enum(["card", "cash"]).default("card"),
-      memo: z3.string().optional(),
-      sortOrder: z3.number().default(0)
+    addItem: publicProcedure.input(z4.object({
+      tableReportId: z4.number(),
+      tableNumber: z4.string(),
+      guestType: z4.enum(["walking", "regular", "named"]).default("walking"),
+      guestName: z4.string().optional(),
+      amount: z4.string().default("0"),
+      paymentMethod: z4.enum(["card", "cash"]).default("card"),
+      memo: z4.string().optional(),
+      sortOrder: z4.number().default(0)
     })).mutation(async ({ input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
       const [result] = await db2.insert(tableItems).values({
         tableReportId: input.tableReportId,
         tableNumber: input.tableNumber,
@@ -6130,17 +6223,17 @@ var appRouter = router({
       return { id: result.insertId };
     }),
     // 테이블 항목 수정
-    updateItem: publicProcedure.input(z3.object({
-      id: z3.number(),
-      tableNumber: z3.string().optional(),
-      guestType: z3.enum(["walking", "regular", "named"]).optional(),
-      guestName: z3.string().optional().nullable(),
-      amount: z3.string().optional(),
-      paymentMethod: z3.enum(["card", "cash"]).optional(),
-      memo: z3.string().optional()
+    updateItem: publicProcedure.input(z4.object({
+      id: z4.number(),
+      tableNumber: z4.string().optional(),
+      guestType: z4.enum(["walking", "regular", "named"]).optional(),
+      guestName: z4.string().optional().nullable(),
+      amount: z4.string().optional(),
+      paymentMethod: z4.enum(["card", "cash"]).optional(),
+      memo: z4.string().optional()
     })).mutation(async ({ input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
       const { id, ...rest } = input;
       const updateData = {};
       if (rest.tableNumber !== void 0) updateData.tableNumber = rest.tableNumber;
@@ -6149,40 +6242,40 @@ var appRouter = router({
       if (rest.amount !== void 0) updateData.amount = rest.amount;
       if (rest.paymentMethod !== void 0) updateData.paymentMethod = rest.paymentMethod;
       if (rest.memo !== void 0) updateData.memo = rest.memo;
-      await db2.update(tableItems).set(updateData).where(eq5(tableItems.id, id));
+      await db2.update(tableItems).set(updateData).where(eq6(tableItems.id, id));
       return { success: true };
     }),
     // 테이블 항목 삭제
-    deleteItem: publicProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ input }) => {
+    deleteItem: publicProcedure.input(z4.object({ id: z4.number() })).mutation(async ({ input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      await db2.delete(tableItems).where(eq5(tableItems.id, input.id));
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
+      await db2.delete(tableItems).where(eq6(tableItems.id, input.id));
       return { success: true };
     }),
     // 두 테이블 항목 합치기 (분할 결제 대응)
     // targetItemId: 남길 테이블 항목 ID, sourceItemId: 합쳐지고 삭제될 테이블 항목 ID
-    mergeItems: publicProcedure.input(z3.object({
-      targetItemId: z3.number(),
+    mergeItems: publicProcedure.input(z4.object({
+      targetItemId: z4.number(),
       // 남길 항목
-      sourceItemId: z3.number(),
+      sourceItemId: z4.number(),
       // 합쳐지고 삭제될 항목
-      tableReportId: z3.number(),
+      tableReportId: z4.number(),
       // 소속 tableReport ID (누적금 재계산용)
-      date: z3.string(),
+      date: z4.string(),
       // YYYY-MM-DD (누적금 재계산용)
-      branchId: z3.number().optional()
+      branchId: z4.number().optional()
     })).mutation(async ({ ctx, input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "FORBIDDEN" });
-      const [target] = await db2.select().from(tableItems).where(eq5(tableItems.id, input.targetItemId)).limit(1);
-      const [source] = await db2.select().from(tableItems).where(eq5(tableItems.id, input.sourceItemId)).limit(1);
-      if (!target || !source) throw new TRPCError4({ code: "NOT_FOUND", message: "\uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError5({ code: "FORBIDDEN" });
+      const [target] = await db2.select().from(tableItems).where(eq6(tableItems.id, input.targetItemId)).limit(1);
+      const [source] = await db2.select().from(tableItems).where(eq6(tableItems.id, input.sourceItemId)).limit(1);
+      if (!target || !source) throw new TRPCError5({ code: "NOT_FOUND", message: "\uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
       if (target.tableReportId !== source.tableReportId) {
-        throw new TRPCError4({ code: "BAD_REQUEST", message: "\uAC19\uC740 \uB0A0\uC9DC\uC758 \uD56D\uBAA9\uB9CC \uD569\uCE60 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
+        throw new TRPCError5({ code: "BAD_REQUEST", message: "\uAC19\uC740 \uB0A0\uC9DC\uC758 \uD56D\uBAA9\uB9CC \uD569\uCE60 \uC218 \uC788\uC2B5\uB2C8\uB2E4" });
       }
       const mergedAmount = String(Number(target.amount || 0) + Number(source.amount || 0));
       const targetMemo = (target.memo ?? "").trim();
@@ -6198,17 +6291,17 @@ var appRouter = router({
       await db2.update(tableItems).set({
         amount: mergedAmount,
         memo: mergedMemo
-      }).where(eq5(tableItems.id, input.targetItemId));
-      await db2.delete(tableItems).where(eq5(tableItems.id, input.sourceItemId));
+      }).where(eq6(tableItems.id, input.targetItemId));
+      await db2.delete(tableItems).where(eq6(tableItems.id, input.sourceItemId));
       const effectiveBranchId = account.role === "admin" ? input.branchId ?? account.branchId ?? null : account.branchId ?? null;
       if (effectiveBranchId) {
-        const allItems = await db2.select().from(tableItems).where(eq5(tableItems.tableReportId, input.tableReportId));
+        const allItems = await db2.select().from(tableItems).where(eq6(tableItems.tableReportId, input.tableReportId));
         const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((s, it) => s + Number(it.amount || 0), 0);
         const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((s, it) => s + Number(it.amount || 0), 0);
         await db2.update(tableReports).set({
           cashAmount: String(cashSum),
           cardAmount: String(cardSum)
-        }).where(eq5(tableReports.id, input.tableReportId));
+        }).where(eq6(tableReports.id, input.tableReportId));
         const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
         const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
         const { cashTotal, cardTotal } = await computeCumulativesForDate(effectiveBranchId, input.date, prevRec ?? null, cashSum, cardSum);
@@ -6233,35 +6326,35 @@ var appRouter = router({
       return { success: true, mergedAmount, mergedMemo };
     }),
     // 직원 인센티브 추가
-    addIncentive: publicProcedure.input(z3.object({
-      tableReportId: z3.number(),
-      staffName: z3.string(),
-      glassCount: z3.number().default(0),
-      bottleCount: z3.number().default(0),
-      beerBottleCount: z3.number().default(0),
-      salesIncentive: z3.string().default("0"),
-      workStart: z3.string().optional(),
-      workEnd: z3.string().optional(),
-      sortOrder: z3.number().default(0)
+    addIncentive: publicProcedure.input(z4.object({
+      tableReportId: z4.number(),
+      staffName: z4.string(),
+      glassCount: z4.number().default(0),
+      bottleCount: z4.number().default(0),
+      beerBottleCount: z4.number().default(0),
+      salesIncentive: z4.string().default("0"),
+      workStart: z4.string().optional(),
+      workEnd: z4.string().optional(),
+      sortOrder: z4.number().default(0)
     })).mutation(async ({ input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
       const [result] = await db2.insert(staffIncentives).values(input);
       return { id: result.insertId };
     }),
     // 직원 인센티브 수정
-    updateIncentive: publicProcedure.input(z3.object({
-      id: z3.number(),
-      staffName: z3.string().optional(),
-      glassCount: z3.number().optional(),
-      bottleCount: z3.number().optional(),
-      beerBottleCount: z3.number().optional(),
-      salesIncentive: z3.string().optional(),
-      workStart: z3.string().optional(),
-      workEnd: z3.string().optional()
+    updateIncentive: publicProcedure.input(z4.object({
+      id: z4.number(),
+      staffName: z4.string().optional(),
+      glassCount: z4.number().optional(),
+      bottleCount: z4.number().optional(),
+      beerBottleCount: z4.number().optional(),
+      salesIncentive: z4.string().optional(),
+      workStart: z4.string().optional(),
+      workEnd: z4.string().optional()
     })).mutation(async ({ input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
       const { id, ...rest } = input;
       const updateData = {};
       if (rest.staffName !== void 0) updateData.staffName = rest.staffName;
@@ -6271,62 +6364,62 @@ var appRouter = router({
       if (rest.salesIncentive !== void 0) updateData.salesIncentive = rest.salesIncentive;
       if (rest.workStart !== void 0) updateData.workStart = rest.workStart;
       if (rest.workEnd !== void 0) updateData.workEnd = rest.workEnd;
-      await db2.update(staffIncentives).set(updateData).where(eq5(staffIncentives.id, id));
+      await db2.update(staffIncentives).set(updateData).where(eq6(staffIncentives.id, id));
       return { success: true };
     }),
     // 직원 인센티브 삭제
-    deleteIncentive: publicProcedure.input(z3.object({ id: z3.number() })).mutation(async ({ input }) => {
+    deleteIncentive: publicProcedure.input(z4.object({ id: z4.number() })).mutation(async ({ input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      await db2.delete(staffIncentives).where(eq5(staffIncentives.id, input.id));
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
+      await db2.delete(staffIncentives).where(eq6(staffIncentives.id, input.id));
       return { success: true };
     }),
     // 배치 저장 API - 한 번의 요청으로 report + 항목 + 인센티브 모두 저장
-    batchSave: publicProcedure.input(z3.object({
-      date: z3.string(),
-      teamCount: z3.number().default(0),
-      notes: z3.string().optional(),
-      branchId: z3.number().optional(),
-      items: z3.array(z3.object({
-        id: z3.number().optional(),
-        localId: z3.string(),
-        tableNumber: z3.string(),
-        guestType: z3.enum(["walking", "regular", "named"]).default("walking"),
-        guestName: z3.string().optional().nullable(),
-        amount: z3.string().default("0"),
-        paymentMethod: z3.enum(["card", "cash"]).default("card"),
-        memo: z3.string().optional(),
-        sortOrder: z3.number().default(0)
+    batchSave: publicProcedure.input(z4.object({
+      date: z4.string(),
+      teamCount: z4.number().default(0),
+      notes: z4.string().optional(),
+      branchId: z4.number().optional(),
+      items: z4.array(z4.object({
+        id: z4.number().optional(),
+        localId: z4.string(),
+        tableNumber: z4.string(),
+        guestType: z4.enum(["walking", "regular", "named"]).default("walking"),
+        guestName: z4.string().optional().nullable(),
+        amount: z4.string().default("0"),
+        paymentMethod: z4.enum(["card", "cash"]).default("card"),
+        memo: z4.string().optional(),
+        sortOrder: z4.number().default(0)
       })),
-      incentives: z3.array(z3.object({
-        id: z3.number().optional(),
-        localId: z3.string(),
-        staffName: z3.string(),
-        staffType: z3.enum(["staff", "parttime", "manager", "deputy"]).default("staff"),
-        glassCount: z3.number().default(0),
-        bottleCount: z3.number().default(0),
-        beerBottleCount: z3.number().default(0),
-        salesIncentive: z3.string().default("0"),
-        workStart: z3.string().optional(),
-        workEnd: z3.string().optional(),
-        sortOrder: z3.number().default(0)
+      incentives: z4.array(z4.object({
+        id: z4.number().optional(),
+        localId: z4.string(),
+        staffName: z4.string(),
+        staffType: z4.enum(["staff", "parttime", "manager", "deputy"]).default("staff"),
+        glassCount: z4.number().default(0),
+        bottleCount: z4.number().default(0),
+        beerBottleCount: z4.number().default(0),
+        salesIncentive: z4.string().default("0"),
+        workStart: z4.string().optional(),
+        workEnd: z4.string().optional(),
+        sortOrder: z4.number().default(0)
       }))
     })).mutation(async ({ ctx, input }) => {
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
-      if (!account) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      if (!account) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const effectiveBranchId = account.branchId ?? input.branchId;
-      if (!effectiveBranchId) throw new TRPCError4({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const [existing] = await db2.select().from(tableReports).where(and5(eq5(tableReports.branchId, effectiveBranchId), eq5(tableReports.date, input.date))).limit(1);
+      if (!effectiveBranchId) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uC815\uBCF4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const [existing] = await db2.select().from(tableReports).where(and5(eq6(tableReports.branchId, effectiveBranchId), eq6(tableReports.date, input.date))).limit(1);
       let reportId;
       if (existing) {
         await db2.update(tableReports).set({
           teamCount: input.teamCount,
           notes: input.notes || null
-        }).where(eq5(tableReports.id, existing.id));
+        }).where(eq6(tableReports.id, existing.id));
         reportId = existing.id;
       } else {
         const [result] = await db2.insert(tableReports).values({
@@ -6350,7 +6443,7 @@ var appRouter = router({
           paymentMethod: it.paymentMethod,
           memo: it.memo || null,
           sortOrder: it.sortOrder
-        }).where(eq5(tableItems.id, it.id));
+        }).where(eq6(tableItems.id, it.id));
         itemIdMap[it.localId] = it.id;
       }));
       for (const it of itemsToInsert) {
@@ -6380,7 +6473,7 @@ var appRouter = router({
           salesIncentive: inc.salesIncentive || "0",
           workStart: inc.workStart || null,
           workEnd: inc.workEnd || null
-        }).where(eq5(staffIncentives.id, inc.id));
+        }).where(eq6(staffIncentives.id, inc.id));
         incentiveIdMap[inc.localId] = inc.id;
       }));
       for (const inc of incentivesToInsert) {
@@ -6398,13 +6491,13 @@ var appRouter = router({
         });
         incentiveIdMap[inc.localId] = result.insertId;
       }
-      const allItems = await db2.select().from(tableItems).where(eq5(tableItems.tableReportId, reportId));
+      const allItems = await db2.select().from(tableItems).where(eq6(tableItems.tableReportId, reportId));
       const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((s, it) => s + Number(it.amount || 0), 0);
       const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((s, it) => s + Number(it.amount || 0), 0);
       await db2.update(tableReports).set({
         cashAmount: String(cashSum),
         cardAmount: String(cardSum)
-      }).where(eq5(tableReports.id, reportId));
+      }).where(eq6(tableReports.id, reportId));
       const existingSales = await getDailySalesRecord(effectiveBranchId, input.date);
       const prevRec = await getPrevDailySalesRecord(effectiveBranchId, input.date);
       const { cashTotal: computedCashTotal, cardTotal: computedCardTotal } = await computeCumulativesForDate(
@@ -6437,10 +6530,10 @@ var appRouter = router({
         console.error("[cascadeUpdatePosAmounts \uC624\uB958]", e);
       }
       try {
-        const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq5(dailySalesRecords.branchId, effectiveBranchId), eq5(dailySalesRecords.date, input.date))).limit(1);
+        const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq6(dailySalesRecords.branchId, effectiveBranchId), eq6(dailySalesRecords.date, input.date))).limit(1);
         if (salesRec && salesRec.length > 0) {
           const rec = salesRec[0];
-          const allInc = await db2?.select().from(staffIncentives).where(eq5(staffIncentives.tableReportId, reportId));
+          const allInc = await db2?.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, reportId));
           const sc = (allInc ?? []).filter((i) => i.staffType === "staff").length;
           const pc = (allInc ?? []).filter((i) => i.staffType === "parttime").length;
           const mc = (allInc ?? []).filter((i) => i.staffType === "manager").length;
@@ -6466,19 +6559,19 @@ var appRouter = router({
       return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
     }),
     // 직원별 월간 인센티브 집계
-    staffIncentiveStats: publicProcedure.input(z3.object({
-      yearMonth: z3.string(),
+    staffIncentiveStats: publicProcedure.input(z4.object({
+      yearMonth: z4.string(),
       // 'YYYY-MM'
-      branchId: z3.number().optional()
+      branchId: z4.number().optional()
       // 없으면 전체 지점
     })).query(async ({ input, ctx }) => {
-      const account = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!account) throw new TRPCError4({ code: "UNAUTHORIZED" });
+      const account = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!account) throw new TRPCError5({ code: "UNAUTHORIZED" });
       const db2 = await getDb();
-      if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
+      if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
       const prefix = `${input.yearMonth}-%`;
       const fullAccount = await getStoreAccountById(account.accountId);
-      if (!fullAccount) throw new TRPCError4({ code: "UNAUTHORIZED" });
+      if (!fullAccount) throw new TRPCError5({ code: "UNAUTHORIZED" });
       const targetBranchId = account.role === "admin" ? input.branchId ?? null : fullAccount.branchId;
       const rows = await db2.select({
         staffName: staffIncentives.staffName,
@@ -6488,8 +6581,8 @@ var appRouter = router({
         totalBeerBottle: sql`SUM(${staffIncentives.beerBottleCount})`,
         totalSalesIncentive: sql`SUM(CAST(NULLIF(${staffIncentives.salesIncentive}, '') AS DECIMAL(15,0)))`,
         workDays: sql`COUNT(DISTINCT ${tableReports.date})`
-      }).from(staffIncentives).innerJoin(tableReports, eq5(staffIncentives.tableReportId, tableReports.id)).where(
-        targetBranchId !== null ? and5(like(tableReports.date, prefix), eq5(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
+      }).from(staffIncentives).innerJoin(tableReports, eq6(staffIncentives.tableReportId, tableReports.id)).where(
+        targetBranchId !== null ? and5(like(tableReports.date, prefix), eq6(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
       ).groupBy(staffIncentives.staffName, staffIncentives.staffType).orderBy(staffIncentives.staffType, staffIncentives.staffName);
       const detailRows = await db2.select({
         staffName: staffIncentives.staffName,
@@ -6497,8 +6590,8 @@ var appRouter = router({
         date: tableReports.date,
         workStart: staffIncentives.workStart,
         workEnd: staffIncentives.workEnd
-      }).from(staffIncentives).innerJoin(tableReports, eq5(staffIncentives.tableReportId, tableReports.id)).where(
-        targetBranchId !== null ? and5(like(tableReports.date, prefix), eq5(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
+      }).from(staffIncentives).innerJoin(tableReports, eq6(staffIncentives.tableReportId, tableReports.id)).where(
+        targetBranchId !== null ? and5(like(tableReports.date, prefix), eq6(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
       ).orderBy(tableReports.date);
       function calcWorkMinutes(start, end) {
         if (!start || !end) return 0;
@@ -6576,11 +6669,11 @@ var appRouter = router({
       return { stats: result, weekLabels: allWeekLabels };
     }),
     // 지점 메모에서 형광펜 패턴 추출 (앱 로드 시 사전 학습용)
-    getHighlightPatterns: publicProcedure.input(z3.object({
-      branchId: z3.number().optional()
+    getHighlightPatterns: publicProcedure.input(z4.object({
+      branchId: z4.number().optional()
     })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
       let yellowKeywords = [];
@@ -6593,9 +6686,9 @@ var appRouter = router({
             const cutoffDate = /* @__PURE__ */ new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 90);
             const cutoff = formatKstDateString(cutoffDate);
-            const recentItems = await db2.select({ memo: tableItems.memo }).from(tableItems).innerJoin(tableReports, eq5(tableItems.tableReportId, tableReports.id)).where(
+            const recentItems = await db2.select({ memo: tableItems.memo }).from(tableItems).innerJoin(tableReports, eq6(tableItems.tableReportId, tableReports.id)).where(
               and5(
-                eq5(tableReports.branchId, effectiveBranchId),
+                eq6(tableReports.branchId, effectiveBranchId),
                 sql`${tableReports.date} >= ${cutoff}`,
                 sql`${tableItems.memo} IS NOT NULL`,
                 sql`${tableItems.memo} != ''`
@@ -6636,23 +6729,23 @@ var appRouter = router({
       return { yellowKeywords, pinkKeywords, recentMemoExamples, branchId: effectiveBranchId };
     }),
     // 포스기 주문내역 사진에서 주문메모 텍스트 자동 추출 (이전 기록 참고 형광펜 + 금액 계산)
-    analyzeOrderMemo: publicProcedure.input(z3.object({
-      imageBase64: z3.string(),
-      mimeType: z3.string().default("image/jpeg"),
-      branchId: z3.number().optional(),
-      date: z3.string().optional(),
+    analyzeOrderMemo: publicProcedure.input(z4.object({
+      imageBase64: z4.string(),
+      mimeType: z4.string().default("image/jpeg"),
+      branchId: z4.number().optional(),
+      date: z4.string().optional(),
       // 클라이언트에서 사전 로드된 패턴 (있으면 DB 재조회 생략)
-      preloadedYellow: z3.array(z3.string()).optional(),
-      preloadedPink: z3.array(z3.string()).optional(),
-      preloadedExamples: z3.array(z3.string()).optional(),
+      preloadedYellow: z4.array(z4.string()).optional(),
+      preloadedPink: z4.array(z4.string()).optional(),
+      preloadedExamples: z4.array(z4.string()).optional(),
       // [추가] 사용자 학습형 형광펜 제외 단어
       //   - 클라이언트에서 사용자가 mark를 지운 횟수를 누적하여 임계값을 넘은 단어 목록.
       //   - 서버 단에서 keyword 후보 및 LLM 프롬프트의 절대 형광펜 금지 항목에 포함시킨다.
-      excludedYellow: z3.array(z3.string()).optional(),
-      excludedPink: z3.array(z3.string()).optional()
+      excludedYellow: z4.array(z4.string()).optional(),
+      excludedPink: z4.array(z4.string()).optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-      if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");
       const ext = input.mimeType.includes("png") ? "png" : "jpg";
@@ -6673,9 +6766,9 @@ var appRouter = router({
             const cutoffDate = /* @__PURE__ */ new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 60);
             const cutoff = formatKstDateString(cutoffDate);
-            const recentItems = await db2.select({ memo: tableItems.memo, amount: tableItems.amount }).from(tableItems).innerJoin(tableReports, eq5(tableItems.tableReportId, tableReports.id)).where(
+            const recentItems = await db2.select({ memo: tableItems.memo, amount: tableItems.amount }).from(tableItems).innerJoin(tableReports, eq6(tableItems.tableReportId, tableReports.id)).where(
               and5(
-                eq5(tableReports.branchId, effectiveBranchId),
+                eq6(tableReports.branchId, effectiveBranchId),
                 sql`${tableReports.date} >= ${cutoff}`,
                 sql`${tableItems.memo} IS NOT NULL`,
                 sql`${tableItems.memo} != ''`
@@ -6813,7 +6906,7 @@ ${pinkGuide}${userExcludeNote}
         }
       });
       const rawContent = response.choices?.[0]?.message?.content;
-      if (!rawContent) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
+      if (!rawContent) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
       const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
       const result = JSON.parse(content);
       const stripMarksContaining = (html, markPattern, excludedList) => {
@@ -6836,7 +6929,8 @@ ${pinkGuide}${userExcludeNote}
       };
     })
   }),
-  settlement: settlementRouter
+  settlement: settlementRouter,
+  branchSettings: branchSettingsRouter
 });
 
 // server/_core/context.ts
