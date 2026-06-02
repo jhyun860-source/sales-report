@@ -16,15 +16,21 @@ function parseAmount(s: string) {
 // 숫자 입력 컴포넌트 - 콤마 포맷 지원
 function NumberInput({ value, onChange, placeholder = '0' }: { value: number; onChange: (v: number) => void; placeholder?: string }) {
   const [display, setDisplay] = React.useState(value > 0 ? value.toLocaleString() : '');
+  const prevValueRef = React.useRef(value);
 
+  // 외부에서 value가 바뀌면 (지점 전환 등) display 강제 업데이트
   React.useEffect(() => {
-    setDisplay(value > 0 ? value.toLocaleString() : '');
+    if (prevValueRef.current !== value) {
+      prevValueRef.current = value;
+      setDisplay(value > 0 ? value.toLocaleString() : '');
+    }
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/,/g, '');
     if (raw === '' || /^\d+$/.test(raw)) {
       const num = parseInt(raw) || 0;
+      prevValueRef.current = num;
       setDisplay(num > 0 ? num.toLocaleString() : raw);
       onChange(num);
     }
