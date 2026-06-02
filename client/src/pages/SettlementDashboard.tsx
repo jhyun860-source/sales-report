@@ -264,7 +264,7 @@ export default function SettlementDashboard() {
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">총매출</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">세금17%</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">임대료</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비+음료</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">주류</th>
                     <th className="px-2 py-2 text-right font-bold text-gray-700 whitespace-nowrap">순수익</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">수익률</th>
@@ -274,7 +274,7 @@ export default function SettlementDashboard() {
                   {(allDaysSettlements as any[]).map((s: any) => {
                     const net = Number(s.netProfit || 0);
                     const rev = Number(s.totalRevenue || 0);
-                    const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0);
+                    const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0) + Number(s.staffDrinkExpense || 0);
                     const liquor = Number(s.liquorCostExpense || 0);
                     return (
                       <tr key={s.date} className={`hover:bg-gray-50 ${(s as any)._empty ? 'opacity-40' : ''}`}>
