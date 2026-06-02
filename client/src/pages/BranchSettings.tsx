@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { trpc } from '@/lib/trpc';
+import { useStoreAuth } from '@/hooks/useStoreAuth';
+import { useLocation } from 'wouter';
 
+const PRIMARY = '#8B0000';
 const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
 
-// MoneyInput을 컴포넌트 밖에 선언 - 안에 있으면 매 렌더마다 재생성되어 커서 튐
+// 컴포넌트 밖에 선언 (안에 있으면 매 렌더마다 재생성되어 커서 튐)
 function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <input
@@ -15,11 +19,6 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
     />
   );
 }
-import { trpc } from '@/lib/trpc';
-import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { useLocation } from 'wouter';
-
-const PRIMARY = '#8B0000';
 
 export default function BranchSettings() {
   const { user, loading } = useStoreAuth();
@@ -27,7 +26,6 @@ export default function BranchSettings() {
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // 입력 폼 state
   const [monthlyRent, setMonthlyRent] = useState(0);
   const [managerMonthlySalary, setManagerMonthlySalary] = useState(0);
   const [managerDailyWage, setManagerDailyWage] = useState(0);
@@ -53,7 +51,6 @@ export default function BranchSettings() {
     },
   });
 
-  // 지점 선택 시 해당 설정값 폼에 로드
   const loadBranchSettings = (branchId: number, settings: any[]) => {
     const s = settings.find((x: any) => Number(x.branchId) === Number(branchId));
     setMonthlyRent(Number(s?.monthlyRent ?? 0));
@@ -74,12 +71,12 @@ export default function BranchSettings() {
     }
   }, [branches]);
 
-  // allSettings 로드되거나 selectedBranchId 바뀌면 폼 업데이트
+  // allSettings 로드되면 현재 지점 값 채우기
   useEffect(() => {
     if (selectedBranchId !== null && (allSettings as any[]).length > 0) {
       loadBranchSettings(selectedBranchId, allSettings as any[]);
     }
-  }, [selectedBranchId, allSettings]);
+  }, [allSettings]);
 
   const handleBranchClick = (branchId: number) => {
     setSelectedBranchId(branchId);
@@ -109,8 +106,6 @@ export default function BranchSettings() {
 
   const selectedBranch = (branches as any[]).find((b: any) => b.id === selectedBranchId);
 
-
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
@@ -129,7 +124,6 @@ export default function BranchSettings() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* 지점 선택 */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-2 font-medium">지점 선택</p>
           <div className="flex flex-wrap gap-2">
@@ -152,7 +146,6 @@ export default function BranchSettings() {
 
         {selectedBranch && (
           <>
-            {/* 임대료 */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
               <h3 className="text-sm font-bold text-gray-800 border-b pb-2">📌 임대료</h3>
               <div>
@@ -165,11 +158,9 @@ export default function BranchSettings() {
               </div>
             </div>
 
-            {/* 인건비 */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
               <h3 className="text-sm font-bold text-gray-800 border-b pb-2">👥 인건비 설정</h3>
 
-              {/* 점장 */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-600">점장</p>
                 <div>
@@ -189,7 +180,6 @@ export default function BranchSettings() {
                 </div>
               </div>
 
-              {/* 매니저 */}
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">매니저</p>
                 <div>
@@ -209,7 +199,6 @@ export default function BranchSettings() {
                 </div>
               </div>
 
-              {/* 여직원 */}
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">여직원 일급</p>
                 <div className="flex items-center gap-2">
@@ -218,7 +207,6 @@ export default function BranchSettings() {
                 </div>
               </div>
 
-              {/* 알바 */}
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">알바 시급</p>
                 <div className="flex items-center gap-2">
@@ -228,7 +216,6 @@ export default function BranchSettings() {
               </div>
             </div>
 
-            {/* 수수료율 */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <h3 className="text-sm font-bold text-gray-800 border-b pb-2">💳 수수료율</h3>
               <div className="flex items-center gap-2 mt-3">
@@ -237,7 +224,6 @@ export default function BranchSettings() {
               </div>
             </div>
 
-            {/* 요약 */}
             <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
               <h3 className="text-xs font-bold text-blue-700 mb-2">📋 {selectedBranch.name} 현재 설정</h3>
               <div className="space-y-1 text-xs text-blue-600">
