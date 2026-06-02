@@ -178,7 +178,7 @@ export default function BranchSettings() {
               <div>
                 <label className="text-xs text-gray-500">월 임대료</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <NumberInput value={form.monthlyRent} onChange={v => setForm(prev => ({ ...prev, monthlyRent: v }))} />
+                  <NumberInput key={`${selectedBranchId}-rent`} value={form.monthlyRent} onChange={v => setForm(prev => ({ ...prev, monthlyRent: v }))} />
                   <span className="text-xs text-gray-500">원</span>
                 </div>
                 <p className="text-xs text-blue-500 mt-1">
@@ -197,7 +197,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">월급 입력 (자동 계산)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <NumberInput value={form.managerMonthlySalary} onChange={v => setForm(prev => ({ ...prev, managerMonthlySalary: v, managerDailyWage: 0 }))} />
+                    <NumberInput key={`${selectedBranchId}-mgr-salary`} value={form.managerMonthlySalary} onChange={v => setForm(prev => ({ ...prev, managerMonthlySalary: v, managerDailyWage: 0 }))} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
                   {form.managerMonthlySalary > 0 && (
@@ -209,7 +209,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력 (월급 입력 시 자동 계산됨)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <NumberInput value={computedDailyWage} onChange={v => setForm(prev => ({ ...prev, managerDailyWage: v, managerMonthlySalary: 0 }))} />
+                    <NumberInput key={`${selectedBranchId}-mgr-daily`} value={computedDailyWage} onChange={v => setForm(prev => ({ ...prev, managerDailyWage: v, managerMonthlySalary: 0 }))} />
                     <span className="text-xs text-gray-500">원/시간</span>
                   </div>
                 </div>
@@ -221,7 +221,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">월급 입력 (자동 계산)</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <NumberInput value={form.deputyMonthlySalary} onChange={v => setForm(prev => ({ ...prev, deputyMonthlySalary: v, deputyDailyWage: 0 }))} />
+                    <NumberInput key={`${selectedBranchId}-dep-salary`} value={form.deputyMonthlySalary} onChange={v => setForm(prev => ({ ...prev, deputyMonthlySalary: v, deputyDailyWage: 0 }))} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
                   {form.deputyMonthlySalary > 0 && (
@@ -231,7 +231,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <NumberInput value={computedDeputyDailyWage} onChange={v => setForm(prev => ({ ...prev, deputyDailyWage: v, deputyMonthlySalary: 0 }))} />
+                    <NumberInput key={`${selectedBranchId}-dep-daily`} value={computedDeputyDailyWage} onChange={v => setForm(prev => ({ ...prev, deputyDailyWage: v, deputyMonthlySalary: 0 }))} />
                     <span className="text-xs text-gray-500">원/시간</span>
                   </div>
                 </div>
@@ -241,7 +241,7 @@ export default function BranchSettings() {
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">여직원 일급</p>
                 <div className="flex items-center gap-2">
-                  <NumberInput value={form.staffDailyWage} onChange={v => setForm(prev => ({ ...prev, staffDailyWage: v }))} />
+                  <NumberInput key={`${selectedBranchId}-staff`} value={form.staffDailyWage} onChange={v => setForm(prev => ({ ...prev, staffDailyWage: v }))} />
                   <span className="text-xs text-gray-500">원/시간</span>
                 </div>
               </div>
@@ -250,7 +250,7 @@ export default function BranchSettings() {
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">알바 시급</p>
                 <div className="flex items-center gap-2">
-                  <NumberInput value={form.partTimeHourlyWage} onChange={v => setForm(prev => ({ ...prev, partTimeHourlyWage: v }))} />
+                  <NumberInput key={`${selectedBranchId}-parttime`} value={form.partTimeHourlyWage} onChange={v => setForm(prev => ({ ...prev, partTimeHourlyWage: v }))} />
                   <span className="text-xs text-gray-500">원/시간</span>
                 </div>
               </div>
