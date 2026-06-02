@@ -49,9 +49,9 @@ export default function BranchSettings() {
     commissionRate: 0.17,
   });
 
-  // 지점 선택 시 기존 설정값 로드
+  // 지점 선택 시 기존 설정값 로드 (없으면 0으로 초기화)
   useEffect(() => {
-    if (selectedBranchId && allSettings.length > 0) {
+    if (selectedBranchId !== null) {
       const setting = (allSettings as any[]).find((s: any) => s.branchId === selectedBranchId);
       if (setting) {
         setForm({
@@ -63,6 +63,18 @@ export default function BranchSettings() {
           staffDailyWage: Number(setting.staffDailyWage || 0),
           partTimeHourlyWage: Number(setting.partTimeHourlyWage || 0),
           commissionRate: Number(setting.commissionRate || 0.17),
+        });
+      } else {
+        // 해당 지점 설정 없으면 전부 0으로 초기화
+        setForm({
+          monthlyRent: 0,
+          managerMonthlySalary: 0,
+          managerDailyWage: 0,
+          deputyMonthlySalary: 0,
+          deputyDailyWage: 0,
+          staffDailyWage: 0,
+          partTimeHourlyWage: 0,
+          commissionRate: 0.17,
         });
       }
     }
