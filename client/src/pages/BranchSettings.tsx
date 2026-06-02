@@ -1,4 +1,20 @@
 import React, { useState, useEffect } from 'react';
+
+const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
+
+// MoneyInput을 컴포넌트 밖에 선언 - 안에 있으면 매 렌더마다 재생성되어 커서 튐
+function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <input
+      type="number"
+      className={inputClass}
+      value={value === 0 ? '' : value}
+      onChange={e => onChange(parseInt(e.target.value) || 0)}
+      placeholder="0"
+      min="0"
+    />
+  );
+}
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { useLocation } from 'wouter';
@@ -93,19 +109,7 @@ export default function BranchSettings() {
 
   const selectedBranch = (branches as any[]).find((b: any) => b.id === selectedBranchId);
 
-  const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
 
-  // 숫자 입력 컴포넌트
-  const MoneyInput = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => (
-    <input
-      type="number"
-      className={inputClass}
-      value={value || ''}
-      onChange={e => onChange(parseInt(e.target.value) || 0)}
-      placeholder="0"
-      min="0"
-    />
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
