@@ -42,6 +42,8 @@ export default function BranchSettings() {
     monthlyRent: 0,
     managerMonthlySalary: 0,
     managerDailyWage: 0,
+    deputyMonthlySalary: 0,
+    deputyDailyWage: 0,
     staffDailyWage: 0,
     partTimeDailyWage: 0,
     commissionRate: 0.17,
@@ -56,6 +58,8 @@ export default function BranchSettings() {
           monthlyRent: Number(setting.monthlyRent || 0),
           managerMonthlySalary: Number(setting.managerMonthlySalary || 0),
           managerDailyWage: Number(setting.managerDailyWage || 0),
+          deputyMonthlySalary: Number(setting.deputyMonthlySalary || 0),
+          deputyDailyWage: Number(setting.deputyDailyWage || 0),
           staffDailyWage: Number(setting.staffDailyWage || 0),
           partTimeDailyWage: Number(setting.partTimeDailyWage || 0),
           commissionRate: Number(setting.commissionRate || 0.17),
@@ -80,6 +84,9 @@ export default function BranchSettings() {
   const computedDailyWage = form.managerMonthlySalary > 0
     ? Math.round(form.managerMonthlySalary / 22)
     : form.managerDailyWage;
+  const computedDeputyDailyWage = form.deputyMonthlySalary > 0
+    ? Math.round(form.deputyMonthlySalary / 22)
+    : form.deputyDailyWage;
 
   const handleSave = () => {
     if (!selectedBranchId) return;
@@ -87,6 +94,7 @@ export default function BranchSettings() {
       branchId: selectedBranchId,
       ...form,
       managerDailyWage: computedDailyWage,
+      deputyDailyWage: computedDeputyDailyWage,
     });
   };
 
@@ -160,7 +168,7 @@ export default function BranchSettings() {
 
               {/* 점장/매니저 */}
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-600">점장 / 매니저</p>
+                <p className="text-xs font-semibold text-gray-600">점장</p>
                 <div>
                   <label className="text-xs text-gray-500">월급 입력 (자동 계산)</label>
                   <div className="flex items-center gap-2 mt-1">
@@ -186,6 +194,40 @@ export default function BranchSettings() {
                       type="text"
                       value={formatNumber(computedDailyWage)}
                       onChange={e => setForm(prev => ({ ...prev, managerDailyWage: parseAmount(e.target.value), managerMonthlySalary: 0 }))}
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+                      placeholder="0"
+                    />
+                    <span className="text-xs text-gray-500">원/일</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 매니저 */}
+              <div className="space-y-2 border-t pt-3">
+                <p className="text-xs font-semibold text-gray-600">매니저</p>
+                <div>
+                  <label className="text-xs text-gray-500">월급 입력 (자동 계산)</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={formatNumber(form.deputyMonthlySalary)}
+                      onChange={e => setForm(prev => ({ ...prev, deputyMonthlySalary: parseAmount(e.target.value), deputyDailyWage: 0 }))}
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+                      placeholder="0"
+                    />
+                    <span className="text-xs text-gray-500">원/월</span>
+                  </div>
+                  {form.deputyMonthlySalary > 0 && (
+                    <p className="text-xs text-blue-500 mt-1">→ 일급: {computedDeputyDailyWage.toLocaleString()}원 (÷22일)</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">일급 직접 입력</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={formatNumber(computedDeputyDailyWage)}
+                      onChange={e => setForm(prev => ({ ...prev, deputyDailyWage: parseAmount(e.target.value), deputyMonthlySalary: 0 }))}
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                       placeholder="0"
                     />
@@ -248,7 +290,8 @@ export default function BranchSettings() {
               <h3 className="text-xs font-bold text-blue-700 mb-2">📋 {selectedBranch.name} 현재 설정</h3>
               <div className="space-y-1 text-xs text-blue-600">
                 <div className="flex justify-between"><span>월 임대료</span><span>{form.monthlyRent.toLocaleString()}원</span></div>
-                <div className="flex justify-between"><span>점장/매니저 일급</span><span>{computedDailyWage.toLocaleString()}원</span></div>
+                <div className="flex justify-between"><span>점장 일급</span><span>{computedDailyWage.toLocaleString()}원</span></div>
+                <div className="flex justify-between"><span>매니저 일급</span><span>{computedDeputyDailyWage.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>여직원 일급</span><span>{form.staffDailyWage.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>알바 일급</span><span>{form.partTimeDailyWage.toLocaleString()}원</span></div>
                 <div className="flex justify-between"><span>수수료율</span><span>{(form.commissionRate * 100).toFixed(0)}%</span></div>
