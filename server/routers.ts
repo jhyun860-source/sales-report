@@ -37,6 +37,7 @@ import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-o
 import { TRPCError } from "@trpc/server";
 import { calculateDailySettlement, saveDailySettlementRecord } from "./_core/settlementCalculations";
 import { settlementRouter } from "./settlementRouter";
+import { branchSettingsRouter } from "./branchSettingsRouter";
 
 
 function formatKstDateString(date: Date): string {
@@ -5242,6 +5243,7 @@ ${pinkGuide}${userExcludeNote}
       }),
   }),
   settlement: settlementRouter,
+  branchSettings: branchSettingsRouter,
 });
 
 export type AppRouter = typeof appRouter;
