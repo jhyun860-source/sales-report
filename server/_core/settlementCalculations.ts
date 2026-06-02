@@ -4,7 +4,7 @@
  */
 
 import { getDb } from '../db';
-import { dailySalesRecords, staffIncentives, liquorStockMovements, branches } from '../../drizzle/schema';
+import { dailySalesRecords, staffIncentives, liquorStockMovements, branches, branchSettings } from '../../drizzle/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 
 /**
@@ -222,41 +222,42 @@ export async function calculateDailySettlement(
   // 지점 이름 조회
   const branchData = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
   if (!branchData || branchData.length === 0) return zero;
-  const branchName = branchData[0].name;
 
-  // 코드 하드코딩 설정 우선, 없으면 DB 값 폴백
-  const config = BRANCH_CONFIG[branchName];
+  // branchSettings DB에서 설정값 읽기 (설정 페이지에서 저장한 값)
+  const [bsData] = await db.select().from(branchSettings).where(eq(branchSettings.branchId, branchId)).limit(1);
+  // DB 설정값이 없으면 하드코딩 폴백
+  const branchName = branchData[0].name;
+  const hardConfig = BRANCH_CONFIG[branchName];
+
   const [year, month] = date.split('-').map(Number);
 
   // 1. 총매출
   const totalRevenue = cash + card;
 
-  // 2. 수수료/주방 (17%)
-  const commissionRate = config?.commissionRate ?? Number(branchData[0].commissionRate || 0.17);
+  // 2. 수수료/주방
+  const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : (hardConfig?.commissionRate ?? 0.17);
   const commissionExpense = Math.round(totalRevenue * commissionRate);
 
   // 3. 임대료 (월 임대료 ÷ 영업일수)
-  const monthlyRent = config?.monthlyRent ?? Number(branchData[0].monthlyRent || 0);
-  const managementFeeRaw = config?.managementFee ?? Number(branchData[0].managementFee || 0);
-  // 관리비는 임대료에 합산
-  const rentExpense = calculateDailyRent(monthlyRent, year, month) + managementFeeRaw;
+  const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : (hardConfig?.monthlyRent ?? 0);
+  const rentExpense = calculateDailyRent(monthlyRent, year, month);
 
-  // 4. 관리비 (임대료에 합산됨)
+  // 4. 관리비 (0으로 통일, 임대료에 포함)
   const managementFeeExpense = 0;
 
   // 5. 여직원 인건비
-  const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
+  const staffDailyWage = bsData ? Number(bsData.staffDailyWage || 0) : (hardConfig?.staffDailyWage ?? 0);
   const staffWageExpense = staffCount * staffDailyWage;
 
   // 6. 점장/매니저 인건비 - 테이블 기록에 직접 추가했을 때만 반영
-  const managerDailyWage = config?.managerDailyWage ?? 0;
-  const deputyDailyWage = config?.deputyDailyWage ?? managerDailyWage; // 매니저 일급 (없으면 점장 일급 사용)
+  const managerDailyWage = bsData ? Number(bsData.managerDailyWage || 0) : (hardConfig?.managerDailyWage ?? 0);
+  const deputyDailyWage = bsData ? Number(bsData.deputyDailyWage || 0) : managerDailyWage;
   const pureManagerCount = incentives.filter(i => i.staffType === 'manager').length;
   const deputyCount = incentives.filter(i => i.staffType === 'deputy').length;
   const managerWageExpense = (pureManagerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
-  // 7. 알바 인건비 (일급)
-  const partTimeHourlyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 9860);
+  // 7. 알바 인건비 (시급 × 근무시간)
+  const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : (hardConfig?.partTimeDailyWage ?? 9860);
   // 알바: 시급 × 총 근무시간 (출퇴근 시간 기록 있으면 시간 계산, 없으면 인원수 × 시급 × 8시간)
   const partTimeWageExpense = partTimeTotalHours > 0
     ? Math.round(partTimeHourlyWage * partTimeTotalHours)
