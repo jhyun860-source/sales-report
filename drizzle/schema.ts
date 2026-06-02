@@ -181,6 +181,7 @@ export const branchSettings = mysqlTable("branchSettings", {
   partTimeHourlyWage: decimal("partTimeHourlyWage", { precision: 15, scale: 0 }).default("0").notNull(),
   deputyMonthlySalary: decimal("deputyMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
   deputyDailyWage: decimal("deputyDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+  monthlyFixedExpense: decimal("monthlyFixedExpense", { precision: 15, scale: 0 }).default("0").notNull(),
   commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.1700").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
