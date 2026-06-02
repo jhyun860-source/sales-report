@@ -35,6 +35,7 @@ export default function BranchSettings() {
   const [, navigate] = useLocation();
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
+  const [customForm, setCustomForm] = useState<Record<string, number> | null>(null);
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -55,57 +56,36 @@ export default function BranchSettings() {
     },
   });
 
-  const [form, setForm] = useState({
-    monthlyRent: 0,
-    managerMonthlySalary: 0,
-    managerDailyWage: 0,
-    deputyMonthlySalary: 0,
-    deputyDailyWage: 0,
-    staffDailyWage: 0,
-    partTimeHourlyWage: 0,
-    commissionRate: 0.17,
-  });
+  // form = customForm(수정중) ?? dbSetting(DB값) ?? 기본값0
+  const form = {
+    monthlyRent: customForm?.monthlyRent ?? Number(dbSetting?.monthlyRent ?? 0),
+    managerMonthlySalary: customForm?.managerMonthlySalary ?? Number(dbSetting?.managerMonthlySalary ?? 0),
+    managerDailyWage: customForm?.managerDailyWage ?? Number(dbSetting?.managerDailyWage ?? 0),
+    deputyMonthlySalary: customForm?.deputyMonthlySalary ?? Number(dbSetting?.deputyMonthlySalary ?? 0),
+    deputyDailyWage: customForm?.deputyDailyWage ?? Number(dbSetting?.deputyDailyWage ?? 0),
+    staffDailyWage: customForm?.staffDailyWage ?? Number(dbSetting?.staffDailyWage ?? 0),
+    partTimeHourlyWage: customForm?.partTimeHourlyWage ?? Number(dbSetting?.partTimeHourlyWage ?? 0),
+    commissionRate: customForm?.commissionRate ?? Number(dbSetting?.commissionRate ?? 0.17),
+  };
+  const setForm = (updater: any) => {
+    setCustomForm(prev => typeof updater === 'function' ? updater(prev ?? form) : { ...(prev ?? form), ...updater });
+  };
 
-  // allSettings를 ref로 항상 최신값 유지
-  const allSettingsRef = React.useRef<any[]>([]);
-  useEffect(() => {
-    allSettingsRef.current = allSettings as any[];
-  }, [allSettings]);
+  // 선택된 지점의 DB 설정값 실시간 계산 (Number()로 타입 통일)
+  const dbSetting = (allSettings as any[]).find(
+    (s: any) => Number(s.branchId) === Number(selectedBranchId)
+  );
 
-  // 지점 선택 시 form 즉시 업데이트 (selectedBranchId 변경만 감지)
-  useEffect(() => {
-    if (selectedBranchId === null) return;
-    const settings = allSettingsRef.current;
-    const setting = settings.find((s: any) => s.branchId === selectedBranchId);
-    if (setting) {
-      setForm({
-        monthlyRent: Number(setting.monthlyRent || 0),
-        managerMonthlySalary: Number(setting.managerMonthlySalary || 0),
-        managerDailyWage: Number(setting.managerDailyWage || 0),
-        deputyMonthlySalary: Number(setting.deputyMonthlySalary || 0),
-        deputyDailyWage: Number(setting.deputyDailyWage || 0),
-        staffDailyWage: Number(setting.staffDailyWage || 0),
-        partTimeHourlyWage: Number(setting.partTimeHourlyWage || 0),
-        commissionRate: Number(setting.commissionRate || 0.17),
-      });
-    } else if (settings.length > 0) {
-      setForm({
-        monthlyRent: 0,
-        managerMonthlySalary: 0,
-        managerDailyWage: 0,
-        deputyMonthlySalary: 0,
-        deputyDailyWage: 0,
-        staffDailyWage: 0,
-        partTimeHourlyWage: 0,
-        commissionRate: 0.17,
-      });
-    }
-  }, [selectedBranchId]);
+  // 지점 전환 핸들러 - customForm 초기화
+  const handleBranchChange = (branchId: number) => {
+    setSelectedBranchId(branchId);
+    setCustomForm(null);
+  };
 
   // 첫 지점 자동 선택
   useEffect(() => {
-    if (branches.length > 0 && !selectedBranchId) {
-      setSelectedBranchId((branches as any[])[0].id);
+    if ((branches as any[]).length > 0 && !selectedBranchId) {
+      handleBranchChange((branches as any[])[0].id);
     }
   }, [branches]);
 
@@ -160,7 +140,7 @@ export default function BranchSettings() {
             {(branches as any[]).map((b: any) => (
               <button
                 key={b.id}
-                onClick={() => setSelectedBranchId(b.id)}
+                onClick={() => handleBranchChange(b.id)}
                 className="px-3 py-1.5 text-sm rounded-lg font-medium border transition-all"
                 style={{
                   background: selectedBranchId === b.id ? PRIMARY : 'white',
