@@ -143,6 +143,18 @@ var storeAccountsRelations = relations(storeAccounts, ({ one }) => ({
     references: [branches.id]
   })
 }));
+var branchSettings = mysqlTable("branchSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  branchId: int("branchId").notNull(),
+  monthlyRent: decimal("monthlyRent", { precision: 15, scale: 0 }).default("0").notNull(),
+  managerMonthlySalary: decimal("managerMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
+  managerDailyWage: decimal("managerDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+  staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+  partTimeDailyWage: decimal("partTimeDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.1700").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+});
 var dailySalesRecordsRelations = relations(dailySalesRecords, ({ one }) => ({
   branch: one(branches, {
     fields: [dailySalesRecords.branchId],
