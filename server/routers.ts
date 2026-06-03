@@ -4695,6 +4695,14 @@ export const appRouter = router({
         const incentivesToUpdate = validIncentives.filter(inc => inc.id);
         const incentivesToInsert = validIncentives.filter(inc => !inc.id);
 
+        // DELETE: 프론트에서 넘어온 id 목록에 없는 기존 인센티브 삭제
+        const existingIncentives = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
+        const incomingIds = new Set(validIncentives.filter(inc => inc.id).map(inc => inc.id!));
+        const toDelete = existingIncentives.filter(inc => !incomingIds.has(inc.id));
+        if (toDelete.length > 0) {
+          await Promise.all(toDelete.map(inc => db.delete(staffIncentives).where(eq(staffIncentives.id, inc.id))));
+        }
+
         // UPDATE: 병렬 처리
         await Promise.all(incentivesToUpdate.map(async (inc) => {
           await db.update(staffIncentives).set({
