@@ -657,6 +657,8 @@ export default function TableReport() {
       const next = prev.filter(i => i.localId !== inc.localId);
       return next.length === 0 ? [emptyIncentive()] : next;
     });
+    // 삭제 후 즉시 저장 (날짜 이동 시 복구 방지)
+    setTimeout(() => handleSave(), 100);
   };
 
   // 사진 찍어서 메모 자동 입력
