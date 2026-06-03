@@ -812,7 +812,7 @@ export default function TableReport() {
 
         {/* 날짜 네비게이터 */}
         <div className="flex items-center justify-between px-4 pb-2.5">
-          <button onClick={async () => { await handleSave(); setCurrentDate(d => moveDateBy(d, -1)); }} className="p-1.5 rounded-full" style={{ color: TEXT }}>
+          <button onClick={() => setCurrentDate(d => moveDateBy(d, -1))} className="p-1.5 rounded-full" style={{ color: TEXT }}>
             <ChevronLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="text-center">
@@ -820,12 +820,12 @@ export default function TableReport() {
               {formatDateDisplay(currentDate)}
             </div>
             {!isToday && (
-              <button onClick={async () => { await handleSave(); setCurrentDate(today); }} className="text-xs underline underline-offset-2" style={{ color: PRIMARY }}>
+              <button onClick={() => setCurrentDate(today)} className="text-xs underline underline-offset-2" style={{ color: PRIMARY }}>
                 오늘로 이동
               </button>
             )}
           </div>
-          <button onClick={async () => { await handleSave(); setCurrentDate(d => moveDateBy(d, 1)); }} disabled={isToday} className="p-1.5 rounded-full disabled:opacity-30" style={{ color: TEXT }}>
+          <button onClick={() => setCurrentDate(d => moveDateBy(d, 1))} disabled={isToday} className="p-1.5 rounded-full disabled:opacity-30" style={{ color: TEXT }}>
             <ChevronRight size={20} strokeWidth={2.5} />
           </button>
         </div>
