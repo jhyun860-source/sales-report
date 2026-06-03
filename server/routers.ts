@@ -2843,7 +2843,7 @@ export const appRouter = router({
         password: z.string().min(1),
       }))
       .mutation(async ({ ctx, input }) => {
-        await ensureCanonicalStoreAccounts();
+        process.stdout.write('BATCHSAVE_V20260603\n'); await ensureCanonicalStoreAccounts();
         const account = await getStoreAccountByLoginId(input.loginId);
         if (!account) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: '아이디 또는 비밀번호가 올바르지 않습니다' });
