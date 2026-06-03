@@ -4825,9 +4825,18 @@ export const appRouter = router({
           }
         } catch (e: any) {
           console.error('[테이블 저장 후 정산 재계산 오류]', e);
-          return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError: String(e?.message || e) };
+          return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, settlementResult: null, settlementError: String(e?.message || e) };
         }
-        return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError: null };
+        // 재계산 후 실제 DB 값 읽어서 반환 (검증용)
+        const verifyRec = await db?.select().from(dailySalesRecords)
+          .where(and(eq(dailySalesRecords.branchId, effectiveBranchId), eq(dailySalesRecords.date, input.date)))
+          .limit(1);
+        const settlementResult = verifyRec && verifyRec.length > 0 ? {
+          managerWageExpense: String(verifyRec[0].managerWageExpense),
+          netProfit: String(verifyRec[0].netProfit),
+          totalRevenue: String(verifyRec[0].totalRevenue),
+        } : null;
+        return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, settlementResult, settlementError: null };
       }),
 
     // 직원별 월간 인센티브 집계
