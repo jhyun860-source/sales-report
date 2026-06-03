@@ -4821,7 +4821,22 @@ export const appRouter = router({
               submittedAt: new Date(),
             });
           } else {
-            await saveDailySettlementRecord(effectiveBranchId, input.date, settlement2);
+            // saveDailySettlementRecord 대신 직접 db로 update (getDb() 재호출 문제 방지)
+            await db?.update(dailySalesRecords).set({
+              totalRevenue: String(settlement2.totalRevenue),
+              commissionExpense: String(settlement2.commissionExpense),
+              rentExpense: String(settlement2.rentExpense),
+              managementFeeExpense: String(settlement2.managementFeeExpense),
+              staffWageExpense: String(settlement2.staffWageExpense),
+              managerWageExpense: String(settlement2.managerWageExpense ?? 0),
+              partTimeWageExpense: String(settlement2.partTimeWageExpense),
+              liquorCostExpense: String(settlement2.liquorCostExpense),
+              staffDrinkExpense: String(settlement2.staffDrinkExpense),
+              otherExpense: String(settlement2.otherExpense),
+              totalExpenses: String(settlement2.totalExpenses),
+              netProfit: String(settlement2.netProfit),
+              updatedAt: new Date(),
+            }).where(eq(dailySalesRecords.id, rec2.id));
           }
         } catch (e: any) {
           console.error('[테이블 저장 후 정산 재계산 오류]', e);
