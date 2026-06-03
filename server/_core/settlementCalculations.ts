@@ -252,9 +252,13 @@ export async function calculateDailySettlement(
   // 6. 점장/매니저 인건비 - 테이블 기록에 직접 추가했을 때만 반영
   const managerDailyWage = bsData ? Number(bsData.managerDailyWage || 0) : (hardConfig?.managerDailyWage ?? 0);
   const deputyDailyWage = bsData ? Number(bsData.deputyDailyWage || 0) : managerDailyWage;
-  const pureManagerCount = incentives.filter(i => i.staffType === 'manager').length;
-  const deputyCount = incentives.filter(i => i.staffType === 'deputy').length;
-  const managerWageExpense = (pureManagerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
+  let managerWageExpense = 0;
+  if (tableReportId) {
+    const incentivesForManager = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
+    const pureManagerCount = incentivesForManager.filter(i => i.staffType === 'manager').length;
+    const deputyCount = incentivesForManager.filter(i => i.staffType === 'deputy').length;
+    managerWageExpense = (pureManagerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
+  }
 
   // 7. 알바 인건비 (시급 × 근무시간)
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : (hardConfig?.partTimeDailyWage ?? 9860);
