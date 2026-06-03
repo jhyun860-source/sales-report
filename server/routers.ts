@@ -4331,37 +4331,59 @@ export const appRouter = router({
         try { await cascadeUpdateCumulativeAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdateCumulativeAmounts 오류]', e); }
         try { await cascadeUpdatePosAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdatePosAmounts 오류]', e); }
 
-        // 테이블 기록 저장 후 정산 자동 재계산
+        // 테이블 기록 저장 후 정산 자동 재계산 (레코드 없어도 upsert)
         try {
           const salesRec = await db?.select().from(dailySalesRecords)
             .where(and(eq(dailySalesRecords.branchId, effectiveBranchId), eq(dailySalesRecords.date, input.date)))
             .limit(1);
-          if (salesRec && salesRec.length > 0) {
-            const rec = salesRec[0];
-            const allInc = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
-            const sc = (allInc ?? []).filter((i: any) => i.staffType === 'staff').length;
-            const pc = (allInc ?? []).filter((i: any) => i.staffType === 'parttime').length;
-            const mc = (allInc ?? []).filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
-            // 알바 총 근무시간 계산
-            let pth = 0;
-            for (const inc of (allInc ?? []).filter((i: any) => i.staffType === 'parttime')) {
-              if (inc.workStart && inc.workEnd) {
-                try {
-                  const [sh, sm] = (inc.workStart as string).split(':').map(Number);
-                  const [eh, em] = (inc.workEnd as string).split(':').map(Number);
-                  let startMin = sh * 60 + sm;
-                  let endMin = eh * 60 + em;
-                  if (endMin <= startMin) endMin += 24 * 60;
-                  pth += (endMin - startMin) / 60;
-                } catch {}
-              }
+          const rec = salesRec && salesRec.length > 0 ? salesRec[0] : null;
+          const allInc = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
+          const sc = (allInc ?? []).filter((i: any) => i.staffType === 'staff').length;
+          const pc = (allInc ?? []).filter((i: any) => i.staffType === 'parttime').length;
+          const mc = (allInc ?? []).filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
+          // 알바 총 근무시간 계산
+          let pth = 0;
+          for (const inc of (allInc ?? []).filter((i: any) => i.staffType === 'parttime')) {
+            if (inc.workStart && inc.workEnd) {
+              try {
+                const [sh, sm] = (inc.workStart as string).split(':').map(Number);
+                const [eh, em] = (inc.workEnd as string).split(':').map(Number);
+                let startMin = sh * 60 + sm;
+                let endMin = eh * 60 + em;
+                if (endMin <= startMin) endMin += 24 * 60;
+                pth += (endMin - startMin) / 60;
+              } catch {}
             }
-            const cash = parseInt(rec.cash || '0') || 0;
-            const card = parseInt(rec.card || '0') || 0;
-            const expenses = Array.isArray(rec.expenses) ? rec.expenses as Array<{id:string;description:string;amount:string}> : [];
-            const settlement = await calculateDailySettlement(
-              effectiveBranchId, input.date, cash, card, sc, pc, expenses, reportId, mc, pth
-            );
+          }
+          const cash = parseInt(rec?.cash || '0') || cashSum;
+          const card = parseInt(rec?.card || '0') || cardSum;
+          const expenses = rec && Array.isArray(rec.expenses) ? rec.expenses as Array<{id:string;description:string;amount:string}> : [];
+          const settlement = await calculateDailySettlement(
+            effectiveBranchId, input.date, cash, card, sc, pc, expenses, reportId, mc, pth
+          );
+          if (!rec) {
+            await db?.insert(dailySalesRecords).values({
+              branchId: effectiveBranchId,
+              date: input.date,
+              cash: String(cash),
+              card: String(card),
+              expenses: expenses,
+              totalRevenue: String(settlement.totalRevenue),
+              commissionExpense: String(settlement.commissionExpense),
+              rentExpense: String(settlement.rentExpense),
+              managementFeeExpense: String(settlement.managementFeeExpense),
+              staffWageExpense: String(settlement.staffWageExpense),
+              partTimeWageExpense: String(settlement.partTimeWageExpense),
+              liquorCostExpense: String(settlement.liquorCostExpense),
+              staffDrinkExpense: String(settlement.staffDrinkExpense),
+              otherExpense: String(settlement.otherExpense),
+              totalExpenses: String(settlement.totalExpenses),
+              netProfit: String(settlement.netProfit),
+              staffCount: sc,
+              partTimeCount: pc,
+              submittedAt: new Date(),
+            });
+          } else {
             await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
           }
         } catch (e) { console.error('[테이블 저장 후 정산 재계산 오류]', e); }
