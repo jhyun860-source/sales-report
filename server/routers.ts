@@ -4383,7 +4383,6 @@ export const appRouter = router({
               partTimeCount: pc,
               submittedAt: new Date(),
             });
-            } // end if (cash2 > 0 || card2 > 0)
           } else {
             await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
           }

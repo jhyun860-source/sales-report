@@ -1,3 +1,321 @@
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// drizzle/schema.ts
+var schema_exports = {};
+__export(schema_exports, {
+  branchManagers: () => branchManagers,
+  branchManagersRelations: () => branchManagersRelations,
+  branchSettings: () => branchSettings,
+  branches: () => branches,
+  branchesRelations: () => branchesRelations,
+  dailySalesRecords: () => dailySalesRecords,
+  dailySalesRecordsRelations: () => dailySalesRecordsRelations,
+  liquorInventories: () => liquorInventories,
+  liquorInventoriesRelations: () => liquorInventoriesRelations,
+  liquorItems: () => liquorItems,
+  liquorItemsRelations: () => liquorItemsRelations,
+  liquorStockMovements: () => liquorStockMovements,
+  liquorStockMovementsRelations: () => liquorStockMovementsRelations,
+  pushSubscriptions: () => pushSubscriptions,
+  staffIncentives: () => staffIncentives,
+  staffIncentivesRelations: () => staffIncentivesRelations,
+  storeAccounts: () => storeAccounts,
+  storeAccountsRelations: () => storeAccountsRelations,
+  tableItems: () => tableItems,
+  tableItemsRelations: () => tableItemsRelations,
+  tableReports: () => tableReports,
+  tableReportsRelations: () => tableReportsRelations,
+  users: () => users,
+  usersRelations: () => usersRelations
+});
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json } from "drizzle-orm/mysql-core";
+import { relations } from "drizzle-orm";
+var users, branches, branchManagers, dailySalesRecords, usersRelations, branchesRelations, branchManagersRelations, pushSubscriptions, storeAccounts, storeAccountsRelations, branchSettings, dailySalesRecordsRelations, tableReports, tableItems, staffIncentives, tableReportsRelations, tableItemsRelations, staffIncentivesRelations, liquorItems, liquorInventories, liquorStockMovements, liquorItemsRelations, liquorInventoriesRelations, liquorStockMovementsRelations;
+var init_schema = __esm({
+  "drizzle/schema.ts"() {
+    "use strict";
+    users = mysqlTable("users", {
+      /**
+       * Surrogate primary key. Auto-incremented numeric value managed by the database.
+       * Use this for relations between tables.
+       */
+      id: int("id").autoincrement().primaryKey(),
+      /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
+      openId: varchar("openId", { length: 64 }).notNull().unique(),
+      name: text("name"),
+      email: varchar("email", { length: 320 }),
+      loginMethod: varchar("loginMethod", { length: 64 }),
+      role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+      lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull()
+    });
+    branches = mysqlTable("branches", {
+      id: int("id").autoincrement().primaryKey(),
+      ownerId: int("ownerId").notNull(),
+      // admin 사용자 ID
+      name: varchar("name", { length: 100 }).notNull(),
+      // 지점명 (강남점, 홍대점 등)
+      code: varchar("code", { length: 50 }).notNull().unique(),
+      // 지점 코드
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    branchManagers = mysqlTable("branchManagers", {
+      id: int("id").autoincrement().primaryKey(),
+      branchId: int("branchId").notNull(),
+      userId: int("userId").notNull(),
+      // 점장 사용자 ID
+      role: mysqlEnum("role", ["manager", "staff"]).default("staff").notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    dailySalesRecords = mysqlTable("dailySalesRecords", {
+      id: int("id").autoincrement().primaryKey(),
+      branchId: int("branchId").notNull(),
+      date: varchar("date", { length: 10 }).notNull(),
+      // YYYY-MM-DD
+      posStartAmount: decimal("posStartAmount", { precision: 15, scale: 0 }).default("0").notNull(),
+      cash: decimal("cash", { precision: 15, scale: 0 }).default("0").notNull(),
+      card: decimal("card", { precision: 15, scale: 0 }).default("0").notNull(),
+      cashTotal: decimal("cashTotal", { precision: 15, scale: 0 }).default("0").notNull(),
+      cardTotal: decimal("cardTotal", { precision: 15, scale: 0 }).default("0").notNull(),
+      posEndAmount: decimal("posEndAmount", { precision: 15, scale: 0 }).default("0").notNull(),
+      cashDeposit: decimal("cashDeposit", { precision: 15, scale: 0 }).default("0").notNull(),
+      // 시제 입금
+      paymentChangeNote: text("paymentChangeNote"),
+      paymentChangeDate: varchar("paymentChangeDate", { length: 10 }),
+      paymentChangeAmount: decimal("paymentChangeAmount", { precision: 15, scale: 0 }).default("0").notNull(),
+      expenses: json("expenses").$type().default([]).notNull(),
+      submittedBy: int("submittedBy"),
+      submittedAt: timestamp("submittedAt"),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+      // 정산 컬럼 (매출 저장 시 자동 계산)
+      totalRevenue: decimal("totalRevenue", { precision: 15, scale: 0 }).default("0").notNull(),
+      commissionExpense: decimal("commissionExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      rentExpense: decimal("rentExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      managementFeeExpense: decimal("managementFeeExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      staffWageExpense: decimal("staffWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      managerWageExpense: decimal("managerWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(),
+      netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(),
+      staffCount: int("staffCount").default(0).notNull(),
+      partTimeCount: int("partTimeCount").default(0).notNull()
+    });
+    usersRelations = relations(users, ({ many }) => ({
+      ownedBranches: many(branches),
+      managedBranches: many(branchManagers),
+      submittedRecords: many(dailySalesRecords)
+    }));
+    branchesRelations = relations(branches, ({ one, many }) => ({
+      owner: one(users, {
+        fields: [branches.ownerId],
+        references: [users.id]
+      }),
+      managers: many(branchManagers),
+      salesRecords: many(dailySalesRecords)
+    }));
+    branchManagersRelations = relations(branchManagers, ({ one }) => ({
+      branch: one(branches, {
+        fields: [branchManagers.branchId],
+        references: [branches.id]
+      }),
+      user: one(users, {
+        fields: [branchManagers.userId],
+        references: [users.id]
+      })
+    }));
+    pushSubscriptions = mysqlTable("pushSubscriptions", {
+      id: int("id").autoincrement().primaryKey(),
+      userId: int("userId").notNull(),
+      endpoint: text("endpoint").notNull(),
+      p256dh: text("p256dh").notNull(),
+      auth: text("auth").notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull()
+    });
+    storeAccounts = mysqlTable("storeAccounts", {
+      id: int("id").autoincrement().primaryKey(),
+      loginId: varchar("loginId", { length: 50 }).notNull().unique(),
+      // 로그인 아이디
+      passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+      // bcrypt 해시
+      branchId: int("branchId"),
+      // 배정된 지점 (null이면 미배정)
+      role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+      displayName: varchar("displayName", { length: 100 }),
+      // 표시 이름
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    storeAccountsRelations = relations(storeAccounts, ({ one }) => ({
+      branch: one(branches, {
+        fields: [storeAccounts.branchId],
+        references: [branches.id]
+      })
+    }));
+    branchSettings = mysqlTable("branchSettings", {
+      id: int("id").autoincrement().primaryKey(),
+      branchId: int("branchId").notNull(),
+      monthlyRent: decimal("monthlyRent", { precision: 15, scale: 0 }).default("0").notNull(),
+      managerMonthlySalary: decimal("managerMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
+      managerDailyWage: decimal("managerDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+      staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+      partTimeHourlyWage: decimal("partTimeHourlyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+      deputyMonthlySalary: decimal("deputyMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
+      deputyDailyWage: decimal("deputyDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+      monthlyFixedExpense: decimal("monthlyFixedExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.1700").notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    dailySalesRecordsRelations = relations(dailySalesRecords, ({ one }) => ({
+      branch: one(branches, {
+        fields: [dailySalesRecords.branchId],
+        references: [branches.id]
+      }),
+      submitter: one(users, {
+        fields: [dailySalesRecords.submittedBy],
+        references: [users.id]
+      })
+    }));
+    tableReports = mysqlTable("tableReports", {
+      id: int("id").autoincrement().primaryKey(),
+      branchId: int("branchId").notNull(),
+      date: varchar("date", { length: 10 }).notNull(),
+      // YYYY-MM-DD
+      teamCount: int("teamCount").default(0).notNull(),
+      // 팀수
+      cashAmount: decimal("cashAmount", { precision: 15, scale: 0 }).default("0").notNull(),
+      // 현금 금액
+      cardAmount: decimal("cardAmount", { precision: 15, scale: 0 }).default("0").notNull(),
+      // 카드 금액
+      notes: text("notes"),
+      // 기타사항
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    tableItems = mysqlTable("tableItems", {
+      id: int("id").autoincrement().primaryKey(),
+      tableReportId: int("tableReportId").notNull(),
+      tableNumber: varchar("tableNumber", { length: 20 }).notNull(),
+      // 테이블 번호 (1T, 2T 등)
+      guestType: mysqlEnum("guestType", ["walking", "regular", "named"]).default("walking").notNull(),
+      // 워킹/기존/지명
+      guestName: varchar("guestName", { length: 100 }),
+      // 손님 이름 (지명 시)
+      amount: decimal("amount", { precision: 15, scale: 0 }).default("0").notNull(),
+      // 금액
+      paymentMethod: mysqlEnum("paymentMethod", ["card", "cash"]).default("card").notNull(),
+      // 결제수단
+      memo: text("memo"),
+      // 주문 메모
+      sortOrder: int("sortOrder").default(0).notNull(),
+      // 정렬 순서
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    staffIncentives = mysqlTable("staffIncentives", {
+      id: int("id").autoincrement().primaryKey(),
+      tableReportId: int("tableReportId").notNull(),
+      staffName: varchar("staffName", { length: 50 }).notNull(),
+      // 직원명
+      glassCount: int("glassCount").default(0).notNull(),
+      // 잔추가 수
+      bottleCount: int("bottleCount").default(0).notNull(),
+      // 병추가 수
+      beerBottleCount: int("beerBottleCount").default(0).notNull(),
+      // 맥주 병추가 수
+      salesIncentive: decimal("salesIncentive", { precision: 15, scale: 0 }).default("0").notNull(),
+      // 영업 인센티브 금액
+      staffType: mysqlEnum("staffType", ["staff", "parttime", "manager", "deputy"]).default("staff").notNull(),
+      // 직원/아르바이트/점장
+      workStart: varchar("workStart", { length: 5 }),
+      // 근무 시작 시간 (HH:mm)
+      workEnd: varchar("workEnd", { length: 5 }),
+      // 근무 종료 시간 (HH:mm)
+      sortOrder: int("sortOrder").default(0).notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    tableReportsRelations = relations(tableReports, ({ one, many }) => ({
+      branch: one(branches, {
+        fields: [tableReports.branchId],
+        references: [branches.id]
+      }),
+      items: many(tableItems),
+      staffIncentives: many(staffIncentives)
+    }));
+    tableItemsRelations = relations(tableItems, ({ one }) => ({
+      tableReport: one(tableReports, {
+        fields: [tableItems.tableReportId],
+        references: [tableReports.id]
+      })
+    }));
+    staffIncentivesRelations = relations(staffIncentives, ({ one }) => ({
+      tableReport: one(tableReports, {
+        fields: [staffIncentives.tableReportId],
+        references: [tableReports.id]
+      })
+    }));
+    liquorItems = mysqlTable("liquorItems", {
+      id: int("id").autoincrement().primaryKey(),
+      name: varchar("name", { length: 150 }).notNull(),
+      category: varchar("category", { length: 50 }).default("\uAE30\uD0C0").notNull(),
+      unitCost: decimal("unitCost", { precision: 15, scale: 0 }).default("0").notNull(),
+      isActive: int("isActive").default(1).notNull(),
+      sortOrder: int("sortOrder").default(0).notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    liquorInventories = mysqlTable("liquorInventories", {
+      id: int("id").autoincrement().primaryKey(),
+      branchId: int("branchId").notNull(),
+      liquorItemId: int("liquorItemId").notNull(),
+      currentStock: decimal("currentStock", { precision: 12, scale: 2 }).default("0").notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    liquorStockMovements = mysqlTable("liquorStockMovements", {
+      id: int("id").autoincrement().primaryKey(),
+      branchId: int("branchId").notNull(),
+      liquorItemId: int("liquorItemId").notNull(),
+      date: varchar("date", { length: 10 }).notNull(),
+      type: mysqlEnum("type", ["IN", "OUT", "ADJUST"]).notNull(),
+      quantity: decimal("quantity", { precision: 12, scale: 2 }).default("0").notNull(),
+      unitCost: decimal("unitCost", { precision: 15, scale: 0 }).default("0").notNull(),
+      totalCost: decimal("totalCost", { precision: 15, scale: 0 }).default("0").notNull(),
+      memo: text("memo"),
+      createdBy: int("createdBy"),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    liquorItemsRelations = relations(liquorItems, ({ many }) => ({
+      inventories: many(liquorInventories),
+      movements: many(liquorStockMovements)
+    }));
+    liquorInventoriesRelations = relations(liquorInventories, ({ one }) => ({
+      branch: one(branches, { fields: [liquorInventories.branchId], references: [branches.id] }),
+      item: one(liquorItems, { fields: [liquorInventories.liquorItemId], references: [liquorItems.id] })
+    }));
+    liquorStockMovementsRelations = relations(liquorStockMovements, ({ one }) => ({
+      branch: one(branches, { fields: [liquorStockMovements.branchId], references: [branches.id] }),
+      item: one(liquorItems, { fields: [liquorStockMovements.liquorItemId], references: [liquorItems.id] })
+    }));
+  }
+});
+
 // server/_core/index.ts
 import "dotenv/config";
 import express2 from "express";
@@ -13,282 +331,9 @@ var UNAUTHED_ERR_MSG = "Please login (10001)";
 var NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 
 // server/db.ts
+init_schema();
 import { eq, and, gte, lte, desc, lt, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-
-// drizzle/schema.ts
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json } from "drizzle-orm/mysql-core";
-import { relations } from "drizzle-orm";
-var users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull()
-});
-var branches = mysqlTable("branches", {
-  id: int("id").autoincrement().primaryKey(),
-  ownerId: int("ownerId").notNull(),
-  // admin 사용자 ID
-  name: varchar("name", { length: 100 }).notNull(),
-  // 지점명 (강남점, 홍대점 등)
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  // 지점 코드
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var branchManagers = mysqlTable("branchManagers", {
-  id: int("id").autoincrement().primaryKey(),
-  branchId: int("branchId").notNull(),
-  userId: int("userId").notNull(),
-  // 점장 사용자 ID
-  role: mysqlEnum("role", ["manager", "staff"]).default("staff").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var dailySalesRecords = mysqlTable("dailySalesRecords", {
-  id: int("id").autoincrement().primaryKey(),
-  branchId: int("branchId").notNull(),
-  date: varchar("date", { length: 10 }).notNull(),
-  // YYYY-MM-DD
-  posStartAmount: decimal("posStartAmount", { precision: 15, scale: 0 }).default("0").notNull(),
-  cash: decimal("cash", { precision: 15, scale: 0 }).default("0").notNull(),
-  card: decimal("card", { precision: 15, scale: 0 }).default("0").notNull(),
-  cashTotal: decimal("cashTotal", { precision: 15, scale: 0 }).default("0").notNull(),
-  cardTotal: decimal("cardTotal", { precision: 15, scale: 0 }).default("0").notNull(),
-  posEndAmount: decimal("posEndAmount", { precision: 15, scale: 0 }).default("0").notNull(),
-  cashDeposit: decimal("cashDeposit", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 시제 입금
-  paymentChangeNote: text("paymentChangeNote"),
-  paymentChangeDate: varchar("paymentChangeDate", { length: 10 }),
-  paymentChangeAmount: decimal("paymentChangeAmount", { precision: 15, scale: 0 }).default("0").notNull(),
-  expenses: json("expenses").$type().default([]).notNull(),
-  submittedBy: int("submittedBy"),
-  submittedAt: timestamp("submittedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  // 정산 컬럼 (매출 저장 시 자동 계산)
-  totalRevenue: decimal("totalRevenue", { precision: 15, scale: 0 }).default("0").notNull(),
-  commissionExpense: decimal("commissionExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  rentExpense: decimal("rentExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  managementFeeExpense: decimal("managementFeeExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  staffWageExpense: decimal("staffWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  managerWageExpense: decimal("managerWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-  totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(),
-  netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(),
-  staffCount: int("staffCount").default(0).notNull(),
-  partTimeCount: int("partTimeCount").default(0).notNull()
-});
-var usersRelations = relations(users, ({ many }) => ({
-  ownedBranches: many(branches),
-  managedBranches: many(branchManagers),
-  submittedRecords: many(dailySalesRecords)
-}));
-var branchesRelations = relations(branches, ({ one, many }) => ({
-  owner: one(users, {
-    fields: [branches.ownerId],
-    references: [users.id]
-  }),
-  managers: many(branchManagers),
-  salesRecords: many(dailySalesRecords)
-}));
-var branchManagersRelations = relations(branchManagers, ({ one }) => ({
-  branch: one(branches, {
-    fields: [branchManagers.branchId],
-    references: [branches.id]
-  }),
-  user: one(users, {
-    fields: [branchManagers.userId],
-    references: [users.id]
-  })
-}));
-var pushSubscriptions = mysqlTable("pushSubscriptions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  endpoint: text("endpoint").notNull(),
-  p256dh: text("p256dh").notNull(),
-  auth: text("auth").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull()
-});
-var storeAccounts = mysqlTable("storeAccounts", {
-  id: int("id").autoincrement().primaryKey(),
-  loginId: varchar("loginId", { length: 50 }).notNull().unique(),
-  // 로그인 아이디
-  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
-  // bcrypt 해시
-  branchId: int("branchId"),
-  // 배정된 지점 (null이면 미배정)
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  displayName: varchar("displayName", { length: 100 }),
-  // 표시 이름
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var storeAccountsRelations = relations(storeAccounts, ({ one }) => ({
-  branch: one(branches, {
-    fields: [storeAccounts.branchId],
-    references: [branches.id]
-  })
-}));
-var branchSettings = mysqlTable("branchSettings", {
-  id: int("id").autoincrement().primaryKey(),
-  branchId: int("branchId").notNull(),
-  monthlyRent: decimal("monthlyRent", { precision: 15, scale: 0 }).default("0").notNull(),
-  managerMonthlySalary: decimal("managerMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
-  managerDailyWage: decimal("managerDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
-  staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
-  partTimeHourlyWage: decimal("partTimeHourlyWage", { precision: 15, scale: 0 }).default("0").notNull(),
-  deputyMonthlySalary: decimal("deputyMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
-  deputyDailyWage: decimal("deputyDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
-  commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.1700").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var dailySalesRecordsRelations = relations(dailySalesRecords, ({ one }) => ({
-  branch: one(branches, {
-    fields: [dailySalesRecords.branchId],
-    references: [branches.id]
-  }),
-  submitter: one(users, {
-    fields: [dailySalesRecords.submittedBy],
-    references: [users.id]
-  })
-}));
-var tableReports = mysqlTable("tableReports", {
-  id: int("id").autoincrement().primaryKey(),
-  branchId: int("branchId").notNull(),
-  date: varchar("date", { length: 10 }).notNull(),
-  // YYYY-MM-DD
-  teamCount: int("teamCount").default(0).notNull(),
-  // 팀수
-  cashAmount: decimal("cashAmount", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 현금 금액
-  cardAmount: decimal("cardAmount", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 카드 금액
-  notes: text("notes"),
-  // 기타사항
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var tableItems = mysqlTable("tableItems", {
-  id: int("id").autoincrement().primaryKey(),
-  tableReportId: int("tableReportId").notNull(),
-  tableNumber: varchar("tableNumber", { length: 20 }).notNull(),
-  // 테이블 번호 (1T, 2T 등)
-  guestType: mysqlEnum("guestType", ["walking", "regular", "named"]).default("walking").notNull(),
-  // 워킹/기존/지명
-  guestName: varchar("guestName", { length: 100 }),
-  // 손님 이름 (지명 시)
-  amount: decimal("amount", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 금액
-  paymentMethod: mysqlEnum("paymentMethod", ["card", "cash"]).default("card").notNull(),
-  // 결제수단
-  memo: text("memo"),
-  // 주문 메모
-  sortOrder: int("sortOrder").default(0).notNull(),
-  // 정렬 순서
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var staffIncentives = mysqlTable("staffIncentives", {
-  id: int("id").autoincrement().primaryKey(),
-  tableReportId: int("tableReportId").notNull(),
-  staffName: varchar("staffName", { length: 50 }).notNull(),
-  // 직원명
-  glassCount: int("glassCount").default(0).notNull(),
-  // 잔추가 수
-  bottleCount: int("bottleCount").default(0).notNull(),
-  // 병추가 수
-  beerBottleCount: int("beerBottleCount").default(0).notNull(),
-  // 맥주 병추가 수
-  salesIncentive: decimal("salesIncentive", { precision: 15, scale: 0 }).default("0").notNull(),
-  // 영업 인센티브 금액
-  staffType: mysqlEnum("staffType", ["staff", "parttime", "manager", "deputy"]).default("staff").notNull(),
-  // 직원/아르바이트/점장
-  workStart: varchar("workStart", { length: 5 }),
-  // 근무 시작 시간 (HH:mm)
-  workEnd: varchar("workEnd", { length: 5 }),
-  // 근무 종료 시간 (HH:mm)
-  sortOrder: int("sortOrder").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var tableReportsRelations = relations(tableReports, ({ one, many }) => ({
-  branch: one(branches, {
-    fields: [tableReports.branchId],
-    references: [branches.id]
-  }),
-  items: many(tableItems),
-  staffIncentives: many(staffIncentives)
-}));
-var tableItemsRelations = relations(tableItems, ({ one }) => ({
-  tableReport: one(tableReports, {
-    fields: [tableItems.tableReportId],
-    references: [tableReports.id]
-  })
-}));
-var staffIncentivesRelations = relations(staffIncentives, ({ one }) => ({
-  tableReport: one(tableReports, {
-    fields: [staffIncentives.tableReportId],
-    references: [tableReports.id]
-  })
-}));
-var liquorItems = mysqlTable("liquorItems", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 150 }).notNull(),
-  category: varchar("category", { length: 50 }).default("\uAE30\uD0C0").notNull(),
-  unitCost: decimal("unitCost", { precision: 15, scale: 0 }).default("0").notNull(),
-  isActive: int("isActive").default(1).notNull(),
-  sortOrder: int("sortOrder").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var liquorInventories = mysqlTable("liquorInventories", {
-  id: int("id").autoincrement().primaryKey(),
-  branchId: int("branchId").notNull(),
-  liquorItemId: int("liquorItemId").notNull(),
-  currentStock: decimal("currentStock", { precision: 12, scale: 2 }).default("0").notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var liquorStockMovements = mysqlTable("liquorStockMovements", {
-  id: int("id").autoincrement().primaryKey(),
-  branchId: int("branchId").notNull(),
-  liquorItemId: int("liquorItemId").notNull(),
-  date: varchar("date", { length: 10 }).notNull(),
-  type: mysqlEnum("type", ["IN", "OUT", "ADJUST"]).notNull(),
-  quantity: decimal("quantity", { precision: 12, scale: 2 }).default("0").notNull(),
-  unitCost: decimal("unitCost", { precision: 15, scale: 0 }).default("0").notNull(),
-  totalCost: decimal("totalCost", { precision: 15, scale: 0 }).default("0").notNull(),
-  memo: text("memo"),
-  createdBy: int("createdBy"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
-});
-var liquorItemsRelations = relations(liquorItems, ({ many }) => ({
-  inventories: many(liquorInventories),
-  movements: many(liquorStockMovements)
-}));
-var liquorInventoriesRelations = relations(liquorInventories, ({ one }) => ({
-  branch: one(branches, { fields: [liquorInventories.branchId], references: [branches.id] }),
-  item: one(liquorItems, { fields: [liquorInventories.liquorItemId], references: [liquorItems.id] })
-}));
-var liquorStockMovementsRelations = relations(liquorStockMovements, ({ one }) => ({
-  branch: one(branches, { fields: [liquorStockMovements.branchId], references: [branches.id] }),
-  item: one(liquorItems, { fields: [liquorStockMovements.liquorItemId], references: [liquorItems.id] })
-}));
 
 // server/_core/env.ts
 var ENV = {
@@ -902,6 +947,7 @@ function registerOAuthRoutes(app) {
 }
 
 // server/_core/settlements.ts
+init_schema();
 import { eq as eq2, and as and2 } from "drizzle-orm";
 function validateApiKey(req, res) {
   const apiKey = req.headers["x-api-key"];
@@ -950,8 +996,8 @@ async function getSettlementByDate(branchId, date) {
     let staffWages = 0;
     let parttimeWages = 0;
     if (tableReportId > 0) {
-      const incentives2 = await db2.select().from(staffIncentives).where(eq2(staffIncentives.tableReportId, tableReportId));
-      for (const incentive of incentives2) {
+      const incentives = await db2.select().from(staffIncentives).where(eq2(staffIncentives.tableReportId, tableReportId));
+      for (const incentive of incentives) {
         const amount = Number(incentive.salesIncentive || 0);
         if (incentive.staffType === "staff") {
           staffWages += amount;
@@ -1204,6 +1250,7 @@ import { z as z4 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
 import { SignJWT as SignJWT2, jwtVerify as jwtVerify4 } from "jose";
+init_schema();
 
 // server/_core/llm.ts
 var ensureArray = (value) => Array.isArray(value) ? value : [value];
@@ -1444,6 +1491,7 @@ import { eq as eq6, and as and5, desc as desc3, asc, like, sql, inArray, gte as 
 import { TRPCError as TRPCError5 } from "@trpc/server";
 
 // server/_core/settlementCalculations.ts
+init_schema();
 import { eq as eq3, and as and3, gte as gte2, lte as lte2 } from "drizzle-orm";
 var BRANCH_CONFIG = {
   "\uB300\uCE58\uC810": {
@@ -1525,12 +1573,12 @@ function calculateDailyRent(monthlyRent, year, month) {
 async function getStaffCounts(tableReportId) {
   const db2 = await getDb();
   if (!db2) return { staffCount: 0, partTimeCount: 0, managerCount: 0, partTimeTotalHours: 0 };
-  const incentives2 = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
-  const staffCount = incentives2.filter((i) => i.staffType === "staff").length;
-  const partTimeCount = incentives2.filter((i) => i.staffType === "parttime").length;
-  const managerCount = incentives2.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
+  const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
+  const staffCount = incentives.filter((i) => i.staffType === "staff").length;
+  const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
+  const managerCount = incentives.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
   let partTimeTotalHours2 = 0;
-  for (const inc of incentives2.filter((i) => i.staffType === "parttime")) {
+  for (const inc of incentives.filter((i) => i.staffType === "parttime")) {
     if (inc.workStart && inc.workEnd) {
       try {
         const [sh, sm] = inc.workStart.split(":").map(Number);
@@ -1552,9 +1600,9 @@ async function calculateStaffDrinkExpense(tableReportId, branchName) {
   const glassPrice = config?.glassUnitPrice ?? 5e3;
   const bottlePrice = config?.bottleUnitPrice ?? 1e4;
   const beerBottlePrice = config?.beerBottleUnitPrice ?? 3e3;
-  const incentives2 = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
+  const incentives = await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
   let total = 0;
-  incentives2.forEach((inc) => {
+  incentives.forEach((inc) => {
     total += Number(inc.glassCount || 0) * glassPrice;
     total += Number(inc.bottleCount || 0) * bottlePrice;
     total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
@@ -1577,7 +1625,7 @@ function calculateOtherExpenses(expenses) {
   if (!Array.isArray(expenses)) return 0;
   return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 }
-async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount = 0, partTimeTotalHours2 = 0) {
+async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount = 0, partTimeTotalHours2 = 0, externalDb) {
   const zero = {
     totalRevenue: 0,
     commissionExpense: 0,
@@ -1592,32 +1640,40 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
     totalExpenses: 0,
     netProfit: 0
   };
-  const db2 = await getDb();
-  if (!db2) return zero;
+  const db2 = externalDb ?? await getDb();
+  if (!db2) {
+    console.log("[\uC815\uC0B0\uACC4\uC0B0] DB \uC5F0\uACB0 \uC2E4\uD328");
+    return zero;
+  }
   const branchData = await db2.select().from(branches).where(eq3(branches.id, branchId)).limit(1);
-  if (!branchData || branchData.length === 0) return zero;
+  if (!branchData || branchData.length === 0) {
+    console.log("[\uC815\uC0B0\uACC4\uC0B0] \uC9C0\uC810 \uC5C6\uC74C branchId:", branchId);
+    return zero;
+  }
+  console.log("[\uC815\uC0B0\uACC4\uC0B0] \uC2DC\uC791 branchId:", branchId, "date:", date, "cash:", cash, "card:", card, "managerCount:", managerCount);
+  const [bsData] = await db2.select().from(branchSettings).where(eq3(branchSettings.branchId, branchId)).limit(1);
   const branchName = branchData[0].name;
-  const config = BRANCH_CONFIG[branchName];
+  const hardConfig = BRANCH_CONFIG[branchName];
   const [year, month] = date.split("-").map(Number);
   const totalRevenue = cash + card;
-  const commissionRate = config?.commissionRate ?? Number(branchData[0].commissionRate || 0.17);
+  const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : hardConfig?.commissionRate ?? 0.17;
   const commissionExpense = Math.round(totalRevenue * commissionRate);
-  const monthlyRent = config?.monthlyRent ?? Number(branchData[0].monthlyRent || 0);
-  const managementFeeRaw = config?.managementFee ?? Number(branchData[0].managementFee || 0);
-  const rentExpense = calculateDailyRent(monthlyRent, year, month) + managementFeeRaw;
+  const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : hardConfig?.monthlyRent ?? 0;
+  const rentExpense = calculateDailyRent(monthlyRent, year, month);
   const managementFeeExpense = 0;
-  const staffDailyWage = config?.staffDailyWage ?? Number(branchData[0].staffDailyWage || 0);
+  const staffDailyWage = bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
   const staffWageExpense = staffCount * staffDailyWage;
-  const managerDailyWage = config?.managerDailyWage ?? 0;
-  const deputyDailyWage = config?.deputyDailyWage ?? managerDailyWage;
-  const pureManagerCount = incentives.filter((i) => i.staffType === "manager").length;
-  const deputyCount = incentives.filter((i) => i.staffType === "deputy").length;
-  const managerWageExpense = pureManagerCount * managerDailyWage + deputyCount * deputyDailyWage;
-  const partTimeHourlyWage = config?.partTimeDailyWage ?? Number(branchData[0].partTimeHourlyWage || 9860);
+  const managerDailyWage = bsData ? Number(bsData.managerDailyWage || 0) : hardConfig?.managerDailyWage ?? 0;
+  const deputyDailyWage = bsData ? Number(bsData.deputyDailyWage || 0) : managerDailyWage;
+  const managerWageExpense = managerCount * managerDailyWage;
+  const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
   const partTimeWageExpense = partTimeTotalHours2 > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours2) : partTimeCount * partTimeHourlyWage * 8;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
   const staffDrinkExpense = tableReportId ? await calculateStaffDrinkExpense(tableReportId, branchName) : 0;
-  const otherExpense = calculateOtherExpenses(expenses);
+  const monthlyFixedExpense = bsData ? Number(bsData.monthlyFixedExpense || 0) : 0;
+  const dailyFixedExpense = monthlyFixedExpense > 0 ? calculateDailyRent(monthlyFixedExpense, year, month) : 0;
+  const webExpense = calculateOtherExpenses(expenses);
+  const otherExpense = dailyFixedExpense + webExpense;
   const totalExpenses = commissionExpense + rentExpense + managementFeeExpense + staffWageExpense + managerWageExpense + partTimeWageExpense + liquorCostExpense + staffDrinkExpense + otherExpense;
   const netProfit = totalRevenue - totalExpenses;
   return {
@@ -1736,6 +1792,7 @@ async function saveDailySettlementRecord(branchId, date, settlement) {
 // server/settlementRouter.ts
 import { z as z2 } from "zod";
 import { TRPCError as TRPCError3 } from "@trpc/server";
+init_schema();
 import { eq as eq4, and as and4, gte as gte3, lte as lte3, desc as desc2 } from "drizzle-orm";
 import { jwtVerify as jwtVerify2 } from "jose";
 async function parseStoreCookie(cookieHeader, authHeader) {
@@ -1994,12 +2051,34 @@ var settlementRouter = router({
       netProfit: Number(records.find((r) => r.branchId === branch.id)?.netProfit || 0),
       totalRevenue: Number(records.find((r) => r.branchId === branch.id)?.totalRevenue || 0)
     }));
+  }),
+  // 정산 계산 디버그
+  debugCalculate: publicProcedure.input(z2.object({ branchId: z2.number(), date: z2.string(), managerCount: z2.number().default(0) })).query(async ({ input }) => {
+    const db2 = await getDb();
+    const dbExists = !!db2;
+    const dbUrl = !!process.env.DATABASE_URL;
+    const { branchSettings: branchSettings2 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
+    const branchData = db2 ? await db2.select().from(branches).where(eq4(branches.id, input.branchId)).limit(1) : [];
+    const bsData = db2 ? await db2.select().from(branchSettings2).where(eq4(branchSettings2.branchId, input.branchId)).limit(1) : [];
+    const result = await calculateDailySettlement(input.branchId, input.date, 0, 0, 0, 0, [], null, input.managerCount, 0);
+    return {
+      dbExists,
+      dbUrl,
+      managerCount: input.managerCount,
+      managerWageExpense: result.managerWageExpense,
+      rentExpense: result.rentExpense,
+      branchFound: branchData.length > 0,
+      branchName: branchData.length > 0 ? branchData[0].name : null,
+      bsFound: bsData.length > 0,
+      bsManagerDailyWage: bsData.length > 0 ? String(bsData[0].managerDailyWage) : null
+    };
   })
 });
 
 // server/branchSettingsRouter.ts
 import { z as z3 } from "zod";
 import { eq as eq5 } from "drizzle-orm";
+init_schema();
 import { TRPCError as TRPCError4 } from "@trpc/server";
 import { jwtVerify as jwtVerify3 } from "jose";
 async function parseStoreCookie2(cookieHeader, authHeader) {
@@ -2051,6 +2130,7 @@ var branchSettingsRouter = router({
     deputyDailyWage: z3.number().min(0).default(0),
     staffDailyWage: z3.number().min(0),
     partTimeHourlyWage: z3.number().min(0),
+    monthlyFixedExpense: z3.number().min(0).default(0),
     commissionRate: z3.number().min(0).max(1).default(0.17)
   })).mutation(async ({ ctx, input }) => {
     const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
@@ -2071,6 +2151,7 @@ var branchSettingsRouter = router({
         deputyDailyWage: String(computedDeputyDailyWage),
         staffDailyWage: String(input.staffDailyWage),
         partTimeHourlyWage: String(input.partTimeHourlyWage),
+        monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
         commissionRate: String(input.commissionRate)
       }).where(eq5(branchSettings.branchId, input.branchId));
     } else {
@@ -2083,6 +2164,7 @@ var branchSettingsRouter = router({
         deputyDailyWage: String(computedDeputyDailyWage),
         staffDailyWage: String(input.staffDailyWage),
         partTimeHourlyWage: String(input.partTimeHourlyWage),
+        monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
         commissionRate: String(input.commissionRate)
       });
     }
@@ -4830,6 +4912,7 @@ var appRouter = router({
       loginId: z4.string().min(1),
       password: z4.string().min(1)
     })).mutation(async ({ ctx, input }) => {
+      process.stdout.write("BATCHSAVE_V20260603\n");
       await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountByLoginId(input.loginId);
       if (!account) {
@@ -6094,8 +6177,8 @@ var appRouter = router({
       const [report] = await db2.select().from(tableReports).where(and5(eq6(tableReports.branchId, effectiveBranchId), eq6(tableReports.date, input.date))).limit(1);
       if (!report) return null;
       const items = await db2.select().from(tableItems).where(eq6(tableItems.tableReportId, report.id)).orderBy(tableItems.sortOrder, tableItems.createdAt);
-      const incentives2 = await db2.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
-      return { ...report, items, incentives: incentives2 };
+      const incentives = await db2.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, report.id)).orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
+      return { ...report, items, incentives };
     }),
     // 기록 생성 또는 업데이트
     upsert: publicProcedure.input(z4.object({
@@ -6169,27 +6252,63 @@ var appRouter = router({
       }
       try {
         const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq6(dailySalesRecords.branchId, effectiveBranchId), eq6(dailySalesRecords.date, input.date))).limit(1);
-        if (salesRec && salesRec.length > 0) {
-          const rec = salesRec[0];
-          const allInc = await db2?.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, reportId));
-          const sc = (allInc ?? []).filter((i) => i.staffType === "staff").length;
-          const pc = (allInc ?? []).filter((i) => i.staffType === "parttime").length;
-          const mc = (allInc ?? []).filter((i) => i.staffType === "manager").length;
-          const cash = parseInt(rec.cash || "0") || 0;
-          const card = parseInt(rec.card || "0") || 0;
-          const expenses = Array.isArray(rec.expenses) ? rec.expenses : [];
-          const settlement = await calculateDailySettlement(
-            effectiveBranchId,
-            input.date,
-            cash,
-            card,
-            sc,
-            pc,
+        const rec = salesRec && salesRec.length > 0 ? salesRec[0] : null;
+        const allInc = await db2?.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, reportId));
+        const sc = (allInc ?? []).filter((i) => i.staffType === "staff").length;
+        const pc = (allInc ?? []).filter((i) => i.staffType === "parttime").length;
+        const mc = (allInc ?? []).filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
+        let pth = 0;
+        for (const inc of (allInc ?? []).filter((i) => i.staffType === "parttime")) {
+          if (inc.workStart && inc.workEnd) {
+            try {
+              const [sh, sm] = inc.workStart.split(":").map(Number);
+              const [eh, em] = inc.workEnd.split(":").map(Number);
+              let startMin = sh * 60 + sm;
+              let endMin = eh * 60 + em;
+              if (endMin <= startMin) endMin += 24 * 60;
+              pth += (endMin - startMin) / 60;
+            } catch {
+            }
+          }
+        }
+        const cash = parseInt(rec?.cash || "0") || cashSum;
+        const card = parseInt(rec?.card || "0") || cardSum;
+        const expenses = rec && Array.isArray(rec.expenses) ? rec.expenses : [];
+        const settlement = await calculateDailySettlement(
+          effectiveBranchId,
+          input.date,
+          cash,
+          card,
+          sc,
+          pc,
+          expenses,
+          reportId,
+          mc,
+          pth
+        );
+        if (!rec) {
+          await db2?.insert(dailySalesRecords).values({
+            branchId: effectiveBranchId,
+            date: input.date,
+            cash: String(cash),
+            card: String(card),
             expenses,
-            reportId,
-            mc,
-            pth
-          );
+            totalRevenue: String(settlement.totalRevenue),
+            commissionExpense: String(settlement.commissionExpense),
+            rentExpense: String(settlement.rentExpense),
+            managementFeeExpense: String(settlement.managementFeeExpense),
+            staffWageExpense: String(settlement.staffWageExpense),
+            partTimeWageExpense: String(settlement.partTimeWageExpense),
+            liquorCostExpense: String(settlement.liquorCostExpense),
+            staffDrinkExpense: String(settlement.staffDrinkExpense),
+            otherExpense: String(settlement.otherExpense),
+            totalExpenses: String(settlement.totalExpenses),
+            netProfit: String(settlement.netProfit),
+            staffCount: sc,
+            partTimeCount: pc,
+            submittedAt: /* @__PURE__ */ new Date()
+          });
+        } else {
           await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
         }
       } catch (e) {
@@ -6405,6 +6524,7 @@ var appRouter = router({
         sortOrder: z4.number().default(0)
       }))
     })).mutation(async ({ ctx, input }) => {
+      process.stdout.write("[batchSave] \uC9C4\uC785 date=" + input.date + "\n");
       const db2 = await getDb();
       if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
       const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
@@ -6463,6 +6583,12 @@ var appRouter = router({
       const validIncentives = input.incentives.filter((inc) => inc.staffName);
       const incentivesToUpdate = validIncentives.filter((inc) => inc.id);
       const incentivesToInsert = validIncentives.filter((inc) => !inc.id);
+      const existingIncentives = await db2.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, reportId));
+      const incomingIds = new Set(validIncentives.filter((inc) => inc.id).map((inc) => inc.id));
+      const toDelete = existingIncentives.filter((inc) => !incomingIds.has(inc.id));
+      if (toDelete.length > 0) {
+        await Promise.all(toDelete.map((inc) => db2.delete(staffIncentives).where(eq6(staffIncentives.id, inc.id))));
+      }
       await Promise.all(incentivesToUpdate.map(async (inc) => {
         await db2.update(staffIncentives).set({
           staffName: inc.staffName,
@@ -6530,33 +6656,97 @@ var appRouter = router({
         console.error("[cascadeUpdatePosAmounts \uC624\uB958]", e);
       }
       try {
-        const salesRec = await db2?.select().from(dailySalesRecords).where(and5(eq6(dailySalesRecords.branchId, effectiveBranchId), eq6(dailySalesRecords.date, input.date))).limit(1);
-        if (salesRec && salesRec.length > 0) {
-          const rec = salesRec[0];
-          const allInc = await db2?.select().from(staffIncentives).where(eq6(staffIncentives.tableReportId, reportId));
-          const sc = (allInc ?? []).filter((i) => i.staffType === "staff").length;
-          const pc = (allInc ?? []).filter((i) => i.staffType === "parttime").length;
-          const mc = (allInc ?? []).filter((i) => i.staffType === "manager").length;
-          const cash = parseInt(rec.cash || "0") || 0;
-          const card = parseInt(rec.card || "0") || 0;
-          const expenses = Array.isArray(rec.expenses) ? rec.expenses : [];
-          const settlement = await calculateDailySettlement(
-            effectiveBranchId,
-            input.date,
-            cash,
-            card,
-            sc,
-            pc,
-            expenses,
-            reportId,
-            mc
-          );
-          await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
+        const salesRec2 = await db2?.select().from(dailySalesRecords).where(and5(eq6(dailySalesRecords.branchId, effectiveBranchId), eq6(dailySalesRecords.date, input.date))).limit(1);
+        const rec2 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
+        const validInc2 = input.incentives.filter((inc) => inc.staffName);
+        const sc2 = validInc2.filter((i) => i.staffType === "staff").length;
+        const pc2 = validInc2.filter((i) => i.staffType === "parttime").length;
+        const mc2 = validInc2.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
+        let pth2 = 0;
+        for (const inc of validInc2.filter((i) => i.staffType === "parttime")) {
+          if (inc.workStart && inc.workEnd) {
+            try {
+              const [sh, sm] = inc.workStart.split(":").map(Number);
+              const [eh, em] = inc.workEnd.split(":").map(Number);
+              let startMin = sh * 60 + sm;
+              let endMin = eh * 60 + em;
+              if (endMin <= startMin) endMin += 24 * 60;
+              pth2 += (endMin - startMin) / 60;
+            } catch {
+            }
+          }
+        }
+        const cash2 = cashSum;
+        const card2 = cardSum;
+        const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses : [];
+        const settlement2 = await calculateDailySettlement(
+          effectiveBranchId,
+          input.date,
+          cash2,
+          card2,
+          sc2,
+          pc2,
+          expenses2,
+          reportId,
+          mc2,
+          pth2,
+          db2
+        );
+        if (!rec2) {
+          if (cash2 > 0 || card2 > 0) {
+            await db2?.insert(dailySalesRecords).values({
+              branchId: effectiveBranchId,
+              date: input.date,
+              cash: String(cash2),
+              card: String(card2),
+              expenses: expenses2,
+              totalRevenue: String(settlement2.totalRevenue),
+              commissionExpense: String(settlement2.commissionExpense),
+              rentExpense: String(settlement2.rentExpense),
+              managementFeeExpense: String(settlement2.managementFeeExpense),
+              staffWageExpense: String(settlement2.staffWageExpense),
+              managerWageExpense: String(settlement2.managerWageExpense ?? 0),
+              partTimeWageExpense: String(settlement2.partTimeWageExpense),
+              liquorCostExpense: String(settlement2.liquorCostExpense),
+              staffDrinkExpense: String(settlement2.staffDrinkExpense),
+              otherExpense: String(settlement2.otherExpense),
+              totalExpenses: String(settlement2.totalExpenses),
+              netProfit: String(settlement2.netProfit),
+              staffCount: sc2,
+              partTimeCount: pc2,
+              submittedAt: /* @__PURE__ */ new Date()
+            });
+          }
+        } else {
+          await db2?.update(dailySalesRecords).set({
+            totalRevenue: String(settlement2.totalRevenue),
+            commissionExpense: String(settlement2.commissionExpense),
+            rentExpense: String(settlement2.rentExpense),
+            managementFeeExpense: String(settlement2.managementFeeExpense),
+            staffWageExpense: String(settlement2.staffWageExpense),
+            managerWageExpense: String(settlement2.managerWageExpense ?? 0),
+            partTimeWageExpense: String(settlement2.partTimeWageExpense),
+            liquorCostExpense: String(settlement2.liquorCostExpense),
+            staffDrinkExpense: String(settlement2.staffDrinkExpense),
+            otherExpense: String(settlement2.otherExpense),
+            totalExpenses: String(settlement2.totalExpenses),
+            netProfit: String(settlement2.netProfit),
+            updatedAt: /* @__PURE__ */ new Date()
+          }).where(eq6(dailySalesRecords.id, rec2.id));
         }
       } catch (e) {
         console.error("[\uD14C\uC774\uBE14 \uC800\uC7A5 \uD6C4 \uC815\uC0B0 \uC7AC\uACC4\uC0B0 \uC624\uB958]", e);
+        return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, settlementResult: null, settlementError: String(e?.message || e) };
       }
-      return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
+      const verifyRec = await db2?.select().from(dailySalesRecords).where(and5(eq6(dailySalesRecords.branchId, effectiveBranchId), eq6(dailySalesRecords.date, input.date))).limit(1);
+      const settlementResult = verifyRec && verifyRec.length > 0 ? {
+        managerWageExpense: String(verifyRec[0].managerWageExpense),
+        netProfit: String(verifyRec[0].netProfit),
+        totalRevenue: String(verifyRec[0].totalRevenue),
+        debugIncCount: input.incentives.filter((i) => i.staffName).length,
+        debugManagerCount: input.incentives.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length
+      } : { debugIncCount: input.incentives.length, debugManagerCount: input.incentives.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length, managerWageExpense: "?", netProfit: "?", totalRevenue: "?" };
+      return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, settlementResult, settlementError: null };
     }),
     // 직원별 월간 인센티브 집계
     staffIncentiveStats: publicProcedure.input(z4.object({
