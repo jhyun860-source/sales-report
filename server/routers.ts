@@ -4814,7 +4814,10 @@ export const appRouter = router({
           } else {
             await saveDailySettlementRecord(effectiveBranchId, input.date, settlement2);
           }
-        } catch (e) { console.error('[테이블 저장 후 정산 재계산 오류]', e); }
+        } catch (e: any) {
+          console.error('[테이블 저장 후 정산 재계산 오류]', e);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `정산 재계산 실패: ${e?.message || String(e)}` });
+        }
         return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
       }),
 
