@@ -4778,7 +4778,8 @@ export const appRouter = router({
           const validInc2 = input.incentives.filter(inc => inc.staffName);
           const sc2 = validInc2.filter(i => i.staffType === 'staff').length;
           const pc2 = validInc2.filter(i => i.staffType === 'parttime').length;
-          const mc2 = validInc2.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length;
+          const mc2 = validInc2.filter(i => i.staffType === 'manager').length;
+          const dc2 = validInc2.filter(i => i.staffType === 'deputy').length;
           let pth2 = 0;
           for (const inc of validInc2.filter((i: any) => i.staffType === 'parttime')) {
             if (inc.workStart && inc.workEnd) {
@@ -4797,7 +4798,7 @@ export const appRouter = router({
           const card2 = cardSum;
           const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses as Array<{id:string;description:string;amount:string}> : [];
           const settlement2 = await calculateDailySettlement(
-            effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db
+            effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db, dc2
           );
           if (!rec2) {
             // 매출 0이면 신규 레코드 생성 안 함 (미래/빈 날짜에 임대료만 찍히는 문제 방지)
