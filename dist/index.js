@@ -1625,7 +1625,7 @@ function calculateOtherExpenses(expenses) {
   if (!Array.isArray(expenses)) return 0;
   return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 }
-async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount = 0, partTimeTotalHours2 = 0, externalDb) {
+async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount = 0, partTimeTotalHours2 = 0, externalDb, deputyCount = 0) {
   const zero = {
     totalRevenue: 0,
     commissionExpense: 0,
@@ -1665,7 +1665,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const staffWageExpense = staffCount * staffDailyWage;
   const managerDailyWage = bsData ? Number(bsData.managerDailyWage || 0) : hardConfig?.managerDailyWage ?? 0;
   const deputyDailyWage = bsData ? Number(bsData.deputyDailyWage || 0) : managerDailyWage;
-  const managerWageExpense = managerCount * managerDailyWage;
+  const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
   const partTimeWageExpense = partTimeTotalHours2 > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours2) : partTimeCount * partTimeHourlyWage * 8;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
@@ -6661,7 +6661,8 @@ var appRouter = router({
         const validInc2 = input.incentives.filter((inc) => inc.staffName);
         const sc2 = validInc2.filter((i) => i.staffType === "staff").length;
         const pc2 = validInc2.filter((i) => i.staffType === "parttime").length;
-        const mc2 = validInc2.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
+        const mc2 = validInc2.filter((i) => i.staffType === "manager").length;
+        const dc2 = validInc2.filter((i) => i.staffType === "deputy").length;
         let pth2 = 0;
         for (const inc of validInc2.filter((i) => i.staffType === "parttime")) {
           if (inc.workStart && inc.workEnd) {
@@ -6690,7 +6691,8 @@ var appRouter = router({
           reportId,
           mc2,
           pth2,
-          db2
+          db2,
+          dc2
         );
         if (!rec2) {
           if (cash2 > 0 || card2 > 0) {
