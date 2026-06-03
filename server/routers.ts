@@ -4796,7 +4796,7 @@ export const appRouter = router({
           const card2 = rec2 ? Number(rec2.card || 0) : cardSum;
           const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses as Array<{id:string;description:string;amount:string}> : [];
           const settlement2 = await calculateDailySettlement(
-            effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2
+            effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db
           );
           if (!rec2) {
             await db?.insert(dailySalesRecords).values({
