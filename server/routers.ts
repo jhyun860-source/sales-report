@@ -4835,7 +4835,9 @@ export const appRouter = router({
           managerWageExpense: String(verifyRec[0].managerWageExpense),
           netProfit: String(verifyRec[0].netProfit),
           totalRevenue: String(verifyRec[0].totalRevenue),
-        } : null;
+          debugIncCount: input.incentives.filter(i => i.staffName).length,
+          debugManagerCount: input.incentives.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length,
+        } : { debugIncCount: input.incentives.length, debugManagerCount: input.incentives.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length, managerWageExpense: '?', netProfit: '?', totalRevenue: '?' };
         return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, settlementResult, settlementError: null };
       }),
 
