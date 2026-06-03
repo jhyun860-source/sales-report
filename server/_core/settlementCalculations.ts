@@ -194,7 +194,8 @@ export async function calculateDailySettlement(
   expenses: Array<{ id: string; description: string; amount: string }>,
   tableReportId: number | null,
   managerCount: number = 0,
-  partTimeTotalHours: number = 0
+  partTimeTotalHours: number = 0,
+  externalDb?: any
 ): Promise<{
   totalRevenue: number;
   commissionExpense: number;
@@ -216,7 +217,7 @@ export async function calculateDailySettlement(
     otherExpense: 0, totalExpenses: 0, netProfit: 0,
   };
 
-  const db = await getDb();
+  const db = externalDb ?? await getDb();
   if (!db) { console.log('[정산계산] DB 연결 실패'); return zero; }
 
   // 지점 이름 조회
