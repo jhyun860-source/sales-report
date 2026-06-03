@@ -4383,6 +4383,7 @@ export const appRouter = router({
               partTimeCount: pc,
               submittedAt: new Date(),
             });
+            } // end if (cash2 > 0 || card2 > 0)
           } else {
             await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
           }
@@ -4800,6 +4801,8 @@ export const appRouter = router({
             effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db
           );
           if (!rec2) {
+            // 매출 0이면 신규 레코드 생성 안 함 (미래/빈 날짜에 임대료만 찍히는 문제 방지)
+            if (cash2 > 0 || card2 > 0) {
             await db?.insert(dailySalesRecords).values({
               branchId: effectiveBranchId,
               date: input.date,
@@ -4822,6 +4825,7 @@ export const appRouter = router({
               partTimeCount: pc2,
               submittedAt: new Date(),
             });
+            } // end if (cash2 > 0 || card2 > 0)
           } else {
             // saveDailySettlementRecord 대신 직접 db로 update (getDb() 재호출 문제 방지)
             await db?.update(dailySalesRecords).set({
