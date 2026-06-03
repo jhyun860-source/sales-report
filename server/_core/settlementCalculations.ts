@@ -195,7 +195,8 @@ export async function calculateDailySettlement(
   tableReportId: number | null,
   managerCount: number = 0,
   partTimeTotalHours: number = 0,
-  externalDb?: any
+  externalDb?: any,
+  deputyCount: number = 0
 ): Promise<{
   totalRevenue: number;
   commissionExpense: number;
@@ -254,7 +255,7 @@ export async function calculateDailySettlement(
   // 6. 점장/매니저 인건비 - 파라미터로 넘겨받은 managerCount 사용 (DB 재조회 제거)
   const managerDailyWage = bsData ? Number(bsData.managerDailyWage || 0) : (hardConfig?.managerDailyWage ?? 0);
   const deputyDailyWage = bsData ? Number(bsData.deputyDailyWage || 0) : managerDailyWage;
-  const managerWageExpense = managerCount * managerDailyWage;
+  const managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
   // 7. 알바 인건비 (시급 × 근무시간)
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : (hardConfig?.partTimeDailyWage ?? 9860);
