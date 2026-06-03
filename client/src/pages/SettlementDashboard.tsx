@@ -288,7 +288,7 @@ export default function SettlementDashboard() {
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">총매출</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">세금17%</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">임대료</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비+음료</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비+인센</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">주류</th>
                     <th className="px-2 py-2 text-right font-bold text-gray-700 whitespace-nowrap">순수익</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">수익률</th>
