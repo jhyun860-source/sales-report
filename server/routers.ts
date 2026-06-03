@@ -4774,6 +4774,7 @@ export const appRouter = router({
             .limit(1);
           const rec2 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
           const allInc2 = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
+          console.log('[정산재계산] reportId:', reportId, '인센티브 수:', (allInc2??[]).length, '내용:', JSON.stringify((allInc2??[]).map(i=>({id:i.id,type:i.staffType,name:i.staffName}))));
           const sc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'staff').length;
           const pc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'parttime').length;
           const mc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
