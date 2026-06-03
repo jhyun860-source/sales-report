@@ -4773,11 +4773,11 @@ export const appRouter = router({
             .where(and(eq(dailySalesRecords.branchId, effectiveBranchId), eq(dailySalesRecords.date, input.date)))
             .limit(1);
           const rec2 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
-          const allInc2 = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
-          console.log('[정산재계산] reportId:', reportId, '인센티브 수:', (allInc2??[]).length, '내용:', JSON.stringify((allInc2??[]).map(i=>({id:i.id,type:i.staffType,name:i.staffName}))));
-          const sc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'staff').length;
-          const pc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'parttime').length;
-          const mc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
+          // DB 재조회 대신 input.incentives에서 직접 계산 (INSERT 타이밍 문제 방지)
+          const validInc2 = input.incentives.filter(inc => inc.staffName);
+          const sc2 = validInc2.filter(i => i.staffType === 'staff').length;
+          const pc2 = validInc2.filter(i => i.staffType === 'parttime').length;
+          const mc2 = validInc2.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length;
           let pth2 = 0;
           for (const inc of (allInc2 ?? []).filter((i: any) => i.staffType === 'parttime')) {
             if (inc.workStart && inc.workEnd) {
