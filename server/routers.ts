@@ -4383,6 +4383,7 @@ export const appRouter = router({
               partTimeCount: pc,
               submittedAt: new Date(),
             });
+            } // end if (cash2 > 0 || card2 > 0)
           } else {
             await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
           }
@@ -4824,6 +4825,7 @@ export const appRouter = router({
               partTimeCount: pc2,
               submittedAt: new Date(),
             });
+            } // end if (cash2 > 0 || card2 > 0)
           } else {
             // saveDailySettlementRecord 대신 직접 db로 update (getDb() 재호출 문제 방지)
             await db?.update(dailySalesRecords).set({
