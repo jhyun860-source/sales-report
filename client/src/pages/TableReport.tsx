@@ -606,6 +606,10 @@ export default function TableReport() {
       loadedDateRef.current = currentDate;
 
       if (debugError) toast.error(`정산 재계산 오류: ${debugError}`);
+      // 정산 페이지 캐시 무효화
+      await utils.storeSales.getRecord.invalidate();
+      await utils.storeSales.getRecords.invalidate();
+      await utils.settlement.getSettlementsByDateRange.invalidate();
       setSaved(true);
       const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
       const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
