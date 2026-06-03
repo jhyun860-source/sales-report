@@ -4779,7 +4779,7 @@ export const appRouter = router({
           const pc2 = validInc2.filter(i => i.staffType === 'parttime').length;
           const mc2 = validInc2.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length;
           let pth2 = 0;
-          for (const inc of (allInc2 ?? []).filter((i: any) => i.staffType === 'parttime')) {
+          for (const inc of validInc2.filter((i: any) => i.staffType === 'parttime')) {
             if (inc.workStart && inc.workEnd) {
               try {
                 const [sh, sm] = (inc.workStart as string).split(':').map(Number);
@@ -4791,9 +4791,9 @@ export const appRouter = router({
               } catch {}
             }
           }
-          // rec2가 있으면 DB의 cash/card 사용, 없으면 방금 계산한 cashSum/cardSum 사용
-          const cash2 = rec2 ? Number(rec2.cash || 0) : cashSum;
-          const card2 = rec2 ? Number(rec2.card || 0) : cardSum;
+          // 방금 계산한 cashSum/cardSum을 항상 사용 (DB의 cash/card가 0일 수 있음)
+          const cash2 = cashSum;
+          const card2 = cardSum;
           const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses as Array<{id:string;description:string;amount:string}> : [];
           const settlement2 = await calculateDailySettlement(
             effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db
@@ -4810,6 +4810,7 @@ export const appRouter = router({
               rentExpense: String(settlement2.rentExpense),
               managementFeeExpense: String(settlement2.managementFeeExpense),
               staffWageExpense: String(settlement2.staffWageExpense),
+              managerWageExpense: String(settlement2.managerWageExpense ?? 0),
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(settlement2.staffDrinkExpense),
