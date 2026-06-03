@@ -375,4 +375,13 @@ export const settlementRouter = router({
       totalRevenue: Number(records.find(r => r.branchId === branch.id)?.totalRevenue || 0),
     }));
   }),
+
+  // 정산 계산 디버그
+  debugCalculate: publicProcedure
+    .input(z.object({ branchId: z.number(), date: z.string(), managerCount: z.number().default(0) }))
+    .query(async ({ input }) => {
+      const { calculateDailySettlement } = await import('./_core/settlementCalculations');
+      const result = await calculateDailySettlement(input.branchId, input.date, 0, 0, 0, 0, [], null, input.managerCount, 0);
+      return { managerCount: input.managerCount, managerWageExpense: result.managerWageExpense, rentExpense: result.rentExpense, netProfit: result.netProfit };
+    }),
 });
