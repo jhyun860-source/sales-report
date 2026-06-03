@@ -193,6 +193,13 @@ export default function TableReport() {
   // 이미 로드한 날짜 추적 (items 덮어쓰기 방지)
   const loadedDateRef = useRef<string | null>(null);
 
+  // 날짜 변경 시 정산 캐시 무효화 (새로고침 없이 반영)
+  useEffect(() => {
+    utils.storeSales.getRecord.invalidate();
+    utils.storeSales.getRecords.invalidate();
+    utils.settlement.getSettlementsByDateRange.invalidate();
+  }, [currentDate]);
+
   // URL 파라미터에서 branchId 읽기 (관리자가 지점 선택 후 이동 시 사용)
   const search = useSearch();
   const urlBranchId = (() => {
