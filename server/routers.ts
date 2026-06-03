@@ -4825,9 +4825,9 @@ export const appRouter = router({
           }
         } catch (e: any) {
           console.error('[테이블 저장 후 정산 재계산 오류]', e);
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `정산 재계산 실패: ${e?.message || String(e)}` });
+          return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError: String(e?.message || e) };
         }
-        return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
+        return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError: null };
       }),
 
     // 직원별 월간 인센티브 집계
