@@ -4341,7 +4341,21 @@ export const appRouter = router({
             const allInc = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
             const sc = (allInc ?? []).filter((i: any) => i.staffType === 'staff').length;
             const pc = (allInc ?? []).filter((i: any) => i.staffType === 'parttime').length;
-            const mc = (allInc ?? []).filter((i: any) => i.staffType === 'manager').length;
+            const mc = (allInc ?? []).filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
+            // 알바 총 근무시간 계산
+            let pth = 0;
+            for (const inc of (allInc ?? []).filter((i: any) => i.staffType === 'parttime')) {
+              if (inc.workStart && inc.workEnd) {
+                try {
+                  const [sh, sm] = (inc.workStart as string).split(':').map(Number);
+                  const [eh, em] = (inc.workEnd as string).split(':').map(Number);
+                  let startMin = sh * 60 + sm;
+                  let endMin = eh * 60 + em;
+                  if (endMin <= startMin) endMin += 24 * 60;
+                  pth += (endMin - startMin) / 60;
+                } catch {}
+              }
+            }
             const cash = parseInt(rec.cash || '0') || 0;
             const card = parseInt(rec.card || '0') || 0;
             const expenses = Array.isArray(rec.expenses) ? rec.expenses as Array<{id:string;description:string;amount:string}> : [];
