@@ -77,13 +77,11 @@ export default function SettlementDashboard() {
       if (settlementMap.has(dateStr)) {
         result.push(settlementMap.get(dateStr));
       } else {
-        // DB에 없는 날 - 임대료/관리비는 나가므로 순수익 반영
-        // 기존 데이터에서 임대료 추출 (월 임대료는 고정이므로 첫 번째 데이터 참조)
-        const refRecord = Array.from(settlementMap.values())[0];
-        const dailyRent = refRecord ? Number(refRecord.rentExpense || 0) : 0;
-        const dailyMgmt = refRecord ? Number(refRecord.managementFeeExpense || 0) : 0;
-        const emptyTotalExpenses = dailyRent + dailyMgmt;
-        const emptyNetProfit = -emptyTotalExpenses;
+        // DB에 없는 날 - 매출 없으면 전부 0으로 표시 (저장할 때만 정산 반영)
+        const dailyRent = 0;
+        const dailyMgmt = 0;
+        const emptyTotalExpenses = 0;
+        const emptyNetProfit = 0;
         result.push({
           date: dateStr,
           totalRevenue: '0',
