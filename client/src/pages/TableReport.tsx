@@ -562,7 +562,7 @@ export default function TableReport() {
     }
 
     try {
-      const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap } = await batchSave.mutateAsync({
+      const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError } = await batchSave.mutateAsync({
         date: currentDate,
         teamCount,
         notes,
@@ -605,6 +605,7 @@ export default function TableReport() {
       // 저장 완료 후 loadedDateRef를 현재 날짜로 설정 → useEffect가 서버 데이터로 덮어쓰지 않도록
       loadedDateRef.current = currentDate;
 
+      if (debugError) toast.error(`정산 재계산 오류: ${debugError}`);
       setSaved(true);
       const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
       const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
