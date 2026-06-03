@@ -235,7 +235,7 @@ export default function SettlementDashboard() {
               { label: '수수료/주방', value: monthlyTotal.commissionExpense },
               { label: '임대료', value: monthlyTotal.rentExpense + monthlyTotal.managementFeeExpense },
               { label: '여직원 인건비', value: monthlyTotal.staffWageExpense },
-              { label: '점장 인건비', value: monthlyTotal.managerWageExpense },
+              { label: '관리자 인건비', value: monthlyTotal.managerWageExpense },
               { label: '알바 인건비', value: monthlyTotal.partTimeWageExpense },
               { label: '주류단가', value: monthlyTotal.liquorCostExpense },
               { label: '스탭음료', value: monthlyTotal.staffDrinkExpense },
