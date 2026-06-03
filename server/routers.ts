@@ -4621,6 +4621,7 @@ export const appRouter = router({
         })),
       }))
       .mutation(async ({ ctx, input }) => {
+        process.stdout.write("[batchSave] 진입 date=" + input.date + "\n");
         const db = await getDb();
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
         const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
