@@ -4759,24 +4759,59 @@ export const appRouter = router({
         try { await cascadeUpdateCumulativeAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdateCumulativeAmounts 오류]', e); }
         try { await cascadeUpdatePosAmounts(effectiveBranchId, input.date); } catch (e) { console.error('[cascadeUpdatePosAmounts 오류]', e); }
 
-        // 테이블 기록 저장 후 정산 자동 재계산
+        // 테이블 기록 저장 후 정산 자동 재계산 (레코드 없어도 upsert)
         try {
-          const salesRec = await db?.select().from(dailySalesRecords)
+          const salesRec2 = await db?.select().from(dailySalesRecords)
             .where(and(eq(dailySalesRecords.branchId, effectiveBranchId), eq(dailySalesRecords.date, input.date)))
             .limit(1);
-          if (salesRec && salesRec.length > 0) {
-            const rec = salesRec[0];
-            const allInc = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
-            const sc = (allInc ?? []).filter((i: any) => i.staffType === 'staff').length;
-            const pc = (allInc ?? []).filter((i: any) => i.staffType === 'parttime').length;
-            const mc = (allInc ?? []).filter((i: any) => i.staffType === 'manager').length;
-            const cash = parseInt(rec.cash || '0') || 0;
-            const card = parseInt(rec.card || '0') || 0;
-            const expenses = Array.isArray(rec.expenses) ? rec.expenses as Array<{id:string;description:string;amount:string}> : [];
-            const settlement = await calculateDailySettlement(
-              effectiveBranchId, input.date, cash, card, sc, pc, expenses, reportId, mc
-            );
-            await saveDailySettlementRecord(effectiveBranchId, input.date, settlement);
+          const rec2 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
+          const allInc2 = await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, reportId));
+          const sc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'staff').length;
+          const pc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'parttime').length;
+          const mc2 = (allInc2 ?? []).filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
+          let pth2 = 0;
+          for (const inc of (allInc2 ?? []).filter((i: any) => i.staffType === 'parttime')) {
+            if (inc.workStart && inc.workEnd) {
+              try {
+                const [sh, sm] = (inc.workStart as string).split(':').map(Number);
+                const [eh, em] = (inc.workEnd as string).split(':').map(Number);
+                let startMin = sh * 60 + sm;
+                let endMin = eh * 60 + em;
+                if (endMin <= startMin) endMin += 24 * 60;
+                pth2 += (endMin - startMin) / 60;
+              } catch {}
+            }
+          }
+          const cash2 = parseInt(rec2?.cash || '0') || cashSum;
+          const card2 = parseInt(rec2?.card || '0') || cardSum;
+          const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses as Array<{id:string;description:string;amount:string}> : [];
+          const settlement2 = await calculateDailySettlement(
+            effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2
+          );
+          if (!rec2) {
+            await db?.insert(dailySalesRecords).values({
+              branchId: effectiveBranchId,
+              date: input.date,
+              cash: String(cash2),
+              card: String(card2),
+              expenses: expenses2,
+              totalRevenue: String(settlement2.totalRevenue),
+              commissionExpense: String(settlement2.commissionExpense),
+              rentExpense: String(settlement2.rentExpense),
+              managementFeeExpense: String(settlement2.managementFeeExpense),
+              staffWageExpense: String(settlement2.staffWageExpense),
+              partTimeWageExpense: String(settlement2.partTimeWageExpense),
+              liquorCostExpense: String(settlement2.liquorCostExpense),
+              staffDrinkExpense: String(settlement2.staffDrinkExpense),
+              otherExpense: String(settlement2.otherExpense),
+              totalExpenses: String(settlement2.totalExpenses),
+              netProfit: String(settlement2.netProfit),
+              staffCount: sc2,
+              partTimeCount: pc2,
+              submittedAt: new Date(),
+            });
+          } else {
+            await saveDailySettlementRecord(effectiveBranchId, input.date, settlement2);
           }
         } catch (e) { console.error('[테이블 저장 후 정산 재계산 오류]', e); }
         return { id: reportId, cashSum, cardSum, itemIdMap, incentiveIdMap };
