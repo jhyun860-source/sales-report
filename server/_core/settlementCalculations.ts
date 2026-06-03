@@ -217,11 +217,12 @@ export async function calculateDailySettlement(
   };
 
   const db = await getDb();
-  if (!db) return zero;
+  if (!db) { console.log('[정산계산] DB 연결 실패'); return zero; }
 
   // 지점 이름 조회
   const branchData = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
-  if (!branchData || branchData.length === 0) return zero;
+  if (!branchData || branchData.length === 0) { console.log('[정산계산] 지점 없음 branchId:', branchId); return zero; }
+  console.log('[정산계산] 시작 branchId:', branchId, 'date:', date, 'cash:', cash, 'card:', card, 'managerCount:', managerCount);
 
   // branchSettings DB에서 설정값 읽기 (설정 페이지에서 저장한 값)
   const [bsData] = await db.select().from(branchSettings).where(eq(branchSettings.branchId, branchId)).limit(1);
