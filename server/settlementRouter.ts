@@ -380,8 +380,23 @@ export const settlementRouter = router({
   debugCalculate: publicProcedure
     .input(z.object({ branchId: z.number(), date: z.string(), managerCount: z.number().default(0) }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      const { branches, branchSettings } = await import('../../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      const branchData = db ? await db.select().from(branches).where(eq(branches.id, input.branchId)).limit(1) : [];
+      const bsData = db ? await db.select().from(branchSettings).where(eq(branchSettings.branchId, input.branchId)).limit(1) : [];
       const { calculateDailySettlement } = await import('./_core/settlementCalculations');
       const result = await calculateDailySettlement(input.branchId, input.date, 0, 0, 0, 0, [], null, input.managerCount, 0);
-      return { managerCount: input.managerCount, managerWageExpense: result.managerWageExpense, rentExpense: result.rentExpense, netProfit: result.netProfit };
+      return {
+        managerCount: input.managerCount,
+        managerWageExpense: result.managerWageExpense,
+        rentExpense: result.rentExpense,
+        netProfit: result.netProfit,
+        branchFound: branchData.length > 0,
+        branchName: branchData[0]?.name ?? null,
+        bsFound: bsData.length > 0,
+        bsManagerDailyWage: bsData[0] ? String((bsData[0] as any).managerDailyWage) : null,
+        bsMonthlyRent: bsData[0] ? String((bsData[0] as any).monthlyRent) : null,
+      };
     }),
 });
