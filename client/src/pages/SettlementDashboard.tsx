@@ -288,7 +288,7 @@ export default function SettlementDashboard() {
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">임대료</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비+인센</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">주류</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">총지출</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">당일지출</th>
                     <th className="px-2 py-2 text-right font-bold text-gray-700 whitespace-nowrap">순수익</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">수익률</th>
                   </tr>
@@ -313,7 +313,7 @@ export default function SettlementDashboard() {
                           {formatWon(liquor)}
                           {rev > 0 && liquor > 0 && <span className="text-gray-400 ml-1">({(liquor / rev * 100).toFixed(0)}%)</span>}
                         </td>
-                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.totalExpenses || 0))}</td>
+                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.otherExpense || 0))}</td>
                         <td className={`px-2 py-2 text-right font-bold whitespace-nowrap ${net >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                           {formatWon(net)}
                         </td>
