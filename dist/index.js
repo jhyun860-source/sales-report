@@ -1665,8 +1665,17 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const managementFeeExpense = 0;
   const staffDailyWage = bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
   const staffWageExpense = staffCount * staffDailyWage;
-  const managerDailyWage = bsData ? Number(bsData.managerDailyWage || 0) : hardConfig?.managerDailyWage ?? 0;
-  const deputyDailyWage = bsData ? Number(bsData.deputyDailyWage || 0) : managerDailyWage;
+  const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
+  const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let businessDaysCount = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month - 1, d);
+    const dayOfWeek = dateObj.getDay();
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) businessDaysCount++;
+  }
+  const managerDailyWage = businessDaysCount > 0 ? Math.round(managerMonthlySalary / businessDaysCount) : 0;
+  const deputyDailyWage = businessDaysCount > 0 ? Math.round(deputyMonthlySalary / businessDaysCount) : 0;
   const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
   const partTimeWageExpense = partTimeTotalHours2 > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours2) : partTimeCount * partTimeHourlyWage * 8;

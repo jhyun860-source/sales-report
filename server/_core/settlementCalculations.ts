@@ -254,9 +254,22 @@ export async function calculateDailySettlement(
   const staffDailyWage = bsData ? Number(bsData.staffDailyWage || 0) : (hardConfig?.staffDailyWage ?? 0);
   const staffWageExpense = staffCount * staffDailyWage;
 
-  // 6. 점장/매니저 인건비 - 파라미터로 넘겨받은 managerCount 사용 (DB 재조회 제거)
-  const managerDailyWage = bsData ? Number(bsData.managerDailyWage || 0) : (hardConfig?.managerDailyWage ?? 0);
-  const deputyDailyWage = bsData ? Number(bsData.deputyDailyWage || 0) : managerDailyWage;
+  // 6. 점장/매니저 인건비 - 월 고정금액을 그달 월~금 근무일수로 나눔
+  const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : (hardConfig?.monthlyRent ?? 0);
+  const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
+  
+  // 해당 월의 월~금 근무일수 계산
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let businessDaysCount = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month - 1, d);
+    const dayOfWeek = dateObj.getDay();
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) businessDaysCount++; // 월(1) ~ 금(5)
+  }
+  
+  // 일급 = 월 고정금액 ÷ 월~금 근무일수
+  const managerDailyWage = businessDaysCount > 0 ? Math.round(managerMonthlySalary / businessDaysCount) : 0;
+  const deputyDailyWage = businessDaysCount > 0 ? Math.round(deputyMonthlySalary / businessDaysCount) : 0;
   const managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
   // 7. 알바 인건비 (시급 × 근무시간)
