@@ -83,8 +83,18 @@ export default function BranchSettings() {
     if ((branches as any[]).length > 0 && !selectedBranchId) {
       const firstId = (branches as any[])[0].id;
       setSelectedBranchId(firstId);
+      if ((allSettings as any[]).length > 0) {
+        loadBranchSettings(firstId, allSettings as any[]);
+      }
     }
   }, [branches]);
+
+  // allSettings 로드 완료 시 현재 선택된 지점 설정값 갱신
+  useEffect(() => {
+    if (selectedBranchId && (allSettings as any[]).length > 0) {
+      loadBranchSettings(selectedBranchId, allSettings as any[]);
+    }
+  }, [allSettings]);
 
 
 
