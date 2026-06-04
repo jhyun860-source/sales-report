@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "28ec0e2d-a477-4c5f-a0b4-e08f07c9e831",
-  "prevId": "16f25791-ce1a-4844-a7eb-59158768131a",
+  "id": "c84200da-1131-4d30-ae67-de6a42e74819",
+  "prevId": "28ec0e2d-a477-4c5f-a0b4-e08f07c9e831",
   "tables": {
     "branchManagers": {
       "name": "branchManagers",
@@ -59,6 +59,134 @@
       "compositePrimaryKeys": {
         "branchManagers_id": {
           "name": "branchManagers_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "branchSettings": {
+      "name": "branchSettings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "branchId": {
+          "name": "branchId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "monthlyRent": {
+          "name": "monthlyRent",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "dailyRentExpense": {
+          "name": "dailyRentExpense",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "managerMonthlySalary": {
+          "name": "managerMonthlySalary",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "managerDailyWage": {
+          "name": "managerDailyWage",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "staffDailyWage": {
+          "name": "staffDailyWage",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "partTimeHourlyWage": {
+          "name": "partTimeHourlyWage",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "deputyMonthlySalary": {
+          "name": "deputyMonthlySalary",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "deputyDailyWage": {
+          "name": "deputyDailyWage",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "monthlyFixedExpense": {
+          "name": "monthlyFixedExpense",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "commissionRate": {
+          "name": "commissionRate",
+          "type": "decimal(5,4)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0.1700'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "branchSettings_id": {
+          "name": "branchSettings_id",
           "columns": [
             "id"
           ]
@@ -260,6 +388,23 @@
           "notNull": false,
           "autoincrement": false
         },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        },
         "totalRevenue": {
           "name": "totalRevenue",
           "type": "decimal(15,0)",
@@ -332,6 +477,14 @@
           "autoincrement": false,
           "default": "'0'"
         },
+        "salesIncentiveExpense": {
+          "name": "salesIncentiveExpense",
+          "type": "decimal(15,0)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
         "otherExpense": {
           "name": "otherExpense",
           "type": "decimal(15,0)",
@@ -371,23 +524,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
         }
       },
       "indexes": {},
@@ -763,7 +899,7 @@
         },
         "staffType": {
           "name": "staffType",
-          "type": "enum('staff','parttime')",
+          "type": "enum('staff','parttime','manager','deputy')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,

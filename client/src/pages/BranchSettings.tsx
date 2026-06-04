@@ -39,6 +39,7 @@ export default function BranchSettings() {
 
   // 입력 폼 state
   const [monthlyRent, setMonthlyRent] = useState(0);
+  const [dailyRentExpense, setDailyRentExpense] = useState(0);
   const [managerMonthlySalary, setManagerMonthlySalary] = useState(0);
   const [managerDailyWage, setManagerDailyWage] = useState(0);
   const [deputyMonthlySalary, setDeputyMonthlySalary] = useState(0);
@@ -68,6 +69,7 @@ export default function BranchSettings() {
   const loadBranchSettings = (branchId: number, settings: any[]) => {
     const s = settings.find((x: any) => Number(x.branchId) === Number(branchId));
     setMonthlyRent(Number(s?.monthlyRent ?? 0));
+    setDailyRentExpense(Number(s?.dailyRentExpense ?? 0));
     setManagerMonthlySalary(Number(s?.managerMonthlySalary ?? 0));
     setManagerDailyWage(Number(s?.managerDailyWage ?? 0));
     setDeputyMonthlySalary(Number(s?.deputyMonthlySalary ?? 0));
@@ -108,6 +110,7 @@ export default function BranchSettings() {
     upsertMutation.mutate({
       branchId: selectedBranchId,
       monthlyRent,
+      dailyRentExpense,
       managerMonthlySalary,
       managerDailyWage: managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / 22) : managerDailyWage,
       deputyMonthlySalary,
@@ -180,6 +183,14 @@ export default function BranchSettings() {
                   <span className="text-xs text-gray-500">원</span>
                 </div>
                 <p className="text-xs text-blue-500 mt-1">→ 일 임대료: {monthlyRent > 0 ? `약 ${Math.round(monthlyRent / 26).toLocaleString()}원` : '-'} (해당 월 월~토 일수로 자동 계산)</p>
+              </div>
+              <div className="border-t pt-3">
+                <label className="text-xs text-gray-500">✏️ 일일 임대료 직접 설정 (위 자동 계산값 대신)</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <MoneyInput value={dailyRentExpense} onChange={setDailyRentExpense} />
+                  <span className="text-xs text-gray-500">원/일</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">* 0으로 두면 위 자동 계산값이 사용되며, 0이 아니면 이 값이 사용됩니다</p>
               </div>
             </div>
 

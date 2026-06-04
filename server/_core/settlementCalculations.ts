@@ -243,9 +243,10 @@ export async function calculateDailySettlement(
   const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : (hardConfig?.commissionRate ?? 0.17);
   const commissionExpense = Math.round(totalRevenue * commissionRate);
 
-  // 3. 임대료 (월 임대료 ÷ 영업일수)
+  // 3. 임대료 (사용자 설정 일일 임대료 우선, 없으면 월 임대료 ÷ 영업일수)
   const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : (hardConfig?.monthlyRent ?? 0);
-  const rentExpense = calculateDailyRent(monthlyRent, year, month);
+  const userDailyRent = bsData ? Number(bsData.dailyRentExpense || 0) : 0;
+  const rentExpense = userDailyRent > 0 ? userDailyRent : calculateDailyRent(monthlyRent, year, month);
 
   // 4. 관리비 (0으로 통일, 임대료에 포함)
   const managementFeeExpense = 0;
