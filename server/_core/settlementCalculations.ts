@@ -245,7 +245,15 @@ export async function calculateDailySettlement(
 
   // 3. 임대료 (월 임대료 ÷ 영업일수)
   const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : (hardConfig?.monthlyRent ?? 0);
-  const rentExpense = calculateDailyRent(monthlyRent, year, month);
+  // 임시 수정: 하드코딩된 일일 임대료 사용 (선릉점 250,000원, 대치점 300,000원, 삼성점 250,000원)
+  const hardcodedDailyRents: Record<string, number> = {
+    '선릉점': 250000,
+    '대치점': 300000,
+    '삼성점': 250000,
+    '문정1호점': 173077,
+    '문정2호점': 173077,
+  };
+  const rentExpense = hardcodedDailyRents[branchName] ?? calculateDailyRent(monthlyRent, year, month);
 
   // 4. 관리비 (0으로 통일, 임대료에 포함)
   const managementFeeExpense = 0;
