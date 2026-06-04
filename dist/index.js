@@ -6735,6 +6735,12 @@ var appRouter = router({
         const cash2 = cashSum;
         const card2 = cardSum;
         const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses : [];
+        const GLASS_PRICE = 5e3;
+        const BOTTLE_PRICE = 1e4;
+        const BEER_PRICE = 3e3;
+        const staffDrink2 = validInc2.reduce((sum, inc) => {
+          return sum + Number(inc.glassCount || 0) * GLASS_PRICE + Number(inc.bottleCount || 0) * BOTTLE_PRICE + Number(inc.beerBottleCount || 0) * BEER_PRICE + Number(inc.salesIncentive || 0);
+        }, 0);
         const settlement2 = await calculateDailySettlement(
           effectiveBranchId,
           input.date,
@@ -6765,7 +6771,7 @@ var appRouter = router({
               managerWageExpense: String(settlement2.managerWageExpense ?? 0),
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
-              staffDrinkExpense: String(settlement2.staffDrinkExpense),
+              staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
               otherExpense: String(settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
@@ -6784,7 +6790,7 @@ var appRouter = router({
             managerWageExpense: String(settlement2.managerWageExpense ?? 0),
             partTimeWageExpense: String(settlement2.partTimeWageExpense),
             liquorCostExpense: String(settlement2.liquorCostExpense),
-            staffDrinkExpense: String(settlement2.staffDrinkExpense),
+            staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
             otherExpense: String(settlement2.otherExpense),
             totalExpenses: String(settlement2.totalExpenses),
             netProfit: String(settlement2.netProfit),
