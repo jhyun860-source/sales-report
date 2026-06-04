@@ -112,6 +112,63 @@ export const branchSettingsRouter = router({
           commissionRate: String(input.commissionRate),
         });
       }
+      // 설정값 변경 후 당월 전체 정산 재계산
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const startDate = `${year}-${month}-01`;
+        const endDate = `${year}-${month}-31`;
+
+        await db.execute(`
+          UPDATE dailySalesRecords d
+          SET
+            d.staffWageExpense = d.staffCount * ${input.staffDailyWage},
+            d.managerWageExpense = (
+              SELECT COALESCE(SUM(CASE
+                WHEN si.staffType = 'manager' THEN ${computedDailyWage}
+                WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
+                ELSE 0 END), 0)
+              FROM staffIncentives si
+              JOIN tableReports tr ON si.tableReportId = tr.id
+              WHERE tr.branchId = d.branchId AND tr.date = d.date
+            ),
+            d.commissionExpense = ROUND(d.totalRevenue * ${input.commissionRate}),
+            d.rentExpense = ROUND(${input.monthlyRent} / (
+              SELECT COUNT(*) FROM (
+                SELECT date FROM dailySalesRecords
+                WHERE branchId = ${input.branchId}
+                AND date BETWEEN '${startDate}' AND '${endDate}'
+                AND DAYOFWEEK(date) != 1
+                AND totalRevenue > 0
+              ) sub
+            )),
+            d.totalExpenses = d.commissionExpense + d.rentExpense + d.managementFeeExpense
+              + (d.staffCount * ${input.staffDailyWage})
+              + (SELECT COALESCE(SUM(CASE
+                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
+                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
+                  ELSE 0 END), 0)
+                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
+                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense,
+            d.netProfit = d.totalRevenue - (d.commissionExpense + d.rentExpense + d.managementFeeExpense
+              + (d.staffCount * ${input.staffDailyWage})
+              + (SELECT COALESCE(SUM(CASE
+                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
+                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
+                  ELSE 0 END), 0)
+                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
+                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense)
+          WHERE d.branchId = ${input.branchId}
+          AND d.date BETWEEN '${startDate}' AND '${endDate}'
+          AND d.totalRevenue > 0
+        `);
+      } catch (e) {
+        console.error('[설정 저장 후 재계산 오류]', e);
+      }
+
       return { success: true, managerDailyWage: computedDailyWage, deputyDailyWage: computedDeputyDailyWage };
     }),
 });
