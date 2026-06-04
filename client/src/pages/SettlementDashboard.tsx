@@ -34,18 +34,40 @@ function formatWonFull(n: number) {
 }
 
 export default function SettlementDashboard() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+
   const { user, loading: authLoading, logout } = useStoreAuth();
   const today = getTodayString();
   const { year: todayYear, month: todayMonth } = getYearMonth(today);
 
-  const [selectedYear, setSelectedYear] = useState(todayYear);
-  const [selectedMonth, setSelectedMonth] = useState(todayMonth);
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  // URL에서 상태 복원
+  const getInitialState = () => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const year = params.get('year') ? Number(params.get('year')) : todayYear;
+    const month = params.get('month') ? Number(params.get('month')) : todayMonth;
+    const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
+    return { year, month, branchId };
+  };
+
+  const initialState = getInitialState();
+  const [selectedYear, setSelectedYear] = useState(initialState.year);
+  const [selectedMonth, setSelectedMonth] = useState(initialState.month);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(initialState.branchId);
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
   });
+
+  // URL 상태 동기화
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set('year', String(selectedYear));
+    params.set('month', String(selectedMonth));
+    if (selectedBranchId !== null) {
+      params.set('branchId', String(selectedBranchId));
+    }
+    navigate(`?${params.toString()}`, { replace: true });
+  }, [selectedYear, selectedMonth, selectedBranchId, navigate]);
 
   useEffect(() => {
     if (branches.length > 0 && selectedBranchId === null) {
