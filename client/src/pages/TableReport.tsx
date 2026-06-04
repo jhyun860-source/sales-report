@@ -585,19 +585,25 @@ export default function TableReport() {
           memo: it.memo,
           sortOrder: i,
         })),
-        incentives: incentives.map((inc, i) => ({
-          id: inc.id,
-          localId: inc.localId,
-          staffName: inc.staffName,
-          staffType: inc.staffType,
-          glassCount: inc.glassCount,
-          bottleCount: inc.bottleCount,
-          beerBottleCount: inc.beerBottleCount,
-          salesIncentive: inc.salesIncentive || '0',
-          workStart: inc.workStart || undefined,
-          workEnd: inc.workEnd || undefined,
-          sortOrder: i,
-        })),
+        incentives: incentives.map((inc, i) => {
+          // 자동 계산: glassCount * 5000 + bottleCount * 10000 + beerBottleCount * 3000
+          const autoCalculatedIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
+          // salesIncentive가 수동으로 입력되었으면 그 값 사용, 아니면 자동 계산값 사용
+          const finalSalesIncentive = inc.salesIncentive ? Number(inc.salesIncentive) : autoCalculatedIncentive;
+          return {
+            id: inc.id,
+            localId: inc.localId,
+            staffName: inc.staffName,
+            staffType: inc.staffType,
+            glassCount: inc.glassCount,
+            bottleCount: inc.bottleCount,
+            beerBottleCount: inc.beerBottleCount,
+            salesIncentive: String(finalSalesIncentive),
+            workStart: inc.workStart || undefined,
+            workEnd: inc.workEnd || undefined,
+            sortOrder: i,
+          };
+        }),
       });
 
       // 저장 완료 후 reportId 및 새 id 반영
