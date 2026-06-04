@@ -176,7 +176,6 @@ export const branchSettings = mysqlTable("branchSettings", {
   id: int("id").autoincrement().primaryKey(),
   branchId: int("branchId").notNull(),
   monthlyRent: decimal("monthlyRent", { precision: 15, scale: 0 }).default("0").notNull(),
-  dailyRentExpense: decimal("dailyRentExpense", { precision: 15, scale: 0 }).default("0").notNull(), // 사용자 설정 일일 임대료
   managerMonthlySalary: decimal("managerMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
   managerDailyWage: decimal("managerDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
   staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
