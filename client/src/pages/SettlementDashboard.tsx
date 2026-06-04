@@ -53,6 +53,7 @@ export default function SettlementDashboard() {
   const [selectedYear, setSelectedYear] = useState(initialState.year);
   const [selectedMonth, setSelectedMonth] = useState(initialState.month);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(initialState.branchId);
+  const [hasUrlBranchId] = useState(initialState.branchId !== null);
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -69,11 +70,12 @@ export default function SettlementDashboard() {
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedYear, selectedMonth, selectedBranchId, navigate]);
 
+  // branches 로드 후 기본값 설정 (URL에서 복원된 값이 없을 때만)
   useEffect(() => {
-    if (branches.length > 0 && selectedBranchId === null) {
+    if (branches.length > 0 && !hasUrlBranchId && selectedBranchId === null) {
       setSelectedBranchId(branches[0].id);
     }
-  }, [branches, selectedBranchId]);
+  }, [branches, hasUrlBranchId, selectedBranchId]);
 
   const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesTodayNetProfit.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
