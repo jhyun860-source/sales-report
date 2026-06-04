@@ -109,6 +109,7 @@ var init_schema = __esm({
       partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      salesIncentiveExpense: decimal("salesIncentiveExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(),
       netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(),
