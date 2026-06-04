@@ -1142,18 +1142,23 @@ export default function TableReport() {
                 </div>}
 
                 {/* 3행: 영업인센 금액 - 점장은 미표시 */}
-                {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && (
-                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
-                  <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
-                  <AmountInput
-                    value={inc.salesIncentive}
-                    onChange={v => updateIncentiveField(inc.localId, 'salesIncentive', v)}
-                    placeholder="금액 입력"
-                    className="flex-1 text-sm font-semibold"
-                  />
-                </div>
-                )}
+                {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && (() => {
+                  // 자동 계산: glassCount * 5000 + bottleCount * 10000 + beerBottleCount * 3000
+                  const autoCalcIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
+                  const displayValue = inc.salesIncentive || (autoCalcIncentive > 0 ? String(autoCalcIncentive) : '');
+                  return (
+                    <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>₩</span>
+                      <AmountInput
+                        value={displayValue}
+                        onChange={v => updateIncentiveField(inc.localId, 'salesIncentive', v)}
+                        placeholder="금액 입력"
+                        className="flex-1 text-sm font-semibold"
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* 4행: 근무 시간 - 점장은 미표시 */}
                 {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && (
