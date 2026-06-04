@@ -109,6 +109,7 @@ var init_schema = __esm({
       partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(),
+      salesIncentiveExpense: decimal("salesIncentiveExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(),
       netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(),
@@ -1606,7 +1607,6 @@ async function calculateStaffDrinkExpense(tableReportId, branchName) {
     total += Number(inc.glassCount || 0) * glassPrice;
     total += Number(inc.bottleCount || 0) * bottlePrice;
     total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
-    total += Number(inc.salesIncentive || 0);
   });
   return total;
 }
@@ -1637,6 +1637,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
     partTimeWageExpense: 0,
     liquorCostExpense: 0,
     staffDrinkExpense: 0,
+    salesIncentiveExpense: 0,
     otherExpense: 0,
     totalExpenses: 0,
     netProfit: 0
@@ -1677,6 +1678,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const otherExpense = dailyFixedExpense + webExpense;
   const totalExpenses = commissionExpense + rentExpense + managementFeeExpense + staffWageExpense + managerWageExpense + partTimeWageExpense + liquorCostExpense + staffDrinkExpense + otherExpense;
   const netProfit = totalRevenue - totalExpenses;
+  const salesIncentiveExpense = tableReportId && db2 ? await db2.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId)).then((rows) => rows.reduce((s, i) => s + Number(i.salesIncentive || 0), 0)) : 0;
   return {
     totalRevenue,
     commissionExpense,
@@ -1687,6 +1689,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
     partTimeWageExpense,
     liquorCostExpense,
     staffDrinkExpense,
+    salesIncentiveExpense,
     otherExpense,
     totalExpenses,
     netProfit
@@ -6739,8 +6742,9 @@ var appRouter = router({
         const BOTTLE_PRICE = 1e4;
         const BEER_PRICE = 3e3;
         const staffDrink2 = validInc2.reduce((sum, inc) => {
-          return sum + Number(inc.glassCount || 0) * GLASS_PRICE + Number(inc.bottleCount || 0) * BOTTLE_PRICE + Number(inc.beerBottleCount || 0) * BEER_PRICE + Number(inc.salesIncentive || 0);
+          return sum + Number(inc.glassCount || 0) * GLASS_PRICE + Number(inc.bottleCount || 0) * BOTTLE_PRICE + Number(inc.beerBottleCount || 0) * BEER_PRICE;
         }, 0);
+        const salesIncentive2 = validInc2.reduce((sum, inc) => sum + Number(inc.salesIncentive || 0), 0);
         const bsForOther = db2 ? await db2.select().from(branchSettings).where(eq6(branchSettings.branchId, effectiveBranchId)).limit(1) : [];
         const monthlyFixed = bsForOther.length > 0 ? Number(bsForOther[0].monthlyFixedExpense || 0) : 0;
         const [yr, mo] = input.date.split("-").map(Number);
@@ -6783,6 +6787,7 @@ var appRouter = router({
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
+              salesIncentiveExpense: String(salesIncentive2 || settlement2.salesIncentiveExpense || 0),
               otherExpense: String(otherExpense2 || settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
@@ -6802,12 +6807,13 @@ var appRouter = router({
             partTimeWageExpense: String(settlement2.partTimeWageExpense),
             liquorCostExpense: String(settlement2.liquorCostExpense),
             staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
+            salesIncentiveExpense: String(salesIncentive2 || settlement2.salesIncentiveExpense || 0),
             otherExpense: String(otherExpense2 || settlement2.otherExpense),
             totalExpenses: String(
-              settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + (otherExpense2 || settlement2.otherExpense)
+              settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + salesIncentive2 + (otherExpense2 || settlement2.otherExpense)
             ),
             netProfit: String(
-              settlement2.totalRevenue - (settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + (otherExpense2 || settlement2.otherExpense))
+              settlement2.totalRevenue - (settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + salesIncentive2 + (otherExpense2 || settlement2.otherExpense))
             ),
             updatedAt: /* @__PURE__ */ new Date()
           }).where(eq6(dailySalesRecords.id, rec2.id));
