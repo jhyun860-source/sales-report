@@ -1606,6 +1606,7 @@ async function calculateStaffDrinkExpense(tableReportId, branchName) {
     total += Number(inc.glassCount || 0) * glassPrice;
     total += Number(inc.bottleCount || 0) * bottlePrice;
     total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
+    total += Number(inc.salesIncentive || 0);
   });
   return total;
 }
@@ -2167,6 +2168,60 @@ var branchSettingsRouter = router({
         monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
         commissionRate: String(input.commissionRate)
       });
+    }
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const startDate = `${year}-${month}-01`;
+      const endDate = `${year}-${month}-31`;
+      await db2.execute(`
+          UPDATE dailySalesRecords d
+          SET
+            d.staffWageExpense = d.staffCount * ${input.staffDailyWage},
+            d.managerWageExpense = (
+              SELECT COALESCE(SUM(CASE
+                WHEN si.staffType = 'manager' THEN ${computedDailyWage}
+                WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
+                ELSE 0 END), 0)
+              FROM staffIncentives si
+              JOIN tableReports tr ON si.tableReportId = tr.id
+              WHERE tr.branchId = d.branchId AND tr.date = d.date
+            ),
+            d.commissionExpense = ROUND(d.totalRevenue * ${input.commissionRate}),
+            d.rentExpense = ROUND(${input.monthlyRent} / (
+              SELECT COUNT(*) FROM (
+                SELECT date FROM dailySalesRecords
+                WHERE branchId = ${input.branchId}
+                AND date BETWEEN '${startDate}' AND '${endDate}'
+                AND DAYOFWEEK(date) != 1
+                AND totalRevenue > 0
+              ) sub
+            )),
+            d.totalExpenses = d.commissionExpense + d.rentExpense + d.managementFeeExpense
+              + (d.staffCount * ${input.staffDailyWage})
+              + (SELECT COALESCE(SUM(CASE
+                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
+                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
+                  ELSE 0 END), 0)
+                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
+                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense,
+            d.netProfit = d.totalRevenue - (d.commissionExpense + d.rentExpense + d.managementFeeExpense
+              + (d.staffCount * ${input.staffDailyWage})
+              + (SELECT COALESCE(SUM(CASE
+                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
+                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
+                  ELSE 0 END), 0)
+                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
+                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense)
+          WHERE d.branchId = ${input.branchId}
+          AND d.date BETWEEN '${startDate}' AND '${endDate}'
+          AND d.totalRevenue > 0
+        `);
+    } catch (e) {
+      console.error("[\uC124\uC815 \uC800\uC7A5 \uD6C4 \uC7AC\uACC4\uC0B0 \uC624\uB958]", e);
     }
     return { success: true, managerDailyWage: computedDailyWage, deputyDailyWage: computedDeputyDailyWage };
   })
