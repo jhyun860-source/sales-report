@@ -4806,6 +4806,17 @@ export const appRouter = router({
               + (Number(inc.beerBottleCount || 0) * BEER_PRICE)
               + Number(inc.salesIncentive || 0);
           }, 0);
+          // otherExpense 직접 계산 (월고정지출 일할 + 웹앱지출)
+          const bsForOther = db ? await db.select().from(branchSettings).where(eq(branchSettings.branchId, effectiveBranchId)).limit(1) : [];
+          const monthlyFixed = bsForOther.length > 0 ? Number((bsForOther[0] as any).monthlyFixedExpense || 0) : 0;
+          const [yr, mo] = input.date.split('-').map(Number);
+          // 해당 월 월~토 일수 계산
+          const lastDay = new Date(yr, mo, 0).getDate();
+          let bizDays = 0;
+          for (let d = 1; d <= lastDay; d++) { if (new Date(yr, mo-1, d).getDay() !== 0) bizDays++; }
+          const dailyFixed = bizDays > 0 ? Math.round(monthlyFixed / bizDays) : 0;
+          const webExpense2 = expenses2.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+          const otherExpense2 = dailyFixed + webExpense2;
           const settlement2 = await calculateDailySettlement(
             effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db, dc2
           );
@@ -4827,7 +4838,7 @@ export const appRouter = router({
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-              otherExpense: String(settlement2.otherExpense),
+              otherExpense: String(otherExpense2 || settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
               staffCount: sc2,
@@ -4847,17 +4858,17 @@ export const appRouter = router({
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-              otherExpense: String(settlement2.otherExpense),
+              otherExpense: String(otherExpense2 || settlement2.otherExpense),
               totalExpenses: String(
                 settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense
                 + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense
-                + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + settlement2.otherExpense
+                + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + (otherExpense2 || settlement2.otherExpense)
               ),
               netProfit: String(
                 settlement2.totalRevenue - (
                   settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense
                   + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense
-                  + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + settlement2.otherExpense
+                  + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + (otherExpense2 || settlement2.otherExpense)
                 )
               ),
               updatedAt: new Date(),
