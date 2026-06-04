@@ -40,8 +40,8 @@ export default function SettlementDashboard() {
   const today = getTodayString();
   const { year: todayYear, month: todayMonth } = getYearMonth(today);
 
-  // URL에서 상태 복원
-  const getInitialState = () => {
+  // URL 파라미터 파싱 (source of truth)
+  const getUrlParams = () => {
     const params = new URLSearchParams(location.split('?')[1] || '');
     const year = params.get('year') ? Number(params.get('year')) : todayYear;
     const month = params.get('month') ? Number(params.get('month')) : todayMonth;
@@ -49,17 +49,16 @@ export default function SettlementDashboard() {
     return { year, month, branchId };
   };
 
-  const initialState = getInitialState();
-  const [selectedYear, setSelectedYear] = useState(initialState.year);
-  const [selectedMonth, setSelectedMonth] = useState(initialState.month);
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(initialState.branchId);
-  const [hasUrlBranchId] = useState(initialState.branchId !== null);
+  const urlParams = getUrlParams();
+  const [selectedYear, setSelectedYear] = useState(urlParams.year);
+  const [selectedMonth, setSelectedMonth] = useState(urlParams.month);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(urlParams.branchId);
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
   });
 
-  // URL 상태 동기화
+  // URL 상태 동기화 (상태 변경 시 URL 업데이트)
   useEffect(() => {
     const params = new URLSearchParams();
     params.set('year', String(selectedYear));
@@ -70,12 +69,21 @@ export default function SettlementDashboard() {
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedYear, selectedMonth, selectedBranchId, navigate]);
 
-  // branches 로드 후 기본값 설정 (URL에서 복원된 값이 없을 때만)
+  // 🌟 핵심 수정: branches 로드 후 기본값 설정 (URL이 없을 때만)
+  // branches가 로드되기 전에는 이 로직을 실행하지 않음 (방어 코드)
   useEffect(() => {
-    if (branches.length > 0 && !hasUrlBranchId && selectedBranchId === null) {
-      setSelectedBranchId(branches[0].id);
+    // 1️⃣ branches 데이터가 아직 안 왔으면 대기
+    if (!branches || branches.length === 0) return;
+
+    // 2️⃣ URL에서 읽어온 branchId가 이미 있으면 유효성 검증 후 유지
+    if (selectedBranchId) {
+      const isValid = branches.some(b => b.id === selectedBranchId);
+      if (isValid) return; // 유효하다면 여기서 종료 (덮어쓰지 않음)
     }
-  }, [branches, hasUrlBranchId, selectedBranchId]);
+
+    // 3️⃣ URL에 branchId가 없을 때만 첫 번째 지점으로 기본값 설정
+    setSelectedBranchId(branches[0].id);
+  }, [branches]); // branches 변경 시에만 실행
 
   const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesTodayNetProfit.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -312,62 +320,31 @@ export default function SettlementDashboard() {
                     <th className="px-2 py-2 text-left text-gray-500 font-medium whitespace-nowrap">날짜</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">총매출</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">세금17%</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">수수료</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">임대료</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비+인센</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">주류</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">당일지출</th>
-                    <th className="px-2 py-2 text-right font-bold text-gray-700 whitespace-nowrap">순수익</th>
-                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">수익률</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">인건비</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">주류단가</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">기타</th>
+                    <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">순수익</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {(allDaysSettlements as any[]).map((s: any) => {
-                    const net = Number(s.netProfit || 0);
-                    const rev = Number(s.totalRevenue || 0);
-                    const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0) + Number(s.staffDrinkExpense || 0);
-                    const salesIncentive = Number((s as any).salesIncentiveExpense || 0);
-                    const liquor = Number(s.liquorCostExpense || 0);
-                    return (
-                      <tr key={s.date} className={`hover:bg-gray-50 ${(s as any)._empty ? 'opacity-40' : ''}`}>
-                        <td className="px-2 py-2 text-gray-700 whitespace-nowrap">{s.date?.slice(5)} ({getDayOfWeek(s.date)})</td>
-                        <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{formatWon(rev)}</td>
-                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.commissionExpense || 0))}</td>
-                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.rentExpense || 0))}</td>
-                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">
-                          {formatWon(totalWage)}
-                          {rev > 0 && totalWage > 0 && <span className="text-gray-400 ml-1">({(totalWage / rev * 100).toFixed(0)}%)</span>}
-                        </td>
-                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">
-                          {formatWon(liquor)}
-                          {rev > 0 && liquor > 0 && <span className="text-gray-400 ml-1">({(liquor / rev * 100).toFixed(0)}%)</span>}
-                        </td>
-                        <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.otherExpense || 0))}</td>
-                        <td className={`px-2 py-2 text-right font-bold whitespace-nowrap ${net >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                          {formatWon(net)}
-                        </td>
-                        <td className={`px-2 py-2 text-right whitespace-nowrap ${net >= 0 ? 'text-blue-500' : 'text-red-400'}`}>
-                          {rev > 0 ? (net / rev * 100).toFixed(1) + '%' : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                <tbody>
+                  {(allDaysSettlements as any[]).map((s: any, idx: number) => (
+                    <tr key={idx} className={s._empty ? 'bg-gray-25 opacity-50' : ''}>
+                      <td className="px-2 py-2 text-left text-gray-700">{s.date}</td>
+                      <td className="px-2 py-2 text-right text-gray-700">{formatWon(Number(s.totalRevenue || 0))}</td>
+                      <td className="px-2 py-2 text-right text-gray-700">{formatWon(Number(s.totalRevenue || 0) * 0.17)}</td>
+                      <td className="px-2 py-2 text-right text-gray-700">{formatWon(Number(s.commissionExpense || 0))}</td>
+                      <td className="px-2 py-2 text-right text-gray-700">{formatWon(Number(s.rentExpense || 0) + Number(s.managementFeeExpense || 0))}</td>
+                      <td className="px-2 py-2 text-right text-gray-700">{formatWon(Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0))}</td>
+                      <td className="px-2 py-2 text-right text-gray-700">{formatWon(Number(s.liquorCostExpense || 0))}</td>
+                      <td className="px-2 py-2 text-right text-gray-700">{formatWon(Number(s.staffDrinkExpense || 0) + Number(s.salesIncentiveExpense || 0) + Number(s.otherExpense || 0))}</td>
+                      <td className={`px-2 py-2 text-right font-bold ${Number(s.netProfit || 0) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                        {formatWon(Number(s.netProfit || 0))}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
-                <tfoot className="bg-gray-50 border-t-2 border-gray-200">
-                  <tr>
-                    <td className="px-3 py-2 font-bold text-gray-700">합계</td>
-                    <td className="px-2 py-2 text-right font-bold text-gray-700">{formatWon(monthlyTotal.totalRevenue)}</td>
-                    <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.commissionExpense)}</td>
-                    <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.rentExpense)}</td>
-                    <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.staffWageExpense + monthlyTotal.managerWageExpense + monthlyTotal.partTimeWageExpense)}</td>
-                    <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.liquorCostExpense)}</td>
-                    <td className={`px-2 py-2 text-right font-bold text-base ${monthlyTotal.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                      {formatWon(monthlyTotal.netProfit)}
-                    </td>
-                    <td className={`px-2 py-2 text-right font-bold text-sm ${monthlyTotal.netProfit >= 0 ? 'text-blue-500' : 'text-red-400'}`}>
-                      {monthlyTotal.totalRevenue > 0 ? (monthlyTotal.netProfit / monthlyTotal.totalRevenue * 100).toFixed(1) + '%' : '-'}
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           )}
