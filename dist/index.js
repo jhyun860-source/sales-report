@@ -1707,6 +1707,7 @@ async function calculateMonthlySummary(branchId, year, month) {
     partTimeWageExpense: 0,
     liquorCostExpense: 0,
     staffDrinkExpense: 0,
+    salesIncentiveExpense: 0,
     otherExpense: 0,
     totalExpenses: 0,
     netProfit: 0,
@@ -1724,7 +1725,7 @@ async function calculateMonthlySummary(branchId, year, month) {
   );
   let totalRevenue = 0, commissionExpense = 0, rentExpense = 0;
   let managementFeeExpense = 0, staffWageExpense = 0, managerWageExpense = 0, partTimeWageExpense = 0;
-  let liquorCostExpense = 0, staffDrinkExpense = 0, otherExpense = 0;
+  let liquorCostExpense = 0, staffDrinkExpense = 0, salesIncentiveExpense = 0, otherExpense = 0;
   let totalExpenses = 0, netProfit = 0;
   records.forEach((record) => {
     totalRevenue += Number(record.totalRevenue || 0);
@@ -1736,6 +1737,7 @@ async function calculateMonthlySummary(branchId, year, month) {
     partTimeWageExpense += Number(record.partTimeWageExpense || 0);
     liquorCostExpense += Number(record.liquorCostExpense || 0);
     staffDrinkExpense += Number(record.staffDrinkExpense || 0);
+    salesIncentiveExpense += Number(record.salesIncentiveExpense || 0);
     otherExpense += Number(record.otherExpense || 0);
     totalExpenses += Number(record.totalExpenses || 0);
     netProfit += Number(record.netProfit || 0);
@@ -1750,6 +1752,7 @@ async function calculateMonthlySummary(branchId, year, month) {
     ratios.partTimeWage = Math.round(partTimeWageExpense / totalRevenue * 100);
     ratios.liquorCost = Math.round(liquorCostExpense / totalRevenue * 100);
     ratios.staffDrink = Math.round(staffDrinkExpense / totalRevenue * 100);
+    ratios.salesIncentive = Math.round(salesIncentiveExpense / totalRevenue * 100);
     ratios.otherExpense = Math.round(otherExpense / totalRevenue * 100);
     ratios.netProfit = Math.round(netProfit / totalRevenue * 100);
   }
@@ -1763,6 +1766,7 @@ async function calculateMonthlySummary(branchId, year, month) {
     partTimeWageExpense,
     liquorCostExpense,
     staffDrinkExpense,
+    salesIncentiveExpense,
     otherExpense,
     totalExpenses,
     netProfit,

@@ -93,6 +93,7 @@ export default function SettlementDashboard() {
           partTimeWageExpense: '0',
           liquorCostExpense: '0',
           staffDrinkExpense: '0',
+          salesIncentiveExpense: '0',
           otherExpense: '0',
           totalExpenses: String(emptyTotalExpenses),
           netProfit: String(emptyNetProfit),
@@ -114,13 +115,14 @@ export default function SettlementDashboard() {
       partTimeWageExpense: acc.partTimeWageExpense + Number(s.partTimeWageExpense || 0),
       liquorCostExpense: acc.liquorCostExpense + Number(s.liquorCostExpense || 0),
       staffDrinkExpense: acc.staffDrinkExpense + Number(s.staffDrinkExpense || 0),
+      salesIncentiveExpense: acc.salesIncentiveExpense + Number(s.salesIncentiveExpense || 0),
       otherExpense: acc.otherExpense + Number(s.otherExpense || 0),
       totalExpenses: acc.totalExpenses + Number(s.totalExpenses || 0),
       netProfit: acc.netProfit + Number(s.netProfit || 0),
     }), {
       totalRevenue: 0, commissionExpense: 0, rentExpense: 0, managementFeeExpense: 0,
       staffWageExpense: 0, managerWageExpense: 0, partTimeWageExpense: 0,
-      liquorCostExpense: 0, staffDrinkExpense: 0, otherExpense: 0, totalExpenses: 0, netProfit: 0,
+      liquorCostExpense: 0, staffDrinkExpense: 0, salesIncentiveExpense: 0, otherExpense: 0, totalExpenses: 0, netProfit: 0,
     });
   }, [settlements]);
 
