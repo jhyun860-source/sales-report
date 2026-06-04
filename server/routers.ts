@@ -30,7 +30,7 @@ import {
   cascadeUpdateCumulativeAmounts,
   computeCumulativesForDate,
 } from "./db";
-import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives, liquorItems, liquorInventories, liquorStockMovements } from "../drizzle/schema";
+import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives, liquorItems, liquorInventories, liquorStockMovements, branchSettings } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
@@ -3233,23 +3233,27 @@ export const appRouter = router({
         }
         // 정산 자동 계산 및 저장
         try {
-          const tableReport = await db?.select().from(tableReports)
-            .where(and(eq(tableReports.branchId, input.branchId), eq(tableReports.date, input.date)))
-            .limit(1);
-          const tableReportId = tableReport?.[0]?.id ?? null;
-          const staffRows = tableReportId
-            ? await db?.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId))
-            : [];
-          const staffCount = (staffRows ?? []).filter((i: any) => i.staffType === 'staff').length;
-          const partTimeCount = (staffRows ?? []).filter((i: any) => i.staffType === 'parttime').length;
-          const managerCount2 = (staffRows ?? []).filter((i: any) => i.staffType === 'manager').length;
-          const cash = parseInt(input.cash || '0') || 0;
-          const card = parseInt(input.card || '0') || 0;
-          const settlement = await calculateDailySettlement(
-            input.branchId, input.date, cash, card,
-            staffCount, partTimeCount, input.expenses, tableReportId, managerCount2, partTimeTotalHours
-          );
-          await saveDailySettlementRecord(input.branchId, input.date, settlement);
+          const db = await getDb();
+          if (db) {
+            const tableReport = await db.select().from(tableReports)
+              .where(and(eq(tableReports.branchId, input.branchId), eq(tableReports.date, input.date)))
+              .limit(1);
+            const tableReportId = tableReport?.[0]?.id ?? null;
+            const staffRows = tableReportId
+              ? await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId))
+              : [];
+            const staffCount = (staffRows ?? []).filter((i: any) => i.staffType === 'staff').length;
+            const partTimeCount = (staffRows ?? []).filter((i: any) => i.staffType === 'parttime').length;
+            const managerCount2 = (staffRows ?? []).filter((i: any) => i.staffType === 'manager').length;
+            const partTimeTotalHours = (staffRows ?? []).reduce((sum: number, i: any) => sum + (i.staffType === 'parttime' ? (Number(i.workHours || 0)) : 0), 0);
+            const cash = parseInt(input.cash || '0') || 0;
+            const card = parseInt(input.card || '0') || 0;
+            const settlement = await calculateDailySettlement(
+              input.branchId, input.date, cash, card,
+              staffCount, partTimeCount, input.expenses, tableReportId, managerCount2, partTimeTotalHours
+            );
+            await saveDailySettlementRecord(input.branchId, input.date, settlement);
+          }
         } catch (e) { console.error('[정산 자동 계산 오류]', e); }
 
 
@@ -4770,9 +4774,10 @@ export const appRouter = router({
 
         // 테이블 기록 저장 후 정산 자동 재계산 (레코드 없어도 upsert)
         try {
-          const salesRec2 = await db?.select().from(dailySalesRecords)
+          const db = await getDb();
+          const salesRec2 = db ? await db.select().from(dailySalesRecords)
             .where(and(eq(dailySalesRecords.branchId, effectiveBranchId), eq(dailySalesRecords.date, input.date)))
-            .limit(1);
+            .limit(1) : [];
           const rec2 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
           // DB 재조회 대신 input.incentives에서 직접 계산 (INSERT 타이밍 문제 방지)
           const validInc2 = input.incentives.filter(inc => inc.staffName);
@@ -4819,7 +4824,7 @@ export const appRouter = router({
           const webExpense2 = expenses2.reduce((s, e) => s + (Number(e.amount) || 0), 0);
           const otherExpense2 = dailyFixed + webExpense2;
           const settlement2 = await calculateDailySettlement(
-            effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db, dc2
+            effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2
           );
           if (!rec2) {
             // 매출 0이면 신규 레코드 생성 안 함 (미래/빈 날짜에 임대료만 찍히는 문제 방지)
