@@ -13,7 +13,7 @@ var schema_exports = {};
 __export(schema_exports, {
   branchManagers: () => branchManagers,
   branchManagersRelations: () => branchManagersRelations,
-  branchSettings: () => branchSettings,
+  branchSettings: () => branchSettings2,
   branches: () => branches,
   branchesRelations: () => branchesRelations,
   dailySalesRecords: () => dailySalesRecords,
@@ -38,7 +38,7 @@ __export(schema_exports, {
 });
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
-var users, branches, branchManagers, dailySalesRecords, usersRelations, branchesRelations, branchManagersRelations, pushSubscriptions, storeAccounts, storeAccountsRelations, branchSettings, dailySalesRecordsRelations, tableReports, tableItems, staffIncentives, tableReportsRelations, tableItemsRelations, staffIncentivesRelations, liquorItems, liquorInventories, liquorStockMovements, liquorItemsRelations, liquorInventoriesRelations, liquorStockMovementsRelations;
+var users, branches, branchManagers, dailySalesRecords, usersRelations, branchesRelations, branchManagersRelations, pushSubscriptions, storeAccounts, storeAccountsRelations, branchSettings2, dailySalesRecordsRelations, tableReports, tableItems, staffIncentives, tableReportsRelations, tableItemsRelations, staffIncentivesRelations, liquorItems, liquorInventories, liquorStockMovements, liquorItemsRelations, liquorInventoriesRelations, liquorStockMovementsRelations;
 var init_schema = __esm({
   "drizzle/schema.ts"() {
     "use strict";
@@ -166,7 +166,7 @@ var init_schema = __esm({
         references: [branches.id]
       })
     }));
-    branchSettings = mysqlTable("branchSettings", {
+    branchSettings2 = mysqlTable("branchSettings", {
       id: int("id").autoincrement().primaryKey(),
       branchId: int("branchId").notNull(),
       monthlyRent: decimal("monthlyRent", { precision: 15, scale: 0 }).default("0").notNull(),
@@ -1652,7 +1652,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
     return zero;
   }
   console.log("[\uC815\uC0B0\uACC4\uC0B0] \uC2DC\uC791 branchId:", branchId, "date:", date, "cash:", cash, "card:", card, "managerCount:", managerCount);
-  const [bsData] = await db2.select().from(branchSettings).where(eq3(branchSettings.branchId, branchId)).limit(1);
+  const [bsData] = await db2.select().from(branchSettings2).where(eq3(branchSettings2.branchId, branchId)).limit(1);
   const branchName = branchData[0].name;
   const hardConfig = BRANCH_CONFIG[branchName];
   const [year, month] = date.split("-").map(Number);
@@ -2058,9 +2058,9 @@ var settlementRouter = router({
     const db2 = await getDb();
     const dbExists = !!db2;
     const dbUrl = !!process.env.DATABASE_URL;
-    const { branchSettings: branchSettings2 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
+    const { branchSettings: branchSettings3 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
     const branchData = db2 ? await db2.select().from(branches).where(eq4(branches.id, input.branchId)).limit(1) : [];
-    const bsData = db2 ? await db2.select().from(branchSettings2).where(eq4(branchSettings2.branchId, input.branchId)).limit(1) : [];
+    const bsData = db2 ? await db2.select().from(branchSettings3).where(eq4(branchSettings3.branchId, input.branchId)).limit(1) : [];
     const result = await calculateDailySettlement(input.branchId, input.date, 0, 0, 0, 0, [], null, input.managerCount, 0);
     return {
       dbExists,
@@ -2114,12 +2114,12 @@ var branchSettingsRouter = router({
     if (!account || account.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN" });
     const db2 = await getDb();
     if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-    return await db2.select().from(branchSettings).orderBy(branchSettings.branchId);
+    return await db2.select().from(branchSettings2).orderBy(branchSettings2.branchId);
   }),
   getByBranch: publicProcedure.input(z3.object({ branchId: z3.number() })).query(async ({ input }) => {
     const db2 = await getDb();
     if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-    const [setting] = await db2.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
+    const [setting] = await db2.select().from(branchSettings2).where(eq5(branchSettings2.branchId, input.branchId)).limit(1);
     return setting ?? null;
   }),
   upsert: publicProcedure.input(z3.object({
@@ -2142,9 +2142,9 @@ var branchSettingsRouter = router({
     if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
     const computedDailyWage = input.managerMonthlySalary > 0 ? Math.round(input.managerMonthlySalary / 22) : input.managerDailyWage;
     const computedDeputyDailyWage = input.deputyMonthlySalary > 0 ? Math.round(input.deputyMonthlySalary / 22) : input.deputyDailyWage;
-    const [existing] = await db2.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
+    const [existing] = await db2.select().from(branchSettings2).where(eq5(branchSettings2.branchId, input.branchId)).limit(1);
     if (existing) {
-      await db2.update(branchSettings).set({
+      await db2.update(branchSettings2).set({
         monthlyRent: String(input.monthlyRent),
         managerMonthlySalary: String(input.managerMonthlySalary),
         managerDailyWage: String(computedDailyWage),
@@ -2154,9 +2154,9 @@ var branchSettingsRouter = router({
         partTimeHourlyWage: String(input.partTimeHourlyWage),
         monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
         commissionRate: String(input.commissionRate)
-      }).where(eq5(branchSettings.branchId, input.branchId));
+      }).where(eq5(branchSettings2.branchId, input.branchId));
     } else {
-      await db2.insert(branchSettings).values({
+      await db2.insert(branchSettings2).values({
         branchId: input.branchId,
         monthlyRent: String(input.monthlyRent),
         managerMonthlySalary: String(input.managerMonthlySalary),
@@ -6741,6 +6741,17 @@ var appRouter = router({
         const staffDrink2 = validInc2.reduce((sum, inc) => {
           return sum + Number(inc.glassCount || 0) * GLASS_PRICE + Number(inc.bottleCount || 0) * BOTTLE_PRICE + Number(inc.beerBottleCount || 0) * BEER_PRICE + Number(inc.salesIncentive || 0);
         }, 0);
+        const bsForOther = db2 ? await db2.select().from(branchSettings).where(eq6(branchSettings.branchId, effectiveBranchId)).limit(1) : [];
+        const monthlyFixed = bsForOther.length > 0 ? Number(bsForOther[0].monthlyFixedExpense || 0) : 0;
+        const [yr, mo] = input.date.split("-").map(Number);
+        const lastDay = new Date(yr, mo, 0).getDate();
+        let bizDays = 0;
+        for (let d = 1; d <= lastDay; d++) {
+          if (new Date(yr, mo - 1, d).getDay() !== 0) bizDays++;
+        }
+        const dailyFixed = bizDays > 0 ? Math.round(monthlyFixed / bizDays) : 0;
+        const webExpense2 = expenses2.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const otherExpense2 = dailyFixed + webExpense2;
         const settlement2 = await calculateDailySettlement(
           effectiveBranchId,
           input.date,
@@ -6772,7 +6783,7 @@ var appRouter = router({
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-              otherExpense: String(settlement2.otherExpense),
+              otherExpense: String(otherExpense2 || settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
               staffCount: sc2,
@@ -6791,12 +6802,12 @@ var appRouter = router({
             partTimeWageExpense: String(settlement2.partTimeWageExpense),
             liquorCostExpense: String(settlement2.liquorCostExpense),
             staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-            otherExpense: String(settlement2.otherExpense),
+            otherExpense: String(otherExpense2 || settlement2.otherExpense),
             totalExpenses: String(
-              settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + settlement2.otherExpense
+              settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + (otherExpense2 || settlement2.otherExpense)
             ),
             netProfit: String(
-              settlement2.totalRevenue - (settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + settlement2.otherExpense)
+              settlement2.totalRevenue - (settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + (otherExpense2 || settlement2.otherExpense))
             ),
             updatedAt: /* @__PURE__ */ new Date()
           }).where(eq6(dailySalesRecords.id, rec2.id));
