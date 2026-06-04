@@ -109,7 +109,6 @@ var init_schema = __esm({
       partTimeWageExpense: decimal("partTimeWageExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       liquorCostExpense: decimal("liquorCostExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       staffDrinkExpense: decimal("staffDrinkExpense", { precision: 15, scale: 0 }).default("0").notNull(),
-      salesIncentiveExpense: decimal("salesIncentiveExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       otherExpense: decimal("otherExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       totalExpenses: decimal("totalExpenses", { precision: 15, scale: 0 }).default("0").notNull(),
       netProfit: decimal("netProfit", { precision: 15, scale: 0 }).default("0").notNull(),
@@ -1652,7 +1651,6 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
     partTimeWageExpense: 0,
     liquorCostExpense: 0,
     staffDrinkExpense: 0,
-    salesIncentiveExpense: 0,
     otherExpense: 0,
     totalExpenses: 0,
     netProfit: 0
@@ -1709,7 +1707,6 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const otherExpense = dailyFixedExpense + webExpense;
   const totalExpenses = commissionExpense + rentExpense + managementFeeExpense + staffWageExpense + managerWageExpense + partTimeWageExpense + liquorCostExpense + staffDrinkExpense + otherExpense;
   const netProfit = totalRevenue - totalExpenses;
-  const salesIncentiveExpense = tableReportId && db ? await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId)).then((rows) => rows.reduce((s, i) => s + Number(i.salesIncentive || 0), 0)) : 0;
   return {
     totalRevenue,
     commissionExpense,
@@ -1720,7 +1717,6 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
     partTimeWageExpense,
     liquorCostExpense,
     staffDrinkExpense,
-    salesIncentiveExpense,
     otherExpense,
     totalExpenses,
     netProfit
@@ -1797,7 +1793,6 @@ async function calculateMonthlySummary(branchId, year, month) {
     partTimeWageExpense,
     liquorCostExpense,
     staffDrinkExpense,
-    salesIncentiveExpense,
     otherExpense,
     totalExpenses,
     netProfit,
@@ -6825,7 +6820,6 @@ var appRouter = router({
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-              salesIncentiveExpense: String(salesIncentive2 || settlement2.salesIncentiveExpense || 0),
               otherExpense: String(otherExpense2 || settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
@@ -6845,7 +6839,6 @@ var appRouter = router({
             partTimeWageExpense: String(settlement2.partTimeWageExpense),
             liquorCostExpense: String(settlement2.liquorCostExpense),
             staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-            salesIncentiveExpense: String(salesIncentive2 || settlement2.salesIncentiveExpense || 0),
             otherExpense: String(otherExpense2 || settlement2.otherExpense),
             totalExpenses: String(
               settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + salesIncentive2 + (otherExpense2 || settlement2.otherExpense)
