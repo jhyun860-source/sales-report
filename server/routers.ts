@@ -4848,8 +4848,18 @@ export const appRouter = router({
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
               otherExpense: String(settlement2.otherExpense),
-              totalExpenses: String(settlement2.totalExpenses),
-              netProfit: String(settlement2.netProfit),
+              totalExpenses: String(
+                settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense
+                + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense
+                + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + settlement2.otherExpense
+              ),
+              netProfit: String(
+                settlement2.totalRevenue - (
+                  settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense
+                  + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense
+                  + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + settlement2.otherExpense
+                )
+              ),
               updatedAt: new Date(),
             }).where(eq(dailySalesRecords.id, rec2.id));
           }
