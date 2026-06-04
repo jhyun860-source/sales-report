@@ -208,7 +208,6 @@ export async function calculateDailySettlement(
   partTimeWageExpense: number;
   liquorCostExpense: number;
   staffDrinkExpense: number;
-  salesIncentiveExpense: number;
   otherExpense: number;
   totalExpenses: number;
   netProfit: number;
@@ -217,7 +216,7 @@ export async function calculateDailySettlement(
     totalRevenue: 0, commissionExpense: 0, rentExpense: 0,
     managementFeeExpense: 0, staffWageExpense: 0, managerWageExpense: 0,
     partTimeWageExpense: 0, liquorCostExpense: 0, staffDrinkExpense: 0,
-    salesIncentiveExpense: 0, otherExpense: 0, totalExpenses: 0, netProfit: 0,
+otherExpense: 0, totalExpenses: 0, netProfit: 0,
   };
 
   const db = externalDb ?? await getDb();
@@ -310,16 +309,10 @@ export async function calculateDailySettlement(
   // 12. 순수익
   const netProfit = totalRevenue - totalExpenses;
 
-  // 영업인센 합계 (총지출 미포함)
-  const salesIncentiveExpense = tableReportId && db
-    ? await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId))
-        .then(rows => rows.reduce((s: number, i: any) => s + Number(i.salesIncentive || 0), 0))
-    : 0;
-
   return {
     totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
     staffWageExpense, managerWageExpense, partTimeWageExpense,
-    liquorCostExpense, staffDrinkExpense, salesIncentiveExpense, otherExpense, totalExpenses, netProfit,
+    liquorCostExpense, staffDrinkExpense, otherExpense, totalExpenses, netProfit,
   };
 }
 
@@ -339,7 +332,6 @@ export async function calculateMonthlySummary(
   partTimeWageExpense: number;
   liquorCostExpense: number;
   staffDrinkExpense: number;
-  salesIncentiveExpense: number;
   otherExpense: number;
   totalExpenses: number;
   netProfit: number;
@@ -404,7 +396,7 @@ export async function calculateMonthlySummary(
   return {
     totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
     staffWageExpense, managerWageExpense, partTimeWageExpense, liquorCostExpense, staffDrinkExpense,
-    salesIncentiveExpense, otherExpense, totalExpenses, netProfit, ratios,
+otherExpense, totalExpenses, netProfit, ratios,
   };
 }
 
