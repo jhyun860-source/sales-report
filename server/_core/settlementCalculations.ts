@@ -153,6 +153,7 @@ export async function calculateStaffDrinkExpense(tableReportId: number, branchNa
     total += (Number(inc.glassCount || 0) * glassPrice);
     total += (Number(inc.bottleCount || 0) * bottlePrice);
     total += (Number(inc.beerBottleCount || 0) * beerBottlePrice);
+    total += Number(inc.salesIncentive || 0); // 영업인센 합산
   });
   return total;
 }
