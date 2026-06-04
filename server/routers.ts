@@ -4797,6 +4797,15 @@ export const appRouter = router({
           const cash2 = cashSum;
           const card2 = cardSum;
           const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses as Array<{id:string;description:string;amount:string}> : [];
+          // 스탭음료 + 영업인센 직접 계산 (getDb() 재호출 방지)
+          const GLASS_PRICE = 5000; const BOTTLE_PRICE = 10000; const BEER_PRICE = 3000;
+          const staffDrink2 = validInc2.reduce((sum, inc) => {
+            return sum
+              + (Number(inc.glassCount || 0) * GLASS_PRICE)
+              + (Number(inc.bottleCount || 0) * BOTTLE_PRICE)
+              + (Number(inc.beerBottleCount || 0) * BEER_PRICE)
+              + Number(inc.salesIncentive || 0);
+          }, 0);
           const settlement2 = await calculateDailySettlement(
             effectiveBranchId, input.date, cash2, card2, sc2, pc2, expenses2, reportId, mc2, pth2, db, dc2
           );
@@ -4817,7 +4826,7 @@ export const appRouter = router({
               managerWageExpense: String(settlement2.managerWageExpense ?? 0),
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
-              staffDrinkExpense: String(settlement2.staffDrinkExpense),
+              staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
               otherExpense: String(settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
@@ -4837,7 +4846,7 @@ export const appRouter = router({
               managerWageExpense: String(settlement2.managerWageExpense ?? 0),
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
-              staffDrinkExpense: String(settlement2.staffDrinkExpense),
+              staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
               otherExpense: String(settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
