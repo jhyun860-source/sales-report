@@ -153,7 +153,7 @@ export async function calculateStaffDrinkExpense(tableReportId: number, branchNa
     total += (Number(inc.glassCount || 0) * glassPrice);
     total += (Number(inc.bottleCount || 0) * bottlePrice);
     total += (Number(inc.beerBottleCount || 0) * beerBottlePrice);
-    total += Number(inc.salesIncentive || 0); // 영업인센 합산
+    // 영업인센은 salesIncentiveExpense로 별도 계산
   });
   return total;
 }
@@ -208,6 +208,7 @@ export async function calculateDailySettlement(
   partTimeWageExpense: number;
   liquorCostExpense: number;
   staffDrinkExpense: number;
+  salesIncentiveExpense: number;
   otherExpense: number;
   totalExpenses: number;
   netProfit: number;
@@ -216,7 +217,7 @@ export async function calculateDailySettlement(
     totalRevenue: 0, commissionExpense: 0, rentExpense: 0,
     managementFeeExpense: 0, staffWageExpense: 0, managerWageExpense: 0,
     partTimeWageExpense: 0, liquorCostExpense: 0, staffDrinkExpense: 0,
-    otherExpense: 0, totalExpenses: 0, netProfit: 0,
+    salesIncentiveExpense: 0, otherExpense: 0, totalExpenses: 0, netProfit: 0,
   };
 
   const db = externalDb ?? await getDb();
@@ -311,6 +312,7 @@ export async function calculateMonthlySummary(
   partTimeWageExpense: number;
   liquorCostExpense: number;
   staffDrinkExpense: number;
+  salesIncentiveExpense: number;
   otherExpense: number;
   totalExpenses: number;
   netProfit: number;
