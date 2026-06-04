@@ -4810,7 +4810,6 @@ export const appRouter = router({
               + (Number(inc.bottleCount || 0) * BOTTLE_PRICE)
               + (Number(inc.beerBottleCount || 0) * BEER_PRICE);
           }, 0);
-          // 영업인센 별도 집계 (총지출 미포함)
           const salesIncentive2 = validInc2.reduce((sum, inc) => sum + Number(inc.salesIncentive || 0), 0);
           // otherExpense 직접 계산 (월고정지출 일할 + 웹앱지출)
           const bsForOther = db ? await db.select().from(branchSettings).where(eq(branchSettings.branchId, effectiveBranchId)).limit(1) : [];
@@ -4844,7 +4843,6 @@ export const appRouter = router({
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-              salesIncentiveExpense: String(salesIncentive2 || settlement2.salesIncentiveExpense || 0),
               otherExpense: String(otherExpense2 || settlement2.otherExpense),
               totalExpenses: String(settlement2.totalExpenses),
               netProfit: String(settlement2.netProfit),
@@ -4865,7 +4863,6 @@ export const appRouter = router({
               partTimeWageExpense: String(settlement2.partTimeWageExpense),
               liquorCostExpense: String(settlement2.liquorCostExpense),
               staffDrinkExpense: String(staffDrink2 || settlement2.staffDrinkExpense),
-              salesIncentiveExpense: String(salesIncentive2 || settlement2.salesIncentiveExpense || 0),
               otherExpense: String(otherExpense2 || settlement2.otherExpense),
               totalExpenses: String(
                 settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense
