@@ -273,6 +273,7 @@ export default function SettlementDashboard() {
               { label: '알바 인건비', value: monthlyTotal.partTimeWageExpense },
               { label: '주류단가', value: monthlyTotal.liquorCostExpense },
               { label: '추가인센', value: monthlyTotal.staffDrinkExpense },
+              { label: '영업인센', value: monthlyTotal.salesIncentiveExpense },
               { label: '총지출(기타)', value: monthlyTotal.otherExpense },
             ].map(item => (
               <div key={item.label} className="flex justify-between text-gray-600">
