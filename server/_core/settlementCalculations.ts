@@ -85,24 +85,34 @@ const BRANCH_CONFIG: Record<string, {
 };
 
 /**
- * 영업일수 계산 (월~토, 일요일 제외)
+ * 영업일수 계산 (workType에 따라 월~금 또는 월~토)
+ * @param year - 연도
+ * @param month - 월 (1-12)
+ * @param workType - 근무 형태: 'MON_FRI' (월~금) 또는 'MON_SAT' (월~토)
  */
-export function getBusinessDaysInMonth(year: number, month: number): number {
+export function getBusinessDaysInMonth(year: number, month: number, workType: string = 'MON_FRI'): number {
   const firstDay = new Date(year, month - 1, 1);
   const lastDay = new Date(year, month, 0);
   let businessDays = 0;
+  
   for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
     const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0) businessDays++;
+    
+    if (workType === 'MON_FRI') {
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+    } else if (workType === 'MON_SAT') {
+      if (dayOfWeek !== 0) businessDays++;
+    }
   }
+  
   return businessDays;
 }
 
 /**
  * 일별 임대료 계산
  */
-export function calculateDailyRent(monthlyRent: number, year: number, month: number): number {
-  const businessDays = getBusinessDaysInMonth(year, month);
+export function calculateDailyRent(monthlyRent: number, year: number, month: number, workType: string = 'MON_FRI'): number {
+  const businessDays = getBusinessDaysInMonth(year, month, workType);
   if (businessDays === 0) return 0;
   return Math.round(monthlyRent / businessDays);
 }
@@ -257,16 +267,20 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   // 4. 관리비 (0으로 통일, 임대료에 포함)
   const managementFeeExpense = 0;
 
-  // 5. 여직원 인건비
+  // 5. 여직원 인건비 - 고정 일급제
   const staffDailyWage = bsData ? Number(bsData.staffDailyWage || 0) : (hardConfig?.staffDailyWage ?? 0);
   const staffWageExpense = staffCount * staffDailyWage;
 
-  // 6. 점장/매니저 인건비 - 월 고정금액 정액제
+  // 6. 점장/매니저 인건비 - 월급을 근무일수로 자동 배분
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : (hardConfig?.monthlyRent ?? 0);
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
+  const workType = bsData ? (bsData.workType as 'MON_FRI' | 'MON_SAT' || 'MON_FRI') : 'MON_FRI';
   
-  // 정액제: 설정된 월급이 그대로 반영됨
-  const managerWageExpense = (managerCount * managerMonthlySalary) + (deputyCount * deputyMonthlySalary);
+  // 자동 일수 계산: 설정된 월급을 근무일수로 나눔
+  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
+  const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
+  const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
+  const managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
   // 7. 알바 인건비 (시급 × 근무시간)
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : (hardConfig?.partTimeDailyWage ?? 9860);

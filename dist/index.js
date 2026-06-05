@@ -182,6 +182,8 @@ var init_schema = __esm({
       deputyDailyWage: decimal("deputyDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
       monthlyFixedExpense: decimal("monthlyFixedExpense", { precision: 15, scale: 0 }).default("0").notNull(),
       commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.1700").notNull(),
+      workType: mysqlEnum("workType", ["MON_FRI", "MON_SAT"]).default("MON_FRI").notNull(),
+      // 근무 형태: 월~금 또는 월~토
       createdAt: timestamp("createdAt").defaultNow().notNull(),
       updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
     });
@@ -1629,18 +1631,22 @@ var BRANCH_CONFIG = {
     beerBottleUnitPrice: 3e3
   }
 };
-function getBusinessDaysInMonth(year, month) {
+function getBusinessDaysInMonth(year, month, workType = "MON_FRI") {
   const firstDay = new Date(year, month - 1, 1);
   const lastDay = new Date(year, month, 0);
   let businessDays = 0;
   for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
     const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0) businessDays++;
+    if (workType === "MON_FRI") {
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+    } else if (workType === "MON_SAT") {
+      if (dayOfWeek !== 0) businessDays++;
+    }
   }
   return businessDays;
 }
-function calculateDailyRent(monthlyRent, year, month) {
-  const businessDays = getBusinessDaysInMonth(year, month);
+function calculateDailyRent(monthlyRent, year, month, workType = "MON_FRI") {
+  const businessDays = getBusinessDaysInMonth(year, month, workType);
   if (businessDays === 0) return 0;
   return Math.round(monthlyRent / businessDays);
 }
@@ -1746,7 +1752,11 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const staffWageExpense = staffCount * staffDailyWage;
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
-  const managerWageExpense = managerCount * managerMonthlySalary + deputyCount * deputyMonthlySalary;
+  const workType = bsData ? bsData.workType || "MON_FRI" : "MON_FRI";
+  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
+  const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
+  const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
+  const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
   const partTimeWageExpense = partTimeTotalHours > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours) : partTimeCount * partTimeHourlyWage * 8;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
@@ -2216,7 +2226,8 @@ var branchSettingsRouter = router({
     staffDailyWage: z3.number().min(0),
     partTimeHourlyWage: z3.number().min(0),
     monthlyFixedExpense: z3.number().min(0).default(0),
-    commissionRate: z3.number().min(0).max(1).default(0.17)
+    commissionRate: z3.number().min(0).max(1).default(0.17),
+    workType: z3.enum(["MON_FRI", "MON_SAT"]).default("MON_FRI")
   })).mutation(async ({ ctx, input }) => {
     const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
     if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED" });

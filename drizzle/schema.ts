@@ -186,6 +186,7 @@ export const branchSettings = mysqlTable("branchSettings", {
   deputyDailyWage: decimal("deputyDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
   monthlyFixedExpense: decimal("monthlyFixedExpense", { precision: 15, scale: 0 }).default("0").notNull(),
   commissionRate: decimal("commissionRate", { precision: 5, scale: 4 }).default("0.1700").notNull(),
+  workType: mysqlEnum("workType", ["MON_FRI", "MON_SAT"]).default("MON_FRI").notNull(), // 근무 형태: 월~금 또는 월~토
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

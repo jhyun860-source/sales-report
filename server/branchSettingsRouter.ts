@@ -68,6 +68,7 @@ export const branchSettingsRouter = router({
       partTimeHourlyWage: z.number().min(0),
       monthlyFixedExpense: z.number().min(0).default(0),
       commissionRate: z.number().min(0).max(1).default(0.17),
+      workType: z.enum(['MON_FRI', 'MON_SAT']).default('MON_FRI'),
     }))
     .mutation(async ({ ctx, input }) => {
       const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);

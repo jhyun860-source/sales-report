@@ -52,6 +52,7 @@ export default function BranchSettings() {
   const [partTimeHourlyWage, setPartTimeHourlyWage] = useState(0);
   const [monthlyFixedExpense, setMonthlyFixedExpense] = useState(0);
   const [commissionRate, setCommissionRate] = useState(17);
+  const [workType, setWorkType] = useState<'MON_FRI' | 'MON_SAT'>('MON_FRI');
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -98,6 +99,7 @@ export default function BranchSettings() {
     setPartTimeHourlyWage(Number(s?.partTimeHourlyWage ?? 0));
     setMonthlyFixedExpense(Number(s?.monthlyFixedExpense ?? 0));
     setCommissionRate(Math.round(Number(s?.commissionRate ?? 0.17) * 100));
+    setWorkType((s?.workType ?? 'MON_FRI') as 'MON_FRI' | 'MON_SAT');
   };
 
   // URL 파라미터가 없으면 첫 지점으로 자동 설정
@@ -144,6 +146,7 @@ export default function BranchSettings() {
       partTimeHourlyWage,
       monthlyFixedExpense,
       commissionRate: commissionRate / 100,
+      workType,
     });
   };
 
@@ -226,6 +229,37 @@ export default function BranchSettings() {
               </div>
             </div>
 
+            {/* 근무 형태 설정 */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+              <h3 className="text-sm font-bold text-gray-800 border-b pb-2">📅 근무 형태</h3>
+              <div>
+                <label className="text-xs text-gray-500">지점 근무일</label>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => setWorkType('MON_FRI')}
+                    className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                      workType === 'MON_FRI'
+                        ? 'bg-gray-800 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    월~금 (22일)
+                  </button>
+                  <button
+                    onClick={() => setWorkType('MON_SAT')}
+                    className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                      workType === 'MON_SAT'
+                        ? 'bg-gray-800 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    월~토 (26일)
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">* 선택한 근무형태에 따라 월급이 자동으로 일급으로 배분됩니다</p>
+              </div>
+            </div>
+
             <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
               <h3 className="text-sm font-bold text-gray-800 border-b pb-2">👥 인건비 설정</h3>
 
@@ -283,7 +317,7 @@ export default function BranchSettings() {
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <MoneyInput value={staffDailyWage === 0 && staffMonthlySalary > 0 ? computedStaffDaily : staffDailyWage} onChange={v => { setStaffDailyWage(v); setStaffMonthlySalary(0); }} />
+                    <MoneyInput value={computedStaffDaily} onChange={v => { setStaffDailyWage(v); setStaffMonthlySalary(0); }} />
                     <span className="text-xs text-gray-500">원/일</span>
                   </div>
                 </div>
