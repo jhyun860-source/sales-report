@@ -161,7 +161,37 @@ export const branchSettingsRouter = router({
           workType: input.workType,
         });
       }
-      // 설정값 변경 후 당월 전체 정산 재계산
+      // 1단계: tableItems에서 매출 재계산 및 dailySalesRecords 업데이트
+      try {
+        console.log('[매출 재계산 시작] branchId:', input.branchId);
+        
+        // 해당 지점의 모든 tableReports 조회
+        const tableReportsResult = await db.execute(`
+          SELECT id, date FROM tableReports WHERE branchId = ${input.branchId}
+        `);
+        
+        const tableReportIds = (tableReportsResult as any[]).map((tr: any) => tr.id);
+        
+        if (tableReportIds.length > 0) {
+          // 각 tableReport의 tableItems 합계를 계산하고 dailySalesRecords 업데이트
+          const updateResult = await db.execute(`
+            UPDATE dailySalesRecords d
+            SET d.totalRevenue = (
+              SELECT COALESCE(SUM(CAST(ti.amount AS SIGNED)), 0)
+              FROM tableItems ti
+              JOIN tableReports tr ON ti.tableReportId = tr.id
+              WHERE tr.branchId = d.branchId AND tr.date = d.date
+            )
+            WHERE d.branchId = ${input.branchId}
+          `);
+          console.log('[dailySalesRecords 업데이트] 완료:', updateResult);
+        }
+        console.log('[매출 재계산 완료] branchId:', input.branchId);
+      } catch (e) {
+        console.error('[매출 재계산 오류]', e);
+      }
+
+      // 2단계: 설정값 변경 후 당월 전체 정산 재계산
       try {
         const now = new Date();
         const year = now.getFullYear();

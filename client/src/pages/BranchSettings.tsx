@@ -147,8 +147,9 @@ export default function BranchSettings() {
   const utils = trpc.useUtils();
   const upsertMutation = trpc.branchSettings.upsert.useMutation({
     onSuccess: async () => {
-      // 저장 성공 시, 모든 설정 데이터를 다시 불러옴
+      // 저장 성공 시, 모든 설정 데이터와 매출 데이터를 다시 불러옴
       await utils.branchSettings.getAll.invalidate();
+      await utils.dailySales.invalidate();
       
       // Toast 표시
       setToastMessage('✅ 저장됨');
