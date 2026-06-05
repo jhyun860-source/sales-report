@@ -175,6 +175,7 @@ var init_schema = __esm({
       // 사용자 설정 일일 임대료
       managerMonthlySalary: decimal("managerMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
       managerDailyWage: decimal("managerDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
+      staffMonthlySalary: decimal("staffMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
       staffDailyWage: decimal("staffDailyWage", { precision: 15, scale: 0 }).default("0").notNull(),
       partTimeHourlyWage: decimal("partTimeHourlyWage", { precision: 15, scale: 0 }).default("0").notNull(),
       deputyMonthlySalary: decimal("deputyMonthlySalary", { precision: 15, scale: 0 }).default("0").notNull(),
@@ -2220,6 +2221,7 @@ var branchSettingsRouter = router({
     managerDailyWage: z3.number().min(0),
     deputyMonthlySalary: z3.number().min(0).default(0),
     deputyDailyWage: z3.number().min(0).default(0),
+    staffMonthlySalary: z3.number().min(0).default(0),
     staffDailyWage: z3.number().min(0),
     partTimeHourlyWage: z3.number().min(0),
     monthlyFixedExpense: z3.number().min(0).default(0),
@@ -2233,6 +2235,7 @@ var branchSettingsRouter = router({
     if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
     const computedDailyWage = input.managerMonthlySalary > 0 ? Math.round(input.managerMonthlySalary / 22) : input.managerDailyWage;
     const computedDeputyDailyWage = input.deputyMonthlySalary > 0 ? Math.round(input.deputyMonthlySalary / 22) : input.deputyDailyWage;
+    const computedStaffDailyWage = input.staffMonthlySalary > 0 ? Math.round(input.staffMonthlySalary / 22) : input.staffDailyWage;
     const [existing] = await db.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
     if (existing) {
       const result = await db.update(branchSettings).set({
@@ -2241,7 +2244,8 @@ var branchSettingsRouter = router({
         managerDailyWage: String(computedDailyWage),
         deputyMonthlySalary: String(input.deputyMonthlySalary),
         deputyDailyWage: String(computedDeputyDailyWage),
-        staffDailyWage: String(input.staffDailyWage),
+        staffMonthlySalary: String(input.staffMonthlySalary),
+        staffDailyWage: String(computedStaffDailyWage),
         partTimeHourlyWage: String(input.partTimeHourlyWage),
         monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
         commissionRate: String(input.commissionRate)
@@ -2255,7 +2259,8 @@ var branchSettingsRouter = router({
         managerDailyWage: String(computedDailyWage),
         deputyMonthlySalary: String(input.deputyMonthlySalary),
         deputyDailyWage: String(computedDeputyDailyWage),
-        staffDailyWage: String(input.staffDailyWage),
+        staffMonthlySalary: String(input.staffMonthlySalary),
+        staffDailyWage: String(computedStaffDailyWage),
         partTimeHourlyWage: String(input.partTimeHourlyWage),
         monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
         commissionRate: String(input.commissionRate)

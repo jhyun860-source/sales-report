@@ -43,6 +43,7 @@ export default function BranchSettings() {
   const [managerDailyWage, setManagerDailyWage] = useState(0);
   const [deputyMonthlySalary, setDeputyMonthlySalary] = useState(0);
   const [deputyDailyWage, setDeputyDailyWage] = useState(0);
+  const [staffMonthlySalary, setStaffMonthlySalary] = useState(0);
   const [staffDailyWage, setStaffDailyWage] = useState(0);
   const [partTimeHourlyWage, setPartTimeHourlyWage] = useState(0);
   const [monthlyFixedExpense, setMonthlyFixedExpense] = useState(0);
@@ -72,6 +73,7 @@ export default function BranchSettings() {
     setManagerDailyWage(Number(s?.managerDailyWage ?? 0));
     setDeputyMonthlySalary(Number(s?.deputyMonthlySalary ?? 0));
     setDeputyDailyWage(Number(s?.deputyDailyWage ?? 0));
+    setStaffMonthlySalary(Number(s?.staffMonthlySalary ?? 0));
     setStaffDailyWage(Number(s?.staffDailyWage ?? 0));
     setPartTimeHourlyWage(Number(s?.partTimeHourlyWage ?? 0));
     setMonthlyFixedExpense(Number(s?.monthlyFixedExpense ?? 0));
@@ -112,7 +114,8 @@ export default function BranchSettings() {
       managerDailyWage: managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / 22) : managerDailyWage,
       deputyMonthlySalary,
       deputyDailyWage: deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / 22) : deputyDailyWage,
-      staffDailyWage,
+      staffMonthlySalary,
+      staffDailyWage: staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : staffDailyWage,
       partTimeHourlyWage,
       monthlyFixedExpense,
       commissionRate: commissionRate / 100,
@@ -121,6 +124,7 @@ export default function BranchSettings() {
 
   const computedManagerDaily = managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / 22) : managerDailyWage;
   const computedDeputyDaily = deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / 22) : deputyDailyWage;
+  const computedStaffDaily = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : staffDailyWage;
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-500">로딩 중...</div>;
   if (!user || user.role !== 'admin') return <div className="flex items-center justify-center min-h-screen text-gray-500">관리자만 접근 가능합니다.</div>;
@@ -242,10 +246,21 @@ export default function BranchSettings() {
 
               {/* 여직원 */}
               <div className="space-y-2 border-t pt-3">
-                <p className="text-xs font-semibold text-gray-600">여직원 일급</p>
-                <div className="flex items-center gap-2">
-                  <MoneyInput value={staffDailyWage} onChange={setStaffDailyWage} />
-                  <span className="text-xs text-gray-500">원/일</span>
+                <p className="text-xs font-semibold text-gray-600">여직원</p>
+                <div>
+                  <label className="text-xs text-gray-500">월급 (÷22일 자동계산)</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MoneyInput value={staffMonthlySalary} onChange={v => { setStaffMonthlySalary(v); setStaffDailyWage(0); }} />
+                    <span className="text-xs text-gray-500">원/월</span>
+                  </div>
+                  {staffMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedStaffDaily.toLocaleString()}원</p>}
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">일급 직접 입력</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MoneyInput value={staffDailyWage === 0 && staffMonthlySalary > 0 ? computedStaffDaily : staffDailyWage} onChange={v => { setStaffDailyWage(v); setStaffMonthlySalary(0); }} />
+                    <span className="text-xs text-gray-500">원/일</span>
+                  </div>
                 </div>
               </div>
 

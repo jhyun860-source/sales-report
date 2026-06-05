@@ -63,6 +63,7 @@ export const branchSettingsRouter = router({
       managerDailyWage: z.number().min(0),
       deputyMonthlySalary: z.number().min(0).default(0),
       deputyDailyWage: z.number().min(0).default(0),
+      staffMonthlySalary: z.number().min(0).default(0),
       staffDailyWage: z.number().min(0),
       partTimeHourlyWage: z.number().min(0),
       monthlyFixedExpense: z.number().min(0).default(0),
@@ -82,6 +83,9 @@ export const branchSettingsRouter = router({
       const computedDeputyDailyWage = input.deputyMonthlySalary > 0
         ? Math.round(input.deputyMonthlySalary / 22)
         : input.deputyDailyWage;
+      const computedStaffDailyWage = input.staffMonthlySalary > 0
+        ? Math.round(input.staffMonthlySalary / 22)
+        : input.staffDailyWage;
 
       const [existing] = await db.select().from(branchSettings)
         .where(eq(branchSettings.branchId, input.branchId)).limit(1);
@@ -93,7 +97,8 @@ export const branchSettingsRouter = router({
           managerDailyWage: String(computedDailyWage),
           deputyMonthlySalary: String(input.deputyMonthlySalary),
           deputyDailyWage: String(computedDeputyDailyWage),
-          staffDailyWage: String(input.staffDailyWage),
+          staffMonthlySalary: String(input.staffMonthlySalary),
+          staffDailyWage: String(computedStaffDailyWage),
           partTimeHourlyWage: String(input.partTimeHourlyWage),
           monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
           commissionRate: String(input.commissionRate),
@@ -107,7 +112,8 @@ export const branchSettingsRouter = router({
           managerDailyWage: String(computedDailyWage),
           deputyMonthlySalary: String(input.deputyMonthlySalary),
           deputyDailyWage: String(computedDeputyDailyWage),
-          staffDailyWage: String(input.staffDailyWage),
+          staffMonthlySalary: String(input.staffMonthlySalary),
+          staffDailyWage: String(computedStaffDailyWage),
           partTimeHourlyWage: String(input.partTimeHourlyWage),
           monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
           commissionRate: String(input.commissionRate),

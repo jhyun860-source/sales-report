@@ -1,0 +1,1 @@
+ALTER TABLE `branchSettings` ADD `staffMonthlySalary` decimal(15,0) DEFAULT '0' NOT NULL;
