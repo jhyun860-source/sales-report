@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { useLocation } from 'wouter';
+import { useLocation, useSearchParams as useWouterSearchParams } from 'wouter';
 
 const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
 
@@ -34,8 +34,11 @@ const PRIMARY = '#8B0000';
 export default function BranchSettings() {
   const { user, loading } = useStoreAuth();
   const [, navigate] = useLocation();
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const [searchParams, setSearchParams] = useWouterSearchParams();
   const [saved, setSaved] = useState(false);
+
+  // 🌟 URL을 Single Source of Truth로 사용
+  const urlBranchId = searchParams.get('branchId') ? Number(searchParams.get('branchId')) : null;
 
   // 입력 폼 state
   const [monthlyRent, setMonthlyRent] = useState(0);
@@ -53,6 +56,19 @@ export default function BranchSettings() {
     enabled: !!user && user.role === 'admin',
   });
 
+  // URL의 branchId가 유효하면 사용, 아니면 첫 번째 지점
+  const selectedBranchId = useMemo(() => {
+    // 🛡️ 방어 가드: branches가 없거나 배열이 아니면 null 반환
+    const safeBranches = Array.isArray(branches) ? branches : [];
+    if (!safeBranches || safeBranches.length === 0) return null;
+    
+    if (urlBranchId !== null) {
+      const isValid = safeBranches.some(b => Number(b.id) === Number(urlBranchId));
+      if (isValid) return urlBranchId;
+    }
+    return safeBranches[0].id;
+  }, [urlBranchId, branches]);
+
   const { data: allSettings = [], refetch } = trpc.branchSettings.getAll.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
   });
@@ -67,7 +83,10 @@ export default function BranchSettings() {
 
   // 지점 선택 시 해당 설정값 폼에 로드
   const loadBranchSettings = (branchId: number, settings: any[]) => {
+    // 🛡️ 방어 가드: settings가 배열이 아니면 조기 반환
+    if (!Array.isArray(settings) || settings.length === 0) return;
     const s = settings.find((x: any) => Number(x.branchId) === Number(branchId));
+    if (!s) return; // 🛡️ 설정이 없으면 조기 반환
     setMonthlyRent(Number(s?.monthlyRent ?? 0));
     setManagerMonthlySalary(Number(s?.managerMonthlySalary ?? 0));
     setManagerDailyWage(Number(s?.managerDailyWage ?? 0));
@@ -80,32 +99,37 @@ export default function BranchSettings() {
     setCommissionRate(Math.round(Number(s?.commissionRate ?? 0.17) * 100));
   };
 
-  // 첫 지점 자동 선택
+  // URL 파라미터가 없으면 첫 지점으로 자동 설정
   useEffect(() => {
-    if ((branches as any[]).length > 0 && !selectedBranchId) {
-      const firstId = (branches as any[])[0].id;
-      setSelectedBranchId(firstId);
-      if ((allSettings as any[]).length > 0) {
-        loadBranchSettings(firstId, allSettings as any[]);
-      }
+    const safeBranches = Array.isArray(branches) ? branches : [];
+    if (safeBranches.length > 0 && urlBranchId === null) {
+      const firstId = safeBranches[0].id;
+      // 🛡️ 불변성 유지: searchParams 상태에서 새로운 인스턴스 생성
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('branchId', String(firstId));
+      setSearchParams(nextParams, { replace: true });
     }
-  }, [branches]);
+  }, [branches, urlBranchId, searchParams, setSearchParams]);
 
-  // allSettings 로드 완료 시 현재 선택된 지점 설정값 갱신
+  // selectedBranchId가 변경되면 설정값 로드
   useEffect(() => {
-    if (selectedBranchId && (allSettings as any[]).length > 0) {
-      loadBranchSettings(selectedBranchId, allSettings as any[]);
+    // 🛡️ 방어 가드: selectedBranchId가 null이거나 allSettings가 없으면 무시
+    if (selectedBranchId && Array.isArray(allSettings) && allSettings.length > 0) {
+      loadBranchSettings(selectedBranchId, allSettings);
     }
-  }, [allSettings]);
+  }, [selectedBranchId, allSettings]);
 
 
 
   const handleBranchClick = (branchId: number) => {
-    setSelectedBranchId(branchId);
-    loadBranchSettings(branchId, allSettings as any[]);
+    // 🛡️ 불변성 유지: searchParams 상태에서 새로운 인스턴스 생성
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('branchId', String(branchId));
+    setSearchParams(nextParams, { replace: true });
   };
 
   const handleSave = () => {
+    // 🛡️ 방어 가드: selectedBranchId가 null이면 조기 반환
     if (!selectedBranchId) return;
     upsertMutation.mutate({
       branchId: selectedBranchId,
