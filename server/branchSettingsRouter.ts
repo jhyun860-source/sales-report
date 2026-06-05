@@ -1,45 +1,15 @@
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
-import { router, publicProcedure } from './_core/trpc';
-import { getDb, getStoreAccountById } from './db';
+import { router, publicProcedure, adminProcedure } from './_core/trpc';
+import { getDb } from './db';
 import { branchSettings } from '../drizzle/schema';
 import { TRPCError } from '@trpc/server';
-import { COOKIE_NAME } from '@shared/const';
-import { ENV } from './_core/env';
-import { jwtVerify } from 'jose';
 
-async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: string) {
-  let token: string | undefined;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.slice(7).trim();
-  }
-  if (!token && cookieHeader) {
-    const cookies = Object.fromEntries(
-      cookieHeader.split(';').map(c => {
-        const [k, ...v] = c.trim().split('=');
-        return [k.trim(), v.join('=')];
-      })
-    );
-    token = cookies[COOKIE_NAME];
-  }
-  if (!token) return null;
-  try {
-    const secret = new TextEncoder().encode(ENV.cookieSecret);
-    const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] });
-    if (payload.type !== 'store') return null;
-    return payload as { accountId: number; loginId: string; role: string; type: string };
-  } catch {
-    return null;
-  }
-}
+
 
 export const branchSettingsRouter = router({
-  getAll: publicProcedure
+  getAll: adminProcedure
     .query(async ({ ctx }) => {
-      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
-      if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED' });
-      const account = await getStoreAccountById(payload.accountId);
-      if (!account || account.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       return await db.select().from(branchSettings).orderBy(branchSettings.branchId);
@@ -55,7 +25,7 @@ export const branchSettingsRouter = router({
       return setting ?? null;
     }),
 
-  upsert: publicProcedure
+  upsert: adminProcedure
     .input(z.object({
       branchId: z.number(),
       monthlyRent: z.number().min(0),
@@ -71,10 +41,6 @@ export const branchSettingsRouter = router({
       workType: z.enum(['MON_FRI', 'MON_SAT']).default('MON_FRI'),
     }))
     .mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
-      if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED' });
-      const account = await getStoreAccountById(payload.accountId);
-      if (!account || account.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 

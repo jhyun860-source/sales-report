@@ -1325,7 +1325,7 @@ var systemRouter = router({
 import { z as z4 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
-import { SignJWT as SignJWT2, jwtVerify as jwtVerify4 } from "jose";
+import { SignJWT as SignJWT2, jwtVerify as jwtVerify3 } from "jose";
 init_schema();
 
 // server/_core/llm.ts
@@ -2177,37 +2177,8 @@ import { z as z3 } from "zod";
 import { eq as eq5 } from "drizzle-orm";
 init_schema();
 import { TRPCError as TRPCError4 } from "@trpc/server";
-import { jwtVerify as jwtVerify3 } from "jose";
-async function parseStoreCookie2(cookieHeader, authHeader) {
-  let token;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.slice(7).trim();
-  }
-  if (!token && cookieHeader) {
-    const cookies = Object.fromEntries(
-      cookieHeader.split(";").map((c) => {
-        const [k, ...v] = c.trim().split("=");
-        return [k.trim(), v.join("=")];
-      })
-    );
-    token = cookies[COOKIE_NAME];
-  }
-  if (!token) return null;
-  try {
-    const secret = new TextEncoder().encode(ENV.cookieSecret);
-    const { payload } = await jwtVerify3(token, secret, { algorithms: ["HS256"] });
-    if (payload.type !== "store") return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
 var branchSettingsRouter = router({
-  getAll: publicProcedure.query(async ({ ctx }) => {
-    const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-    if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED" });
-    const account = await getStoreAccountById(payload.accountId);
-    if (!account || account.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN" });
+  getAll: adminProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
     return await db.select().from(branchSettings).orderBy(branchSettings.branchId);
@@ -2218,7 +2189,7 @@ var branchSettingsRouter = router({
     const [setting] = await db.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
     return setting ?? null;
   }),
-  upsert: publicProcedure.input(z3.object({
+  upsert: adminProcedure.input(z3.object({
     branchId: z3.number(),
     monthlyRent: z3.number().min(0),
     managerMonthlySalary: z3.number().min(0),
@@ -2232,10 +2203,6 @@ var branchSettingsRouter = router({
     commissionRate: z3.number().min(0).max(1).default(0.17),
     workType: z3.enum(["MON_FRI", "MON_SAT"]).default("MON_FRI")
   })).mutation(async ({ ctx, input }) => {
-    const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
-    if (!payload) throw new TRPCError4({ code: "UNAUTHORIZED" });
-    const account = await getStoreAccountById(payload.accountId);
-    if (!account || account.role !== "admin") throw new TRPCError4({ code: "FORBIDDEN" });
     const db = await getDb();
     if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
     const computedDailyWage = input.managerMonthlySalary > 0 ? Math.round(input.managerMonthlySalary / 22) : input.managerDailyWage;
@@ -4884,7 +4851,7 @@ var BOXHERO_ITEM_ALIASES = {
   "\uD55C\uB9E5\uC0DD\uB9E5": "\uD55C\uB9E5 \uC0DD\uB9E5\uC8FC"
 };
 async function requireStoreAccount(ctx) {
-  const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+  const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
   if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
   await ensureCanonicalStoreAccounts();
   const account = await getStoreAccountById(payload.accountId);
@@ -5034,7 +5001,7 @@ async function ensureLiquorSeeded(db) {
   }
   await ensureBoxHeroBranchStockSeeded(db);
 }
-async function parseStoreCookie3(cookieHeader, authHeader) {
+async function parseStoreCookie2(cookieHeader, authHeader) {
   let token;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.slice(7).trim();
@@ -5051,7 +5018,7 @@ async function parseStoreCookie3(cookieHeader, authHeader) {
   if (!token) return null;
   try {
     const secret = new TextEncoder().encode(ENV.cookieSecret);
-    const { payload } = await jwtVerify4(token, secret, { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify3(token, secret, { algorithms: ["HS256"] });
     if (payload.type !== "store") return null;
     return payload;
   } catch {
@@ -5105,7 +5072,7 @@ var appRouter = router({
     }),
     // 자체 계정 현재 사용자 조회
     storeMe: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) return null;
       await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountById(payload.accountId);
@@ -5220,7 +5187,7 @@ var appRouter = router({
   // storeAccount 관리 API
   storeAccount: router({
     list: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const accounts = await getAllStoreAccounts();
       const db = await getDb();
@@ -5242,7 +5209,7 @@ var appRouter = router({
       role: z4.enum(["user", "admin"]).default("user"),
       branchId: z4.number().optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const existing = await getStoreAccountByLoginId(input.loginId);
       if (existing) throw new TRPCError5({ code: "CONFLICT", message: "\uC774\uBBF8 \uC0AC\uC6A9 \uC911\uC778 \uC544\uC774\uB514\uC785\uB2C8\uB2E4" });
@@ -5257,26 +5224,26 @@ var appRouter = router({
       return { success: true, account };
     }),
     changePassword: publicProcedure.input(z4.object({ accountId: z4.number(), newPassword: z4.string().min(1) })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const passwordHash = await bcrypt.hash(input.newPassword, 10);
       await updateStoreAccount(input.accountId, { passwordHash });
       return { success: true };
     }),
     delete: publicProcedure.input(z4.object({ accountId: z4.number() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await deleteStoreAccount(input.accountId);
       return { success: true };
     }),
     assignBranch: publicProcedure.input(z4.object({ accountId: z4.number(), branchId: z4.number().nullable() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await updateStoreAccount(input.accountId, { branchId: input.branchId });
       return { success: true };
     }),
     branchList: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const db = await getDb();
       if (!db) return [];
@@ -5286,7 +5253,7 @@ var appRouter = router({
   // 매출 기록 API (storeAccount 기반)
   storeSales: router({
     getBranches: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED" });
@@ -5301,7 +5268,7 @@ var appRouter = router({
       return [];
     }),
     getRecord: publicProcedure.input(z4.object({ branchId: z4.number(), date: z4.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5333,7 +5300,7 @@ var appRouter = router({
       return record;
     }),
     getPrevRecord: publicProcedure.input(z4.object({ branchId: z4.number(), date: z4.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5344,7 +5311,7 @@ var appRouter = router({
       return normalizeMonthlyCumulativeRecord(prev);
     }),
     getRecords: publicProcedure.input(z4.object({ branchId: z4.number(), startDate: z4.string(), endDate: z4.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5366,7 +5333,7 @@ var appRouter = router({
       cashDeposit: z4.string().optional(),
       expenses: z4.array(z4.object({ id: z4.string(), description: z4.string(), amount: z4.string() })).default([])
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5495,7 +5462,7 @@ var appRouter = router({
       return { success: true, record, pushSent };
     }),
     adminDailyDetail: publicProcedure.input(z4.object({ date: z4.string() })).query(async ({ ctx, input }) => {
-      const storePayload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const storePayload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin = storePayload?.role === "admin";
       const isOAuthAdmin = ctx.user?.role === "admin";
       if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
@@ -5522,7 +5489,7 @@ var appRouter = router({
       }));
     }),
     adminSummary: publicProcedure.input(z4.object({ startDate: z4.string(), endDate: z4.string() })).query(async ({ ctx, input }) => {
-      const storePayload2 = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const storePayload2 = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin2 = storePayload2?.role === "admin";
       const isOAuthAdmin2 = ctx.user?.role === "admin";
       if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
@@ -5552,7 +5519,7 @@ var appRouter = router({
       imageBase64: z4.string(),
       mimeType: z4.string().default("image/jpeg")
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");
@@ -6332,7 +6299,7 @@ var appRouter = router({
     getByDate: publicProcedure.input(z4.object({ date: z4.string(), branchId: z4.number().optional() })).query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return null;
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) return null;
@@ -6353,7 +6320,7 @@ var appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
@@ -6550,7 +6517,7 @@ var appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "FORBIDDEN" });
@@ -6691,7 +6658,7 @@ var appRouter = router({
       process.stdout.write("[batchSave] \uC9C4\uC785 date=" + input.date + "\n");
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
@@ -6942,7 +6909,7 @@ var appRouter = router({
       branchId: z4.number().optional()
       // 없으면 전체 지점
     })).query(async ({ input, ctx }) => {
-      const account = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const account = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED" });
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
@@ -7049,7 +7016,7 @@ var appRouter = router({
     getHighlightPatterns: publicProcedure.input(z4.object({
       branchId: z4.number().optional()
     })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
@@ -7121,7 +7088,7 @@ var appRouter = router({
       excludedYellow: z4.array(z4.string()).optional(),
       excludedPink: z4.array(z4.string()).optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");

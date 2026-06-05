@@ -35,11 +35,15 @@ export default function BranchSettings() {
   const urlBranchId = searchParams.get('branchId') ? Number(searchParams.get('branchId')) : null;
   const selectedBranchId = urlBranchId;
 
-  // 지점 목록 조회
-  const { data: branches = [] } = trpc.branch.list.useQuery();
+  // 지점 목록 조회 (인증 완료 후에만 실행)
+  const { data: branches = [] } = trpc.branch.list.useQuery(undefined, {
+    enabled: !authLoading && !!user,
+  });
 
-  // 지점 설정 조회
-  const { data: allSettings = [] } = trpc.branchSettings.list.useQuery();
+  // 지점 설정 조회 (인증 완료 후에만 실행)
+  const { data: allSettings = [] } = trpc.branchSettings.getAll.useQuery(undefined, {
+    enabled: !authLoading && !!user,
+  });
 
   // 상태 선언
   const [monthlyRent, setMonthlyRent] = useState(0);
