@@ -232,7 +232,14 @@ export default function SettlementDashboard() {
             {(branches as any[]).map((b: any) => (
               <button
                 key={b.id}
-                onClick={() => setSelectedBranchId(b.id)}
+                onClick={() => {
+                  // Explicitly update URL query parameter immediately
+                  const params = new URLSearchParams();
+                  params.set('year', String(selectedYear));
+                  params.set('month', String(selectedMonth));
+                  params.set('branchId', String(b.id));
+                  navigate(`?${params.toString()}`, { replace: true });
+                }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   selectedBranchId === b.id ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
