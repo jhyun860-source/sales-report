@@ -49,10 +49,14 @@ export default function SettlementDashboard() {
     return { year, month, branchId };
   };
 
-  // urlParams는 useMemo로 계산됨 (아래 useEffect에서 정의)
+  // 1️⃣ URL 파라미터를 VERY TOP에서 즉시 계산 (useState 초기화 전에)
+  const urlParams = getUrlParams();
+
+  // 2️⃣ 그 다음 상태 초기화 (urlParams 값 사용)
   const [selectedYear, setSelectedYear] = useState(urlParams.year);
   const [selectedMonth, setSelectedMonth] = useState(urlParams.month);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(urlParams.branchId);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -72,11 +76,6 @@ export default function SettlementDashboard() {
   // 🌟 핵심 수정: URL 파라미터를 source of truth로 유지
   // 초기 로드 시에만 URL이 없으면 기본값 설정, 이후 절대 덮어쓰지 않음
   // hasInitialized 플래그: 한 번만 초기화되도록 보장하여 경합 조건(race condition) 방지
-  const [hasInitialized, setHasInitialized] = useState(false);
-
-  // URL 파라미터 재계산 (location 변경 시만 업데이트)
-  const urlParams = useMemo(() => getUrlParams(), [location]);
-
   useEffect(() => {
     // 1️⃣ branches 데이터가 아직 안 왔으면 대기
     if (!branches || branches.length === 0) return;
