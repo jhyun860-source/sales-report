@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-06-05T06:10:00Z",
+  "table": "branchSettings",
+  "description": "Backup before BranchSettings.tsx URL synchronization refactor",
+  "note": "6 rows backed up - branches 1-5 plus default settings",
+  "backup_status": "COMPLETED",
+  "safety_check": "No data will be deleted or truncated during refactoring"
+}
