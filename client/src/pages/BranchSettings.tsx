@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { useSearchParams } from 'wouter';
@@ -26,6 +25,21 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
       }}
       placeholder="0"
     />
+  );
+}
+
+// Toast 컴포넌트
+function Toast({ message, type, visible }: { message: string; type: 'success' | 'error'; visible: boolean }) {
+  if (!visible) return null;
+  
+  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+  const icon = type === 'success' ? '✅' : '❌';
+  
+  return (
+    <div className={`fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300`}>
+      <span>{icon}</span>
+      <span>{message}</span>
+    </div>
   );
 }
 
@@ -57,40 +71,11 @@ export default function BranchSettings() {
   const [monthlyFixedExpense, setMonthlyFixedExpense] = useState(0);
   const [commissionRate, setCommissionRate] = useState(17);
   const [workType, setWorkType] = useState<'MON_FRI' | 'MON_SAT'>('MON_FRI');
-
-  // 디버깅용 로그
-  useEffect(() => {
-    console.log('[BranchSettings Debug]', {
-      user,
-      role: user?.role,
-      isAuthenticated: !!user,
-      loading: authLoading,
-    });
-  }, [user, authLoading]);
-
-  // 쿼리 상태 로깅
-  useEffect(() => {
-    console.log('[BranchSettings] Query states:', {
-      branchesLoading: false, // 실제 로딩 상태는 trpc 훅에서 제공
-      allSettingsLoading: false,
-      authLoading,
-      userExists: !!user,
-      isAdmin: user?.role === 'admin',
-    });
-  }, [user, authLoading]);
-
-  // Mutation
-  const utils = trpc.useUtils();
-  const upsertMutation = trpc.branchSettings.upsert.useMutation({
-    onSuccess: () => {
-      // 저장 성공 시, 모든 설정 데이터를 다시 불러옴
-      utils.branchSettings.getAll.invalidate();
-      // toast.success('설정이 저장되었습니다');
-    },
-    onError: (error) => {
-      // toast.error('저장 실패: ' + error.message);
-    },
-  });
+  
+  // Toast 상태
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [showToast, setShowToast] = useState(false);
 
   // 설정값 초기화 헬퍼 함수
   const resetSettings = () => {
@@ -156,6 +141,36 @@ export default function BranchSettings() {
     }
   }, [selectedBranchId, allSettings]);
 
+  // Mutation
+  const utils = trpc.useUtils();
+  const upsertMutation = trpc.branchSettings.upsert.useMutation({
+    onSuccess: async () => {
+      // 저장 성공 시, 모든 설정 데이터를 다시 불러옴
+      await utils.branchSettings.getAll.invalidate();
+      
+      // Toast 표시
+      setToastMessage('✅ 저장됨');
+      setToastType('success');
+      setShowToast(true);
+      
+      // 2초 후 자동 닫기
+      setTimeout(() => {
+        setShowToast(false);
+      }, 2000);
+    },
+    onError: (error) => {
+      // Toast 표시
+      setToastMessage(`❌ 저장 실패: ${error.message}`);
+      setToastType('error');
+      setShowToast(true);
+      
+      // 3초 후 자동 닫기
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+    },
+  });
+
   const handleSave = () => {
     // 🛡️ 방어 가드: selectedBranchId가 null이면 조기 반환
     if (!selectedBranchId) return;
@@ -185,6 +200,8 @@ export default function BranchSettings() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <Toast message={toastMessage} type={toastType} visible={showToast} />
+      
       <div className="max-w-2xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-md p-6">
           <h1 className="text-2xl font-bold mb-6">지점 설정</h1>
@@ -199,9 +216,9 @@ export default function BranchSettings() {
                 nextParams.set('branchId', e.target.value);
                 setSearchParams(nextParams);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2"
             >
-              {branches.map((branch: any) => (
+              {Array.isArray(branches) && branches.map((branch: any) => (
                 <option key={branch.id} value={branch.id}>
                   {branch.name}
                 </option>
@@ -209,35 +226,35 @@ export default function BranchSettings() {
             </select>
           </div>
 
-          {/* 임대료 */}
-          <div className="mb-4">
-            <label className="text-xs text-gray-500">월 임대료</label>
-            <div className="flex items-center gap-2 mt-1">
+          {/* 월 임대료 */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">월 임대료</label>
+            <div className="flex items-center gap-2">
               <MoneyInput value={monthlyRent} onChange={setMonthlyRent} />
-              <span className="text-xs text-gray-500">원/월</span>
+              <span className="text-sm text-gray-500">원/월</span>
             </div>
           </div>
 
-          {/* 근무형태 선택 */}
-          <div className="mb-6 p-3 bg-blue-50 rounded-md border border-blue-200">
-            <label className="text-xs font-semibold text-gray-700 mb-2 block">근무형태</label>
+          {/* 근무형태 */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">근무형태</label>
             <div className="flex gap-2">
               <button
                 onClick={() => setWorkType('MON_FRI')}
-                className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   workType === 'MON_FRI'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 월~금 (22일)
               </button>
               <button
                 onClick={() => setWorkType('MON_SAT')}
-                className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   workType === 'MON_SAT'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 월~토 (26일)
@@ -246,112 +263,112 @@ export default function BranchSettings() {
           </div>
 
           {/* 인건비 설정 */}
-          <div className="border-t pt-4 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800">인건비 설정</h2>
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">인건비 설정</h2>
 
             {/* 점장 */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-600">점장</p>
-              <div>
-                <label className="text-xs text-gray-500">월급 (÷{workType === 'MON_SAT' ? '26' : '22'}일 자동계산)</label>
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">점장</label>
+              <div className="mb-2">
+                <label className="text-xs text-gray-600">월급 (÷{workType === 'MON_SAT' ? 26 : 22}일 자동계산)</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <MoneyInput value={managerMonthlySalary} onChange={v => { setManagerMonthlySalary(v); setManagerDailyWage(0); }} />
-                  <span className="text-xs text-gray-500">원/월</span>
+                  <MoneyInput value={managerMonthlySalary} onChange={setManagerMonthlySalary} />
+                  <span className="text-sm text-gray-500">원/월</span>
                 </div>
-                {managerMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedManagerDaily.toLocaleString()}원 ({workType === 'MON_SAT' ? '월~토' : '월~금'})</p>}
+                <div className="text-xs text-gray-500 mt-1">→ 일급: {computedManagerDaily.toLocaleString()}원 ({workType === 'MON_SAT' ? '월~토' : '월~금'})</div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">일급 직접 입력</label>
+                <label className="text-xs text-gray-600">일급 직접 입력</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <MoneyInput value={computedManagerDaily} onChange={v => { setManagerDailyWage(v); setManagerMonthlySalary(0); }} />
-                  <span className="text-xs text-gray-500">원/일</span>
+                  <MoneyInput value={managerDailyWage} onChange={setManagerDailyWage} />
+                  <span className="text-sm text-gray-500">원/일</span>
                 </div>
               </div>
             </div>
 
             {/* 매니저 */}
-            <div className="space-y-2 border-t pt-3">
-              <p className="text-xs font-semibold text-gray-600">매니저</p>
-              <div>
-                <label className="text-xs text-gray-500">월급 (÷{workType === 'MON_SAT' ? '26' : '22'}일 자동계산)</label>
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">매니저</label>
+              <div className="mb-2">
+                <label className="text-xs text-gray-600">월급 (÷{workType === 'MON_SAT' ? 26 : 22}일 자동계산)</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <MoneyInput value={deputyMonthlySalary} onChange={v => { setDeputyMonthlySalary(v); setDeputyDailyWage(0); }} />
-                  <span className="text-xs text-gray-500">원/월</span>
+                  <MoneyInput value={deputyMonthlySalary} onChange={setDeputyMonthlySalary} />
+                  <span className="text-sm text-gray-500">원/월</span>
                 </div>
-                {deputyMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedDeputyDaily.toLocaleString()}원 ({workType === 'MON_SAT' ? '월~토' : '월~금'})</p>}
+                <div className="text-xs text-gray-500 mt-1">→ 일급: {computedDeputyDaily.toLocaleString()}원 ({workType === 'MON_SAT' ? '월~토' : '월~금'})</div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">일급 직접 입력</label>
+                <label className="text-xs text-gray-600">일급 직접 입력</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <MoneyInput value={computedDeputyDaily} onChange={v => { setDeputyDailyWage(v); setDeputyMonthlySalary(0); }} />
-                  <span className="text-xs text-gray-500">원/일</span>
+                  <MoneyInput value={deputyDailyWage} onChange={setDeputyDailyWage} />
+                  <span className="text-sm text-gray-500">원/일</span>
                 </div>
               </div>
             </div>
 
             {/* 여직원 */}
-            <div className="space-y-2 border-t pt-3">
-              <p className="text-xs font-semibold text-gray-600">여직원</p>
-              <div>
-                <label className="text-xs text-gray-500">월급 (÷22일 자동계산)</label>
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">여직원</label>
+              <div className="mb-2">
+                <label className="text-xs text-gray-600">월급 (÷22일 자동계산)</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <MoneyInput value={staffMonthlySalary} onChange={v => { setStaffMonthlySalary(v); setStaffDailyWage(0); }} />
-                  <span className="text-xs text-gray-500">원/월</span>
+                  <MoneyInput value={staffMonthlySalary} onChange={setStaffMonthlySalary} />
+                  <span className="text-sm text-gray-500">원/월</span>
                 </div>
-                {staffMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedStaffDaily.toLocaleString()}원</p>}
+                <div className="text-xs text-gray-500 mt-1">→ 일급: {computedStaffDaily.toLocaleString()}원</div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">일급 직접 입력</label>
+                <label className="text-xs text-gray-600">일급 직접 입력</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <MoneyInput value={computedStaffDaily} onChange={v => { setStaffDailyWage(v); setStaffMonthlySalary(0); }} />
-                  <span className="text-xs text-gray-500">원/일</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 알바 시급 */}
-            <div className="space-y-2 border-t pt-3">
-              <p className="text-xs font-semibold text-gray-600">알바</p>
-              <div>
-                <label className="text-xs text-gray-500">시급</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <MoneyInput value={partTimeHourlyWage} onChange={setPartTimeHourlyWage} />
-                  <span className="text-xs text-gray-500">원/시간</span>
+                  <MoneyInput value={staffDailyWage} onChange={setStaffDailyWage} />
+                  <span className="text-sm text-gray-500">원/일</span>
                 </div>
               </div>
             </div>
 
-            {/* 기타 설정 */}
-            <div className="space-y-2 border-t pt-3">
-              <p className="text-xs font-semibold text-gray-600">기타</p>
-              <div>
-                <label className="text-xs text-gray-500">월 고정비</label>
+            {/* 알바 */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">알바</label>
+              <label className="text-xs text-gray-600">시급</label>
+              <div className="flex items-center gap-2 mt-1">
+                <MoneyInput value={partTimeHourlyWage} onChange={setPartTimeHourlyWage} />
+                <span className="text-sm text-gray-500">원/시간</span>
+              </div>
+            </div>
+
+            {/* 기타 */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">기타</label>
+              <div className="mb-2">
+                <label className="text-xs text-gray-600">월 고정비</label>
                 <div className="flex items-center gap-2 mt-1">
                   <MoneyInput value={monthlyFixedExpense} onChange={setMonthlyFixedExpense} />
-                  <span className="text-xs text-gray-500">원/월</span>
+                  <span className="text-sm text-gray-500">원/월</span>
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">수수료율</label>
+                <label className="text-xs text-gray-600">수수료율</label>
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="number"
                     value={commissionRate}
-                    onChange={(e) => setCommissionRate(Number(e.target.value))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setCommissionRate(Math.max(0, Math.min(100, Number(e.target.value))))}
+                    className={inputClass}
+                    min="0"
+                    max="100"
                   />
-                  <span className="text-xs text-gray-500">%</span>
+                  <span className="text-sm text-gray-500">%</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* 저장 버튼 */}
-          <div className="mt-6 flex gap-2">
+          <div className="flex gap-2">
             <Button
               onClick={handleSave}
               disabled={upsertMutation.isPending}
-              className="flex-1"
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
             >
               {upsertMutation.isPending ? '저장 중...' : '저장'}
             </Button>
