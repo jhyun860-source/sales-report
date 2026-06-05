@@ -148,7 +148,16 @@ export async function getDailySalesRecord(branchId: number, date: string): Promi
       .limit(1);
     return result[0] || null;
   } catch (error) {
-    console.error('[getDailySalesRecord ERROR]', { branchId, date, error: error instanceof Error ? error.message : String(error) });
+    console.error('[getDailySalesRecord ERROR]', {
+      branchId,
+      date,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? (error as any).cause : undefined,
+      code: (error as any).code,
+      errno: (error as any).errno,
+      sqlState: (error as any).sqlState,
+      fullError: JSON.stringify(error, null, 2),
+    });
     throw error;
   }
 }
@@ -166,7 +175,16 @@ export async function getPrevDailySalesRecord(branchId: number, beforeDate: stri
       .limit(1);
     return result[0] || null;
   } catch (error) {
-    console.error('[getPrevDailySalesRecord ERROR]', { branchId, beforeDate, error: error instanceof Error ? error.message : String(error) });
+    console.error('[getPrevDailySalesRecord ERROR]', {
+      branchId,
+      beforeDate,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? (error as any).cause : undefined,
+      code: (error as any).code,
+      errno: (error as any).errno,
+      sqlState: (error as any).sqlState,
+      fullError: JSON.stringify(error, null, 2),
+    });
     throw error;
   }
 }
@@ -187,7 +205,16 @@ export async function getPrevDailySalesRecordWithPosEnd(branchId: number, before
 
     return result.find((rec) => (parseInt(rec.posEndAmount || '0') || 0) > 0) || result[0] || null;
   } catch (error) {
-    console.error('[getPrevDailySalesRecordWithPosEnd ERROR]', { branchId, beforeDate, error: error instanceof Error ? error.message : String(error) });
+    console.error('[getPrevDailySalesRecordWithPosEnd ERROR]', {
+      branchId,
+      beforeDate,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? (error as any).cause : undefined,
+      code: (error as any).code,
+      errno: (error as any).errno,
+      sqlState: (error as any).sqlState,
+      fullError: JSON.stringify(error, null, 2),
+    });
     throw error;
   }
 }
@@ -213,7 +240,17 @@ export async function getDailySalesRecordsByDateRange(
       )
       .orderBy(desc(dailySalesRecords.date));
   } catch (error) {
-    console.error('[getDailySalesRecordsByDateRange ERROR]', { branchId, startDate, endDate, error: error instanceof Error ? error.message : String(error) });
+    console.error('[getDailySalesRecordsByDateRange ERROR]', {
+      branchId,
+      startDate,
+      endDate,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? (error as any).cause : undefined,
+      code: (error as any).code,
+      errno: (error as any).errno,
+      sqlState: (error as any).sqlState,
+      fullError: JSON.stringify(error, null, 2),
+    });
     throw error;
   }
 }

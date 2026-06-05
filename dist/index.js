@@ -459,7 +459,16 @@ async function getDailySalesRecord(branchId, date) {
     const result = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), eq(dailySalesRecords.date, date))).limit(1);
     return result[0] || null;
   } catch (error) {
-    console.error("[getDailySalesRecord ERROR]", { branchId, date, error: error instanceof Error ? error.message : String(error) });
+    console.error("[getDailySalesRecord ERROR]", {
+      branchId,
+      date,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : void 0,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      fullError: JSON.stringify(error, null, 2)
+    });
     throw error;
   }
 }
@@ -470,7 +479,16 @@ async function getPrevDailySalesRecord(branchId, beforeDate) {
     const result = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate))).orderBy(desc(dailySalesRecords.date)).limit(1);
     return result[0] || null;
   } catch (error) {
-    console.error("[getPrevDailySalesRecord ERROR]", { branchId, beforeDate, error: error instanceof Error ? error.message : String(error) });
+    console.error("[getPrevDailySalesRecord ERROR]", {
+      branchId,
+      beforeDate,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : void 0,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      fullError: JSON.stringify(error, null, 2)
+    });
     throw error;
   }
 }
@@ -481,7 +499,16 @@ async function getPrevDailySalesRecordWithPosEnd(branchId, beforeDate) {
     const result = await db.select().from(dailySalesRecords).where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate))).orderBy(desc(dailySalesRecords.date)).limit(120);
     return result.find((rec) => (parseInt(rec.posEndAmount || "0") || 0) > 0) || result[0] || null;
   } catch (error) {
-    console.error("[getPrevDailySalesRecordWithPosEnd ERROR]", { branchId, beforeDate, error: error instanceof Error ? error.message : String(error) });
+    console.error("[getPrevDailySalesRecordWithPosEnd ERROR]", {
+      branchId,
+      beforeDate,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : void 0,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      fullError: JSON.stringify(error, null, 2)
+    });
     throw error;
   }
 }
@@ -497,7 +524,17 @@ async function getDailySalesRecordsByDateRange(branchId, startDate, endDate) {
       )
     ).orderBy(desc(dailySalesRecords.date));
   } catch (error) {
-    console.error("[getDailySalesRecordsByDateRange ERROR]", { branchId, startDate, endDate, error: error instanceof Error ? error.message : String(error) });
+    console.error("[getDailySalesRecordsByDateRange ERROR]", {
+      branchId,
+      startDate,
+      endDate,
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : void 0,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      fullError: JSON.stringify(error, null, 2)
+    });
     throw error;
   }
 }
