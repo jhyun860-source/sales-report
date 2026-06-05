@@ -138,9 +138,9 @@ export default function BranchSettings() {
       branchId: selectedBranchId,
       monthlyRent,
       managerMonthlySalary,
-      managerDailyWage: managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / 22) : managerDailyWage,
+      managerDailyWage: managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / (workType === 'MON_SAT' ? 26 : 22)) : managerDailyWage,
       deputyMonthlySalary,
-      deputyDailyWage: deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / 22) : deputyDailyWage,
+      deputyDailyWage: deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / (workType === 'MON_SAT' ? 26 : 22)) : deputyDailyWage,
       staffMonthlySalary,
       staffDailyWage: staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : staffDailyWage,
       partTimeHourlyWage,
@@ -150,8 +150,8 @@ export default function BranchSettings() {
     });
   };
 
-  const computedManagerDaily = managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / 22) : managerDailyWage;
-  const computedDeputyDaily = deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / 22) : deputyDailyWage;
+  const computedManagerDaily = managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / (workType === 'MON_SAT' ? 26 : 22)) : managerDailyWage;
+  const computedDeputyDaily = deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / (workType === 'MON_SAT' ? 26 : 22)) : deputyDailyWage;
   const computedStaffDaily = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : staffDailyWage;
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-500">로딩 중...</div>;
@@ -267,12 +267,12 @@ export default function BranchSettings() {
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-600">점장</p>
                 <div>
-                  <label className="text-xs text-gray-500">월급 (÷22일 자동계산)</label>
+                  <label className="text-xs text-gray-500">월급 (÷{workType === 'MON_SAT' ? '26' : '22'}일 자동계산)</label>
                   <div className="flex items-center gap-2 mt-1">
                     <MoneyInput value={managerMonthlySalary} onChange={v => { setManagerMonthlySalary(v); setManagerDailyWage(0); }} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
-                  {managerMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedManagerDaily.toLocaleString()}원</p>}
+                  {managerMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedManagerDaily.toLocaleString()}원 ({workType === 'MON_SAT' ? '월~토' : '월~금'})</p>}
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력</label>
@@ -287,12 +287,12 @@ export default function BranchSettings() {
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-600">매니저</p>
                 <div>
-                  <label className="text-xs text-gray-500">월급 (÷22일 자동계산)</label>
+                  <label className="text-xs text-gray-500">월급 (÷{workType === 'MON_SAT' ? '26' : '22'}일 자동계산)</label>
                   <div className="flex items-center gap-2 mt-1">
                     <MoneyInput value={deputyMonthlySalary} onChange={v => { setDeputyMonthlySalary(v); setDeputyDailyWage(0); }} />
                     <span className="text-xs text-gray-500">원/월</span>
                   </div>
-                  {deputyMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedDeputyDaily.toLocaleString()}원</p>}
+                  {deputyMonthlySalary > 0 && <p className="text-xs text-blue-500 mt-1">→ 일급: {computedDeputyDaily.toLocaleString()}원 ({workType === 'MON_SAT' ? '월~토' : '월~금'})</p>}
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">일급 직접 입력</label>

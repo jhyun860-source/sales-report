@@ -1753,8 +1753,10 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const staffWageExpense = staffCount * staffDailyWage;
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
-  const workType = bsData ? bsData.workType || "MON_FRI" : "MON_FRI";
+  const workType = bsData?.workType || "MON_FRI";
+  console.log("[\uC815\uC0B0\uACC4\uC0B0] workType:", workType, "managerMonthlySalary:", managerMonthlySalary);
   const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
+  console.log("[\uC815\uC0B0\uACC4\uC0B0] managerBusinessDays:", managerBusinessDays, "managerDailyWage:", managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0);
   const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
   const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
   const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;

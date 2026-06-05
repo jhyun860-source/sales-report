@@ -277,10 +277,12 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   // 6. 점장/매니저 인건비 - 월급을 근무일수로 자동 배분
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : (hardConfig?.monthlyRent ?? 0);
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
-  const workType = bsData ? (bsData.workType as 'MON_FRI' | 'MON_SAT' || 'MON_FRI') : 'MON_FRI';
+  const workType = (bsData?.workType as 'MON_FRI' | 'MON_SAT') || 'MON_FRI';
   
   // 자동 일수 계산: 설정된 월급을 근무일수로 나눔
+  console.log('[정산계산] workType:', workType, 'managerMonthlySalary:', managerMonthlySalary);
   const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
+  console.log('[정산계산] managerBusinessDays:', managerBusinessDays, 'managerDailyWage:', managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0);
   const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
   const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
   const managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
