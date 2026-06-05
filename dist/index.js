@@ -905,13 +905,28 @@ var SDKServer = class {
       return null;
     }
     try {
+      console.log("[Auth] Verifying token:", { tokenLength: cookieValue.length, tokenStart: cookieValue.substring(0, 50) });
       const secretKey = this.getSessionSecret();
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"]
       });
+      console.log("[Auth] JWT verified, payload:", payload);
+      const tokenType = payload.type;
+      if (tokenType === "store") {
+        console.log("[Auth] Store Account token detected");
+        const accountId = payload.accountId;
+        const loginId = payload.loginId;
+        if (typeof accountId === "number" && typeof loginId === "string") {
+          return {
+            openId: String(accountId),
+            appId: "store-account",
+            name: loginId
+          };
+        }
+      }
       const { openId, appId, name } = payload;
       if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) {
-        console.warn("[Auth] Session payload missing required fields");
+        console.warn("[Auth] Session payload missing required fields", { openId, appId, name });
         return null;
       }
       return {
@@ -944,8 +959,32 @@ var SDKServer = class {
     };
   }
   async authenticateRequest(req) {
-    const cookies = this.parseCookies(req.headers.cookie);
-    const sessionCookie = cookies.get(COOKIE_NAME);
+    let sessionCookie;
+    console.log("[Auth] Request received:", {
+      authHeaderExists: !!req.headers.authorization,
+      authHeaderValue: req.headers.authorization ? req.headers.authorization.substring(0, 100) : "NOT SET",
+      cookieExists: !!req.headers.cookie,
+      url: req.url
+    });
+    if (req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      console.log("[Auth] Authorization header found:", { headerStart: authHeader.substring(0, 50) });
+      if (authHeader.startsWith("Bearer ")) {
+        sessionCookie = authHeader.substring(7);
+        console.log("[Auth] \u2705 Using token from Authorization header", { tokenLength: sessionCookie.length, tokenStart: sessionCookie.substring(0, 100) });
+      } else {
+        console.log("[Auth] \u274C Authorization header does NOT start with Bearer:", { header: authHeader.substring(0, 50) });
+      }
+    } else {
+      console.log("[Auth] \u274C NO Authorization header found");
+    }
+    if (!sessionCookie) {
+      const cookies = this.parseCookies(req.headers.cookie);
+      sessionCookie = cookies.get(COOKIE_NAME);
+      if (sessionCookie) {
+        console.log("[Auth] Using token from session cookie");
+      }
+    }
     const session = await this.verifySession(sessionCookie);
     if (!session) {
       throw ForbiddenError("Invalid session cookie");
@@ -953,20 +992,47 @@ var SDKServer = class {
     const sessionUserId = session.openId;
     const signedInAt = /* @__PURE__ */ new Date();
     let user = await getUserByOpenId(sessionUserId);
-    if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt
-        });
-        user = await getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
+    if (session.appId === "store-account") {
+      console.log("[Auth] Store Account authentication, creating synthetic user");
+      const storeAccount = await getStoreAccountById(parseInt(sessionUserId, 10));
+      console.log("[Auth] Store Account fetched:", { id: storeAccount?.id, loginId: storeAccount?.loginId, role: storeAccount?.role });
+      if (!storeAccount) {
+        throw ForbiddenError("Store account not found");
+      }
+      const finalRole = storeAccount.role || "user";
+      console.log("[Auth] Store Account role:", finalRole);
+      if (!user) {
+        user = {
+          id: parseInt(sessionUserId, 10),
+          openId: sessionUserId,
+          name: storeAccount.displayName || storeAccount.loginId,
+          email: null,
+          role: finalRole,
+          loginMethod: "store-account",
+          lastSignedIn: signedInAt,
+          createdAt: /* @__PURE__ */ new Date(),
+          updatedAt: /* @__PURE__ */ new Date()
+        };
+      } else {
+        user.role = finalRole;
+        user.name = storeAccount.displayName || storeAccount.loginId;
+      }
+    } else {
+      if (!user) {
+        try {
+          const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+          await upsertUser({
+            openId: userInfo.openId,
+            name: userInfo.name || null,
+            email: userInfo.email ?? null,
+            loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+            lastSignedIn: signedInAt
+          });
+          user = await getUserByOpenId(userInfo.openId);
+        } catch (error) {
+          console.error("[Auth] Failed to sync user from OAuth:", error);
+          throw ForbiddenError("Failed to sync user info");
+        }
       }
     }
     if (!user) {
@@ -1330,7 +1396,7 @@ var systemRouter = router({
 import { z as z4 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
-import { SignJWT as SignJWT2, jwtVerify as jwtVerify3 } from "jose";
+import { SignJWT as SignJWT2, jwtVerify as jwtVerify4 } from "jose";
 init_schema();
 
 // server/_core/llm.ts
@@ -1759,9 +1825,14 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
   const workType = bsData?.workType || "MON_FRI";
-  console.log("[\uC815\uC0B0\uACC4\uC0B0] workType:", workType, "managerMonthlySalary:", managerMonthlySalary);
-  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
-  console.log("[\uC815\uC0B0\uACC4\uC0B0] managerBusinessDays:", managerBusinessDays, "managerDailyWage:", managerMonthlySalary > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0);
+  const actualWorkDaysResult = await db.select().from(dailySalesRecords).where(and3(
+    eq3(dailySalesRecords.branchId, branchId),
+    gte2(dailySalesRecords.date, `${year}-${String(month).padStart(2, "0")}-01`),
+    lte2(dailySalesRecords.date, `${year}-${String(month).padStart(2, "0")}-31`)
+  ));
+  const actualWorkDays = actualWorkDaysResult.filter((r) => Number(r.totalRevenue) > 0).length;
+  const managerBusinessDays = actualWorkDays > 0 ? actualWorkDays : getBusinessDaysInMonth(year, month, workType);
+  console.log("[\uC815\uC0B0\uACC4\uC0B0] actualWorkDays:", actualWorkDays, "managerBusinessDays:", managerBusinessDays, "managerMonthlySalary:", managerMonthlySalary);
   const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
   const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
   const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
@@ -2182,13 +2253,48 @@ import { z as z3 } from "zod";
 import { eq as eq5 } from "drizzle-orm";
 init_schema();
 import { TRPCError as TRPCError4 } from "@trpc/server";
+import { jwtVerify as jwtVerify3 } from "jose";
+var COOKIE_NAME2 = "app_session_id";
+async function parseStoreCookie2(cookieHeader, authHeader) {
+  let token;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.slice(7).trim();
+  }
+  if (!token && cookieHeader) {
+    const cookies = Object.fromEntries(
+      cookieHeader.split(";").map((c) => {
+        const [k, ...v] = c.trim().split("=");
+        return [k.trim(), v.join("=")];
+      })
+    );
+    token = cookies[COOKIE_NAME2];
+  }
+  if (!token) return null;
+  try {
+    const secret = new TextEncoder().encode(ENV.cookieSecret);
+    const { payload } = await jwtVerify3(token, secret, { algorithms: ["HS256"] });
+    if (payload.type !== "store") return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
 var branchSettingsRouter = router({
-  getAll: adminProcedure.query(async ({ ctx }) => {
-    console.log("Server Side User Context:", { user: ctx.user, role: ctx.user?.role });
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const storePayload = await parseStoreCookie2(
+      ctx.req.headers.cookie,
+      ctx.req.headers.authorization
+    );
+    const isStoreAdmin = storePayload?.role === "admin";
+    const isOAuthAdmin = ctx.user?.role === "admin";
+    if (!isStoreAdmin && !isOAuthAdmin) {
+      throw new TRPCError4({ code: "FORBIDDEN", message: "Admin access required" });
+    }
     console.log("[branchSettings.getAll] Admin user accessing:", {
       userId: ctx.user?.id,
       userRole: ctx.user?.role,
-      userName: ctx.user?.name
+      storeLoginId: storePayload?.loginId,
+      storeRole: storePayload?.role
     });
     const db = await getDb();
     if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
@@ -2202,7 +2308,7 @@ var branchSettingsRouter = router({
     const [setting] = await db.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
     return setting ?? null;
   }),
-  upsert: adminProcedure.input(z3.object({
+  upsert: publicProcedure.input(z3.object({
     branchId: z3.number(),
     monthlyRent: z3.number().min(0),
     managerMonthlySalary: z3.number().min(0),
@@ -2216,10 +2322,20 @@ var branchSettingsRouter = router({
     commissionRate: z3.number().min(0).max(1).default(0.17),
     workType: z3.enum(["MON_FRI", "MON_SAT"]).default("MON_FRI")
   })).mutation(async ({ ctx, input }) => {
-    console.log("Server Side User Context (upsert):", { user: ctx.user, role: ctx.user?.role });
+    const storePayload = await parseStoreCookie2(
+      ctx.req.headers.cookie,
+      ctx.req.headers.authorization
+    );
+    const isStoreAdmin = storePayload?.role === "admin";
+    const isOAuthAdmin = ctx.user?.role === "admin";
+    if (!isStoreAdmin && !isOAuthAdmin) {
+      throw new TRPCError4({ code: "FORBIDDEN", message: "Admin access required" });
+    }
     console.log("[branchSettings.upsert] Admin user updating:", {
       userId: ctx.user?.id,
       userRole: ctx.user?.role,
+      storeLoginId: storePayload?.loginId,
+      storeRole: storePayload?.role,
       branchId: input.branchId
     });
     const db = await getDb();
@@ -2239,7 +2355,8 @@ var branchSettingsRouter = router({
         staffDailyWage: String(computedStaffDailyWage),
         partTimeHourlyWage: String(input.partTimeHourlyWage),
         monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
-        commissionRate: String(input.commissionRate)
+        commissionRate: String(input.commissionRate),
+        workType: input.workType
       }).where(eq5(branchSettings.branchId, input.branchId));
       if (!result) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update branch settings" });
     } else {
@@ -2254,8 +2371,32 @@ var branchSettingsRouter = router({
         staffDailyWage: String(computedStaffDailyWage),
         partTimeHourlyWage: String(input.partTimeHourlyWage),
         monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
-        commissionRate: String(input.commissionRate)
+        commissionRate: String(input.commissionRate),
+        workType: input.workType
       });
+    }
+    try {
+      console.log("[\uB9E4\uCD9C \uC7AC\uACC4\uC0B0 \uC2DC\uC791] branchId:", input.branchId);
+      const tableReportsResult = await db.execute(`
+          SELECT id, date FROM tableReports WHERE branchId = ${input.branchId}
+        `);
+      const tableReportIds = tableReportsResult.map((tr) => tr.id);
+      if (tableReportIds.length > 0) {
+        const updateResult = await db.execute(`
+            UPDATE dailySalesRecords d
+            SET d.totalRevenue = (
+              SELECT COALESCE(SUM(CAST(ti.amount AS SIGNED)), 0)
+              FROM tableItems ti
+              JOIN tableReports tr ON ti.tableReportId = tr.id
+              WHERE tr.branchId = d.branchId AND tr.date = d.date
+            )
+            WHERE d.branchId = ${input.branchId}
+          `);
+        console.log("[dailySalesRecords \uC5C5\uB370\uC774\uD2B8] \uC644\uB8CC:", updateResult);
+      }
+      console.log("[\uB9E4\uCD9C \uC7AC\uACC4\uC0B0 \uC644\uB8CC] branchId:", input.branchId);
+    } catch (e) {
+      console.error("[\uB9E4\uCD9C \uC7AC\uACC4\uC0B0 \uC624\uB958]", e);
     }
     try {
       const now = /* @__PURE__ */ new Date();
@@ -4870,7 +5011,7 @@ var BOXHERO_ITEM_ALIASES = {
   "\uD55C\uB9E5\uC0DD\uB9E5": "\uD55C\uB9E5 \uC0DD\uB9E5\uC8FC"
 };
 async function requireStoreAccount(ctx) {
-  const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+  const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
   if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
   await ensureCanonicalStoreAccounts();
   const account = await getStoreAccountById(payload.accountId);
@@ -5020,7 +5161,7 @@ async function ensureLiquorSeeded(db) {
   }
   await ensureBoxHeroBranchStockSeeded(db);
 }
-async function parseStoreCookie2(cookieHeader, authHeader) {
+async function parseStoreCookie3(cookieHeader, authHeader) {
   let token;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.slice(7).trim();
@@ -5037,7 +5178,7 @@ async function parseStoreCookie2(cookieHeader, authHeader) {
   if (!token) return null;
   try {
     const secret = new TextEncoder().encode(ENV.cookieSecret);
-    const { payload } = await jwtVerify3(token, secret, { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify4(token, secret, { algorithms: ["HS256"] });
     if (payload.type !== "store") return null;
     return payload;
   } catch {
@@ -5091,7 +5232,7 @@ var appRouter = router({
     }),
     // 자체 계정 현재 사용자 조회
     storeMe: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) return null;
       await ensureCanonicalStoreAccounts();
       const account = await getStoreAccountById(payload.accountId);
@@ -5151,8 +5292,18 @@ var appRouter = router({
     }),
     list: adminProcedure.query(async () => {
       const db = await getDb();
-      if (!db) return [];
-      return db.select().from(branches).orderBy(branches.name);
+      if (!db) {
+        console.log("[branch.list] NO DATABASE");
+        return [];
+      }
+      try {
+        const result = await db.select().from(branches).orderBy(branches.name);
+        console.log("[branch.list] SUCCESS", { count: result.length });
+        return result;
+      } catch (error) {
+        console.error("[branch.list] ERROR:", error);
+        return [];
+      }
     }),
     create: adminProcedure.input(z4.object({ name: z4.string().min(1), code: z4.string().min(1) })).mutation(async ({ ctx, input }) => {
       const branch = await createBranch({ name: input.name, code: input.code, ownerId: ctx.user.id });
@@ -5206,7 +5357,7 @@ var appRouter = router({
   // storeAccount 관리 API
   storeAccount: router({
     list: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const accounts = await getAllStoreAccounts();
       const db = await getDb();
@@ -5228,7 +5379,7 @@ var appRouter = router({
       role: z4.enum(["user", "admin"]).default("user"),
       branchId: z4.number().optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const existing = await getStoreAccountByLoginId(input.loginId);
       if (existing) throw new TRPCError5({ code: "CONFLICT", message: "\uC774\uBBF8 \uC0AC\uC6A9 \uC911\uC778 \uC544\uC774\uB514\uC785\uB2C8\uB2E4" });
@@ -5243,26 +5394,26 @@ var appRouter = router({
       return { success: true, account };
     }),
     changePassword: publicProcedure.input(z4.object({ accountId: z4.number(), newPassword: z4.string().min(1) })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       const passwordHash = await bcrypt.hash(input.newPassword, 10);
       await updateStoreAccount(input.accountId, { passwordHash });
       return { success: true };
     }),
     delete: publicProcedure.input(z4.object({ accountId: z4.number() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await deleteStoreAccount(input.accountId);
       return { success: true };
     }),
     assignBranch: publicProcedure.input(z4.object({ accountId: z4.number(), branchId: z4.number().nullable() })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload || payload.role !== "admin") throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
       await updateStoreAccount(input.accountId, { branchId: input.branchId });
       return { success: true };
     }),
     branchList: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const db = await getDb();
       if (!db) return [];
@@ -5272,7 +5423,7 @@ var appRouter = router({
   // 매출 기록 API (storeAccount 기반)
   storeSales: router({
     getBranches: publicProcedure.query(async ({ ctx }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED" });
@@ -5287,7 +5438,7 @@ var appRouter = router({
       return [];
     }),
     getRecord: publicProcedure.input(z4.object({ branchId: z4.number(), date: z4.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5319,7 +5470,7 @@ var appRouter = router({
       return record;
     }),
     getPrevRecord: publicProcedure.input(z4.object({ branchId: z4.number(), date: z4.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5330,7 +5481,7 @@ var appRouter = router({
       return normalizeMonthlyCumulativeRecord(prev);
     }),
     getRecords: publicProcedure.input(z4.object({ branchId: z4.number(), startDate: z4.string(), endDate: z4.string() })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5352,7 +5503,7 @@ var appRouter = router({
       cashDeposit: z4.string().optional(),
       expenses: z4.array(z4.object({ id: z4.string(), description: z4.string(), amount: z4.string() })).default([])
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uACC4\uC815\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4" });
@@ -5481,7 +5632,7 @@ var appRouter = router({
       return { success: true, record, pushSent };
     }),
     adminDailyDetail: publicProcedure.input(z4.object({ date: z4.string() })).query(async ({ ctx, input }) => {
-      const storePayload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const storePayload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin = storePayload?.role === "admin";
       const isOAuthAdmin = ctx.user?.role === "admin";
       if (!isStoreAdmin && !isOAuthAdmin) throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
@@ -5508,7 +5659,7 @@ var appRouter = router({
       }));
     }),
     adminSummary: publicProcedure.input(z4.object({ startDate: z4.string(), endDate: z4.string() })).query(async ({ ctx, input }) => {
-      const storePayload2 = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const storePayload2 = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       const isStoreAdmin2 = storePayload2?.role === "admin";
       const isOAuthAdmin2 = ctx.user?.role === "admin";
       if (!isStoreAdmin2 && !isOAuthAdmin2) throw new TRPCError5({ code: "FORBIDDEN", message: "\uAD00\uB9AC\uC790\uB9CC \uC811\uADFC \uAC00\uB2A5\uD569\uB2C8\uB2E4" });
@@ -5538,7 +5689,7 @@ var appRouter = router({
       imageBase64: z4.string(),
       mimeType: z4.string().default("image/jpeg")
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");
@@ -6318,7 +6469,7 @@ var appRouter = router({
     getByDate: publicProcedure.input(z4.object({ date: z4.string(), branchId: z4.number().optional() })).query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return null;
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) return null;
@@ -6339,7 +6490,7 @@ var appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
@@ -6536,7 +6687,7 @@ var appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "FORBIDDEN" });
@@ -6677,7 +6828,7 @@ var appRouter = router({
       process.stdout.write("[batchSave] \uC9C4\uC785 date=" + input.date + "\n");
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       if (!account) throw new TRPCError5({ code: "FORBIDDEN", message: "\uC9C0\uC810 \uACC4\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
@@ -6928,7 +7079,7 @@ var appRouter = router({
       branchId: z4.number().optional()
       // 없으면 전체 지점
     })).query(async ({ input, ctx }) => {
-      const account = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const account = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED" });
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
@@ -7035,7 +7186,7 @@ var appRouter = router({
     getHighlightPatterns: publicProcedure.input(z4.object({
       branchId: z4.number().optional()
     })).query(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const account = await getStoreAccountById(payload.accountId);
       const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
@@ -7107,7 +7258,7 @@ var appRouter = router({
       excludedYellow: z4.array(z4.string()).optional(),
       excludedPink: z4.array(z4.string()).optional()
     })).mutation(async ({ ctx, input }) => {
-      const payload = await parseStoreCookie2(ctx.req.headers.cookie, ctx.req.headers.authorization);
+      const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
       const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
       const imageBuffer = Buffer.from(base64Data, "base64");
@@ -7303,6 +7454,10 @@ async function createContext(opts) {
   const hasCookie = !!opts.req.headers.cookie;
   const cookieNames = opts.req.headers.cookie ? opts.req.headers.cookie.split(";").map((c) => c.trim().split("=")[0]) : [];
   const hasAuthHeader = !!opts.req.headers.authorization;
+  console.log("[CTX-DEBUG]", {
+    authHeader: opts.req.headers.authorization ? opts.req.headers.authorization.substring(0, 100) : "NOT SET",
+    cookie: opts.req.headers.cookie ? opts.req.headers.cookie.substring(0, 100) : "NOT SET"
+  });
   console.log("[createContext] Request Debug:", {
     url,
     hasCookie,
@@ -7326,6 +7481,7 @@ async function createContext(opts) {
     userId: user?.id,
     userRole: user?.role
   });
+  console.log("[DEBUG-USER-OBJ]", JSON.stringify(user, null, 2));
   return {
     req: opts.req,
     res: opts.res,
