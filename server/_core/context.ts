@@ -20,6 +20,11 @@ export async function createContext(
     : [];
   const hasAuthHeader = !!opts.req.headers.authorization;
   
+  console.log('[CTX-DEBUG]', {
+    authHeader: opts.req.headers.authorization ? opts.req.headers.authorization.substring(0, 100) : 'NOT SET',
+    cookie: opts.req.headers.cookie ? opts.req.headers.cookie.substring(0, 100) : 'NOT SET',
+  });
+  
   console.log('[createContext] Request Debug:', {
     url,
     hasCookie,
@@ -45,6 +50,8 @@ export async function createContext(
     userId: user?.id,
     userRole: user?.role,
   });
+
+  console.log('[DEBUG-USER-OBJ]', JSON.stringify(user, null, 2));
 
   return {
     req: opts.req,

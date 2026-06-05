@@ -1279,6 +1279,11 @@ var protectedProcedure = t.procedure.use(requireUser);
 var adminProcedure = t.procedure.use(
   t.middleware(async (opts) => {
     const { ctx, next } = opts;
+    console.log("[DEBUG-ADMIN-CHECK]", {
+      user: ctx.user,
+      role: ctx.user?.role,
+      userId: ctx.user?.id
+    });
     if (!ctx.user || ctx.user.role !== "admin") {
       throw new TRPCError2({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }

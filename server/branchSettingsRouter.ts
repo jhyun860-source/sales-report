@@ -1,21 +1,64 @@
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
-import { router, publicProcedure, adminProcedure } from './_core/trpc';
+import { router, publicProcedure } from './_core/trpc';
 import { getDb } from './db';
 import { branchSettings } from '../drizzle/schema';
 import { TRPCError } from '@trpc/server';
+import { jwtVerify } from 'jose';
+import { ENV } from './_core/env';
 
+const COOKIE_NAME = 'app_session_id';
 
+// Store Account 권한 확인 함수
+async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: string) {
+  let token: string | undefined;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  }
+  if (!token && cookieHeader) {
+    const cookies = Object.fromEntries(
+      cookieHeader.split(';').map(c => {
+        const [k, ...v] = c.trim().split('=');
+        return [k.trim(), v.join('=')];
+      })
+    );
+    token = cookies[COOKIE_NAME];
+  }
+  if (!token) return null;
+  try {
+    const secret = new TextEncoder().encode(ENV.cookieSecret);
+    const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] });
+    if (payload.type !== 'store') return null;
+    return payload as { accountId: number; loginId: string; role: string; type: string };
+  } catch {
+    return null;
+  }
+}
 
 export const branchSettingsRouter = router({
-  getAll: adminProcedure
+  getAll: publicProcedure
     .query(async ({ ctx }) => {
-      console.log('Server Side User Context:', { user: ctx.user, role: ctx.user?.role });
+      // Store Account 권한 확인
+      const storePayload = await parseStoreCookie(
+        ctx.req.headers.cookie,
+        ctx.req.headers.authorization as string | undefined
+      );
+      
+      // Store Account admin 또는 Manus OAuth admin만 허용
+      const isStoreAdmin = storePayload?.role === 'admin';
+      const isOAuthAdmin = ctx.user?.role === 'admin';
+      
+      if (!isStoreAdmin && !isOAuthAdmin) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+      }
+
       console.log('[branchSettings.getAll] Admin user accessing:', {
         userId: ctx.user?.id,
         userRole: ctx.user?.role,
-        userName: ctx.user?.name,
+        storeLoginId: storePayload?.loginId,
+        storeRole: storePayload?.role,
       });
+
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       const result = await db.select().from(branchSettings).orderBy(branchSettings.branchId);
@@ -33,7 +76,7 @@ export const branchSettingsRouter = router({
       return setting ?? null;
     }),
 
-  upsert: adminProcedure
+  upsert: publicProcedure
     .input(z.object({
       branchId: z.number(),
       monthlyRent: z.number().min(0),
@@ -49,12 +92,28 @@ export const branchSettingsRouter = router({
       workType: z.enum(['MON_FRI', 'MON_SAT']).default('MON_FRI'),
     }))
     .mutation(async ({ ctx, input }) => {
-      console.log('Server Side User Context (upsert):', { user: ctx.user, role: ctx.user?.role });
+      // Store Account 권한 확인
+      const storePayload = await parseStoreCookie(
+        ctx.req.headers.cookie,
+        ctx.req.headers.authorization as string | undefined
+      );
+      
+      // Store Account admin 또는 Manus OAuth admin만 허용
+      const isStoreAdmin = storePayload?.role === 'admin';
+      const isOAuthAdmin = ctx.user?.role === 'admin';
+      
+      if (!isStoreAdmin && !isOAuthAdmin) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+      }
+
       console.log('[branchSettings.upsert] Admin user updating:', {
         userId: ctx.user?.id,
         userRole: ctx.user?.role,
+        storeLoginId: storePayload?.loginId,
+        storeRole: storePayload?.role,
         branchId: input.branchId,
       });
+
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
@@ -83,6 +142,7 @@ export const branchSettingsRouter = router({
           partTimeHourlyWage: String(input.partTimeHourlyWage),
           monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
           commissionRate: String(input.commissionRate),
+          workType: input.workType,
         }).where(eq(branchSettings.branchId, input.branchId));
         if (!result) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update branch settings' });
       } else {
@@ -98,6 +158,7 @@ export const branchSettingsRouter = router({
           partTimeHourlyWage: String(input.partTimeHourlyWage),
           monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
           commissionRate: String(input.commissionRate),
+          workType: input.workType,
         });
       }
       // 설정값 변경 후 당월 전체 정산 재계산

@@ -206,10 +206,31 @@ class SDKServer {
     }
 
     try {
+      console.log('[Auth] Verifying token:', { tokenLength: cookieValue.length, tokenStart: cookieValue.substring(0, 50) });
       const secretKey = this.getSessionSecret();
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
+      console.log('[Auth] JWT verified, payload:', payload);
+      
+      // Check if this is a Store Account token (has 'type: store')
+      const tokenType = (payload as Record<string, unknown>).type;
+      if (tokenType === 'store') {
+        console.log('[Auth] Store Account token detected');
+        // For Store Account tokens, we need to convert to Manus user format
+        // Use accountId as openId, and create synthetic appId/name
+        const accountId = (payload as Record<string, unknown>).accountId;
+        const loginId = (payload as Record<string, unknown>).loginId;
+        if (typeof accountId === 'number' && typeof loginId === 'string') {
+          return {
+            openId: String(accountId),
+            appId: 'store-account',
+            name: loginId,
+          };
+        }
+      }
+      
+      // Otherwise, expect Manus OAuth token format
       const { openId, appId, name } = payload as Record<string, unknown>;
 
       if (
@@ -217,7 +238,7 @@ class SDKServer {
         !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
-        console.warn("[Auth] Session payload missing required fields");
+        console.warn("[Auth] Session payload missing required fields", { openId, appId, name });
         return null;
       }
 
@@ -257,9 +278,40 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    // Regular authentication flow
-    const cookies = this.parseCookies(req.headers.cookie);
-    const sessionCookie = cookies.get(COOKIE_NAME);
+    // Try Authorization header first (for mobile Chrome cookie blocking), then fall back to cookie
+    let sessionCookie: string | undefined;
+    
+    // Log incoming request details
+    console.log('[Auth] Request received:', {
+      authHeaderExists: !!req.headers.authorization,
+      authHeaderValue: req.headers.authorization ? req.headers.authorization.substring(0, 100) : 'NOT SET',
+      cookieExists: !!req.headers.cookie,
+      url: (req as any).url
+    });
+    
+    // Check Authorization header first
+    if (req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      console.log('[Auth] Authorization header found:', { headerStart: authHeader.substring(0, 50) });
+      if (authHeader.startsWith('Bearer ')) {
+        sessionCookie = authHeader.substring(7); // Remove 'Bearer ' prefix
+        console.log('[Auth] ✅ Using token from Authorization header', { tokenLength: sessionCookie.length, tokenStart: sessionCookie.substring(0, 100) });
+      } else {
+        console.log('[Auth] ❌ Authorization header does NOT start with Bearer:', { header: authHeader.substring(0, 50) });
+      }
+    } else {
+      console.log('[Auth] ❌ NO Authorization header found');
+    }
+    
+    // Fall back to cookie if no Authorization header
+    if (!sessionCookie) {
+      const cookies = this.parseCookies(req.headers.cookie);
+      sessionCookie = cookies.get(COOKIE_NAME);
+      if (sessionCookie) {
+        console.log('[Auth] Using token from session cookie');
+      }
+    }
+    
     const session = await this.verifySession(sessionCookie);
 
     if (!session) {
@@ -270,21 +322,53 @@ class SDKServer {
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
 
-    // If user not in DB, sync from OAuth server automatically
-    if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+    // If this is a Store Account token (appId === 'store-account'), handle differently
+    if (session.appId === 'store-account') {
+      console.log('[Auth] Store Account authentication, creating synthetic user');
+      // For Store Account, fetch the account details and update user role
+      const storeAccount = await db.getStoreAccountById(parseInt(sessionUserId, 10));
+      console.log('[Auth] Store Account fetched:', { id: storeAccount?.id, loginId: storeAccount?.loginId, role: storeAccount?.role });
+      if (!storeAccount) {
+        throw ForbiddenError("Store account not found");
+      }
+      const finalRole = (storeAccount.role as 'admin' | 'user') || 'user';
+      console.log('[Auth] Store Account role:', finalRole);
+      
+      if (!user) {
+        // Create a synthetic user for Store Account
+        user = {
+          id: parseInt(sessionUserId, 10),
+          openId: sessionUserId,
+          name: storeAccount.displayName || storeAccount.loginId,
+          email: null,
+          role: finalRole,
+          loginMethod: 'store-account',
           lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any as User;
+      } else {
+        // User exists in DB, but update role from Store Account
+        user.role = finalRole;
+        user.name = storeAccount.displayName || storeAccount.loginId;
+      }
+    } else {
+      // If user not in DB, sync from OAuth server automatically
+      if (!user) {
+        try {
+          const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+          await db.upsertUser({
+            openId: userInfo.openId,
+            name: userInfo.name || null,
+            email: userInfo.email ?? null,
+            loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+            lastSignedIn: signedInAt,
+          });
+          user = await db.getUserByOpenId(userInfo.openId);
+        } catch (error) {
+          console.error("[Auth] Failed to sync user from OAuth:", error);
+          throw ForbiddenError("Failed to sync user info");
+        }
       }
     }
 

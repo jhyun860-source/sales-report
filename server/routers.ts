@@ -2948,8 +2948,18 @@ export const appRouter = router({
     }),
     list: adminProcedure.query(async () => {
       const db = await getDb();
-      if (!db) return [];
-      return db.select().from(branches).orderBy(branches.name);
+      if (!db) {
+        console.log('[branch.list] NO DATABASE');
+        return [];
+      }
+      try {
+        const result = await db.select().from(branches).orderBy(branches.name);
+        console.log('[branch.list] SUCCESS', { count: result.length });
+        return result;
+      } catch (error) {
+        console.error('[branch.list] ERROR:', error);
+        return [];
+      }
     }),
     create: adminProcedure
       .input(z.object({ name: z.string().min(1), code: z.string().min(1) }))
