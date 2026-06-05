@@ -140,25 +140,35 @@ export async function getBranchById(branchId: number): Promise<Branch | null> {
 export async function getDailySalesRecord(branchId: number, date: string): Promise<DailySalesRecord | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db
-    .select()
-    .from(dailySalesRecords)
-    .where(and(eq(dailySalesRecords.branchId, branchId), eq(dailySalesRecords.date, date)))
-    .limit(1);
-  return result[0] || null;
+  try {
+    const result = await db
+      .select()
+      .from(dailySalesRecords)
+      .where(and(eq(dailySalesRecords.branchId, branchId), eq(dailySalesRecords.date, date)))
+      .limit(1);
+    return result[0] || null;
+  } catch (error) {
+    console.error('[getDailySalesRecord ERROR]', { branchId, date, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 }
 
 // 특정 날짜 이전의 가장 최근 기록 조회 (현금누적/카드누적 계산용)
 export async function getPrevDailySalesRecord(branchId: number, beforeDate: string): Promise<DailySalesRecord | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db
-    .select()
-    .from(dailySalesRecords)
-    .where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate)))
-    .orderBy(desc(dailySalesRecords.date))
-    .limit(1);
-  return result[0] || null;
+  try {
+    const result = await db
+      .select()
+      .from(dailySalesRecords)
+      .where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate)))
+      .orderBy(desc(dailySalesRecords.date))
+      .limit(1);
+    return result[0] || null;
+  } catch (error) {
+    console.error('[getPrevDailySalesRecord ERROR]', { branchId, beforeDate, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 }
 
 
@@ -167,14 +177,19 @@ export async function getPrevDailySalesRecord(branchId: number, beforeDate: stri
 export async function getPrevDailySalesRecordWithPosEnd(branchId: number, beforeDate: string): Promise<DailySalesRecord | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db
-    .select()
-    .from(dailySalesRecords)
-    .where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate)))
-    .orderBy(desc(dailySalesRecords.date))
-    .limit(120);
+  try {
+    const result = await db
+      .select()
+      .from(dailySalesRecords)
+      .where(and(eq(dailySalesRecords.branchId, branchId), lt(dailySalesRecords.date, beforeDate)))
+      .orderBy(desc(dailySalesRecords.date))
+      .limit(120);
 
-  return result.find((rec) => (parseInt(rec.posEndAmount || '0') || 0) > 0) || result[0] || null;
+    return result.find((rec) => (parseInt(rec.posEndAmount || '0') || 0) > 0) || result[0] || null;
+  } catch (error) {
+    console.error('[getPrevDailySalesRecordWithPosEnd ERROR]', { branchId, beforeDate, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 }
 
 // 특정 지점의 기간별 매출 기록 조회
@@ -185,17 +200,22 @@ export async function getDailySalesRecordsByDateRange(
 ): Promise<DailySalesRecord[]> {
   const db = await getDb();
   if (!db) return [];
-  return db
-    .select()
-    .from(dailySalesRecords)
-    .where(
-      and(
-        eq(dailySalesRecords.branchId, branchId),
-        gte(dailySalesRecords.date, startDate),
-        lte(dailySalesRecords.date, endDate)
+  try {
+    return db
+      .select()
+      .from(dailySalesRecords)
+      .where(
+        and(
+          eq(dailySalesRecords.branchId, branchId),
+          gte(dailySalesRecords.date, startDate),
+          lte(dailySalesRecords.date, endDate)
+        )
       )
-    )
-    .orderBy(desc(dailySalesRecords.date));
+      .orderBy(desc(dailySalesRecords.date));
+  } catch (error) {
+    console.error('[getDailySalesRecordsByDateRange ERROR]', { branchId, startDate, endDate, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 }
 
 // 매출 기록 생성 또는 업데이트
