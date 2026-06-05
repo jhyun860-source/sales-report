@@ -233,7 +233,10 @@ export default function SettlementDashboard() {
               <button
                 key={b.id}
                 onClick={() => {
-                  // Explicitly update URL query parameter immediately
+                  // 1. CRITICAL: Update local state first for immediate UI feedback
+                  setSelectedBranchId(b.id);
+
+                  // 2. Then synchronize URL query parameter
                   const params = new URLSearchParams();
                   params.set('year', String(selectedYear));
                   params.set('month', String(selectedMonth));
