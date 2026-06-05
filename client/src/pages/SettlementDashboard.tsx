@@ -49,7 +49,7 @@ export default function SettlementDashboard() {
     return { year, month, branchId };
   };
 
-  const urlParams = getUrlParams();
+  // urlParams는 useMemo로 계산됨 (아래 useEffect에서 정의)
   const [selectedYear, setSelectedYear] = useState(urlParams.year);
   const [selectedMonth, setSelectedMonth] = useState(urlParams.month);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(urlParams.branchId);
@@ -69,21 +69,39 @@ export default function SettlementDashboard() {
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedYear, selectedMonth, selectedBranchId, navigate]);
 
-  // 🌟 핵심 수정: branches 로드 후 기본값 설정 (URL이 없을 때만)
-  // branches가 로드되기 전에는 이 로직을 실행하지 않음 (방어 코드)
+  // 🌟 핵심 수정: URL 파라미터를 source of truth로 유지
+  // 초기 로드 시에만 URL이 없으면 기본값 설정, 이후 절대 덮어쓰지 않음
+  // hasInitialized 플래그: 한 번만 초기화되도록 보장하여 경합 조건(race condition) 방지
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // URL 파라미터 재계산 (location 변경 시만 업데이트)
+  const urlParams = useMemo(() => getUrlParams(), [location]);
+
   useEffect(() => {
     // 1️⃣ branches 데이터가 아직 안 왔으면 대기
     if (!branches || branches.length === 0) return;
 
-    // 2️⃣ URL에서 읽어온 branchId가 이미 있으면 유효성 검증 후 유지
-    if (selectedBranchId) {
-      const isValid = branches.some(b => b.id === selectedBranchId);
-      if (isValid) return; // 유효하다면 여기서 종료 (덮어쓰지 않음)
+    // 2️⃣ 이미 초기화되었으면 더 이상 실행하지 않음 (URL 보호)
+    if (hasInitialized) return;
+
+    // 3️⃣ URL에 branchId가 있으면 그대로 유지 (유효성 검증만 수행)
+    if (urlParams.branchId !== null) {
+      // 엄격한 타입 캐스팅: URL 파라미터는 문자열이므로 Number로 변환 후 비교
+      const isValid = branches.some(b => Number(b.id) === Number(urlParams.branchId));
+      if (isValid) {
+        // URL의 branchId가 유효하면 상태와 일치하는지 확인
+        if (Number(selectedBranchId) === Number(urlParams.branchId)) {
+          setHasInitialized(true);
+          return;
+        }
+      }
+      // 유효하지 않으면 URL 파라미터 무시하고 기본값 사용
     }
 
-    // 3️⃣ URL에 branchId가 없을 때만 첫 번째 지점으로 기본값 설정
+    // 4️⃣ URL에 branchId가 없을 때만 첫 번째 지점으로 기본값 설정
     setSelectedBranchId(branches[0].id);
-  }, [branches]); // branches 변경 시에만 실행
+    setHasInitialized(true);
+  }, [branches, urlParams.branchId, selectedBranchId, hasInitialized]);
 
   const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesTodayNetProfit.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
