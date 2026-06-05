@@ -1825,14 +1825,8 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
   const workType = bsData?.workType || "MON_FRI";
-  const actualWorkDaysResult = await db.select().from(dailySalesRecords).where(and3(
-    eq3(dailySalesRecords.branchId, branchId),
-    gte2(dailySalesRecords.date, `${year}-${String(month).padStart(2, "0")}-01`),
-    lte2(dailySalesRecords.date, `${year}-${String(month).padStart(2, "0")}-31`)
-  ));
-  const actualWorkDays = actualWorkDaysResult.filter((r) => Number(r.totalRevenue) > 0).length;
-  const managerBusinessDays = actualWorkDays > 0 ? actualWorkDays : getBusinessDaysInMonth(year, month, workType);
-  console.log("[\uC815\uC0B0\uACC4\uC0B0] actualWorkDays:", actualWorkDays, "managerBusinessDays:", managerBusinessDays, "managerMonthlySalary:", managerMonthlySalary);
+  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
+  console.log("[\uC815\uC0B0\uACC4\uC0B0] managerBusinessDays:", managerBusinessDays, "managerMonthlySalary:", managerMonthlySalary);
   const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
   const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
   const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
