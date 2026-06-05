@@ -87,7 +87,7 @@ export const branchSettingsRouter = router({
         .where(eq(branchSettings.branchId, input.branchId)).limit(1);
 
       if (existing) {
-        await db.update(branchSettings).set({
+        const result = await db.update(branchSettings).set({
           monthlyRent: String(input.monthlyRent),
           managerMonthlySalary: String(input.managerMonthlySalary),
           managerDailyWage: String(computedDailyWage),
@@ -98,6 +98,7 @@ export const branchSettingsRouter = router({
           monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
           commissionRate: String(input.commissionRate),
         }).where(eq(branchSettings.branchId, input.branchId));
+        if (!result) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update branch settings' });
       } else {
         await db.insert(branchSettings).values({
           branchId: input.branchId,
@@ -120,7 +121,9 @@ export const branchSettingsRouter = router({
         const startDate = `${year}-${month}-01`;
         const endDate = `${year}-${month}-31`;
 
-        await db.execute(`
+        console.log('[설정 저장] 재계산 시작:', { branchId: input.branchId, startDate, endDate });
+        
+        const result = await db.execute(`
           UPDATE dailySalesRecords d
           SET
             d.staffWageExpense = d.staffCount * ${input.staffDailyWage},
@@ -165,8 +168,10 @@ export const branchSettingsRouter = router({
           AND d.date BETWEEN '${startDate}' AND '${endDate}'
           AND d.totalRevenue > 0
         `);
+        console.log('[설정 저장] 재계산 완료:', result);
       } catch (e) {
         console.error('[설정 저장 후 재계산 오류]', e);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to recalculate settlements: ${e instanceof Error ? e.message : String(e)}` });
       }
 
       return { success: true, managerDailyWage: computedDailyWage, deputyDailyWage: computedDeputyDailyWage };

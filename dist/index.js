@@ -2235,7 +2235,7 @@ var branchSettingsRouter = router({
     const computedDeputyDailyWage = input.deputyMonthlySalary > 0 ? Math.round(input.deputyMonthlySalary / 22) : input.deputyDailyWage;
     const [existing] = await db.select().from(branchSettings).where(eq5(branchSettings.branchId, input.branchId)).limit(1);
     if (existing) {
-      await db.update(branchSettings).set({
+      const result = await db.update(branchSettings).set({
         monthlyRent: String(input.monthlyRent),
         managerMonthlySalary: String(input.managerMonthlySalary),
         managerDailyWage: String(computedDailyWage),
@@ -2246,6 +2246,7 @@ var branchSettingsRouter = router({
         monthlyFixedExpense: String(input.monthlyFixedExpense ?? 0),
         commissionRate: String(input.commissionRate)
       }).where(eq5(branchSettings.branchId, input.branchId));
+      if (!result) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update branch settings" });
     } else {
       await db.insert(branchSettings).values({
         branchId: input.branchId,
@@ -2266,7 +2267,8 @@ var branchSettingsRouter = router({
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const startDate = `${year}-${month}-01`;
       const endDate = `${year}-${month}-31`;
-      await db.execute(`
+      console.log("[\uC124\uC815 \uC800\uC7A5] \uC7AC\uACC4\uC0B0 \uC2DC\uC791:", { branchId: input.branchId, startDate, endDate });
+      const result = await db.execute(`
           UPDATE dailySalesRecords d
           SET
             d.staffWageExpense = d.staffCount * ${input.staffDailyWage},
@@ -2311,8 +2313,10 @@ var branchSettingsRouter = router({
           AND d.date BETWEEN '${startDate}' AND '${endDate}'
           AND d.totalRevenue > 0
         `);
+      console.log("[\uC124\uC815 \uC800\uC7A5] \uC7AC\uACC4\uC0B0 \uC644\uB8CC:", result);
     } catch (e) {
       console.error("[\uC124\uC815 \uC800\uC7A5 \uD6C4 \uC7AC\uACC4\uC0B0 \uC624\uB958]", e);
+      throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: `Failed to recalculate settlements: ${e instanceof Error ? e.message : String(e)}` });
     }
     return { success: true, managerDailyWage: computedDailyWage, deputyDailyWage: computedDeputyDailyWage };
   })
