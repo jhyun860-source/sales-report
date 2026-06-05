@@ -1748,7 +1748,8 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   };
   const rentExpense = hardcodedDailyRents[branchName] ?? calculateDailyRent(monthlyRent, year, month);
   const managementFeeExpense = 0;
-  const staffDailyWage = bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
+  const staffMonthlySalary = bsData ? Number(bsData.staffMonthlySalary || 0) : 0;
+  const staffDailyWage = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
   const staffWageExpense = staffCount * staffDailyWage;
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;

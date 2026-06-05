@@ -267,8 +267,11 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   // 4. 관리비 (0으로 통일, 임대료에 포함)
   const managementFeeExpense = 0;
 
-  // 5. 여직원 인건비 - 고정 일급제
-  const staffDailyWage = bsData ? Number(bsData.staffDailyWage || 0) : (hardConfig?.staffDailyWage ?? 0);
+  // 5. 여직원 인건비 - 월급을 22일로 자동 배분
+  const staffMonthlySalary = bsData ? Number(bsData.staffMonthlySalary || 0) : 0;
+  const staffDailyWage = staffMonthlySalary > 0 
+    ? Math.round(staffMonthlySalary / 22) 
+    : (bsData ? Number(bsData.staffDailyWage || 0) : (hardConfig?.staffDailyWage ?? 0));
   const staffWageExpense = staffCount * staffDailyWage;
 
   // 6. 점장/매니저 인건비 - 월급을 근무일수로 자동 배분
