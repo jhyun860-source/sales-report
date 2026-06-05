@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useMemo } from 'react';
+import { useLocation, useSearchParams as useWouterSearchParams } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
@@ -35,65 +35,51 @@ function formatWonFull(n: number) {
 
 export default function SettlementDashboard() {
   const [location, navigate] = useLocation();
+  const [searchParams, setSearchParams] = useWouterSearchParams();
 
   const { user, loading: authLoading, logout } = useStoreAuth();
   const today = getTodayString();
   const { year: todayYear, month: todayMonth } = getYearMonth(today);
 
-  // URL 파라미터 파싱 (source of truth)
-  const getUrlParams = () => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
-    const year = params.get('year') ? Number(params.get('year')) : todayYear;
-    const month = params.get('month') ? Number(params.get('month')) : todayMonth;
-    const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
-    return { year, month, branchId };
-  };
-
-  // 1️⃣ URL 파라미터를 VERY TOP에서 즉시 계산 (useState 초기화 전에)
-  const urlParams = getUrlParams();
-
-  // 2️⃣ 그 다음 상태 초기화 (urlParams 값 사용)
-  const [selectedYear, setSelectedYear] = useState(urlParams.year);
-  const [selectedMonth, setSelectedMonth] = useState(urlParams.month);
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(urlParams.branchId);
+  // 🌟 URL을 Single Source of Truth로 사용 (로컬 상태 제거)
+  const selectedYear = searchParams.get('year') ? Number(searchParams.get('year')) : todayYear;
+  const selectedMonth = searchParams.get('month') ? Number(searchParams.get('month')) : todayMonth;
+  const urlBranchId = searchParams.get('branchId') ? Number(searchParams.get('branchId')) : null;
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
   });
 
-  // URL 상태 동기화 (상태 변경 시 URL 업데이트)
-  useEffect(() => {
-    const params = new URLSearchParams();
-    params.set('year', String(selectedYear));
-    params.set('month', String(selectedMonth));
-    if (selectedBranchId !== null) {
-      params.set('branchId', String(selectedBranchId));
+  // URL에 유효한 branchId가 없으면 첫 번째 지점 사용
+  const selectedBranchId = useMemo(() => {
+    if (urlBranchId !== null) {
+      const isValid = branches.some(b => Number(b.id) === Number(urlBranchId));
+      if (isValid) return urlBranchId;
     }
-    navigate(`?${params.toString()}`, { replace: true });
-  }, [selectedYear, selectedMonth, selectedBranchId, navigate]);
+    return branches && branches.length > 0 ? branches[0].id : null;
+  }, [urlBranchId, branches]);
 
-  // 🌟 핵심 수정: URL 파라미터를 source of truth로 유지
-  // branches 데이터 로드 후 URL의 branchId를 검증하고 상태에 반영
-  useEffect(() => {
-    // 1. Wait until the asynchronous branches data is fully loaded
-    if (!branches || branches.length === 0) return;
+  // 상태 업데이트 헬퍼 함수
+  const updateYear = (year: number) => {
+    setSearchParams(prev => {
+      prev.set('year', String(year));
+      return prev;
+    }, { replace: true });
+  };
 
-    // 2. If the URL already contains a branchId, STRICTLY validate it with type casting
-    if (urlParams.branchId !== null) {
-      const isValid = branches.some(b => Number(b.id) === Number(urlParams.branchId));
-      if (isValid) {
-        // If valid, explicitly enforce the URL's branchId into the state and EXIT.
-        // NEVER let it reach the fallback line below.
-        setSelectedBranchId(urlParams.branchId);
-        return;
-      }
-    }
+  const updateMonth = (month: number) => {
+    setSearchParams(prev => {
+      prev.set('month', String(month));
+      return prev;
+    }, { replace: true });
+  };
 
-    // 3. ONLY fallback to the first branch if there is absolutely NO branchId in the URL
-    if (selectedBranchId === null) {
-      setSelectedBranchId(branches[0].id);
-    }
-  }, [branches, urlParams.branchId, selectedBranchId]);
+  const updateBranchId = (branchId: number) => {
+    setSearchParams(prev => {
+      prev.set('branchId', String(branchId));
+      return prev;
+    }, { replace: true });
+  };
 
   const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesTodayNetProfit.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -225,17 +211,7 @@ export default function SettlementDashboard() {
             {(branches as any[]).map((b: any) => (
               <button
                 key={b.id}
-                onClick={() => {
-                  // 1. CRITICAL: Update local state first for immediate UI feedback
-                  setSelectedBranchId(b.id);
-
-                  // 2. Then synchronize URL query parameter
-                  const params = new URLSearchParams();
-                  params.set('year', String(selectedYear));
-                  params.set('month', String(selectedMonth));
-                  params.set('branchId', String(b.id));
-                  navigate(`?${params.toString()}`, { replace: true });
-                }}
+                onClick={() => updateBranchId(b.id)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   selectedBranchId === b.id ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
@@ -249,7 +225,7 @@ export default function SettlementDashboard() {
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-4">
             <button
-              onClick={() => { const {year: y, month: m} = moveMonth(selectedYear, selectedMonth, -1); setSelectedYear(y); setSelectedMonth(m); }}
+              onClick={() => { const {year: y, month: m} = moveMonth(selectedYear, selectedMonth, -1); updateYear(y); updateMonth(m); }}
               className="p-1 hover:bg-gray-100 rounded"
             >
               <ChevronLeft size={18} />
@@ -258,7 +234,7 @@ export default function SettlementDashboard() {
               {selectedYear}년 {selectedMonth}월 — {selectedBranch?.name || ''}
             </h2>
             <button
-              onClick={() => { const {year: y, month: m} = moveMonth(selectedYear, selectedMonth, 1); setSelectedYear(y); setSelectedMonth(m); }}
+              onClick={() => { const {year: y, month: m} = moveMonth(selectedYear, selectedMonth, 1); updateYear(y); updateMonth(m); }}
               className="p-1 hover:bg-gray-100 rounded"
             >
               <ChevronRight size={18} />
