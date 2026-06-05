@@ -80,8 +80,11 @@ export default function BranchSettings() {
   }, [user, authLoading]);
 
   // Mutation
+  const utils = trpc.useUtils();
   const upsertMutation = trpc.branchSettings.upsert.useMutation({
     onSuccess: () => {
+      // 저장 성공 시, 모든 설정 데이터를 다시 불러옴
+      utils.branchSettings.getAll.invalidate();
       // toast.success('설정이 저장되었습니다');
     },
     onError: (error) => {
