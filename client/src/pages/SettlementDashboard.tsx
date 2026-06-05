@@ -56,7 +56,6 @@ export default function SettlementDashboard() {
   const [selectedYear, setSelectedYear] = useState(urlParams.year);
   const [selectedMonth, setSelectedMonth] = useState(urlParams.month);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(urlParams.branchId);
-  const [hasInitialized, setHasInitialized] = useState(false);
 
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -74,33 +73,27 @@ export default function SettlementDashboard() {
   }, [selectedYear, selectedMonth, selectedBranchId, navigate]);
 
   // 🌟 핵심 수정: URL 파라미터를 source of truth로 유지
-  // 초기 로드 시에만 URL이 없으면 기본값 설정, 이후 절대 덮어쓰지 않음
-  // hasInitialized 플래그: 한 번만 초기화되도록 보장하여 경합 조건(race condition) 방지
+  // branches 데이터 로드 후 URL의 branchId를 검증하고 상태에 반영
   useEffect(() => {
-    // 1️⃣ branches 데이터가 아직 안 왔으면 대기
+    // 1. Wait until the asynchronous branches data is fully loaded
     if (!branches || branches.length === 0) return;
 
-    // 2️⃣ 이미 초기화되었으면 더 이상 실행하지 않음 (URL 보호)
-    if (hasInitialized) return;
-
-    // 3️⃣ URL에 branchId가 있으면 그대로 유지 (유효성 검증만 수행)
+    // 2. If the URL already contains a branchId, STRICTLY validate it with type casting
     if (urlParams.branchId !== null) {
-      // 엄격한 타입 캐스팅: URL 파라미터는 문자열이므로 Number로 변환 후 비교
       const isValid = branches.some(b => Number(b.id) === Number(urlParams.branchId));
       if (isValid) {
-        // URL의 branchId가 유효하면 상태와 일치하는지 확인
-        if (Number(selectedBranchId) === Number(urlParams.branchId)) {
-          setHasInitialized(true);
-          return;
-        }
+        // If valid, explicitly enforce the URL's branchId into the state and EXIT.
+        // NEVER let it reach the fallback line below.
+        setSelectedBranchId(urlParams.branchId);
+        return;
       }
-      // 유효하지 않으면 URL 파라미터 무시하고 기본값 사용
     }
 
-    // 4️⃣ URL에 branchId가 없을 때만 첫 번째 지점으로 기본값 설정
-    setSelectedBranchId(branches[0].id);
-    setHasInitialized(true);
-  }, [branches, urlParams.branchId, selectedBranchId, hasInitialized]);
+    // 3. ONLY fallback to the first branch if there is absolutely NO branchId in the URL
+    if (selectedBranchId === null) {
+      setSelectedBranchId(branches[0].id);
+    }
+  }, [branches, urlParams.branchId, selectedBranchId]);
 
   const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesTodayNetProfit.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
