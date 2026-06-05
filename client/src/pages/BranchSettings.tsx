@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { useSearchParams } from 'wouter';
+import { useSearchParams, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 
 const inputClass = "flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right";
 
@@ -45,6 +46,7 @@ function Toast({ message, type, visible }: { message: string; type: 'success' | 
 
 export default function BranchSettings() {
   const { user, loading: authLoading } = useStoreAuth();
+  const [, navigate] = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlBranchId = searchParams.get('branchId') ? Number(searchParams.get('branchId')) : null;
   const selectedBranchId = urlBranchId;
@@ -204,7 +206,17 @@ export default function BranchSettings() {
       
       <div className="max-w-2xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-bold mb-6">지점 설정</h1>
+          {/* 헤더 */}
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              onClick={() => navigate('/settlement')}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+              aria-label="뒤로가기"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <h1 className="text-2xl font-bold">지점 설정</h1>
+          </div>
 
           {/* 지점 선택 */}
           <div className="mb-6">
