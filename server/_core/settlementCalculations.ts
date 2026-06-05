@@ -279,16 +279,9 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
   const workType = (bsData?.workType as 'MON_FRI' | 'MON_SAT') || 'MON_FRI';
   
-  // 실제 출근일수 계산: 해당 월에 totalRevenue > 0인 날짜 수
-  const actualWorkDaysResult = await db.select().from(dailySalesRecords)
-    .where(and(
-      eq(dailySalesRecords.branchId, branchId),
-      gte(dailySalesRecords.date, `${year}-${String(month).padStart(2,'0')}-01`),
-      lte(dailySalesRecords.date, `${year}-${String(month).padStart(2,'0')}-31`)
-    ));
-  const actualWorkDays = actualWorkDaysResult.filter(r => Number(r.totalRevenue) > 0).length;
-  const managerBusinessDays = actualWorkDays > 0 ? actualWorkDays : getBusinessDaysInMonth(year, month, workType);
-  console.log('[정산계산] actualWorkDays:', actualWorkDays, 'managerBusinessDays:', managerBusinessDays, 'managerMonthlySalary:', managerMonthlySalary);
+  // 달력 기준 영업일수 계산 (workType에 따라 월~금 또는 월~토)
+  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
+  console.log('[정산계산] managerBusinessDays:', managerBusinessDays, 'managerMonthlySalary:', managerMonthlySalary);
   const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
   const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
   const managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
