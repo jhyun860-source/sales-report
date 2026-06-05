@@ -10,9 +10,17 @@ import { TRPCError } from '@trpc/server';
 export const branchSettingsRouter = router({
   getAll: adminProcedure
     .query(async ({ ctx }) => {
+      console.log('Server Side User Context:', { user: ctx.user, role: ctx.user?.role });
+      console.log('[branchSettings.getAll] Admin user accessing:', {
+        userId: ctx.user?.id,
+        userRole: ctx.user?.role,
+        userName: ctx.user?.name,
+      });
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-      return await db.select().from(branchSettings).orderBy(branchSettings.branchId);
+      const result = await db.select().from(branchSettings).orderBy(branchSettings.branchId);
+      console.log('[branchSettings.getAll] Query success, returning', result.length, 'records');
+      return result;
     }),
 
   getByBranch: publicProcedure
@@ -41,6 +49,12 @@ export const branchSettingsRouter = router({
       workType: z.enum(['MON_FRI', 'MON_SAT']).default('MON_FRI'),
     }))
     .mutation(async ({ ctx, input }) => {
+      console.log('Server Side User Context (upsert):', { user: ctx.user, role: ctx.user?.role });
+      console.log('[branchSettings.upsert] Admin user updating:', {
+        userId: ctx.user?.id,
+        userRole: ctx.user?.role,
+        branchId: input.branchId,
+      });
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 

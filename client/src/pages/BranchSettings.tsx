@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { useSearchParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 
@@ -30,7 +30,7 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
 }
 
 export default function BranchSettings() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useStoreAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlBranchId = searchParams.get('branchId') ? Number(searchParams.get('branchId')) : null;
   const selectedBranchId = urlBranchId;
@@ -60,7 +60,23 @@ export default function BranchSettings() {
 
   // 디버깅용 로그
   useEffect(() => {
-    console.log('[BranchSettings] Auth state:', { user, authLoading, role: user?.role });
+    console.log('[BranchSettings Debug]', {
+      user,
+      role: user?.role,
+      isAuthenticated: !!user,
+      loading: authLoading,
+    });
+  }, [user, authLoading]);
+
+  // 쿼리 상태 로깅
+  useEffect(() => {
+    console.log('[BranchSettings] Query states:', {
+      branchesLoading: false, // 실제 로딩 상태는 trpc 훅에서 제공
+      allSettingsLoading: false,
+      authLoading,
+      userExists: !!user,
+      isAdmin: user?.role === 'admin',
+    });
   }, [user, authLoading]);
 
   // Mutation

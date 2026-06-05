@@ -2179,9 +2179,17 @@ init_schema();
 import { TRPCError as TRPCError4 } from "@trpc/server";
 var branchSettingsRouter = router({
   getAll: adminProcedure.query(async ({ ctx }) => {
+    console.log("Server Side User Context:", { user: ctx.user, role: ctx.user?.role });
+    console.log("[branchSettings.getAll] Admin user accessing:", {
+      userId: ctx.user?.id,
+      userRole: ctx.user?.role,
+      userName: ctx.user?.name
+    });
     const db = await getDb();
     if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(branchSettings).orderBy(branchSettings.branchId);
+    const result = await db.select().from(branchSettings).orderBy(branchSettings.branchId);
+    console.log("[branchSettings.getAll] Query success, returning", result.length, "records");
+    return result;
   }),
   getByBranch: publicProcedure.input(z3.object({ branchId: z3.number() })).query(async ({ input }) => {
     const db = await getDb();
@@ -2203,6 +2211,12 @@ var branchSettingsRouter = router({
     commissionRate: z3.number().min(0).max(1).default(0.17),
     workType: z3.enum(["MON_FRI", "MON_SAT"]).default("MON_FRI")
   })).mutation(async ({ ctx, input }) => {
+    console.log("Server Side User Context (upsert):", { user: ctx.user, role: ctx.user?.role });
+    console.log("[branchSettings.upsert] Admin user updating:", {
+      userId: ctx.user?.id,
+      userRole: ctx.user?.role,
+      branchId: input.branchId
+    });
     const db = await getDb();
     if (!db) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR" });
     const computedDailyWage = input.managerMonthlySalary > 0 ? Math.round(input.managerMonthlySalary / 22) : input.managerDailyWage;
@@ -7280,11 +7294,33 @@ ${pinkGuide}${userExcludeNote}
 // server/_core/context.ts
 async function createContext(opts) {
   let user = null;
+  const url = opts.req.url;
+  const hasCookie = !!opts.req.headers.cookie;
+  const cookieNames = opts.req.headers.cookie ? opts.req.headers.cookie.split(";").map((c) => c.trim().split("=")[0]) : [];
+  const hasAuthHeader = !!opts.req.headers.authorization;
+  console.log("[createContext] Request Debug:", {
+    url,
+    hasCookie,
+    cookieNames,
+    hasAuthHeader
+  });
   try {
+    console.log("[createContext] Attempting sdk.authenticateRequest...");
     user = await sdk.authenticateRequest(opts.req);
+    console.log("[createContext] SUCCESS:", {
+      userId: user?.id,
+      userRole: user?.role
+    });
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.log("[createContext] FAILED:", { error: errorMsg });
     user = null;
   }
+  console.log("[createContext] Final ctx.user:", {
+    isNull: user === null,
+    userId: user?.id,
+    userRole: user?.role
+  });
   return {
     req: opts.req,
     res: opts.res,
