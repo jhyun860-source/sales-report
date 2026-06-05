@@ -1746,16 +1746,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const staffWageExpense = staffCount * staffDailyWage;
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
-  const daysInMonth = new Date(year, month, 0).getDate();
-  let businessDaysCount = 0;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateObj = new Date(year, month - 1, d);
-    const dayOfWeek = dateObj.getDay();
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) businessDaysCount++;
-  }
-  const managerDailyWage = businessDaysCount > 0 ? Math.round(managerMonthlySalary / businessDaysCount) : 0;
-  const deputyDailyWage = businessDaysCount > 0 ? Math.round(deputyMonthlySalary / businessDaysCount) : 0;
-  const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
+  const managerWageExpense = managerCount * managerMonthlySalary + deputyCount * deputyMonthlySalary;
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
   const partTimeWageExpense = partTimeTotalHours > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours) : partTimeCount * partTimeHourlyWage * 8;
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
