@@ -45,6 +45,14 @@ async function startServer() {
       createContext,
     })
   );
+  // /api/version 엔드포인트
+  app.get('/api/version', (_req, res) => {
+    res.json({
+      commit: process.env.COMMIT_SHA || 'unknown',
+      buildTime: process.env.BUILD_TIME || new Date().toISOString(),
+    });
+  });
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
