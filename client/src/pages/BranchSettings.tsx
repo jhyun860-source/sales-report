@@ -30,7 +30,7 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
 }
 
 export default function BranchSettings() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlBranchId = searchParams.get('branchId') ? Number(searchParams.get('branchId')) : null;
   const selectedBranchId = urlBranchId;
@@ -53,7 +53,11 @@ export default function BranchSettings() {
   const [monthlyFixedExpense, setMonthlyFixedExpense] = useState(0);
   const [commissionRate, setCommissionRate] = useState(17);
   const [workType, setWorkType] = useState<'MON_FRI' | 'MON_SAT'>('MON_FRI');
-  const [loading, setLoading] = useState(false);
+
+  // 디버깅용 로그
+  useEffect(() => {
+    console.log('[BranchSettings] Auth state:', { user, authLoading, role: user?.role });
+  }, [user, authLoading]);
 
   // Mutation
   const upsertMutation = trpc.branchSettings.upsert.useMutation({
@@ -152,8 +156,9 @@ export default function BranchSettings() {
   const computedDeputyDaily = deputyMonthlySalary > 0 ? Math.round(deputyMonthlySalary / (workType === 'MON_SAT' ? 26 : 22)) : deputyDailyWage;
   const computedStaffDaily = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : staffDailyWage;
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-500">로딩 중...</div>;
-  if (!user || user.role !== 'admin') return <div className="flex items-center justify-center min-h-screen text-gray-500">관리자만 접근 가능합니다.</div>;
+  if (authLoading) return <div className="flex items-center justify-center min-h-screen text-gray-500">로딩 중...</div>;
+  if (!user) return <div className="flex items-center justify-center min-h-screen text-gray-500">로그인이 필요합니다.</div>;
+  if (user.role !== 'admin') return <div className="flex items-center justify-center min-h-screen text-gray-500">관리자만 접근 가능합니다. (현재 역할: {user.role})</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
