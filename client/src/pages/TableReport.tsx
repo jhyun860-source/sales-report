@@ -536,12 +536,14 @@ export default function TableReport() {
         branchId: effectiveBranchId,
       });
       applyLocalMerge(result.mergedAmount, result.mergedMemo ?? '');
-      await utils.tableReport.getByDate.invalidate({ date: currentDate, branchId: effectiveBranchId });
-      // 매출 일일 보고 페이지 캐시 무효화
-      await utils.storeSales.getRecord.invalidate();
-      await utils.storeSales.getRecords.invalidate();
-      await utils.storeSales.getPrevRecord.invalidate();
       toast.success('합치기 완료! 금액과 메모가 합산되었습니다.');
+      // invalidate는 딜레이 후 실행 (즉시 실행 시 로컬 상태 덮어쓰기 방지)
+      setTimeout(async () => {
+        await utils.tableReport.getByDate.invalidate({ date: currentDate, branchId: effectiveBranchId });
+        await utils.storeSales.getRecord.invalidate();
+        await utils.storeSales.getRecords.invalidate();
+        await utils.storeSales.getPrevRecord.invalidate();
+      }, 1000);
     } catch (e: any) {
       toast.error('합치기 실패: ' + (e?.message ?? '알 수 없는 오류'));
       setMergeTargetLocalId(null);
