@@ -762,7 +762,7 @@ function ErrorState({ message, retry }: { message: string; retry: () => void }) 
 }
 
 function SummaryCard({ branchName, date, totalStock, totalInQty, totalOutQty, totalOutCost, isAdmin }: any) {
-  return <div className="rounded-3xl p-5 text-white shadow-lg" style={{ background: "linear-gradient(135deg, #4f63ff, #5877ff)" }}><div className="flex items-center gap-2 text-lg font-black"><span>{branchName}</span><span className="opacity-60">{date}</span></div><div className={`grid ${isAdmin ? "grid-cols-4" : "grid-cols-3"} gap-2 mt-6 text-center`}><SummaryMetric value={qty(totalStock)} label="총 재고" /><SummaryMetric value={qty(totalInQty)} label="입고" /><SummaryMetric value={qty(totalOutQty)} label="출고" /></div></div>;
+  return <div className="rounded-3xl p-5 text-white shadow-lg" style={{ background: "linear-gradient(135deg, #4f63ff, #5877ff)" }}><div className="flex items-center gap-2 text-lg font-black"><span>{branchName}</span><span className="opacity-60">{date}</span></div><div className={"grid grid-cols-3 gap-2 mt-6 text-center"}><SummaryMetric value={qty(totalStock)} label="총 재고" /><SummaryMetric value={qty(totalInQty)} label="입고" /><SummaryMetric value={qty(totalOutQty)} label="출고" /></div></div>;
 }
 function SummaryMetric({ value, label, small }: { value: string; label: string; small?: boolean }) {
   return <div><div className={`font-black ${small ? "text-base" : "text-3xl"}`}>{value}</div><div className="text-xs opacity-70 mt-1">{label}</div></div>;
