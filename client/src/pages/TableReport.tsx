@@ -590,12 +590,10 @@ export default function TableReport() {
         incentives: incentives.map((inc, i) => {
           // 자동 계산: glassCount * 5000 + bottleCount * 10000 + beerBottleCount * 3000
           const autoCalculatedIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
-          // 영업인센은 직접 입력값 사용. 빈 문자열이면 0, undefined/null이면 자동계산
-          const finalSalesIncentive = (inc.salesIncentive === '' || inc.salesIncentive === '0' || Number(inc.salesIncentive) === 0)
-            ? 0
-            : (inc.salesIncentive !== undefined && inc.salesIncentive !== null && inc.salesIncentive !== '')
-              ? Number(inc.salesIncentive)
-              : autoCalculatedIncentive;
+          // 영업인센: 직접 입력값 그대로 저장 (비어있으면 0)
+          const finalSalesIncentive = (inc.salesIncentive !== undefined && inc.salesIncentive !== null && inc.salesIncentive !== '')
+            ? Number(inc.salesIncentive)
+            : 0;
           return {
             id: inc.id,
             localId: inc.localId,
@@ -1149,13 +1147,10 @@ export default function TableReport() {
 
                 {/* 3행: 영업인센 금액 - 점장은 미표시 */}
                 {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && (() => {
-                  // 자동 계산: glassCount * 5000 + bottleCount * 10000 + beerBottleCount * 3000
-                  const autoCalcIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
-                  // 영업인센: 직접 입력값 우선. 0이면 빈칸, 없으면 자동계산 표시
-                  const hasIncentiveValue = inc.salesIncentive !== undefined && inc.salesIncentive !== null && inc.salesIncentive !== '';
-                  const displayValue = hasIncentiveValue
-                    ? (Number(inc.salesIncentive) === 0 ? '' : String(inc.salesIncentive))
-                    : (autoCalcIncentive > 0 ? String(autoCalcIncentive) : '');
+                  // 영업인센: 직접 입력값만 표시 (자동계산 없음)
+                  const displayValue = (inc.salesIncentive && Number(inc.salesIncentive) > 0)
+                    ? String(inc.salesIncentive)
+                    : '';
                   return (
                     <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
                       <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
