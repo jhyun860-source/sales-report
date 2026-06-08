@@ -590,8 +590,10 @@ export default function TableReport() {
         incentives: incentives.map((inc, i) => {
           // 자동 계산: glassCount * 5000 + bottleCount * 10000 + beerBottleCount * 3000
           const autoCalculatedIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
-          // salesIncentive가 수동으로 입력되었으면 그 값 사용, 아니면 자동 계산값 사용
-          const finalSalesIncentive = inc.salesIncentive ? Number(inc.salesIncentive) : autoCalculatedIncentive;
+          // salesIncentive가 수동으로 입력되었으면 그 값 사용, 빈 문자열이면 0으로 처리 (자동계산 덮어쓰기 방지)
+          const finalSalesIncentive = inc.salesIncentive !== undefined && inc.salesIncentive !== null
+            ? Number(inc.salesIncentive)
+            : autoCalculatedIncentive;
           return {
             id: inc.id,
             localId: inc.localId,
