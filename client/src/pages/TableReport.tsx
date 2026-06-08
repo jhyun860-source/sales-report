@@ -1149,7 +1149,10 @@ export default function TableReport() {
                 {(inc.staffType !== 'manager' && inc.staffType !== 'deputy') && (() => {
                   // 자동 계산: glassCount * 5000 + bottleCount * 10000 + beerBottleCount * 3000
                   const autoCalcIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
-                  const displayValue = inc.salesIncentive || (autoCalcIncentive > 0 ? String(autoCalcIncentive) : '');
+                  // salesIncentive가 명시적으로 설정된 경우(0 포함) 그 값 사용, 없으면 자동계산
+                  const displayValue = (inc.salesIncentive !== undefined && inc.salesIncentive !== null && inc.salesIncentive !== '')
+                    ? inc.salesIncentive
+                    : (autoCalcIncentive > 0 ? String(autoCalcIncentive) : '');
                   return (
                     <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
                       <span className="text-xs flex-shrink-0" style={{ color: MUTED }}>영업인센</span>
