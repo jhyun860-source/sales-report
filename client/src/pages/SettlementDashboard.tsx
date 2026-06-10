@@ -328,7 +328,7 @@ export default function SettlementDashboard() {
                   {(allDaysSettlements as any[]).map((s: any) => {
                     const net = Number(s.netProfit || 0);
                     const rev = Number(s.totalRevenue || 0);
-                    const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0) + Number(s.staffDrinkExpense || 0);
+                    const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0) + Number(s.staffDrinkExpense || 0) + Number(s.salesIncentiveExpense || 0);
                     const liquor = Number(s.liquorCostExpense || 0);
                     return (
                       <tr key={s.date} className={`hover:bg-gray-50 ${(s as any)._empty ? 'opacity-40' : ''}` }>
