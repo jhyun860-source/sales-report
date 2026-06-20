@@ -537,13 +537,10 @@ export default function TableReport() {
       });
       applyLocalMerge(result.mergedAmount, result.mergedMemo ?? '');
       toast.success('합치기 완료! 금액과 메모가 합산되었습니다.');
-      // invalidate는 딜레이 후 실행 (즉시 실행 시 로컬 상태 덮어쓰기 방지)
-      setTimeout(async () => {
-        await utils.tableReport.getByDate.invalidate({ date: currentDate, branchId: effectiveBranchId });
-        await utils.storeSales.getRecord.invalidate();
-        await utils.storeSales.getRecords.invalidate();
-        await utils.storeSales.getPrevRecord.invalidate();
-      }, 1000);
+      // invalidate 제거: 서버 데이터 재조회가 로컬 병합 상태를 덮어써서
+      // 두 항목이 모두 사라지는 레이스 컨디션을 일으킴.
+      // 로컬 state(applyLocalMerge)만으로 화면은 이미 정확한 상태이며,
+      // 매출 합계는 다음 페이지 이동/새로고침 시 자연스럽게 최신화됨.
     } catch (e: any) {
       toast.error('합치기 실패: ' + (e?.message ?? '알 수 없는 오류'));
       setMergeTargetLocalId(null);
