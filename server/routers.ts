@@ -5022,14 +5022,17 @@ export const appRouter = router({
 
         // 직원별 주간 근무시간 집계
         const staffWeeklyMap: Record<string, Record<string, number>> = {};
+        const staffWeeklyDaysMap: Record<string, Record<string, number>> = {}; // 주차별 출근일수
         const staffTotalMinutes: Record<string, number> = {};
 
         for (const row of detailRows) {
           const key = `${row.staffName}__${row.staffType}`;
           const mins = calcWorkMinutes(row.workStart, row.workEnd);
           if (!staffWeeklyMap[key]) staffWeeklyMap[key] = {};
+          if (!staffWeeklyDaysMap[key]) staffWeeklyDaysMap[key] = {};
           const weekLabel = getWeekLabel(row.date);
           staffWeeklyMap[key][weekLabel] = (staffWeeklyMap[key][weekLabel] || 0) + mins;
+          staffWeeklyDaysMap[key][weekLabel] = (staffWeeklyDaysMap[key][weekLabel] || 0) + 1;
           staffTotalMinutes[key] = (staffTotalMinutes[key] || 0) + mins;
         }
 
@@ -5077,6 +5080,7 @@ export const appRouter = router({
             standardMinutes,
             workDiffMinutes,
             weeklyWorkMinutes: weeklyHours, // { '4/6~4/12': 분수 }
+            weeklyWorkDays: staffWeeklyDaysMap[key] || {}, // { '4/6~4/12': 출근일수 }
             avgWeeklyIncentive,
           };
         });
