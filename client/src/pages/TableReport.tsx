@@ -649,15 +649,17 @@ export default function TableReport() {
     scheduleAutoSave();
   };
 
-  // 테이블 항목 삭제
-  const removeItem = async (item: TableItemLocal) => {
-    if (item.id) {
-      try { await deleteItem.mutateAsync({ id: item.id }); } catch {}
-    }
+  // 테이블 항목 삭제 (Optimistic UI - 화면 먼저 제거 후 서버 요청)
+  const removeItem = (item: TableItemLocal) => {
+    // 화면에서 즉시 제거
     setItems(prev => {
       const next = prev.filter(it => it.localId !== item.localId);
       return next.length === 0 ? [emptyItem()] : next;
     });
+    // 서버 요청은 백그라운드로
+    if (item.id) {
+      deleteItem.mutate({ id: item.id });
+    }
   };
 
   // 인센티브 업데이트
