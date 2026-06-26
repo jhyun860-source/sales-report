@@ -213,6 +213,7 @@ export default function StaffIncentiveStats() {
                 const incentive = row.incentiveAmount || 0;
                 const totalMins = row.totalWorkMinutes || 0;
                 const weeklyMins = row.weeklyWorkMinutes || {};
+                const weeklyDays = row.weeklyWorkDays || {};
                 const avgWeekly = row.avgWeeklyIncentive || 0;
                 const workDays = Number(row.workDays) || 0;
 
@@ -290,7 +291,7 @@ export default function StaffIncentiveStats() {
                                   className="text-xs font-semibold"
                                   style={{ color: mins > 0 ? ACCENT : MUTED, fontVariantNumeric: 'tabular-nums' }}
                                 >
-                                  {formatMinutes(mins)}
+                                  {formatMinutes(mins)}{weeklyDays[week] ? ` (${weeklyDays[week]}일)` : ''}
                                 </span>
                               </div>
                             );
