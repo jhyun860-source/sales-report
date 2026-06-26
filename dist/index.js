@@ -7136,13 +7136,16 @@ var appRouter = router({
         return `${fmt(weekStart)}~${fmt(weekEnd)}`;
       }
       const staffWeeklyMap = {};
+      const staffWeeklyDaysMap = {};
       const staffTotalMinutes = {};
       for (const row of detailRows) {
         const key = `${row.staffName}__${row.staffType}`;
         const mins = calcWorkMinutes(row.workStart, row.workEnd);
         if (!staffWeeklyMap[key]) staffWeeklyMap[key] = {};
+        if (!staffWeeklyDaysMap[key]) staffWeeklyDaysMap[key] = {};
         const weekLabel = getWeekLabel(row.date);
         staffWeeklyMap[key][weekLabel] = (staffWeeklyMap[key][weekLabel] || 0) + mins;
+        staffWeeklyDaysMap[key][weekLabel] = (staffWeeklyDaysMap[key][weekLabel] || 0) + 1;
         staffTotalMinutes[key] = (staffTotalMinutes[key] || 0) + mins;
       }
       const GLASS_PRICE = 5e3;
@@ -7177,6 +7180,8 @@ var appRouter = router({
           workDiffMinutes,
           weeklyWorkMinutes: weeklyHours,
           // { '4/6~4/12': 분수 }
+          weeklyWorkDays: staffWeeklyDaysMap[key] || {},
+          // { '4/6~4/12': 출근일수 }
           avgWeeklyIncentive
         };
       });
