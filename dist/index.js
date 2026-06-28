@@ -1810,14 +1810,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : hardConfig?.commissionRate ?? 0.17;
   const commissionExpense = Math.round(totalRevenue * commissionRate);
   const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : hardConfig?.monthlyRent ?? 0;
-  const hardcodedDailyRents = {
-    "\uC120\uB989\uC810": 25e4,
-    "\uB300\uCE58\uC810": 3e5,
-    "\uC0BC\uC131\uC810": 25e4,
-    "\uBB38\uC8151\uD638\uC810": 173077,
-    "\uBB38\uC8152\uD638\uC810": 173077
-  };
-  const rentExpense = hardcodedDailyRents[branchName] ?? calculateDailyRent(monthlyRent, year, month);
+  const rentExpense = calculateDailyRent(monthlyRent, year, month, workType);
   const managementFeeExpense = 0;
   const staffMonthlySalary = bsData ? Number(bsData.staffMonthlySalary || 0) : 0;
   const staffDailyWage = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
