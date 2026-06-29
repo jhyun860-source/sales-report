@@ -4752,8 +4752,8 @@ export const appRouter = router({
 
         // 4. 현금/카드 합산 → dailySalesRecords 자동 반영
         const allItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, reportId));
-        const cashSum = allItems.filter(it => it.paymentMethod === 'cash').reduce((s, it) => s + Number(it.amount || 0), 0);
-        const cardSum = allItems.filter(it => it.paymentMethod === 'card').reduce((s, it) => s + Number(it.amount || 0), 0);
+        const cashSum = allItems.filter(it => it.paymentMethod === 'cash' || it.paymentMethod === '현금').reduce((s, it) => s + Number(it.amount || 0), 0);
+        const cardSum = allItems.filter(it => it.paymentMethod === 'card' || it.paymentMethod === '카드').reduce((s, it) => s + Number(it.amount || 0), 0);
 
         await db.update(tableReports).set({
           cashAmount: String(cashSum),
