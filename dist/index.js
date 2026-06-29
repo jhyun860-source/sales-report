@@ -6611,7 +6611,7 @@ var appRouter = router({
       guestType: z4.enum(["walking", "regular", "named"]).default("walking"),
       guestName: z4.string().optional(),
       amount: z4.string().default("0"),
-      paymentMethod: z4.enum(["card", "cash"]).default("card"),
+      paymentMethod: z4.enum(["card", "cash", "\uCE74\uB4DC", "\uD604\uAE08"]).default("card"),
       memo: z4.string().optional(),
       sortOrder: z4.number().default(0)
     })).mutation(async ({ input }) => {
@@ -6794,7 +6794,7 @@ var appRouter = router({
         guestType: z4.enum(["walking", "regular", "named"]).default("walking"),
         guestName: z4.string().optional().nullable(),
         amount: z4.string().default("0"),
-        paymentMethod: z4.enum(["card", "cash"]).default("card"),
+        paymentMethod: z4.enum(["card", "cash", "\uCE74\uB4DC", "\uD604\uAE08"]).default("card"),
         memo: z4.string().optional(),
         sortOrder: z4.number().default(0)
       })),
