@@ -1809,6 +1809,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const totalRevenue = cash + card;
   const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : hardConfig?.commissionRate ?? 0.17;
   const commissionExpense = Math.round(totalRevenue * commissionRate);
+  const workType = bsData?.workType || "MON_SAT";
   const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : hardConfig?.monthlyRent ?? 0;
   const rentExpense = calculateDailyRent(monthlyRent, year, month, workType);
   const managementFeeExpense = 0;
@@ -1817,7 +1818,6 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const staffWageExpense = staffCount * staffDailyWage;
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
-  const workType = bsData?.workType || "MON_FRI";
   const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
   console.log("[\uC815\uC0B0\uACC4\uC0B0] managerBusinessDays:", managerBusinessDays, "managerMonthlySalary:", managerMonthlySalary);
   const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
