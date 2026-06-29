@@ -252,15 +252,17 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : (hardConfig?.commissionRate ?? 0.17);
   const commissionExpense = Math.round(totalRevenue * commissionRate);
 
+  // workType 먼저 선언 (임대료 계산에 필요)
+  const workType = (bsData?.workType as 'MON_FRI' | 'MON_SAT') || 'MON_SAT';
+
   // 3. 임대료 (월 임대료 ÷ 영업일수)
   const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : (hardConfig?.monthlyRent ?? 0);
-  // 임시 수정: 하드코딩된 일일 임대료 사용 (DB branchSettings의 monthlyRent와 workType 기준으로 일별 임대료 계산)
   const rentExpense = calculateDailyRent(monthlyRent, year, month, workType);
 
   // 4. 관리비 (0으로 통일, 임대료에 포함)
   const managementFeeExpense = 0;
 
-  // 5. 여직원 인건비 - 월급을 22일로 자동 배분
+  // 5. 여직원 인건비
   const staffMonthlySalary = bsData ? Number(bsData.staffMonthlySalary || 0) : 0;
   const staffDailyWage = staffMonthlySalary > 0 
     ? Math.round(staffMonthlySalary / 22) 
@@ -270,7 +272,6 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   // 6. 점장/매니저 인건비 - 월급을 근무일수로 자동 배분
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : (hardConfig?.monthlyRent ?? 0);
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
-  const workType = (bsData?.workType as 'MON_FRI' | 'MON_SAT') || 'MON_FRI';
   
   // 달력 기준 영업일수 계산 (workType에 따라 월~금 또는 월~토)
   const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
