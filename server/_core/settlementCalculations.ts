@@ -255,9 +255,9 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   // workType 먼저 선언 (임대료 계산에 필요)
   const workType = (bsData?.workType as 'MON_FRI' | 'MON_SAT') || 'MON_SAT';
 
-  // 3. 임대료 (월 임대료 ÷ 영업일수)
+  // 3. 임대료 (월 임대료 ÷ 월~토 일수) - 토요일 영업 포함하므로 항상 MON_SAT 기준
   const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : (hardConfig?.monthlyRent ?? 0);
-  const rentExpense = calculateDailyRent(monthlyRent, year, month, workType);
+  const rentExpense = calculateDailyRent(monthlyRent, year, month, 'MON_SAT');
 
   // 4. 관리비 (0으로 통일, 임대료에 포함)
   const managementFeeExpense = 0;
