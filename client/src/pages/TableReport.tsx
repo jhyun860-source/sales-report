@@ -895,7 +895,7 @@ export default function TableReport() {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 테이블 기록</div>
             <button
-              onClick={() => { setItems(prev => [...prev, emptyItem()]); try { navigator.vibrate?.(30); } catch {} }}
+              onClick={() => { setItems(prev => [...prev, emptyItem()]); try { navigator.vibrate?.(60); } catch {} }}
               className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
               style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
             >
@@ -983,7 +983,7 @@ export default function TableReport() {
                   >
                     <Merge size={13} />
                   </button>
-                  <button onClick={() => removeItem(item)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
+                  <button onClick={() => { removeItem(item); try { navigator.vibrate?.(60); } catch {} }} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -1077,7 +1077,7 @@ export default function TableReport() {
               <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 출근자 인센티브</div>
             </div>
             <button
-              onClick={() => { setIncentives(prev => [...prev, emptyIncentive()]); try { navigator.vibrate?.(30); } catch {} }}
+              onClick={() => { setIncentives(prev => [...prev, emptyIncentive()]); try { navigator.vibrate?.(60); } catch {} }}
               className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
               style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
             >
@@ -1113,7 +1113,7 @@ export default function TableReport() {
                   >
                     {inc.staffType === 'staff' ? '직원' : inc.staffType === 'parttime' ? '아르바' : inc.staffType === 'manager' ? '점장' : '매니저'}
                   </button>
-                  <button onClick={() => removeIncentive(inc)} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
+                  <button onClick={() => { removeIncentive(inc); try { navigator.vibrate?.(60); } catch {} }} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
                   </button>
                 </div>
