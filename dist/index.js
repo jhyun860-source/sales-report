@@ -1811,7 +1811,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const commissionExpense = Math.round(totalRevenue * commissionRate);
   const workType = bsData?.workType || "MON_SAT";
   const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : hardConfig?.monthlyRent ?? 0;
-  const rentExpense = calculateDailyRent(monthlyRent, year, month, workType);
+  const rentExpense = calculateDailyRent(monthlyRent, year, month, "MON_SAT");
   const managementFeeExpense = 0;
   const staffMonthlySalary = bsData ? Number(bsData.staffMonthlySalary || 0) : 0;
   const staffDailyWage = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
