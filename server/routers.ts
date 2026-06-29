@@ -4411,7 +4411,7 @@ export const appRouter = router({
         guestType: z.enum(['walking', 'regular', 'named']).default('walking'),
         guestName: z.string().optional(),
         amount: z.string().default('0'),
-        paymentMethod: z.enum(['card', 'cash']).default('card'),
+        paymentMethod: z.enum(['card', 'cash', '카드', '현금']).default('card'),
         memo: z.string().optional(),
         sortOrder: z.number().default(0),
       }))
@@ -4616,7 +4616,7 @@ export const appRouter = router({
           guestType: z.enum(['walking', 'regular', 'named']).default('walking'),
           guestName: z.string().optional().nullable(),
           amount: z.string().default('0'),
-          paymentMethod: z.enum(['card', 'cash']).default('card'),
+          paymentMethod: z.enum(['card', 'cash', '카드', '현금']).default('card'),
           memo: z.string().optional(),
           sortOrder: z.number().default(0),
         })),
