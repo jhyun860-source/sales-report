@@ -895,7 +895,7 @@ export default function TableReport() {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 테이블 기록</div>
             <button
-              onClick={() => setItems(prev => [...prev, emptyItem()])}
+              onClick={() => { setItems(prev => [...prev, emptyItem()]); try { navigator.vibrate?.(30); } catch {} }}
               className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
               style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
             >
@@ -1077,7 +1077,7 @@ export default function TableReport() {
               <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 출근자 인센티브</div>
             </div>
             <button
-              onClick={() => setIncentives(prev => [...prev, emptyIncentive()])}
+              onClick={() => { setIncentives(prev => [...prev, emptyIncentive()]); try { navigator.vibrate?.(30); } catch {} }}
               className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
               style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
             >
