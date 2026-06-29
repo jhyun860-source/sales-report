@@ -6906,8 +6906,8 @@ var appRouter = router({
         incentiveIdMap[inc.localId] = result.insertId;
       }
       const allItems = await db.select().from(tableItems).where(eq6(tableItems.tableReportId, reportId));
-      const cashSum = allItems.filter((it) => it.paymentMethod === "cash").reduce((s, it) => s + Number(it.amount || 0), 0);
-      const cardSum = allItems.filter((it) => it.paymentMethod === "card").reduce((s, it) => s + Number(it.amount || 0), 0);
+      const cashSum = allItems.filter((it) => it.paymentMethod === "cash" || it.paymentMethod === "\uD604\uAE08").reduce((s, it) => s + Number(it.amount || 0), 0);
+      const cardSum = allItems.filter((it) => it.paymentMethod === "card" || it.paymentMethod === "\uCE74\uB4DC").reduce((s, it) => s + Number(it.amount || 0), 0);
       await db.update(tableReports).set({
         cashAmount: String(cashSum),
         cardAmount: String(cardSum)
