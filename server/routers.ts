@@ -4036,6 +4036,26 @@ export const appRouter = router({
             }
           }
         }
+        // [자동 동기화] 주류 출고/입고/조정 후 해당 날짜의 정산(liquorCostExpense)을 즉시 재계산
+        // 테이블 기록을 다시 저장하지 않아도 정산관리에 반영되도록 함
+        try {
+          const newLiquorCost = await calculateLiquorCostExpense(input.branchId, input.date);
+          const existingRec = await getDailySalesRecord(input.branchId, input.date);
+          if (existingRec) {
+            const newTotalExpenses =
+              Number(existingRec.commissionExpense || 0) + Number(existingRec.rentExpense || 0)
+              + Number(existingRec.managementFeeExpense || 0) + Number(existingRec.staffWageExpense || 0)
+              + Number(existingRec.managerWageExpense || 0) + Number(existingRec.partTimeWageExpense || 0)
+              + newLiquorCost + Number(existingRec.staffDrinkExpense || 0)
+              + Number(existingRec.salesIncentiveExpense || 0) + Number(existingRec.otherExpense || 0);
+            const newNetProfit = Number(existingRec.totalRevenue || 0) - newTotalExpenses;
+            await db.update(dailySalesRecords).set({
+              liquorCostExpense: String(newLiquorCost),
+              totalExpenses: String(newTotalExpenses),
+              netProfit: String(newNetProfit),
+            }).where(eq(dailySalesRecords.id, existingRec.id));
+          }
+        } catch (e) { console.error('[recordMovement] liquorCostExpense 자동 동기화 오류', e); }
         return { success: true };
       }),
 
