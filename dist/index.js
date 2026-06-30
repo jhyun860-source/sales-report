@@ -6159,6 +6159,19 @@ var appRouter = router({
         return { success: true, id: input.id };
       }
       const cleanName = input.name.trim();
+      const normalizedNewName = cleanName.replace(/\s+/g, "");
+      const targetBranchIdForDedupe = input.branchId ?? account.branchId;
+      if (targetBranchIdForDedupe) {
+        const hiddenForBranch = await db.select({ liquorItemId: liquorHiddenItems.liquorItemId }).from(liquorHiddenItems).where(eq6(liquorHiddenItems.branchId, targetBranchIdForDedupe));
+        const hiddenIdSet = new Set(hiddenForBranch.map((h) => h.liquorItemId));
+        const allActiveItems = await db.select().from(liquorItems).where(eq6(liquorItems.isActive, 1));
+        const existingMatch = allActiveItems.find(
+          (it) => !hiddenIdSet.has(it.id) && it.name.replace(/\s+/g, "") === normalizedNewName
+        );
+        if (existingMatch) {
+          return { success: true, id: existingMatch.id, reused: true };
+        }
+      }
       const result = await db.insert(liquorItems).values({
         name: cleanName,
         category: input.category,
