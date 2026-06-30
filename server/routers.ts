@@ -3881,10 +3881,26 @@ export const appRouter = router({
         }
 
         
-        // [최종 수정] 신규 제품 추가는 반드시 현재 선택 지점에만 독립 생성합니다.
-        // liquorItems 테이블은 전역 master 구조이므로, 새 품목을 만든 뒤 다른 모든 지점에는 hidden 처리합니다.
-        // 같은 이름의 품목이 다른 지점에 있어도 재사용하지 않습니다. 재사용하면 삼성점 추가품목이 대치/문정에도 보이는 문제가 다시 발생합니다.
+        // [중복 방지] 신규 제품 추가 시, 같은 지점에서 이미 보이는(숨김 처리 안 된) 품목 중
+        // 공백을 무시하고 같은 이름이 있으면 그 품목을 재사용합니다 (새로 만들지 않음).
+        // 다른 지점에 있는 동명 품목과는 분리(숨김)된 상태를 그대로 유지합니다.
         const cleanName = input.name.trim();
+        const normalizedNewName = cleanName.replace(/\s+/g, '');
+
+        const targetBranchIdForDedupe = input.branchId ?? account.branchId;
+        if (targetBranchIdForDedupe) {
+          const hiddenForBranch = await db.select({ liquorItemId: liquorHiddenItems.liquorItemId })
+            .from(liquorHiddenItems)
+            .where(eq(liquorHiddenItems.branchId, targetBranchIdForDedupe));
+          const hiddenIdSet = new Set(hiddenForBranch.map(h => h.liquorItemId));
+          const allActiveItems = await db.select().from(liquorItems).where(eq(liquorItems.isActive, 1));
+          const existingMatch = allActiveItems.find(it =>
+            !hiddenIdSet.has(it.id) && it.name.replace(/\s+/g, '') === normalizedNewName
+          );
+          if (existingMatch) {
+            return { success: true, id: existingMatch.id, reused: true };
+          }
+        }
 
         const result = await db.insert(liquorItems).values({
           name: cleanName,
