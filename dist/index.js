@@ -1760,7 +1760,7 @@ async function calculateStaffDrinkExpense(tableReportId, branchName) {
   });
   return total;
 }
-async function calculateLiquorCostExpense(branchId, date) {
+async function calculateLiquorCostExpense2(branchId, date) {
   const db = await getDb();
   if (!db) return 0;
   const movements = await db.select().from(liquorStockMovements).where(
@@ -1825,7 +1825,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
   const partTimeWageExpense = partTimeTotalHours > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours) : partTimeCount * partTimeHourlyWage * 8;
-  const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
+  const liquorCostExpense = await calculateLiquorCostExpense2(branchId, date);
   const staffDrinkExpense = tableReportId ? await calculateStaffDrinkExpense(tableReportId, branchName) : 0;
   const monthlyFixedExpense = bsData ? Number(bsData.monthlyFixedExpense || 0) : 0;
   const dailyFixedExpense = monthlyFixedExpense > 0 ? calculateDailyRent(monthlyFixedExpense, year, month) : 0;
@@ -6276,6 +6276,21 @@ var appRouter = router({
             await db.insert(liquorInventories).values({ branchId: input.branchId, liquorItemId: row.liquorItemId, currentStock: String(nextStock) });
           }
         }
+      }
+      try {
+        const newLiquorCost = await calculateLiquorCostExpense(input.branchId, input.date);
+        const existingRec = await getDailySalesRecord(input.branchId, input.date);
+        if (existingRec) {
+          const newTotalExpenses = Number(existingRec.commissionExpense || 0) + Number(existingRec.rentExpense || 0) + Number(existingRec.managementFeeExpense || 0) + Number(existingRec.staffWageExpense || 0) + Number(existingRec.managerWageExpense || 0) + Number(existingRec.partTimeWageExpense || 0) + newLiquorCost + Number(existingRec.staffDrinkExpense || 0) + Number(existingRec.salesIncentiveExpense || 0) + Number(existingRec.otherExpense || 0);
+          const newNetProfit = Number(existingRec.totalRevenue || 0) - newTotalExpenses;
+          await db.update(dailySalesRecords).set({
+            liquorCostExpense: String(newLiquorCost),
+            totalExpenses: String(newTotalExpenses),
+            netProfit: String(newNetProfit)
+          }).where(eq6(dailySalesRecords.id, existingRec.id));
+        }
+      } catch (e) {
+        console.error("[recordMovement] liquorCostExpense \uC790\uB3D9 \uB3D9\uAE30\uD654 \uC624\uB958", e);
       }
       return { success: true };
     }),
