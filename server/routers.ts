@@ -3497,11 +3497,15 @@ export const appRouter = router({
         const expenseTotal2 = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
         const cashDepositVal2 = parseInt(input.cashDeposit || '0') || 0;
         const computedPosEnd2 = isSunday2 ? posStartVal2 : posStartVal2 - expenseTotal2 + cashDepositVal2;
+        // 이미 저장된 posEndAmount가 있으면 유지 (매출보고에서 직접 입력한 값 보호)
+        const finalPosEnd2 = rec2 && parseInt(rec2.posEndAmount || '0') > 0
+          ? rec2.posEndAmount
+          : String(computedPosEnd2);
         const record = await upsertDailySalesRecord({
           branchId: input.branchId, date: input.date,
           posStartAmount: String(posStartVal2), cash: input.cash, card: input.card,
           cashTotal: String(computedCashTotal2), cardTotal: String(computedCardTotal2),
-          posEndAmount: String(computedPosEnd2),
+          posEndAmount: finalPosEnd2,
           cashDeposit: input.cashDeposit ?? '0',
           expenses: input.expenses,
           submittedBy: ctx.user.id, submittedAt: new Date(),
