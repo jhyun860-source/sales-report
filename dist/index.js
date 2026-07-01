@@ -5814,6 +5814,7 @@ var appRouter = router({
       const expenseTotal2 = (input.expenses || []).reduce((s, e) => s + (parseInt(e.amount || "0") || 0), 0);
       const cashDepositVal2 = parseInt(input.cashDeposit || "0") || 0;
       const computedPosEnd2 = isSunday2 ? posStartVal2 : posStartVal2 - expenseTotal2 + cashDepositVal2;
+      const finalPosEnd2 = rec2 && parseInt(rec2.posEndAmount || "0") > 0 ? rec2.posEndAmount : String(computedPosEnd2);
       const record = await upsertDailySalesRecord({
         branchId: input.branchId,
         date: input.date,
@@ -5822,7 +5823,7 @@ var appRouter = router({
         card: input.card,
         cashTotal: String(computedCashTotal2),
         cardTotal: String(computedCardTotal2),
-        posEndAmount: String(computedPosEnd2),
+        posEndAmount: finalPosEnd2,
         cashDeposit: input.cashDeposit ?? "0",
         expenses: input.expenses,
         submittedBy: ctx.user.id,
@@ -6974,7 +6975,7 @@ var appRouter = router({
       try {
         const db2 = await getDb();
         const salesRec2 = db2 ? await db2.select().from(dailySalesRecords).where(and5(eq6(dailySalesRecords.branchId, effectiveBranchId), eq6(dailySalesRecords.date, input.date))).limit(1) : [];
-        const rec2 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
+        const rec22 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
         const validInc2 = input.incentives.filter((inc) => inc.staffName);
         const sc2 = validInc2.filter((i) => i.staffType === "staff").length;
         const pc2 = validInc2.filter((i) => i.staffType === "parttime").length;
@@ -6996,7 +6997,7 @@ var appRouter = router({
         }
         const cash2 = cashSum;
         const card2 = cardSum;
-        const expenses2 = rec2 && Array.isArray(rec2.expenses) ? rec2.expenses : [];
+        const expenses2 = rec22 && Array.isArray(rec22.expenses) ? rec22.expenses : [];
         const GLASS_PRICE = 5e3;
         const BOTTLE_PRICE = 1e4;
         const BEER_PRICE = 3e3;
@@ -7027,7 +7028,7 @@ var appRouter = router({
           mc2,
           pth2
         );
-        if (!rec2) {
+        if (!rec22) {
           if (cash2 > 0 || card2 > 0) {
             await db2?.insert(dailySalesRecords).values({
               branchId: effectiveBranchId,
@@ -7077,7 +7078,7 @@ var appRouter = router({
               settlement2.totalRevenue - (settlement2.commissionExpense + settlement2.rentExpense + settlement2.managementFeeExpense + settlement2.staffWageExpense + (settlement2.managerWageExpense ?? 0) + settlement2.partTimeWageExpense + settlement2.liquorCostExpense + (staffDrink2 || settlement2.staffDrinkExpense) + salesIncentive2 + (otherExpense2 || settlement2.otherExpense))
             ),
             updatedAt: /* @__PURE__ */ new Date()
-          }).where(eq6(dailySalesRecords.id, rec2.id));
+          }).where(eq6(dailySalesRecords.id, rec22.id));
         }
       } catch (e) {
         console.error("[\uD14C\uC774\uBE14 \uC800\uC7A5 \uD6C4 \uC815\uC0B0 \uC7AC\uACC4\uC0B0 \uC624\uB958]", e);
