@@ -633,16 +633,10 @@ async function cascadeUpdatePosAmounts(branchId, fromDate) {
   if (!prevRecord) return;
   for (const rec of futureRecords) {
     const prevPosEnd = parseInt(prevRecord.posEndAmount || "0") || 0;
-    const dateObj = /* @__PURE__ */ new Date(rec.date + "T12:00:00");
-    const isSunday = dateObj.getDay() === 0;
-    const expenses = Array.isArray(rec.expenses) ? rec.expenses : [];
-    const expTotal = expenses.reduce((s, e) => s + (parseInt(e.amount || "0") || 0), 0);
-    const cashDep = parseInt(rec.cashDeposit || "0") || 0;
     const newPosStart = prevPosEnd;
-    const newPosEnd = isSunday ? newPosStart : newPosStart - expTotal + cashDep;
-    if (String(newPosStart) !== rec.posStartAmount || String(newPosEnd) !== rec.posEndAmount) {
-      await db.update(dailySalesRecords).set({ posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
-      prevRecord = { ...rec, posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd) };
+    if (String(newPosStart) !== rec.posStartAmount) {
+      await db.update(dailySalesRecords).set({ posStartAmount: String(newPosStart), updatedAt: /* @__PURE__ */ new Date() }).where(eq(dailySalesRecords.id, rec.id));
+      prevRecord = { ...rec, posStartAmount: String(newPosStart) };
     } else {
       prevRecord = rec;
     }
