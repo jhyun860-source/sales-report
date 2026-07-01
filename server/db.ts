@@ -479,24 +479,18 @@ export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string
   }
   if (!prevRecord) return;
 
+  // [수정] posStartAmount만 연쇄 업데이트. posEndAmount는 매출보고에서 직접 입력하는 값이므로 건드리지 않음.
   for (const rec of futureRecords) {
     const prevPosEnd: number = parseInt(prevRecord.posEndAmount || '0') || 0;
-    const dateObj = new Date(rec.date + 'T12:00:00');
-    const isSunday = dateObj.getDay() === 0;
-    const expenses = Array.isArray(rec.expenses) ? rec.expenses : [];
-    const expTotal = (expenses as Array<{ amount?: string }>).reduce((s, e) => s + (parseInt(e.amount || '0') || 0), 0);
-    const cashDep = parseInt(rec.cashDeposit || '0') || 0;
-
     const newPosStart: number = prevPosEnd;
-    const newPosEnd: number = isSunday ? newPosStart : newPosStart - expTotal + cashDep;
 
-    // 값이 달라진 경우에만 업데이트
-    if (String(newPosStart) !== rec.posStartAmount || String(newPosEnd) !== rec.posEndAmount) {
+    // posStartAmount만 업데이트 (posEndAmount는 직접 입력값 보호)
+    if (String(newPosStart) !== rec.posStartAmount) {
       await db
         .update(dailySalesRecords)
-        .set({ posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd), updatedAt: new Date() })
+        .set({ posStartAmount: String(newPosStart), updatedAt: new Date() })
         .where(eq(dailySalesRecords.id, rec.id));
-      prevRecord = { ...rec, posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd) };
+      prevRecord = { ...rec, posStartAmount: String(newPosStart) };
     } else {
       prevRecord = rec;
     }
