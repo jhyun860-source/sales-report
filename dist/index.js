@@ -6953,6 +6953,8 @@ var appRouter = router({
         cashTotal: String(computedCashTotal),
         cardTotal: String(computedCardTotal),
         posEndAmount: existingSales?.posEndAmount ?? String(parseInt((await getPrevDailySalesRecordWithPosEnd(effectiveBranchId, input.date))?.posEndAmount || "0") || 0),
+        cashDeposit: existingSales?.cashDeposit ?? "0",
+        posEndAmount: existingSales?.posEndAmount ?? "0",
         expenses: existingSales?.expenses ?? [],
         submittedAt: /* @__PURE__ */ new Date()
       });
