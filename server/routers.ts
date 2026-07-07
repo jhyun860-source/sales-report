@@ -4233,9 +4233,13 @@ export const appRouter = router({
         const [existing] = await db.select().from(liquorInventories)
           .where(and(eq(liquorInventories.branchId, base.branchId), eq(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
         const nextStock = Number(existing?.currentStock || 0) + signedQty;
-        if (existing) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
-            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'addMovementToGroup'}, ${account?.id ?? null})`); } catch {}
-        else await db.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
+        if (existing) {
+          await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
+          try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'addMovementToGroup'}, ${account?.id ?? null})`); } catch {}
+        } else {
+          await db.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
+          try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${base.branchId}, ${input.liquorItemId}, 0, ${Number(nextStock)}, ${'addMovementToGroup-new'}, ${account?.id ?? null})`); } catch {}
+        }
         return { success: true };
       }),
 
