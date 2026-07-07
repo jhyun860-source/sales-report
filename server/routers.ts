@@ -3863,9 +3863,13 @@ export const appRouter = router({
             const prevStock = Number(existingInventory?.currentStock || 0);
             const nextStock = Number(input.initialStock || 0);
             const diff = nextStock - prevStock;
-            if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existingInventory.id));
-            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existingInventory.branchId}, ${existingInventory.liquorItemId}, ${Number(existingInventory.currentStock || 0)}, ${Number(nextStock)}, ${'upsertItem'}, ${account?.id ?? null})`); } catch {}
-            else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
+            if (existingInventory) {
+              await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existingInventory.id));
+              try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existingInventory.branchId}, ${existingInventory.liquorItemId}, ${Number(existingInventory.currentStock || 0)}, ${Number(nextStock)}, ${'upsertItem'}, ${account?.id ?? null})`); } catch {}
+            } else {
+              await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
+              try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${effectiveBranchId}, ${input.id}, 0, ${Number(nextStock)}, ${'upsertItem-new'}, ${account?.id ?? null})`); } catch {}
+            }
             if (diff !== 0) {
               const [stockItem] = await db.select().from(liquorItems).where(eq(liquorItems.id, input.id)).limit(1);
               const unitCost = Number(stockItem?.unitCost || 0);
