@@ -18,6 +18,7 @@ __export(schema_exports, {
   branchesRelations: () => branchesRelations,
   dailySalesRecords: () => dailySalesRecords,
   dailySalesRecordsRelations: () => dailySalesRecordsRelations,
+  liquorHiddenItems: () => liquorHiddenItems,
   liquorInventories: () => liquorInventories,
   liquorInventoriesRelations: () => liquorInventoriesRelations,
   liquorItems: () => liquorItems,
@@ -38,7 +39,7 @@ __export(schema_exports, {
 });
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
-var users, branches, branchManagers, dailySalesRecords, usersRelations, branchesRelations, branchManagersRelations, pushSubscriptions, storeAccounts, storeAccountsRelations, branchSettings, dailySalesRecordsRelations, tableReports, tableItems, staffIncentives, tableReportsRelations, tableItemsRelations, staffIncentivesRelations, liquorItems, liquorInventories, liquorStockMovements, liquorItemsRelations, liquorInventoriesRelations, liquorStockMovementsRelations;
+var users, branches, branchManagers, dailySalesRecords, usersRelations, branchesRelations, branchManagersRelations, pushSubscriptions, storeAccounts, storeAccountsRelations, branchSettings, dailySalesRecordsRelations, tableReports, tableItems, staffIncentives, tableReportsRelations, tableItemsRelations, staffIncentivesRelations, liquorItems, liquorInventories, liquorStockMovements, liquorItemsRelations, liquorInventoriesRelations, liquorStockMovementsRelations, liquorHiddenItems;
 var init_schema = __esm({
   "drizzle/schema.ts"() {
     "use strict";
@@ -319,6 +320,12 @@ var init_schema = __esm({
       branch: one(branches, { fields: [liquorStockMovements.branchId], references: [branches.id] }),
       item: one(liquorItems, { fields: [liquorStockMovements.liquorItemId], references: [liquorItems.id] })
     }));
+    liquorHiddenItems = mysqlTable("liquorHiddenItems", {
+      id: int("id").autoincrement().primaryKey(),
+      branchId: int("branchId").notNull(),
+      liquorItemId: int("liquorItemId").notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull()
+    });
   }
 });
 

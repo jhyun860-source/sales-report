@@ -357,3 +357,17 @@ export const liquorStockMovementsRelations = relations(liquorStockMovements, ({ 
   branch: one(branches, { fields: [liquorStockMovements.branchId], references: [branches.id] }),
   item: one(liquorItems, { fields: [liquorStockMovements.liquorItemId], references: [liquorItems.id] }),
 }));
+
+/**
+ * 지점별 숨김 주류 품목
+ * 각 지점에서 삭제한 주류 품목을 추적
+ */
+export const liquorHiddenItems = mysqlTable("liquorHiddenItems", {
+  id: int("id").autoincrement().primaryKey(),
+  branchId: int("branchId").notNull(),
+  liquorItemId: int("liquorItemId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LiquorHiddenItem = typeof liquorHiddenItems.$inferSelect;
+export type InsertLiquorHiddenItem = typeof liquorHiddenItems.$inferInsert;

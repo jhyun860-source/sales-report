@@ -30,7 +30,7 @@ import {
   cascadeUpdateCumulativeAmounts,
   computeCumulativesForDate,
 } from "./db";
-import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives, liquorItems, liquorInventories, liquorStockMovements, branchSettings } from "../drizzle/schema";
+import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives, liquorItems, liquorInventories, liquorStockMovements, liquorHiddenItems, branchSettings } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
