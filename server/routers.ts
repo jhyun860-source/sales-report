@@ -3864,6 +3864,7 @@ export const appRouter = router({
             const nextStock = Number(input.initialStock || 0);
             const diff = nextStock - prevStock;
             if (existingInventory) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existingInventory.id));
+            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existingInventory.branchId}, ${existingInventory.liquorItemId}, ${Number(existingInventory.currentStock || 0)}, ${Number(nextStock)}, ${'upsertItem'}, ${account?.id ?? null})`); } catch {}
             else await db.insert(liquorInventories).values({ branchId: effectiveBranchId, liquorItemId: input.id, currentStock: String(nextStock) });
             if (diff !== 0) {
               const [stockItem] = await db.select().from(liquorItems).where(eq(liquorItems.id, input.id)).limit(1);
@@ -4029,6 +4030,7 @@ export const appRouter = router({
           const nextStock = Number(existing?.currentStock || 0) + signedQty;
           if (existing) {
             await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
+            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'recordMovement'}, ${account?.id ?? null})`); } catch {}
           } else {
             // [버그수정] 삭제(hidden)된 제품은 재고 row 재생성 금지
             // hidden 여부 확인 후 숨겨진 제품이면 INSERT 스킵
@@ -4103,6 +4105,7 @@ export const appRouter = router({
           if (existing) {
             const nextStock = Number(existing.currentStock || 0) + diff;
             await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
+            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'updateMovement'}, ${account?.id ?? null})`); } catch {}
           } else {
             await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
           }
@@ -4173,6 +4176,7 @@ export const appRouter = router({
             if (existing) {
               const nextStock = Number(existing.currentStock || 0) + diff;
               await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
+            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'updateMovementGroup'}, ${account?.id ?? null})`); } catch {}
             } else {
               await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
             }
@@ -4226,6 +4230,7 @@ export const appRouter = router({
           .where(and(eq(liquorInventories.branchId, base.branchId), eq(liquorInventories.liquorItemId, input.liquorItemId))).limit(1);
         const nextStock = Number(existing?.currentStock || 0) + signedQty;
         if (existing) await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
+            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'addMovementToGroup'}, ${account?.id ?? null})`); } catch {}
         else await db.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
         return { success: true };
       }),
@@ -4250,6 +4255,7 @@ export const appRouter = router({
         if (existing) {
           const nextStock = Number(existing.currentStock || 0) - signedQty;
           await db.update(liquorInventories).set({ currentStock: String(nextStock) }).where(eq(liquorInventories.id, existing.id));
+            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'deleteMovement'}, ${account?.id ?? null})`); } catch {}
         }
         await db.delete(liquorStockMovements).where(eq(liquorStockMovements.id, input.id));
         return { success: true };
@@ -4270,6 +4276,7 @@ export const appRouter = router({
         const diff = input.currentStock - prevStock;
         if (existing) {
           await db.update(liquorInventories).set({ currentStock: String(input.currentStock) }).where(eq(liquorInventories.id, existing.id));
+            try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(input.currentStock)}, ${'setStock'}, ${account?.id ?? null})`); } catch {}
         } else {
           // [버그수정] 삭제(hidden)된 제품은 재고 row 재생성 금지
           const hiddenCheck2: any = await db.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${input.branchId} AND liquorItemId = ${input.liquorItemId} LIMIT 1`);
