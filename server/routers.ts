@@ -4064,6 +4064,16 @@ export const appRouter = router({
               totalExpenses: String(newTotalExpenses),
               netProfit: String(newNetProfit),
             }).where(eq(dailySalesRecords.id, existingRec.id));
+          } else if (newLiquorCost > 0) {
+            // 정산 레코드가 아직 없으면(테이블 기록 저장 전) 주류비만 담은 레코드 생성
+            // 이후 테이블 기록 저장 시 batchSave가 전체 정산을 다시 계산함
+            await db.insert(dailySalesRecords).values({
+              branchId: input.branchId,
+              date: input.date,
+              liquorCostExpense: String(newLiquorCost),
+              totalExpenses: String(newLiquorCost),
+              netProfit: String(-newLiquorCost),
+            });
           }
         } catch (e) { console.error('[recordMovement] liquorCostExpense 자동 동기화 오류', e); }
         return { success: true };
