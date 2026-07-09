@@ -6305,6 +6305,14 @@ var appRouter = router({
             totalExpenses: String(newTotalExpenses),
             netProfit: String(newNetProfit)
           }).where(eq6(dailySalesRecords.id, existingRec.id));
+        } else if (newLiquorCost > 0) {
+          await db.insert(dailySalesRecords).values({
+            branchId: input.branchId,
+            date: input.date,
+            liquorCostExpense: String(newLiquorCost),
+            totalExpenses: String(newLiquorCost),
+            netProfit: String(-newLiquorCost)
+          });
         }
       } catch (e) {
         console.error("[recordMovement] liquorCostExpense \uC790\uB3D9 \uB3D9\uAE30\uD654 \uC624\uB958", e);
