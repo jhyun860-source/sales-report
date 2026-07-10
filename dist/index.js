@@ -7196,8 +7196,8 @@ var appRouter = router({
         const [y, m] = ym.split("-").map(Number);
         const firstDay = new Date(y, m - 1, 1);
         const dayOfWeek = firstDay.getDay();
-        const daysToMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : 8 - dayOfWeek;
-        return new Date(y, m - 1, 1 + daysToMonday);
+        const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        return new Date(y, m - 1, 1 - daysSinceMonday);
       }
       const baseMondayOfMonth = getBaseMondayOfMonth(input.yearMonth);
       function getWeekLabel(date) {
