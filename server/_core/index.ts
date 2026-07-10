@@ -68,11 +68,19 @@ async function startServer() {
         dbStatus = "no DATABASE_URL";
       }
     } catch (e: any) {
-      dbStatus = "error: " + (e?.message ?? String(e)).slice(0, 200);
+      const cause = e?.cause?.message || e?.cause?.code || "";
+      dbStatus = "error: " + (cause || (e?.message ?? String(e))).slice(0, 200);
     }
+    // 접속 대상 호스트도 표시 (비밀번호 제외)
+    let dbHost = "unset";
+    try {
+      const u = new URL(process.env.DATABASE_URL || "");
+      dbHost = `${u.hostname}:${u.port}`;
+    } catch { dbHost = "parse-fail"; }
     res.json({
-      build: "2026-07-11-v3-railway",
+      build: "2026-07-11-v4-railway",
       db: dbStatus,
+      dbHost,
       time: new Date().toISOString(),
     });
   });
