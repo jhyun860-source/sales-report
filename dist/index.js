@@ -832,6 +832,144 @@ var init_db = __esm({
   }
 });
 
+// server/restoreRouter.ts
+var restoreRouter_exports = {};
+__export(restoreRouter_exports, {
+  registerRestoreRoutes: () => registerRestoreRoutes
+});
+import fs3 from "node:fs";
+import path3 from "node:path";
+import mysql2 from "mysql2/promise";
+function toMysqlValue(v) {
+  if (v === null || v === void 0) return null;
+  if (typeof v === "string") {
+    const m = v.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?Z?$/);
+    if (m) return `${m[1]} ${m[2]}`;
+    return v;
+  }
+  if (typeof v === "object") return JSON.stringify(v);
+  return v;
+}
+async function getConn() {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL not set");
+  return mysql2.createConnection({ uri: url, multipleStatements: true });
+}
+function registerRestoreRoutes(app) {
+  app.get("/admin/restore-db", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    if (req.query.key !== RESTORE_KEY) {
+      return res.status(403).json({ error: "invalid key" });
+    }
+    const mode = String(req.query.mode || "status");
+    let conn = null;
+    try {
+      conn = await getConn();
+      if (mode === "status") {
+        const [rows] = await conn.query(
+          "SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()"
+        );
+        return res.json({ mode, tables: rows });
+      }
+      if (mode === "schema") {
+        const sqlPath = path3.resolve(process.cwd(), SCHEMA_FILE);
+        const raw = fs3.readFileSync(sqlPath, "utf-8");
+        const statements = raw.split("--> statement-breakpoint").map((s) => s.trim()).filter(Boolean);
+        const results = [];
+        await conn.query("SET FOREIGN_KEY_CHECKS=0");
+        for (const stmt of statements) {
+          try {
+            await conn.query(stmt);
+            const name = stmt.match(/`([^`]+)`/)?.[1] ?? "?";
+            results.push(`ok: ${name}`);
+          } catch (e) {
+            results.push(`skip: ${(e?.message || "").slice(0, 120)}`);
+          }
+        }
+        for (const ddl of EXTRA_DDL) {
+          try {
+            await conn.query(ddl);
+            results.push("ok: extra");
+          } catch (e) {
+            results.push(`skip extra: ${(e?.message || "").slice(0, 120)}`);
+          }
+        }
+        await conn.query("SET FOREIGN_KEY_CHECKS=1");
+        return res.json({ mode, results });
+      }
+      if (mode === "data") {
+        const backupPath = path3.resolve(process.cwd(), BACKUP_FILE);
+        const backup = JSON.parse(fs3.readFileSync(backupPath, "utf-8"));
+        const report = {};
+        await conn.query("SET FOREIGN_KEY_CHECKS=0");
+        for (const [table, rows] of Object.entries(backup)) {
+          if (table === "__drizzle_migrations") continue;
+          if (!Array.isArray(rows) || rows.length === 0) {
+            report[table] = "0\uD589 (\uAC74\uB108\uB700)";
+            continue;
+          }
+          try {
+            await conn.query(`TRUNCATE TABLE \`${table}\``);
+            const cols = Object.keys(rows[0]);
+            const colSql = cols.map((c) => `\`${c}\``).join(",");
+            const CHUNK = 300;
+            let inserted = 0;
+            for (let i = 0; i < rows.length; i += CHUNK) {
+              const chunk = rows.slice(i, i + CHUNK);
+              const values = chunk.map(
+                (r) => cols.map((c) => toMysqlValue(r[c]))
+              );
+              await conn.query(
+                `INSERT INTO \`${table}\` (${colSql}) VALUES ?`,
+                [values]
+              );
+              inserted += chunk.length;
+            }
+            report[table] = `${inserted}\uD589 \uBCF5\uC6D0`;
+          } catch (e) {
+            report[table] = `\uC2E4\uD328: ${(e?.message || "").slice(0, 150)}`;
+          }
+        }
+        await conn.query("SET FOREIGN_KEY_CHECKS=1");
+        return res.json({ mode, report });
+      }
+      return res.status(400).json({ error: "mode must be schema|data|status" });
+    } catch (e) {
+      return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
+    } finally {
+      if (conn) await conn.end().catch(() => {
+      });
+    }
+  });
+}
+var RESTORE_KEY, BACKUP_FILE, SCHEMA_FILE, EXTRA_DDL;
+var init_restoreRouter = __esm({
+  "server/restoreRouter.ts"() {
+    "use strict";
+    RESTORE_KEY = "mwt-restore-20260711-xK4";
+    BACKUP_FILE = "backups/backup-2026-06-05-before-manager-wage.json";
+    SCHEMA_FILE = "drizzle-full/0000_zippy_carlie_cooper.sql";
+    EXTRA_DDL = [
+      `CREATE TABLE IF NOT EXISTS \`liquorSeedMeta\` (
+    \`seedKey\` varchar(191) NOT NULL,
+    \`appliedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (\`seedKey\`)
+  )`,
+      `CREATE TABLE IF NOT EXISTS \`liquorStockAudit\` (
+    \`id\` int AUTO_INCREMENT NOT NULL,
+    \`branchId\` int NOT NULL,
+    \`liquorItemId\` int NOT NULL,
+    \`prevStock\` decimal(10,2),
+    \`nextStock\` decimal(10,2),
+    \`source\` varchar(100),
+    \`accountId\` int,
+    \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (\`id\`)
+  )`
+    ];
+  }
+});
+
 // server/_core/index.ts
 import "dotenv/config";
 import express2 from "express";
@@ -7912,10 +8050,10 @@ function todayKST() {
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1e3);
   return kst.toISOString().slice(0, 10);
 }
-async function getFileSha(path3) {
+async function getFileSha(path4) {
   try {
     const res = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/contents/${path3}?ref=${BACKUP_BRANCH}`,
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${path4}?ref=${BACKUP_BRANCH}`,
       { headers: { Authorization: `token ${GITHUB_TOKEN}`, Accept: "application/vnd.github+json" } }
     );
     if (!res.ok) return null;
@@ -7925,12 +8063,12 @@ async function getFileSha(path3) {
     return null;
   }
 }
-async function pushToGitHub(path3, content, message) {
+async function pushToGitHub(path4, content, message) {
   if (!GITHUB_TOKEN) {
     console.warn("[backup] GITHUB_BACKUP_TOKEN \uBBF8\uC124\uC815 - \uBC31\uC5C5 \uC2A4\uD0B5");
     return false;
   }
-  const sha = await getFileSha(path3);
+  const sha = await getFileSha(path4);
   const body = {
     message,
     content: Buffer.from(content, "utf-8").toString("base64"),
@@ -7938,7 +8076,7 @@ async function pushToGitHub(path3, content, message) {
   };
   if (sha) body.sha = sha;
   const res = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${path3}`,
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${path4}`,
     {
       method: "PUT",
       headers: {
@@ -8066,6 +8204,8 @@ async function startServer() {
   app.use(express2.json({ limit: "50mb" }));
   app.use(express2.urlencoded({ limit: "50mb", extended: true }));
   registerOAuthRoutes(app);
+  const { registerRestoreRoutes: registerRestoreRoutes2 } = await Promise.resolve().then(() => (init_restoreRouter(), restoreRouter_exports));
+  registerRestoreRoutes2(app);
   app.get("/version", async (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
     let dbStatus = "unknown";

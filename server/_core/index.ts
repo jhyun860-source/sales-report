@@ -51,6 +51,9 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // [일회성] DB 이전 복원 라우트 (이전 완료 후 제거)
+  const { registerRestoreRoutes } = await import("../restoreRouter");
+  registerRestoreRoutes(app);
   // [진단용] 배포 버전 + DB 연결 상태 확인 (캐시 우회)
   app.get("/version", async (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
