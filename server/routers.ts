@@ -5062,16 +5062,15 @@ export const appRouter = router({
           return endMin - startMin;
         }
 
-        // 주간 경계 계산: 해당 월의 첫 번째 월요일을 기준점으로 사용 (동적 계산)
-        // 예: 2026-04의 첫 월요일은 4월 6일
+        // 주간 경계 계산: 해당 월 1일이 속한 주의 월요일을 기준점으로 사용 (동적 계산)
+        // 1일이 월~일 어느 요일이든 그 주 전체가 포함되도록 함 (음수 weekNum 방지)
         function getBaseMondayOfMonth(ym: string): Date {
           const [y, m] = ym.split('-').map(Number);
-          // 해당 월 1일부터 첫 번째 월요일 찾기
           const firstDay = new Date(y, m - 1, 1);
           const dayOfWeek = firstDay.getDay(); // 0=일, 1=월, ..., 6=토
-          // 월요일이 아니면 다음 월요일로
-          const daysToMonday = dayOfWeek === 0 ? 1 : (dayOfWeek === 1 ? 0 : 8 - dayOfWeek);
-          return new Date(y, m - 1, 1 + daysToMonday);
+          // 1일이 속한 주의 월요일로 이동 (이전 방향)
+          const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          return new Date(y, m - 1, 1 - daysSinceMonday);
         }
 
         const baseMondayOfMonth = getBaseMondayOfMonth(input.yearMonth);
