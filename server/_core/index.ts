@@ -51,6 +51,28 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // [진단용] 배포 버전 + DB 연결 상태 확인 (캐시 우회)
+  app.get("/version", async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    let dbStatus = "unknown";
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (db) {
+        await db.execute("SELECT 1");
+        dbStatus = "connected";
+      } else {
+        dbStatus = "no DATABASE_URL";
+      }
+    } catch (e: any) {
+      dbStatus = "error: " + (e?.message ?? String(e)).slice(0, 200);
+    }
+    res.json({
+      build: "2026-07-11-v3-railway",
+      db: dbStatus,
+      time: new Date().toISOString(),
+    });
+  });
   registerSettlementsRoutes(app);
   // tRPC API
   app.use(

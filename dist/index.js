@@ -329,45 +329,64 @@ var init_schema = __esm({
   }
 });
 
-// server/_core/index.ts
-import "dotenv/config";
-import express2 from "express";
-import { createServer } from "http";
-import net from "net";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-
-// shared/const.ts
-var COOKIE_NAME = "app_session_id";
-var ONE_YEAR_MS = 1e3 * 60 * 60 * 24 * 365;
-var AXIOS_TIMEOUT_MS = 3e4;
-var UNAUTHED_ERR_MSG = "Please login (10001)";
-var NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
+// server/_core/env.ts
+var ENV;
+var init_env = __esm({
+  "server/_core/env.ts"() {
+    "use strict";
+    ENV = {
+      appId: process.env.VITE_APP_ID ?? "",
+      cookieSecret: process.env.JWT_SECRET ?? "",
+      databaseUrl: process.env.DATABASE_URL ?? "",
+      oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
+      ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
+      isProduction: process.env.NODE_ENV === "production",
+      forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
+      forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
+      vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+      settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me",
+      githubBackupToken: process.env.GITHUB_BACKUP_TOKEN ?? ""
+    };
+  }
+});
 
 // server/db.ts
-init_schema();
+var db_exports = {};
+__export(db_exports, {
+  cascadeUpdateCumulativeAmounts: () => cascadeUpdateCumulativeAmounts,
+  cascadeUpdatePosAmounts: () => cascadeUpdatePosAmounts,
+  checkAndResetMonthlyAmounts: () => checkAndResetMonthlyAmounts,
+  computeCumulativesForDate: () => computeCumulativesForDate,
+  createBranch: () => createBranch,
+  createStoreAccount: () => createStoreAccount,
+  deletePushSubscription: () => deletePushSubscription,
+  deleteStoreAccount: () => deleteStoreAccount,
+  getAllDailySalesRecords: () => getAllDailySalesRecords,
+  getAllStoreAccounts: () => getAllStoreAccounts,
+  getBranchById: () => getBranchById,
+  getBranchesByOwner: () => getBranchesByOwner,
+  getDailySalesRecord: () => getDailySalesRecord,
+  getDailySalesRecordsByDateRange: () => getDailySalesRecordsByDateRange,
+  getDb: () => getDb,
+  getPrevDailySalesRecord: () => getPrevDailySalesRecord,
+  getPrevDailySalesRecordWithPosEnd: () => getPrevDailySalesRecordWithPosEnd,
+  getPushSubscriptionsByOpenId: () => getPushSubscriptionsByOpenId,
+  getPushSubscriptionsByUserId: () => getPushSubscriptionsByUserId,
+  getStoreAccountById: () => getStoreAccountById,
+  getStoreAccountByLoginId: () => getStoreAccountByLoginId,
+  getTotalSalesByDate: () => getTotalSalesByDate,
+  getTotalSalesByDateRange: () => getTotalSalesByDateRange,
+  getUserByOpenId: () => getUserByOpenId,
+  manualResetCumulativeAmounts: () => manualResetCumulativeAmounts,
+  savePushSubscription: () => savePushSubscription,
+  updateStoreAccount: () => updateStoreAccount,
+  upsertDailySalesRecord: () => upsertDailySalesRecord,
+  upsertUser: () => upsertUser
+});
 import { eq, and, gte, lte, desc, lt, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-
-// server/_core/env.ts
-var ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
-  databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
-  isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
-  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
-  settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me",
-  githubBackupToken: process.env.GITHUB_BACKUP_TOKEN ?? ""
-};
-
-// server/db.ts
-var _db = null;
-var _pool = null;
 async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -446,6 +465,11 @@ async function getUserByOpenId(openId) {
   }
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result.length > 0 ? result[0] : void 0;
+}
+async function getBranchesByOwner(ownerId) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(branches).where(eq(branches.ownerId, ownerId));
 }
 async function createBranch(data) {
   const db = await getDb();
@@ -567,6 +591,63 @@ async function upsertDailySalesRecord(data) {
     return created[0] || null;
   }
 }
+async function getAllDailySalesRecords(branchId, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(dailySalesRecords).where(eq(dailySalesRecords.branchId, branchId)).orderBy(desc(dailySalesRecords.date)).limit(limit);
+}
+async function getTotalSalesByDate(branchIds, date) {
+  const db = await getDb();
+  if (!db) return null;
+  const records = await db.select().from(dailySalesRecords).where(eq(dailySalesRecords.date, date));
+  const filtered = records.filter((r) => branchIds.includes(r.branchId));
+  let totalCash = 0;
+  let totalCard = 0;
+  let totalExpense = 0;
+  filtered.forEach((record) => {
+    totalCash += Number(record.cash || 0);
+    totalCard += Number(record.card || 0);
+    record.expenses?.forEach((exp) => {
+      totalExpense += Number(exp.amount || 0);
+    });
+  });
+  return {
+    date,
+    totalCash,
+    totalCard,
+    totalExpense,
+    total: totalCash + totalCard,
+    recordCount: filtered.length
+  };
+}
+async function getTotalSalesByDateRange(branchIds, startDate, endDate) {
+  const db = await getDb();
+  if (!db) return [];
+  const records = await db.select().from(dailySalesRecords).where(
+    and(
+      gte(dailySalesRecords.date, startDate),
+      lte(dailySalesRecords.date, endDate)
+    )
+  );
+  const filtered = records.filter((r) => branchIds.includes(r.branchId));
+  const grouped = {};
+  filtered.forEach((record) => {
+    if (!grouped[record.date]) {
+      grouped[record.date] = { totalCash: 0, totalCard: 0, totalExpense: 0, recordCount: 0 };
+    }
+    grouped[record.date].totalCash += Number(record.cash || 0);
+    grouped[record.date].totalCard += Number(record.card || 0);
+    record.expenses?.forEach((exp) => {
+      grouped[record.date].totalExpense += Number(exp.amount || 0);
+    });
+    grouped[record.date].recordCount += 1;
+  });
+  return Object.entries(grouped).map(([date, data]) => ({
+    date,
+    ...data,
+    total: data.totalCash + data.totalCard
+  }));
+}
 async function savePushSubscription(data) {
   const db = await getDb();
   if (!db) return;
@@ -677,6 +758,9 @@ async function computeCumulativesForDate(branchId, date, _prevRecord, todayCash,
   }
   return { cashTotal: baseCashTotal + todayCash, cardTotal: baseCardTotal + todayCard };
 }
+async function checkAndResetMonthlyAmounts() {
+  return;
+}
 async function manualResetCumulativeAmounts(branchId) {
   const db = await getDb();
   if (!db) return { success: false, message: "\uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uC5F0\uACB0 \uC2E4\uD328" };
@@ -737,6 +821,33 @@ async function cascadeUpdateCumulativeAmounts(branchId, fromDate) {
     }
   }
 }
+var _db, _pool;
+var init_db = __esm({
+  "server/db.ts"() {
+    "use strict";
+    init_schema();
+    init_env();
+    _db = null;
+    _pool = null;
+  }
+});
+
+// server/_core/index.ts
+import "dotenv/config";
+import express2 from "express";
+import { createServer } from "http";
+import net from "net";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+
+// shared/const.ts
+var COOKIE_NAME = "app_session_id";
+var ONE_YEAR_MS = 1e3 * 60 * 60 * 24 * 365;
+var AXIOS_TIMEOUT_MS = 3e4;
+var UNAUTHED_ERR_MSG = "Please login (10001)";
+var NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
+
+// server/_core/oauth.ts
+init_db();
 
 // server/_core/cookies.ts
 function isSecureRequest(req) {
@@ -766,6 +877,8 @@ var HttpError = class extends Error {
 var ForbiddenError = (msg) => new HttpError(403, msg);
 
 // server/_core/sdk.ts
+init_db();
+init_env();
 import axios from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import { SignJWT, jwtVerify } from "jose";
@@ -1090,7 +1203,9 @@ function registerOAuthRoutes(app) {
 }
 
 // server/_core/settlements.ts
+init_db();
 init_schema();
+init_env();
 import { eq as eq2, and as and2 } from "drizzle-orm";
 function validateApiKey(req, res) {
   const apiKey = req.headers["x-api-key"];
@@ -1238,6 +1353,7 @@ function registerSettlementsRoutes(app) {
 }
 
 // server/_core/notification.ts
+init_env();
 import { TRPCError } from "@trpc/server";
 var TITLE_MAX_LENGTH = 1200;
 var CONTENT_MAX_LENGTH = 2e4;
@@ -1364,6 +1480,7 @@ var adminProcedure = t.procedure.use(
 );
 
 // server/_core/systemRouter.ts
+init_db();
 var systemRouter = router({
   health: publicProcedure.input(
     z.object({
@@ -1394,13 +1511,16 @@ var systemRouter = router({
 });
 
 // server/routers.ts
+init_env();
+init_db();
+init_schema();
 import { z as z4 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
 import { SignJWT as SignJWT2, jwtVerify as jwtVerify4 } from "jose";
-init_schema();
 
 // server/_core/llm.ts
+init_env();
 var ensureArray = (value) => Array.isArray(value) ? value : [value];
 var normalizeContentPart = (part) => {
   if (typeof part === "string") {
@@ -1563,6 +1683,7 @@ async function invokeLLM(params) {
 }
 
 // server/storage.ts
+init_env();
 function getStorageConfig() {
   const baseUrl = ENV.forgeApiUrl;
   const apiKey = ENV.forgeApiKey;
@@ -1639,6 +1760,7 @@ import { eq as eq6, and as and5, desc as desc3, asc, like, sql, inArray, gte as 
 import { TRPCError as TRPCError5 } from "@trpc/server";
 
 // server/_core/settlementCalculations.ts
+init_db();
 init_schema();
 import { eq as eq3, and as and3, gte as gte2, lte as lte2 } from "drizzle-orm";
 var BRANCH_CONFIG = {
@@ -1951,10 +2073,13 @@ async function saveDailySettlementRecord(branchId, date, settlement) {
 }
 
 // server/settlementRouter.ts
+init_db();
+init_schema();
 import { z as z2 } from "zod";
 import { TRPCError as TRPCError3 } from "@trpc/server";
-init_schema();
 import { eq as eq4, and as and4, gte as gte3, lte as lte3, desc as desc2 } from "drizzle-orm";
+init_db();
+init_env();
 import { jwtVerify as jwtVerify2 } from "jose";
 async function parseStoreCookie(cookieHeader, authHeader) {
   let token;
@@ -2239,7 +2364,9 @@ var settlementRouter = router({
 // server/branchSettingsRouter.ts
 import { z as z3 } from "zod";
 import { eq as eq5 } from "drizzle-orm";
+init_db();
 init_schema();
+init_env();
 import { TRPCError as TRPCError4 } from "@trpc/server";
 import { jwtVerify as jwtVerify3 } from "jose";
 var COOKIE_NAME2 = "app_session_id";
@@ -7583,7 +7710,6 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vite";
-import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 var PROJECT_ROOT = import.meta.dirname;
 var LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
 var MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024;
@@ -7691,7 +7817,7 @@ function vitePluginManusDebugCollector() {
     }
   };
 }
-var plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+var plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusDebugCollector()];
 var vite_config_default = defineConfig({
   plugins,
   resolve: {
@@ -7776,6 +7902,7 @@ function serveStatic(app) {
 }
 
 // server/backup-scheduler.ts
+init_db();
 import { sql as sql2 } from "drizzle-orm";
 var GITHUB_TOKEN = process.env.GITHUB_BACKUP_TOKEN ?? "";
 var GITHUB_REPO = "jhyun860-source/sales-report";
@@ -7939,6 +8066,27 @@ async function startServer() {
   app.use(express2.json({ limit: "50mb" }));
   app.use(express2.urlencoded({ limit: "50mb", extended: true }));
   registerOAuthRoutes(app);
+  app.get("/version", async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    let dbStatus = "unknown";
+    try {
+      const { getDb: getDb2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+      const db = await getDb2();
+      if (db) {
+        await db.execute("SELECT 1");
+        dbStatus = "connected";
+      } else {
+        dbStatus = "no DATABASE_URL";
+      }
+    } catch (e) {
+      dbStatus = "error: " + (e?.message ?? String(e)).slice(0, 200);
+    }
+    res.json({
+      build: "2026-07-11-v3-railway",
+      db: dbStatus,
+      time: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  });
   registerSettlementsRoutes(app);
   app.use(
     "/api/trpc",
