@@ -343,6 +343,7 @@ var init_env = __esm({
       isProduction: process.env.NODE_ENV === "production",
       forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
       forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+      openaiApiKey: process.env.OPENAI_API_KEY ?? "",
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
       vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
       settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me",
@@ -1765,9 +1766,13 @@ var normalizeToolChoice = (toolChoice, tools) => {
   }
   return toolChoice;
 };
-var resolveApiUrl = () => ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions` : "https://forge.manus.im/v1/chat/completions";
+var useOpenAI = () => !ENV.forgeApiKey && !!ENV.openaiApiKey;
+var resolveApiUrl = () => {
+  if (useOpenAI()) return "https://api.openai.com/v1/chat/completions";
+  return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions` : "https://forge.manus.im/v1/chat/completions";
+};
 var assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
+  if (!ENV.forgeApiKey && !ENV.openaiApiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
 };
@@ -1813,7 +1818,7 @@ async function invokeLLM(params) {
     response_format
   } = params;
   const payload = {
-    model: "gemini-2.5-flash",
+    model: useOpenAI() ? "gpt-4o-mini" : "gemini-2.5-flash",
     messages: messages.map(normalizeMessage)
   };
   if (tools && tools.length > 0) {
@@ -1827,9 +1832,11 @@ async function invokeLLM(params) {
     payload.tool_choice = normalizedToolChoice;
   }
   payload.max_tokens = 32768;
-  payload.thinking = {
-    "budget_tokens": 128
-  };
+  if (!useOpenAI()) {
+    payload.thinking = {
+      "budget_tokens": 128
+    };
+  }
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
     response_format,
@@ -1843,7 +1850,7 @@ async function invokeLLM(params) {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`
+      authorization: `Bearer ${useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`
     },
     body: JSON.stringify(payload)
   });

@@ -209,13 +209,17 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+const useOpenAI = () => !ENV.forgeApiKey && !!ENV.openaiApiKey;
+
+const resolveApiUrl = () => {
+  if (useOpenAI()) return "https://api.openai.com/v1/chat/completions";
+  return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
+};
 
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
+  if (!ENV.forgeApiKey && !ENV.openaiApiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
 };
@@ -280,7 +284,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: useOpenAI() ? "gpt-4o-mini" : "gemini-2.5-flash",
     messages: messages.map(normalizeMessage),
   };
 
@@ -297,8 +301,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   }
 
   payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
+  // "thinking" 파라미터는 Forge(Gemini) 전용 확장 필드라 OpenAI에는 보내지 않음
+  if (!useOpenAI()) {
+    payload.thinking = {
+      "budget_tokens": 128
+    }
   }
 
   const normalizedResponseFormat = normalizeResponseFormat({
@@ -316,7 +323,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`,
     },
     body: JSON.stringify(payload),
   });
