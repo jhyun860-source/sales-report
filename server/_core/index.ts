@@ -58,12 +58,19 @@ async function startServer() {
   app.get("/version", async (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
     let dbStatus = "unknown";
+    let dataCheck: any = null;
     try {
       const { getDb } = await import("../db");
       const db = await getDb();
       if (db) {
         await db.execute("SELECT 1");
         dbStatus = "connected";
+        const [b]: any = await db.execute("SELECT COUNT(*) AS c FROM branches");
+        const [a]: any = await db.execute("SELECT loginId FROM storeAccounts ORDER BY id LIMIT 20");
+        dataCheck = {
+          branches: b?.[0]?.c ?? b,
+          loginIds: Array.isArray(a) ? a.map((r: any) => r.loginId) : a,
+        };
       } else {
         dbStatus = "no DATABASE_URL";
       }
@@ -78,9 +85,10 @@ async function startServer() {
       dbHost = `${u.hostname}:${u.port}`;
     } catch { dbHost = "parse-fail"; }
     res.json({
-      build: "2026-07-11-v4-railway",
+      build: "2026-07-11-v5-railway",
       db: dbStatus,
       dbHost,
+      dataCheck,
       time: new Date().toISOString(),
     });
   });
