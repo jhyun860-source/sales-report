@@ -957,7 +957,18 @@ function registerRestoreRoutes(app) {
         await conn.query("SET FOREIGN_KEY_CHECKS=1");
         return res.json({ mode, report });
       }
-      return res.status(400).json({ error: "mode must be schema|data|status|verify" });
+      if (mode === "staffcheck") {
+        const [rows] = await conn.query(
+          `SELECT si.id, si.staffName, si.staffType, si.workStart, si.workEnd,
+                  tr.date, tr.branchId
+           FROM staffIncentives si
+           JOIN tableReports tr ON tr.id = si.tableReportId
+           WHERE tr.branchId = 2 AND tr.date BETWEEN '2026-06-29' AND '2026-07-04'
+           ORDER BY tr.date, si.staffName`
+        );
+        return res.json({ mode, rows });
+      }
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck" });
     } catch (e) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
