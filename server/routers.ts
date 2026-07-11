@@ -5000,7 +5000,25 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-        const prefix = `${input.yearMonth}-%`;
+        // 주간 경계 계산: 해당 월 1일이 속한 주의 월요일부터, 말일이 속한 주의 일요일까지
+        // (주가 이전/다음 달로 걸쳐도 그 주 전체 데이터를 온전히 포함하기 위해 prefix 대신 날짜 범위 사용)
+        function getBaseMondayOfMonth(ym: string): Date {
+          const [y, m] = ym.split('-').map(Number);
+          const firstDay = new Date(y, m - 1, 1);
+          const dayOfWeek = firstDay.getDay();
+          const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          return new Date(y, m - 1, 1 - daysSinceMonday);
+        }
+        const [rangeY, rangeM] = input.yearMonth.split('-').map(Number);
+        const lastDayOfMonth = new Date(rangeY, rangeM, 0);
+        const baseMondayOfMonth = getBaseMondayOfMonth(input.yearMonth);
+        const lastDayOfWeek = lastDayOfMonth.getDay();
+        const daysUntilSunday = lastDayOfWeek === 0 ? 0 : 7 - lastDayOfWeek;
+        const rangeEnd = new Date(lastDayOfMonth);
+        rangeEnd.setDate(rangeEnd.getDate() + daysUntilSunday);
+        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const rangeStartStr = fmt(baseMondayOfMonth);
+        const rangeEndStr = fmt(rangeEnd);
 
         // DB에서 실제 계정 정보 조회 (branchId 포함)
         const fullAccount = await getStoreAccountById(account.accountId);
@@ -5011,7 +5029,10 @@ export const appRouter = router({
           ? (input.branchId ?? null)
           : fullAccount.branchId;
 
-        // 집계용 rows (직원명별 합계, 직원+알바 모두 포함)
+        const prefix = `${input.yearMonth}-%`;
+
+        // 집계용 rows (직원명별 합계, 직원+알바 모두 포함) - 급여/인센티브 금액이므로
+        // 이중집계 방지를 위해 반드시 해당 캘린더 월(prefix)로만 제한한다.
         const rows = await db
           .select({
             staffName: staffIncentives.staffName,
@@ -5045,8 +5066,8 @@ export const appRouter = router({
           .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
           .where(
             targetBranchId !== null
-              ? and(like(tableReports.date, prefix), eq(tableReports.branchId, targetBranchId))
-              : like(tableReports.date, prefix)
+              ? and(gte(tableReports.date, rangeStartStr), lte(tableReports.date, rangeEndStr), eq(tableReports.branchId, targetBranchId))
+              : and(gte(tableReports.date, rangeStartStr), lte(tableReports.date, rangeEndStr))
           )
           .orderBy(tableReports.date);
 
@@ -5063,18 +5084,7 @@ export const appRouter = router({
           return endMin - startMin;
         }
 
-        // 주간 경계 계산: 해당 월 1일이 속한 주의 월요일을 기준점으로 사용 (동적 계산)
-        // 1일이 월~일 어느 요일이든 그 주 전체가 포함되도록 함 (음수 weekNum 방지)
-        function getBaseMondayOfMonth(ym: string): Date {
-          const [y, m] = ym.split('-').map(Number);
-          const firstDay = new Date(y, m - 1, 1);
-          const dayOfWeek = firstDay.getDay(); // 0=일, 1=월, ..., 6=토
-          // 1일이 속한 주의 월요일로 이동 (이전 방향)
-          const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-          return new Date(y, m - 1, 1 - daysSinceMonday);
-        }
-
-        const baseMondayOfMonth = getBaseMondayOfMonth(input.yearMonth);
+        // baseMondayOfMonth는 위에서 이미 계산됨 (범위 필터와 동일 기준 사용)
 
         function getWeekLabel(date: string): string {
           const d = new Date(date + 'T00:00:00');

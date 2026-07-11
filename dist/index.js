@@ -7459,10 +7459,27 @@ var appRouter = router({
       if (!account) throw new TRPCError5({ code: "UNAUTHORIZED" });
       const db = await getDb();
       if (!db) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR" });
-      const prefix = `${input.yearMonth}-%`;
+      function getBaseMondayOfMonth(ym) {
+        const [y, m] = ym.split("-").map(Number);
+        const firstDay = new Date(y, m - 1, 1);
+        const dayOfWeek = firstDay.getDay();
+        const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        return new Date(y, m - 1, 1 - daysSinceMonday);
+      }
+      const [rangeY, rangeM] = input.yearMonth.split("-").map(Number);
+      const lastDayOfMonth = new Date(rangeY, rangeM, 0);
+      const baseMondayOfMonth = getBaseMondayOfMonth(input.yearMonth);
+      const lastDayOfWeek = lastDayOfMonth.getDay();
+      const daysUntilSunday = lastDayOfWeek === 0 ? 0 : 7 - lastDayOfWeek;
+      const rangeEnd = new Date(lastDayOfMonth);
+      rangeEnd.setDate(rangeEnd.getDate() + daysUntilSunday);
+      const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const rangeStartStr = fmt(baseMondayOfMonth);
+      const rangeEndStr = fmt(rangeEnd);
       const fullAccount = await getStoreAccountById(account.accountId);
       if (!fullAccount) throw new TRPCError5({ code: "UNAUTHORIZED" });
       const targetBranchId = account.role === "admin" ? input.branchId ?? null : fullAccount.branchId;
+      const prefix = `${input.yearMonth}-%`;
       const rows = await db.select({
         staffName: staffIncentives.staffName,
         staffType: staffIncentives.staffType,
@@ -7481,7 +7498,7 @@ var appRouter = router({
         workStart: staffIncentives.workStart,
         workEnd: staffIncentives.workEnd
       }).from(staffIncentives).innerJoin(tableReports, eq6(staffIncentives.tableReportId, tableReports.id)).where(
-        targetBranchId !== null ? and5(like(tableReports.date, prefix), eq6(tableReports.branchId, targetBranchId)) : like(tableReports.date, prefix)
+        targetBranchId !== null ? and5(gte4(tableReports.date, rangeStartStr), lte4(tableReports.date, rangeEndStr), eq6(tableReports.branchId, targetBranchId)) : and5(gte4(tableReports.date, rangeStartStr), lte4(tableReports.date, rangeEndStr))
       ).orderBy(tableReports.date);
       function calcWorkMinutes(start, end) {
         if (!start || !end) return 0;
@@ -7493,14 +7510,6 @@ var appRouter = router({
         if (endMin <= startMin) endMin += 24 * 60;
         return endMin - startMin;
       }
-      function getBaseMondayOfMonth(ym) {
-        const [y, m] = ym.split("-").map(Number);
-        const firstDay = new Date(y, m - 1, 1);
-        const dayOfWeek = firstDay.getDay();
-        const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        return new Date(y, m - 1, 1 - daysSinceMonday);
-      }
-      const baseMondayOfMonth = getBaseMondayOfMonth(input.yearMonth);
       function getWeekLabel(date) {
         const d = /* @__PURE__ */ new Date(date + "T00:00:00");
         const diffMs = d.getTime() - baseMondayOfMonth.getTime();
@@ -7508,8 +7517,8 @@ var appRouter = router({
         const weekNum = Math.floor(diffDays / 7);
         const weekStart = new Date(baseMondayOfMonth.getTime() + weekNum * 7 * 24 * 60 * 60 * 1e3);
         const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1e3);
-        const fmt = (d2) => `${d2.getMonth() + 1}/${d2.getDate()}`;
-        return `${fmt(weekStart)}~${fmt(weekEnd)}`;
+        const fmt2 = (d2) => `${d2.getMonth() + 1}/${d2.getDate()}`;
+        return `${fmt2(weekStart)}~${fmt2(weekEnd)}`;
       }
       const staffWeeklyMap = {};
       const staffWeeklyDaysMap = {};
