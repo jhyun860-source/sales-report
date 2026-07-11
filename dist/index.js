@@ -963,7 +963,8 @@ function registerRestoreRoutes(app) {
                   tr.date, tr.branchId
            FROM staffIncentives si
            JOIN tableReports tr ON tr.id = si.tableReportId
-           WHERE tr.branchId = 2 AND tr.date BETWEEN '2026-06-29' AND '2026-07-04'
+           WHERE tr.branchId = 2 AND tr.date BETWEEN '2026-06-29' AND '2026-07-05'
+             AND si.staffName IN ('\uC720\uC8FC','\uAC00\uC744')
            ORDER BY tr.date, si.staffName`
         );
         return res.json({ mode, rows });
