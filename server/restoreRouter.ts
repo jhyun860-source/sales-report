@@ -113,7 +113,21 @@ export function registerRestoreRoutes(app: Express) {
           }
           try {
             await conn.query(`TRUNCATE TABLE \`${table}\``);
-            const cols = Object.keys(rows[0] as object);
+            // 대상 테이블의 실제 컬럼 목록 조회 → 백업의 잉여 컬럼 제거
+            const [colRows] = await conn.query(
+              "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+              [table]
+            );
+            const tableCols = new Set(
+              (colRows as any[]).map((r) => r.COLUMN_NAME)
+            );
+            const cols = Object.keys(rows[0] as object).filter((c) =>
+              tableCols.has(c)
+            );
+            if (cols.length === 0) {
+              report[table] = "실패: 일치하는 컬럼 없음";
+              continue;
+            }
             const colSql = cols.map((c) => `\`${c}\``).join(",");
             const CHUNK = 300;
             let inserted = 0;
@@ -122,13 +136,13 @@ export function registerRestoreRoutes(app: Express) {
               const values = chunk.map((r) =>
                 cols.map((c) => toMysqlValue(r[c]))
               );
-              await conn.query(
-                `INSERT INTO \`${table}\` (${colSql}) VALUES ?`,
+              const [result]: any = await conn.query(
+                `INSERT IGNORE INTO \`${table}\` (${colSql}) VALUES ?`,
                 [values]
               );
-              inserted += chunk.length;
+              inserted += result?.affectedRows ?? chunk.length;
             }
-            report[table] = `${inserted}행 복원`;
+            report[table] = `${inserted}행 복원 (원본 ${rows.length}행)`;
           } catch (e: any) {
             report[table] = `실패: ${(e?.message || "").slice(0, 150)}`;
           }

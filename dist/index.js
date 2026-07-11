@@ -910,7 +910,20 @@ function registerRestoreRoutes(app) {
           }
           try {
             await conn.query(`TRUNCATE TABLE \`${table}\``);
-            const cols = Object.keys(rows[0]);
+            const [colRows] = await conn.query(
+              "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+              [table]
+            );
+            const tableCols = new Set(
+              colRows.map((r) => r.COLUMN_NAME)
+            );
+            const cols = Object.keys(rows[0]).filter(
+              (c) => tableCols.has(c)
+            );
+            if (cols.length === 0) {
+              report[table] = "\uC2E4\uD328: \uC77C\uCE58\uD558\uB294 \uCEEC\uB7FC \uC5C6\uC74C";
+              continue;
+            }
             const colSql = cols.map((c) => `\`${c}\``).join(",");
             const CHUNK = 300;
             let inserted = 0;
@@ -919,13 +932,13 @@ function registerRestoreRoutes(app) {
               const values = chunk.map(
                 (r) => cols.map((c) => toMysqlValue(r[c]))
               );
-              await conn.query(
-                `INSERT INTO \`${table}\` (${colSql}) VALUES ?`,
+              const [result] = await conn.query(
+                `INSERT IGNORE INTO \`${table}\` (${colSql}) VALUES ?`,
                 [values]
               );
-              inserted += chunk.length;
+              inserted += result?.affectedRows ?? chunk.length;
             }
-            report[table] = `${inserted}\uD589 \uBCF5\uC6D0`;
+            report[table] = `${inserted}\uD589 \uBCF5\uC6D0 (\uC6D0\uBCF8 ${rows.length}\uD589)`;
           } catch (e) {
             report[table] = `\uC2E4\uD328: ${(e?.message || "").slice(0, 150)}`;
           }
