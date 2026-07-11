@@ -3360,12 +3360,10 @@ export const appRouter = router({
         const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
 
-        // base64 → Buffer → S3 업로드
-        const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, '');
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        const ext = input.mimeType.includes('png') ? 'png' : 'jpg';
-        const fileKey = `pos-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
+        // base64 이미지를 바로 Vision API에 전달 (외부 스토리지 업로드 불필요)
+        const imageDataUrl = input.imageBase64.startsWith('data:')
+          ? input.imageBase64
+          : `data:${input.mimeType};base64,${input.imageBase64}`;
 
         // LLM Vision으로 포스기 화면 분석
         const response = await invokeLLM({
@@ -3379,7 +3377,7 @@ export const appRouter = router({
               content: [
                 {
                   type: 'image_url' as const,
-                  image_url: { url: imageUrl, detail: 'high' as const },
+                  image_url: { url: imageDataUrl, detail: 'high' as const },
                 },
                 {
                   type: 'text' as const,
@@ -5260,12 +5258,10 @@ export const appRouter = router({
         const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
         if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
 
-        // base64 → Buffer → S3 업로드
-        const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, '');
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        const ext = input.mimeType.includes('png') ? 'png' : 'jpg';
-        const fileKey = `order-memo-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
+        // base64 이미지를 바로 Vision API에 전달 (외부 스토리지 업로드 불필요)
+        const imageDataUrl = input.imageBase64.startsWith('data:')
+          ? input.imageBase64
+          : `data:${input.mimeType};base64,${input.imageBase64}`;
 
         // 클라이언트에서 사전 로드된 패턴이 있으면 우선 사용 (DB 재조회 생략)
         const account = await getStoreAccountById(payload.accountId);
@@ -5409,7 +5405,7 @@ ${pinkGuide}${userExcludeNote}
               content: [
                 {
                   type: 'image_url' as const,
-                  image_url: { url: imageUrl, detail: 'high' as const },
+                  image_url: { url: imageDataUrl, detail: 'high' as const },
                 },
                 {
                   type: 'text' as const,

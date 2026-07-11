@@ -1872,79 +1872,6 @@ async function invokeLLM(params) {
   return await response.json();
 }
 
-// server/storage.ts
-init_env();
-function getStorageConfig() {
-  const baseUrl = ENV.forgeApiUrl;
-  const apiKey = ENV.forgeApiKey;
-  if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
-    );
-  }
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
-}
-function buildUploadUrl(baseUrl, relKey) {
-  const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
-  url.searchParams.set("path", normalizeKey(relKey));
-  return url;
-}
-function ensureTrailingSlash(value) {
-  return value.endsWith("/") ? value : `${value}/`;
-}
-function normalizeKey(relKey) {
-  return relKey.replace(/^\/+/, "");
-}
-function toFormData(data, contentType, fileName) {
-  const blob = typeof data === "string" ? new Blob([data], { type: contentType }) : new Blob([data], { type: contentType });
-  const form = new FormData();
-  form.append("file", blob, fileName || "file");
-  return form;
-}
-function buildAuthHeaders(apiKey) {
-  return { Authorization: `Bearer ${apiKey}` };
-}
-async function storagePut(relKey, data, contentType = "application/octet-stream") {
-  const { baseUrl, apiKey } = getStorageConfig();
-  const key = normalizeKey(relKey);
-  const uploadUrl = buildUploadUrl(baseUrl, key);
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY_MS = 1e3;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        headers: buildAuthHeaders(apiKey),
-        body: formData,
-        signal: AbortSignal.timeout(3e4)
-        // 30초 타임아웃
-      });
-      if (!response.ok) {
-        const message = await response.text().catch(() => response.statusText);
-        if (response.status === 503 && attempt < MAX_RETRIES) {
-          console.warn(`[Storage] Upload attempt ${attempt}/${MAX_RETRIES} failed with 503, retrying...`);
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-          continue;
-        }
-        throw new Error(
-          `Storage upload failed (${response.status} ${response.statusText}): ${message}`
-        );
-      }
-      const url = (await response.json()).url;
-      return { key, url };
-    } catch (err) {
-      if (attempt < MAX_RETRIES && (err.name === "TimeoutError" || err.message?.includes("fetch"))) {
-        console.warn(`[Storage] Upload attempt ${attempt}/${MAX_RETRIES} failed with ${err.message}, retrying...`);
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error("Storage upload failed after maximum retries");
-}
-
 // server/routers.ts
 import { eq as eq6, and as and5, desc as desc3, asc, like, sql, inArray, gte as gte4, lte as lte4, not } from "drizzle-orm";
 import { TRPCError as TRPCError5 } from "@trpc/server";
@@ -5996,11 +5923,7 @@ var appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
-      const imageBuffer = Buffer.from(base64Data, "base64");
-      const ext = input.mimeType.includes("png") ? "png" : "jpg";
-      const fileKey = `pos-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
+      const imageDataUrl = input.imageBase64.startsWith("data:") ? input.imageBase64 : `data:${input.mimeType};base64,${input.imageBase64}`;
       const response = await invokeLLM({
         messages: [
           {
@@ -6012,7 +5935,7 @@ var appRouter = router({
             content: [
               {
                 type: "image_url",
-                image_url: { url: imageUrl, detail: "high" }
+                image_url: { url: imageDataUrl, detail: "high" }
               },
               {
                 type: "text",
@@ -7666,11 +7589,7 @@ var appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const payload = await parseStoreCookie3(ctx.req.headers.cookie, ctx.req.headers.authorization);
       if (!payload) throw new TRPCError5({ code: "UNAUTHORIZED", message: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4" });
-      const base64Data = input.imageBase64.replace(/^data:[^;]+;base64,/, "");
-      const imageBuffer = Buffer.from(base64Data, "base64");
-      const ext = input.mimeType.includes("png") ? "png" : "jpg";
-      const fileKey = `order-memo-analysis/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { url: imageUrl } = await storagePut(fileKey, imageBuffer, input.mimeType);
+      const imageDataUrl = input.imageBase64.startsWith("data:") ? input.imageBase64 : `data:${input.mimeType};base64,${input.imageBase64}`;
       const account = await getStoreAccountById(payload.accountId);
       const effectiveBranchId = input.branchId ?? account?.branchId ?? null;
       let yellowKeywords = input.preloadedYellow ?? [];
@@ -7775,7 +7694,7 @@ ${pinkGuide}${userExcludeNote}
             content: [
               {
                 type: "image_url",
-                image_url: { url: imageUrl, detail: "high" }
+                image_url: { url: imageDataUrl, detail: "high" }
               },
               {
                 type: "text",
