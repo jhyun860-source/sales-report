@@ -624,6 +624,7 @@ export default function TableReport() {
       await utils.storeSales.getRecord.invalidate();
       await utils.storeSales.getRecords.invalidate();
       await utils.settlement.getSettlementsByDateRange.invalidate();
+      await utils.tableReport.getByDate.invalidate();
       setSaved(true);
       const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
       const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
