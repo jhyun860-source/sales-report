@@ -7546,7 +7546,7 @@ var appRouter = router({
                 const text2 = m[1].replace(/<[^>]+>/g, "").trim();
                 if (text2 && text2.length > 0 && text2.length < 30) yellowSet.add(text2);
               }
-              const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+              const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(216,\s*180,\s*254\)[^>]*>([\s\S]*?)<\/mark>/g));
               for (const m of pMatches) {
                 const text2 = m[1].replace(/<[^>]+>/g, "").trim();
                 const parts = text2.split(/[,，]/).map((p) => p.trim()).filter((p) => p.length > 0 && p.length < 15);
@@ -7561,7 +7561,7 @@ var appRouter = router({
                 if (cleanMemo) recentMemoExamples.push(cleanMemo);
               }
             }
-            const YELLOW_BLACKLIST = ["\uBB34\uC81C\uD55C", "\uC5F0\uC7A5", "\uAE30\uBCF8", "\uCD94\uAC00", "\uC11C\uBE44\uC2A4", "\uD3EC\uC7A5", "\uD14C\uC774\uBE14", "\uB8F8"];
+            const YELLOW_BLACKLIST = ["\uBB34\uC81C\uD55C", "\uC5F0\uC7A5", "\uAE30\uBCF8", "\uCD94\uAC00", "\uC11C\uBE44\uC2A4", "\uD3EC\uC7A5", "\uD14C\uC774\uBE14", "\uB8F8", "\uC794\uC220", "\uC794"];
             yellowKeywords = Array.from(yellowSet).filter((kw) => !YELLOW_BLACKLIST.some((bl) => kw.includes(bl))).slice(0, 50);
             pinkKeywords = Array.from(pinkSet).slice(0, 50);
           }
@@ -7622,7 +7622,7 @@ var appRouter = router({
                 const text2 = m[1].replace(/<[^>]+>/g, "").trim();
                 if (text2 && text2.length > 0 && text2.length < 30) yellowSet.add(text2);
               }
-              const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+              const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(216,\s*180,\s*254\)[^>]*>([\s\S]*?)<\/mark>/g));
               for (const m of pMatches) {
                 const text2 = m[1].replace(/<[^>]+>/g, "").trim();
                 const parts = text2.split(/[,，]/).map((p) => p.trim()).filter((p) => p.length > 0 && p.length < 15);
@@ -7637,7 +7637,7 @@ var appRouter = router({
                 if (cleanMemo) recentMemoExamples.push(cleanMemo);
               }
             }
-            const YELLOW_BLACKLIST = ["\uBB34\uC81C\uD55C", "\uC5F0\uC7A5", "\uAE30\uBCF8", "\uCD94\uAC00", "\uC11C\uBE44\uC2A4", "\uD3EC\uC7A5", "\uD14C\uC774\uBE14", "\uB8F8"];
+            const YELLOW_BLACKLIST = ["\uBB34\uC81C\uD55C", "\uC5F0\uC7A5", "\uAE30\uBCF8", "\uCD94\uAC00", "\uC11C\uBE44\uC2A4", "\uD3EC\uC7A5", "\uD14C\uC774\uBE14", "\uB8F8", "\uC794\uC220", "\uC794"];
             yellowKeywords = Array.from(yellowSet).filter((kw) => !YELLOW_BLACKLIST.some((bl) => kw.includes(bl))).slice(0, 30);
             pinkKeywords = Array.from(pinkSet).slice(0, 30);
           }
@@ -7662,8 +7662,8 @@ var appRouter = router({
 ` + (userExcludedYellowList.length > 0 ? `- \uB178\uB780 \uD615\uAD11\uD39C \uAE08\uC9C0: ${userExcludedYellowList.join(", ")}
 ` : "") + (userExcludedPinkList.length > 0 ? `- \uBD84\uD64D \uD615\uAD11\uD39C \uAE08\uC9C0: ${userExcludedPinkList.join(", ")}
 ` : "") + `\uC704 \uB2E8\uC5B4\uB4E4\uC740 \uC0AC\uC6A9\uC790\uAC00 \uBC18\uBCF5\uC801\uC73C\uB85C \uD615\uAD11\uD39C\uC744 \uC81C\uAC70\uD55C \uB2E8\uC5B4\uC774\uBBC0\uB85C \uC808\uB300\uB85C mark \uD0DC\uADF8\uB97C \uC801\uC6A9\uD558\uC9C0 \uB9D0 \uAC83.` : "";
-      const yellowGuide = yellowKeywords.length > 0 ? `\uB178\uB780 \uD615\uAD11\uD39C(<mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">\uD14D\uC2A4\uD2B8</mark>): \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4/\uD2B9\uC774 \uBA54\uB274. \uC774\uC804 \uAE30\uB85D\uC5D0\uC11C \uB178\uB780 \uD615\uAD11\uD39C\uC774 \uC801\uC6A9\uB41C \uD0A4\uC6CC\uB4DC \uC608\uC2DC: ${yellowKeywords.join(", ")}` : "\uB178\uB780 \uD615\uAD11\uD39C: \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4/\uD2B9\uC774 \uBA54\uB274\uC5D0 \uC801\uC6A9";
-      const pinkGuide = pinkKeywords.length > 0 ? `\uBD84\uD64D \uD615\uAD11\uD39C(<mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">\uD14D\uC2A4\uD2B8</mark>): \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D \uC774\uB984). \uC774\uC804 \uAE30\uB85D\uC5D0\uC11C \uBD84\uD64D \uD615\uAD11\uD39C\uC774 \uC801\uC6A9\uB41C \uC9C1\uC6D0\uBA85 \uC608\uC2DC: ${pinkKeywords.join(", ")}` : "\uBD84\uD64D \uD615\uAD11\uD39C: \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D \uC774\uB984)\uC5D0 \uC801\uC6A9";
+      const yellowGuide = yellowKeywords.length > 0 ? `\uB178\uB780 \uD615\uAD11\uD39C(<mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">\uD14D\uC2A4\uD2B8</mark>): \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4 \uB4F1\uC744 "\uBCD1(\uBC14\uD2C0)" \uB2E8\uC704\uB85C \uC8FC\uBB38\uD55C \uACBD\uC6B0\uC5D0\uB9CC \uC801\uC6A9. \uC794\uC220/\uAE00\uB77C\uC2A4 \uB2E8\uC704 \uC8FC\uBB38\uC740 \uC808\uB300 \uB178\uB780 \uD615\uAD11\uD39C \uAE08\uC9C0. \uC774\uC804 \uAE30\uB85D\uC5D0\uC11C \uB178\uB780 \uD615\uAD11\uD39C\uC774 \uC801\uC6A9\uB41C \uD0A4\uC6CC\uB4DC \uC608\uC2DC: ${yellowKeywords.join(", ")}` : '\uB178\uB780 \uD615\uAD11\uD39C: \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4\uB97C "\uBCD1(\uBC14\uD2C0)" \uB2E8\uC704\uB85C \uC8FC\uBB38\uD55C \uACBD\uC6B0\uC5D0\uB9CC \uC801\uC6A9 (\uC794\uC220/\uAE00\uB77C\uC2A4 \uB2E8\uC704\uB294 \uC808\uB300 \uAE08\uC9C0)';
+      const pinkGuide = pinkKeywords.length > 0 ? `\uBCF4\uB77C \uD615\uAD11\uD39C(<mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">\uD14D\uC2A4\uD2B8</mark>): \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D \uC774\uB984, \uC794\uCD94\uAC00 \uB4F1). \uC774\uC804 \uAE30\uB85D\uC5D0\uC11C \uBCF4\uB77C \uD615\uAD11\uD39C\uC774 \uC801\uC6A9\uB41C \uC9C1\uC6D0\uBA85 \uC608\uC2DC: ${pinkKeywords.join(", ")}` : "\uBCF4\uB77C \uD615\uAD11\uD39C: \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D \uC774\uB984, \uC794\uCD94\uAC00 \uB4F1)\uC5D0 \uC801\uC6A9";
       const examplesGuide = recentMemoExamples.length > 0 ? `
 
 \uC774\uC804 \uAE30\uB85D \uBA54\uBAA8 \uD615\uC2DD \uC608\uC2DC:
@@ -7708,14 +7708,15 @@ ${pinkGuide}${userExcludeNote}
    - \uC218\uB7C9\uC774 \uC5C6\uC73C\uBA74 \uAD04\uD638 \uC0DD\uB7B5 (\uC608: "\uBB34\uC81C\uD55C2", "\uC5F0\uC7A51")
 
    [\uD615\uAD11\uD39C \uADDC\uCE59]
-   - \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4 \uB4F1 \uD2B9\uC774 \uBA54\uB274: \uB178\uB780 \uD615\uAD11\uD39C
+   - \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4 \uB4F1\uC744 "\uBCD1(\uBC14\uD2C0)" \uB2E8\uC704\uB85C \uC8FC\uBB38\uD55C \uACBD\uC6B0\uC5D0\uB9CC: \uB178\uB780 \uD615\uAD11\uD39C
      \uC218\uB7C9 \uAD04\uD638\uAE4C\uC9C0 \uD3EC\uD568\uD574\uC11C \uD615\uAD11\uD39C \uC801\uC6A9 (\uC608: <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">\uD788\uBE44\uD0A4(1)</mark>)
-   - \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D): \uBD84\uD64D \uD615\uAD11\uD39C (\uC218\uB7C9 \uAD04\uD638 \uD3EC\uD568)
-     (\uC608: <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">\uC544\uB984(3), \uC608\uB098(2)</mark>)
-   - \uC808\uB300 \uD615\uAD11\uD39C \uAE08\uC9C0 \uD56D\uBAA9: \uBB34\uC81C\uD55C, \uC5F0\uC7A5, \uAE30\uBCF8, \uCD94\uAC00, \uC11C\uBE44\uC2A4, \uD3EC\uC7A5, \uD14C\uC774\uBE14, \uB8F8 \uB4F1 \uC77C\uBC18 \uC11C\uBE44\uC2A4 \uD14D\uC2A4\uD2B8
+     \u26A0\uFE0F "\uC794\uC220", "\uAE00\uB77C\uC2A4", "\uC794" \uB2E8\uC704\uB85C \uC8FC\uBB38\uD55C \uACBD\uC6B0\uB294 \uB178\uB780 \uD615\uAD11\uD39C\uC744 \uC808\uB300 \uC801\uC6A9\uD558\uC9C0 \uB9D0 \uAC83 (\uC608: "\uB9E5\uCF08\uB780 12y \uC794\uC220(1)"\uC740 \uD615\uAD11\uD39C \uC5C6\uC774 \uC77C\uBC18 \uD14D\uC2A4\uD2B8\uB85C\uB9CC \uD45C\uC2DC)
+   - \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D, \uC794\uCD94\uAC00 \uD3EC\uD568): \uBCF4\uB77C \uD615\uAD11\uD39C (\uC218\uB7C9 \uAD04\uD638 \uD3EC\uD568)
+     (\uC608: <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">\uC544\uB984(3), \uC608\uB098(2)</mark>)
+   - \uC808\uB300 \uD615\uAD11\uD39C \uAE08\uC9C0 \uD56D\uBAA9: \uBB34\uC81C\uD55C, \uC5F0\uC7A5, \uAE30\uBCF8, \uCD94\uAC00, \uC11C\uBE44\uC2A4, \uD3EC\uC7A5, \uD14C\uC774\uBE14, \uB8F8 \uB4F1 \uC77C\uBC18 \uC11C\uBE44\uC2A4 \uD14D\uC2A4\uD2B8, \uADF8\uB9AC\uACE0 \uC794\uC220/\uAE00\uB77C\uC2A4 \uB2E8\uC704 \uC8FC\uB958
      ("\uBB34\uC81C\uD55C"\uC740 \uC808\uB300\uB85C \uB178\uB780 \uD615\uAD11\uD39C\uC744 \uC801\uC6A9\uD558\uC9C0 \uB9D0 \uAC83)
 
-   \uC608\uC2DC \uCD9C\uB825: \uBB34\uC81C\uD55C2, \uC5F0\uC7A51, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">\uBAA8\uC5E3(1)</mark>, <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">\uC544\uB984(3), \uC608\uB098(2)</mark>
+   \uC608\uC2DC \uCD9C\uB825: \uBB34\uC81C\uD55C2, \uC5F0\uC7A51, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">\uBAA8\uC5E3(1)</mark>, \uB9E5\uCF08\uB780 12y \uC794\uC220(1), <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">\uC544\uB984(3), \uC608\uB098(2)</mark>
 
 2. amount: \uC774\uBBF8\uC9C0\uC5D0\uC11C \uD30C\uC545\uD55C \uCD1D \uACB0\uC81C\uAE08\uC561 (\uC6D0 \uB2E8\uC704 \uC815\uC218, \uD30C\uC545 \uBD88\uAC00\uC2DC 0)
    - \uC774\uBBF8\uC9C0\uC5D0 \uD569\uACC4 \uAE08\uC561\uC774 \uBA85\uC2DC\uB418\uC5B4 \uC788\uC73C\uBA74 \uADF8 \uAC12 \uC0AC\uC6A9
@@ -7758,7 +7759,7 @@ ${pinkGuide}${userExcludeNote}
       };
       let memoOut = result.memo || "";
       const yellowMarkRe = /<mark[^>]*rgb\(255,\s*224,\s*102\)[^>]*>([\s\S]*?)<\/mark>/g;
-      const pinkMarkRe = /<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g;
+      const pinkMarkRe = /<mark[^>]*rgb\(216,\s*180,\s*254\)[^>]*>([\s\S]*?)<\/mark>/g;
       memoOut = stripMarksContaining(memoOut, yellowMarkRe, excludedYellowList);
       memoOut = stripMarksContaining(memoOut, pinkMarkRe, excludedPinkList);
       return {

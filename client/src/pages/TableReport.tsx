@@ -354,7 +354,7 @@ export default function TableReport() {
     if (!html) return { yellow, pink };
     const yMatches = Array.from(html.matchAll(/<mark[^>]*rgb\(255,\s*224,\s*102\)[^>]*>([\s\S]*?)<\/mark>/g));
     for (const m of yMatches) yellow.push(m[1].replace(/<[^>]+>/g, '').trim());
-    const pMatches = Array.from(html.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+    const pMatches = Array.from(html.matchAll(/<mark[^>]*rgb\(216,\s*180,\s*254\)[^>]*>([\s\S]*?)<\/mark>/g));
     for (const m of pMatches) pink.push(m[1].replace(/<[^>]+>/g, '').trim());
     return { yellow, pink };
   };

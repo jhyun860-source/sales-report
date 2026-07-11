@@ -5209,7 +5209,7 @@ export const appRouter = router({
                   const text = m[1].replace(/<[^>]+>/g, '').trim();
                   if (text && text.length > 0 && text.length < 30) yellowSet.add(text);
                 }
-                const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+                const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(216,\s*180,\s*254\)[^>]*>([\s\S]*?)<\/mark>/g));
                 for (const m of pMatches) {
                   const text = m[1].replace(/<[^>]+>/g, '').trim();
                   const parts = text.split(/[,，]/).map((p: string) => p.trim()).filter((p: string) => p.length > 0 && p.length < 15);
@@ -5224,7 +5224,7 @@ export const appRouter = router({
                   if (cleanMemo) recentMemoExamples.push(cleanMemo);
                 }
               }
-              const YELLOW_BLACKLIST = ['무제한', '연장', '기본', '추가', '서비스', '포장', '테이블', '룸'];
+              const YELLOW_BLACKLIST = ['무제한', '연장', '기본', '추가', '서비스', '포장', '테이블', '룸', '잔술', '잔'];
               yellowKeywords = Array.from(yellowSet)
                 .filter(kw => !YELLOW_BLACKLIST.some(bl => kw.includes(bl)))
                 .slice(0, 50);
@@ -5311,7 +5311,7 @@ export const appRouter = router({
                   if (text && text.length > 0 && text.length < 30) yellowSet.add(text);
                 }
                 // 분홍 형광펜 텍스트 추출 (쉼표로 분리된 직원명 개별 처리)
-                const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g));
+                const pMatches = Array.from(memo.matchAll(/<mark[^>]*rgb\(216,\s*180,\s*254\)[^>]*>([\s\S]*?)<\/mark>/g));
                 for (const m of pMatches) {
                   const text = m[1].replace(/<[^>]+>/g, '').trim();
                   // 쉼표로 분리하여 개별 직원명 추출
@@ -5330,7 +5330,7 @@ export const appRouter = router({
                 }
               }
               // 무제한, 연장 등 일반 텍스트는 노란 형광펜 키워드에서 제외
-              const YELLOW_BLACKLIST = ['무제한', '연장', '기본', '추가', '서비스', '포장', '테이블', '룸'];
+              const YELLOW_BLACKLIST = ['무제한', '연장', '기본', '추가', '서비스', '포장', '테이블', '룸', '잔술', '잔'];
               yellowKeywords = Array.from(yellowSet)
                 .filter(kw => !YELLOW_BLACKLIST.some(bl => kw.includes(bl)))
                 .slice(0, 30);
@@ -5369,11 +5369,11 @@ export const appRouter = router({
 
         // 형광펜 가이드 프롬프트 구성
         const yellowGuide = yellowKeywords.length > 0
-          ? `노란 형광펜(<mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">텍스트</mark>): 주류/샴페인/위스키/특이 메뉴. 이전 기록에서 노란 형광펜이 적용된 키워드 예시: ${yellowKeywords.join(', ')}`
-          : '노란 형광펜: 주류/샴페인/위스키/특이 메뉴에 적용';
+          ? `노란 형광펜(<mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">텍스트</mark>): 주류/샴페인/위스키 등을 "병(바틀)" 단위로 주문한 경우에만 적용. 잔술/글라스 단위 주문은 절대 노란 형광펜 금지. 이전 기록에서 노란 형광펜이 적용된 키워드 예시: ${yellowKeywords.join(', ')}`
+          : '노란 형광펜: 주류/샴페인/위스키를 "병(바틀)" 단위로 주문한 경우에만 적용 (잔술/글라스 단위는 절대 금지)';
         const pinkGuide = pinkKeywords.length > 0
-          ? `분홍 형광펜(<mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">텍스트</mark>): 직원명(호스티스/스텝 이름). 이전 기록에서 분홍 형광펜이 적용된 직원명 예시: ${pinkKeywords.join(', ')}`
-          : '분홍 형광펜: 직원명(호스티스/스텝 이름)에 적용';
+          ? `보라 형광펜(<mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">텍스트</mark>): 직원명(호스티스/스텝 이름, 잔추가 등). 이전 기록에서 보라 형광펜이 적용된 직원명 예시: ${pinkKeywords.join(', ')}`
+          : '보라 형광펜: 직원명(호스티스/스텝 이름, 잔추가 등)에 적용';
         const examplesGuide = recentMemoExamples.length > 0
           ? `\n\n이전 기록 메모 형식 예시:\n${recentMemoExamples.slice(0, 5).map(m => `- ${m}`).join('\n')}`
           : '';
@@ -5419,14 +5419,15 @@ ${pinkGuide}${userExcludeNote}
    - 수량이 없으면 괄호 생략 (예: "무제한2", "연장1")
 
    [형광펜 규칙]
-   - 주류/샴페인/위스키 등 특이 메뉴: 노란 형광펜
+   - 주류/샴페인/위스키 등을 "병(바틀)" 단위로 주문한 경우에만: 노란 형광펜
      수량 괄호까지 포함해서 형광펜 적용 (예: <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">히비키(1)</mark>)
-   - 직원명(호스티스/스텝): 분홍 형광펜 (수량 괄호 포함)
-     (예: <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>)
-   - 절대 형광펜 금지 항목: 무제한, 연장, 기본, 추가, 서비스, 포장, 테이블, 룸 등 일반 서비스 텍스트
+     ⚠️ "잔술", "글라스", "잔" 단위로 주문한 경우는 노란 형광펜을 절대 적용하지 말 것 (예: "맥켈란 12y 잔술(1)"은 형광펜 없이 일반 텍스트로만 표시)
+   - 직원명(호스티스/스텝, 잔추가 포함): 보라 형광펜 (수량 괄호 포함)
+     (예: <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>)
+   - 절대 형광펜 금지 항목: 무제한, 연장, 기본, 추가, 서비스, 포장, 테이블, 룸 등 일반 서비스 텍스트, 그리고 잔술/글라스 단위 주류
      ("무제한"은 절대로 노란 형광펜을 적용하지 말 것)
 
-   예시 출력: 무제한2, 연장1, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">모엣(1)</mark>, <mark style="background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>
+   예시 출력: 무제한2, 연장1, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">모엣(1)</mark>, 맥켈란 12y 잔술(1), <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>
 
 2. amount: 이미지에서 파악한 총 결제금액 (원 단위 정수, 파악 불가시 0)
    - 이미지에 합계 금액이 명시되어 있으면 그 값 사용
@@ -5481,7 +5482,7 @@ ${pinkGuide}${userExcludeNote}
 
         let memoOut = (result.memo as string) || '';
         const yellowMarkRe = /<mark[^>]*rgb\(255,\s*224,\s*102\)[^>]*>([\s\S]*?)<\/mark>/g;
-        const pinkMarkRe = /<mark[^>]*rgb\(255,\s*179,\s*209\)[^>]*>([\s\S]*?)<\/mark>/g;
+        const pinkMarkRe = /<mark[^>]*rgb\(216,\s*180,\s*254\)[^>]*>([\s\S]*?)<\/mark>/g;
         memoOut = stripMarksContaining(memoOut, yellowMarkRe, excludedYellowList);
         memoOut = stripMarksContaining(memoOut, pinkMarkRe, excludedPinkList);
 
