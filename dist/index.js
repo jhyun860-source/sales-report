@@ -958,6 +958,15 @@ function registerRestoreRoutes(app) {
         await conn.query("SET FOREIGN_KEY_CHECKS=1");
         return res.json({ mode, report });
       }
+      if (mode === "aicheck") {
+        const key = process.env.OPENAI_API_KEY || "";
+        return res.json({
+          mode,
+          openaiKeySet: !!key,
+          openaiKeyPrefix: key ? key.slice(0, 8) + "..." : null,
+          openaiKeyLength: key.length
+        });
+      }
       if (mode === "staffcheck") {
         const [rows] = await conn.query(
           `SELECT si.id, si.staffName, si.staffType, si.workStart, si.workEnd,
