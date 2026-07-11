@@ -12,9 +12,11 @@ export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       if (!_pool) {
+        // TiDB Cloud는 TLS 필수, Railway MySQL 등은 일반 연결 사용
+        const needsTls = (process.env.DATABASE_URL || "").includes("tidbcloud");
         _pool = mysql.createPool({
           uri: process.env.DATABASE_URL,
-          ssl: { rejectUnauthorized: true },
+          ...(needsTls ? { ssl: { rejectUnauthorized: true } } : {}),
           waitForConnections: true,
           connectionLimit: 10,
           queueLimit: 0,
