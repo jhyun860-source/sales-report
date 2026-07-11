@@ -1840,7 +1840,7 @@ async function invokeLLM(params) {
   if (normalizedToolChoice) {
     payload.tool_choice = normalizedToolChoice;
   }
-  payload.max_tokens = 32768;
+  payload.max_tokens = useOpenAI() ? 16384 : 32768;
   if (!useOpenAI()) {
     payload.thinking = {
       "budget_tokens": 128

@@ -300,7 +300,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
+  payload.max_tokens = useOpenAI() ? 16384 : 32768
   // "thinking" 파라미터는 Forge(Gemini) 전용 확장 필드라 OpenAI에는 보내지 않음
   if (!useOpenAI()) {
     payload.thinking = {
