@@ -866,6 +866,16 @@ function registerRestoreRoutes(app) {
     let conn = null;
     try {
       conn = await getConn();
+      if (mode === "verify") {
+        const [rows] = await conn.query(`
+          SELECT b.name,
+            (SELECT COUNT(*) FROM dailySalesRecords s WHERE s.branchId = b.id) AS sales,
+            (SELECT MAX(s.date) FROM dailySalesRecords s WHERE s.branchId = b.id) AS latestSale,
+            (SELECT COUNT(*) FROM liquorInventories li WHERE li.branchId = b.id) AS inventories,
+            (SELECT COUNT(*) FROM tableReports tr WHERE tr.branchId = b.id) AS reports
+          FROM branches b ORDER BY b.id`);
+        return res.json({ mode, branches: rows });
+      }
       if (mode === "status") {
         const [rows] = await conn.query(
           "SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()"
@@ -947,7 +957,7 @@ function registerRestoreRoutes(app) {
         await conn.query("SET FOREIGN_KEY_CHECKS=1");
         return res.json({ mode, report });
       }
-      return res.status(400).json({ error: "mode must be schema|data|status" });
+      return res.status(400).json({ error: "mode must be schema|data|status|verify" });
     } catch (e) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
