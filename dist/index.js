@@ -959,6 +959,12 @@ function registerRestoreRoutes(app) {
         await conn.query("SET FOREIGN_KEY_CHECKS=1");
         return res.json({ mode, report });
       }
+      if (mode === "accountscheck") {
+        const [rows] = await conn.query(
+          `SELECT id, loginId, role, branchId FROM storeAccounts ORDER BY loginId`
+        );
+        return res.json({ mode, rows });
+      }
       if (mode === "aicheck") {
         const key = process.env.OPENAI_API_KEY || "";
         const gkey = process.env.GEMINI_API_KEY || "";
