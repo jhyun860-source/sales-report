@@ -284,7 +284,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: useOpenAI() ? "gpt-4o-mini" : "gemini-2.5-flash",
+    model: useOpenAI() ? "gpt-4o" : "gemini-2.5-flash",
     messages: messages.map(normalizeMessage),
   };
 

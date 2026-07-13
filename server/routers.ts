@@ -5389,16 +5389,16 @@ export const appRouter = router({
 수량 표기 변환 규칙 (최우선):
 - 포스기의 "x1", "X1", "×1", "*1" 형식을 모두 "(1)" 괄호 형식으로 변환
 - 예: 히비키x1 → 히비키(1), 모엣x2 → 모엣(2), 발렌17 X1 → 발렌17(1)
-- 형광펜은 수량 괄호 끝까지 포함하여 적용
+
+⚠️ 정확도 최우선 규칙 (매우 중요):
+- 이미지에 실제로 적힌 글자만 그대로 옮겨 적을 것. 이전에 본 적 있는 메뉴 이름이나 패턴을 떠올려서 비슷하게 채워넣지 말 것
+- 글자가 흐릿하거나 잘 안 보이면, 안 보이는 대로 최대한 읽되 절대 다른 메뉴 이름으로 대체하거나 지어내지 말 것
+- 이미지에 있는 줄(항목)은 하나도 빠짐없이 전부 포함할 것 (한 줄이라도 누락 금지)
+- 이미지에 없는 항목을 추가로 만들어내지 말 것
 
 형광펜 규칙:
 ${yellowGuide}
-${pinkGuide}${userExcludeNote}
-
-금액 계산 규칙:
-- 이미지에 표시된 총 결제금액을 그대로 사용 (있는 경우)
-- 없으면 개별 항목 금액 합산
-- 금액이 전혀 파악 안 되면 0 반환${examplesGuide}`,
+${pinkGuide}${userExcludeNote}${examplesGuide}`,
             },
             {
               role: 'user',
@@ -5409,29 +5409,20 @@ ${pinkGuide}${userExcludeNote}
                 },
                 {
                   type: 'text' as const,
-                  text: `이 포스기 주문내역 이미지를 분석해서 다음을 반환해주세요:
+                  text: `이 포스기 주문내역 이미지를 분석해서 다음을 반환해주세요. memo 문장을 직접 작성하지 말고, 이미지에 보이는 항목을 하나씩 items 배열에 정확히 나열해주세요 (문장 조립은 서버에서 처리합니다).
 
-1. memo: 주문 내역을 한 줄로 요약한 HTML 텍스트
+1. items: 이미지의 각 줄(항목)을 하나씩 빠짐없이 배열로 반환
+   - name: 항목명. 수량 표기(x1, X1, ×1, *1 등)는 "이름(숫자)" 형식으로 변환 (예: 히비키x1 → "히비키(1)", 모엣x2 → "모엣(2)")
+     수량이 없으면 이름만 (예: "무제한2", "연장1"처럼 이미지에 붙어있는 숫자는 그대로 이름에 포함)
+   - amount: 해당 항목 금액 (원 단위 정수). 무료/서비스 항목은 0
+   - highlight: 이 항목에 적용할 형광펜 색상
+     · "yellow": 주류/샴페인/위스키 등을 "병(바틀)" 단위로 주문한 경우만 (⚠️ 잔술/글라스/잔 단위는 절대 yellow 금지 → "none")
+     · "purple": 직원명(호스티스/스텝, 잔추가 등)인 경우
+     · "none": 그 외 전부 (무제한, 연장, 기본, 추가, 서비스, 포장, 테이블, 룸, 잔술 단위 주류 등)
+   - 이미지에 실제로 보이는 글자만 옮길 것. 흐릿해도 다른 메뉴로 대체하거나 지어내지 말고, 안 보이면 보이는 부분까지만 정확히 표기
 
-   [수량 표기 규칙 - 중요]
-   - 포스기에 "x1", "X1", "×1", "*1" 등으로 표시된 수량은 반드시 괄호로 변환하세요
-   - 예: "히비키x1" → "히비키(1)", "모엣x2" → "모엣(2)", "발렌17 X1" → "발렌17(1)"
-   - 수량이 없으면 괄호 생략 (예: "무제한2", "연장1")
-
-   [형광펜 규칙]
-   - 주류/샴페인/위스키 등을 "병(바틀)" 단위로 주문한 경우에만: 노란 형광펜
-     수량 괄호까지 포함해서 형광펜 적용 (예: <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">히비키(1)</mark>)
-     ⚠️ "잔술", "글라스", "잔" 단위로 주문한 경우는 노란 형광펜을 절대 적용하지 말 것 (예: "맥켈란 12y 잔술(1)"은 형광펜 없이 일반 텍스트로만 표시)
-   - 직원명(호스티스/스텝, 잔추가 포함): 보라 형광펜 (수량 괄호 포함)
-     (예: <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>)
-   - 절대 형광펜 금지 항목: 무제한, 연장, 기본, 추가, 서비스, 포장, 테이블, 룸 등 일반 서비스 텍스트, 그리고 잔술/글라스 단위 주류
-     ("무제한"은 절대로 노란 형광펜을 적용하지 말 것)
-
-   예시 출력: 무제한2, 연장1, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">모엣(1)</mark>, 맥켈란 12y 잔술(1), <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">아름(3), 예나(2)</mark>
-
-2. amount: 이미지에서 파악한 총 결제금액 (원 단위 정수, 파악 불가시 0)
-   - 이미지에 합계 금액이 명시되어 있으면 그 값 사용
-   - 없으면 개별 항목 금액 합산
+2. amount: 이미지에 "합계/총액"란이 별도로 명시되어 있으면 그 숫자 그대로 사용 (원 단위 정수)
+   - 별도 합계란이 없으면 0으로 반환 (items 합산은 서버에서 자동 계산)
 
 3. confidence: 분석 신뢰도 (high/medium/low)`,
                 },
@@ -5441,16 +5432,29 @@ ${pinkGuide}${userExcludeNote}
           response_format: {
             type: 'json_schema',
             json_schema: {
-              name: 'order_memo_v2',
+              name: 'order_memo_v3',
               strict: true,
               schema: {
                 type: 'object',
                 properties: {
-                  memo: { type: 'string', description: '형광펜 HTML이 포함된 주문 메모 (한 줄)' },
-                  amount: { type: 'integer', description: '총 결제금액 (원, 파악 불가시 0)' },
+                  items: {
+                    type: 'array',
+                    description: '이미지에서 읽은 개별 항목 목록 (빠짐없이 전부, 지어내지 말 것)',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string', description: '항목명 (수량은 "이름(숫자)" 형식)' },
+                        amount: { type: 'integer', description: '해당 항목 금액 (원)' },
+                        highlight: { type: 'string', enum: ['yellow', 'purple', 'none'], description: '형광펜 색상' },
+                      },
+                      required: ['name', 'amount', 'highlight'],
+                      additionalProperties: false,
+                    },
+                  },
+                  amount: { type: 'integer', description: '이미지에 표시된 총 결제금액 (합계란이 명시되어 있는 경우만 사용, 없으면 0)' },
                   confidence: { type: 'string', description: '분석 신뢰도: high/medium/low' },
                 },
-                required: ['memo', 'amount', 'confidence'],
+                required: ['items', 'amount', 'confidence'],
                 additionalProperties: false,
               },
             },
@@ -5461,6 +5465,44 @@ ${pinkGuide}${userExcludeNote}
         if (!rawContent) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI 분석 결과를 받지 못했습니다' });
         const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
         const result = JSON.parse(content);
+
+        // memo는 AI가 자유서술하지 않고, items 배열을 서버에서 그대로 조립한다.
+        //   (자유서술 방식은 모델이 과거 패턴을 흉내내며 항목을 지어내거나 누락시키는 경향이 있어
+        //    항목별 구조화 추출 + 서버측 조립 방식으로 변경)
+        const HIGHLIGHT_STYLE: Record<string, string> = {
+          yellow: 'background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;',
+          purple: 'background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;',
+        };
+        const escapeHtml = (s: string) =>
+          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        result.memo = Array.isArray(result.items)
+          ? result.items
+              .map((it: any) => {
+                const name = escapeHtml(String(it?.name ?? '').trim());
+                if (!name) return null;
+                const style = HIGHLIGHT_STYLE[it?.highlight];
+                return style ? `<mark style="${style}">${name}</mark>` : name;
+              })
+              .filter(Boolean)
+              .join(', ')
+          : '';
+
+        // [산술 정확도 보강] AI의 직접 합산은 오차가 잦으므로,
+        //   개별 항목 금액을 서버에서 직접 더해 총액을 계산한다.
+        //   - 이미지에 "합계"란이 명시되어 있고 항목 합산액과 크게 다르면 명시된 합계를 신뢰(포장비/할인 등 항목외 요소 반영 가능)
+        //   - 그렇지 않으면 항목 합산액을 사용
+        const itemsSum = Array.isArray(result.items)
+          ? result.items.reduce((sum: number, it: any) => sum + (Number(it?.amount) || 0), 0)
+          : 0;
+        if (itemsSum > 0) {
+          const modelAmount = Number(result.amount) || 0;
+          // 모델이 밝힌 총액과 항목합산액이 거의 같으면(오차 1000원 이내) 항목합산액 사용
+          // 차이가 크면 이미지에 별도 합계가 명시됐을 가능성이 있으므로 모델 값 우선하되,
+          // 모델 값이 0이면 항목합산액으로 대체
+          result.amount = modelAmount > 0 && Math.abs(modelAmount - itemsSum) <= 1000
+            ? itemsSum
+            : (modelAmount > 0 ? modelAmount : itemsSum);
+        }
 
         // [4차 방어] LLM 응답 memo 후처리:
         //   - LLM이 프롬프트 지시를 무시하고 excluded 단어에 mark 태그를 붙였을 경우를 대비,

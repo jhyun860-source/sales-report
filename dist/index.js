@@ -1827,7 +1827,7 @@ async function invokeLLM(params) {
     response_format
   } = params;
   const payload = {
-    model: useOpenAI() ? "gpt-4o-mini" : "gemini-2.5-flash",
+    model: useOpenAI() ? "gpt-4o" : "gemini-2.5-flash",
     messages: messages.map(normalizeMessage)
   };
   if (tools && tools.length > 0) {
@@ -7678,16 +7678,16 @@ ${recentMemoExamples.slice(0, 5).map((m) => `- ${m}`).join("\n")}` : "";
 \uC218\uB7C9 \uD45C\uAE30 \uBCC0\uD658 \uADDC\uCE59 (\uCD5C\uC6B0\uC120):
 - \uD3EC\uC2A4\uAE30\uC758 "x1", "X1", "\xD71", "*1" \uD615\uC2DD\uC744 \uBAA8\uB450 "(1)" \uAD04\uD638 \uD615\uC2DD\uC73C\uB85C \uBCC0\uD658
 - \uC608: \uD788\uBE44\uD0A4x1 \u2192 \uD788\uBE44\uD0A4(1), \uBAA8\uC5E3x2 \u2192 \uBAA8\uC5E3(2), \uBC1C\uB80C17 X1 \u2192 \uBC1C\uB80C17(1)
-- \uD615\uAD11\uD39C\uC740 \uC218\uB7C9 \uAD04\uD638 \uB05D\uAE4C\uC9C0 \uD3EC\uD568\uD558\uC5EC \uC801\uC6A9
+
+\u26A0\uFE0F \uC815\uD655\uB3C4 \uCD5C\uC6B0\uC120 \uADDC\uCE59 (\uB9E4\uC6B0 \uC911\uC694):
+- \uC774\uBBF8\uC9C0\uC5D0 \uC2E4\uC81C\uB85C \uC801\uD78C \uAE00\uC790\uB9CC \uADF8\uB300\uB85C \uC62E\uACA8 \uC801\uC744 \uAC83. \uC774\uC804\uC5D0 \uBCF8 \uC801 \uC788\uB294 \uBA54\uB274 \uC774\uB984\uC774\uB098 \uD328\uD134\uC744 \uB5A0\uC62C\uB824\uC11C \uBE44\uC2B7\uD558\uAC8C \uCC44\uC6CC\uB123\uC9C0 \uB9D0 \uAC83
+- \uAE00\uC790\uAC00 \uD750\uB9BF\uD558\uAC70\uB098 \uC798 \uC548 \uBCF4\uC774\uBA74, \uC548 \uBCF4\uC774\uB294 \uB300\uB85C \uCD5C\uB300\uD55C \uC77D\uB418 \uC808\uB300 \uB2E4\uB978 \uBA54\uB274 \uC774\uB984\uC73C\uB85C \uB300\uCCB4\uD558\uAC70\uB098 \uC9C0\uC5B4\uB0B4\uC9C0 \uB9D0 \uAC83
+- \uC774\uBBF8\uC9C0\uC5D0 \uC788\uB294 \uC904(\uD56D\uBAA9)\uC740 \uD558\uB098\uB3C4 \uBE60\uC9D0\uC5C6\uC774 \uC804\uBD80 \uD3EC\uD568\uD560 \uAC83 (\uD55C \uC904\uC774\uB77C\uB3C4 \uB204\uB77D \uAE08\uC9C0)
+- \uC774\uBBF8\uC9C0\uC5D0 \uC5C6\uB294 \uD56D\uBAA9\uC744 \uCD94\uAC00\uB85C \uB9CC\uB4E4\uC5B4\uB0B4\uC9C0 \uB9D0 \uAC83
 
 \uD615\uAD11\uD39C \uADDC\uCE59:
 ${yellowGuide}
-${pinkGuide}${userExcludeNote}
-
-\uAE08\uC561 \uACC4\uC0B0 \uADDC\uCE59:
-- \uC774\uBBF8\uC9C0\uC5D0 \uD45C\uC2DC\uB41C \uCD1D \uACB0\uC81C\uAE08\uC561\uC744 \uADF8\uB300\uB85C \uC0AC\uC6A9 (\uC788\uB294 \uACBD\uC6B0)
-- \uC5C6\uC73C\uBA74 \uAC1C\uBCC4 \uD56D\uBAA9 \uAE08\uC561 \uD569\uC0B0
-- \uAE08\uC561\uC774 \uC804\uD600 \uD30C\uC545 \uC548 \uB418\uBA74 0 \uBC18\uD658${examplesGuide}`
+${pinkGuide}${userExcludeNote}${examplesGuide}`
           },
           {
             role: "user",
@@ -7698,29 +7698,20 @@ ${pinkGuide}${userExcludeNote}
               },
               {
                 type: "text",
-                text: `\uC774 \uD3EC\uC2A4\uAE30 \uC8FC\uBB38\uB0B4\uC5ED \uC774\uBBF8\uC9C0\uB97C \uBD84\uC11D\uD574\uC11C \uB2E4\uC74C\uC744 \uBC18\uD658\uD574\uC8FC\uC138\uC694:
+                text: `\uC774 \uD3EC\uC2A4\uAE30 \uC8FC\uBB38\uB0B4\uC5ED \uC774\uBBF8\uC9C0\uB97C \uBD84\uC11D\uD574\uC11C \uB2E4\uC74C\uC744 \uBC18\uD658\uD574\uC8FC\uC138\uC694. memo \uBB38\uC7A5\uC744 \uC9C1\uC811 \uC791\uC131\uD558\uC9C0 \uB9D0\uACE0, \uC774\uBBF8\uC9C0\uC5D0 \uBCF4\uC774\uB294 \uD56D\uBAA9\uC744 \uD558\uB098\uC529 items \uBC30\uC5F4\uC5D0 \uC815\uD655\uD788 \uB098\uC5F4\uD574\uC8FC\uC138\uC694 (\uBB38\uC7A5 \uC870\uB9BD\uC740 \uC11C\uBC84\uC5D0\uC11C \uCC98\uB9AC\uD569\uB2C8\uB2E4).
 
-1. memo: \uC8FC\uBB38 \uB0B4\uC5ED\uC744 \uD55C \uC904\uB85C \uC694\uC57D\uD55C HTML \uD14D\uC2A4\uD2B8
+1. items: \uC774\uBBF8\uC9C0\uC758 \uAC01 \uC904(\uD56D\uBAA9)\uC744 \uD558\uB098\uC529 \uBE60\uC9D0\uC5C6\uC774 \uBC30\uC5F4\uB85C \uBC18\uD658
+   - name: \uD56D\uBAA9\uBA85. \uC218\uB7C9 \uD45C\uAE30(x1, X1, \xD71, *1 \uB4F1)\uB294 "\uC774\uB984(\uC22B\uC790)" \uD615\uC2DD\uC73C\uB85C \uBCC0\uD658 (\uC608: \uD788\uBE44\uD0A4x1 \u2192 "\uD788\uBE44\uD0A4(1)", \uBAA8\uC5E3x2 \u2192 "\uBAA8\uC5E3(2)")
+     \uC218\uB7C9\uC774 \uC5C6\uC73C\uBA74 \uC774\uB984\uB9CC (\uC608: "\uBB34\uC81C\uD55C2", "\uC5F0\uC7A51"\uCC98\uB7FC \uC774\uBBF8\uC9C0\uC5D0 \uBD99\uC5B4\uC788\uB294 \uC22B\uC790\uB294 \uADF8\uB300\uB85C \uC774\uB984\uC5D0 \uD3EC\uD568)
+   - amount: \uD574\uB2F9 \uD56D\uBAA9 \uAE08\uC561 (\uC6D0 \uB2E8\uC704 \uC815\uC218). \uBB34\uB8CC/\uC11C\uBE44\uC2A4 \uD56D\uBAA9\uC740 0
+   - highlight: \uC774 \uD56D\uBAA9\uC5D0 \uC801\uC6A9\uD560 \uD615\uAD11\uD39C \uC0C9\uC0C1
+     \xB7 "yellow": \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4 \uB4F1\uC744 "\uBCD1(\uBC14\uD2C0)" \uB2E8\uC704\uB85C \uC8FC\uBB38\uD55C \uACBD\uC6B0\uB9CC (\u26A0\uFE0F \uC794\uC220/\uAE00\uB77C\uC2A4/\uC794 \uB2E8\uC704\uB294 \uC808\uB300 yellow \uAE08\uC9C0 \u2192 "none")
+     \xB7 "purple": \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D, \uC794\uCD94\uAC00 \uB4F1)\uC778 \uACBD\uC6B0
+     \xB7 "none": \uADF8 \uC678 \uC804\uBD80 (\uBB34\uC81C\uD55C, \uC5F0\uC7A5, \uAE30\uBCF8, \uCD94\uAC00, \uC11C\uBE44\uC2A4, \uD3EC\uC7A5, \uD14C\uC774\uBE14, \uB8F8, \uC794\uC220 \uB2E8\uC704 \uC8FC\uB958 \uB4F1)
+   - \uC774\uBBF8\uC9C0\uC5D0 \uC2E4\uC81C\uB85C \uBCF4\uC774\uB294 \uAE00\uC790\uB9CC \uC62E\uAE38 \uAC83. \uD750\uB9BF\uD574\uB3C4 \uB2E4\uB978 \uBA54\uB274\uB85C \uB300\uCCB4\uD558\uAC70\uB098 \uC9C0\uC5B4\uB0B4\uC9C0 \uB9D0\uACE0, \uC548 \uBCF4\uC774\uBA74 \uBCF4\uC774\uB294 \uBD80\uBD84\uAE4C\uC9C0\uB9CC \uC815\uD655\uD788 \uD45C\uAE30
 
-   [\uC218\uB7C9 \uD45C\uAE30 \uADDC\uCE59 - \uC911\uC694]
-   - \uD3EC\uC2A4\uAE30\uC5D0 "x1", "X1", "\xD71", "*1" \uB4F1\uC73C\uB85C \uD45C\uC2DC\uB41C \uC218\uB7C9\uC740 \uBC18\uB4DC\uC2DC \uAD04\uD638\uB85C \uBCC0\uD658\uD558\uC138\uC694
-   - \uC608: "\uD788\uBE44\uD0A4x1" \u2192 "\uD788\uBE44\uD0A4(1)", "\uBAA8\uC5E3x2" \u2192 "\uBAA8\uC5E3(2)", "\uBC1C\uB80C17 X1" \u2192 "\uBC1C\uB80C17(1)"
-   - \uC218\uB7C9\uC774 \uC5C6\uC73C\uBA74 \uAD04\uD638 \uC0DD\uB7B5 (\uC608: "\uBB34\uC81C\uD55C2", "\uC5F0\uC7A51")
-
-   [\uD615\uAD11\uD39C \uADDC\uCE59]
-   - \uC8FC\uB958/\uC0F4\uD398\uC778/\uC704\uC2A4\uD0A4 \uB4F1\uC744 "\uBCD1(\uBC14\uD2C0)" \uB2E8\uC704\uB85C \uC8FC\uBB38\uD55C \uACBD\uC6B0\uC5D0\uB9CC: \uB178\uB780 \uD615\uAD11\uD39C
-     \uC218\uB7C9 \uAD04\uD638\uAE4C\uC9C0 \uD3EC\uD568\uD574\uC11C \uD615\uAD11\uD39C \uC801\uC6A9 (\uC608: <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">\uD788\uBE44\uD0A4(1)</mark>)
-     \u26A0\uFE0F "\uC794\uC220", "\uAE00\uB77C\uC2A4", "\uC794" \uB2E8\uC704\uB85C \uC8FC\uBB38\uD55C \uACBD\uC6B0\uB294 \uB178\uB780 \uD615\uAD11\uD39C\uC744 \uC808\uB300 \uC801\uC6A9\uD558\uC9C0 \uB9D0 \uAC83 (\uC608: "\uB9E5\uCF08\uB780 12y \uC794\uC220(1)"\uC740 \uD615\uAD11\uD39C \uC5C6\uC774 \uC77C\uBC18 \uD14D\uC2A4\uD2B8\uB85C\uB9CC \uD45C\uC2DC)
-   - \uC9C1\uC6D0\uBA85(\uD638\uC2A4\uD2F0\uC2A4/\uC2A4\uD15D, \uC794\uCD94\uAC00 \uD3EC\uD568): \uBCF4\uB77C \uD615\uAD11\uD39C (\uC218\uB7C9 \uAD04\uD638 \uD3EC\uD568)
-     (\uC608: <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">\uC544\uB984(3), \uC608\uB098(2)</mark>)
-   - \uC808\uB300 \uD615\uAD11\uD39C \uAE08\uC9C0 \uD56D\uBAA9: \uBB34\uC81C\uD55C, \uC5F0\uC7A5, \uAE30\uBCF8, \uCD94\uAC00, \uC11C\uBE44\uC2A4, \uD3EC\uC7A5, \uD14C\uC774\uBE14, \uB8F8 \uB4F1 \uC77C\uBC18 \uC11C\uBE44\uC2A4 \uD14D\uC2A4\uD2B8, \uADF8\uB9AC\uACE0 \uC794\uC220/\uAE00\uB77C\uC2A4 \uB2E8\uC704 \uC8FC\uB958
-     ("\uBB34\uC81C\uD55C"\uC740 \uC808\uB300\uB85C \uB178\uB780 \uD615\uAD11\uD39C\uC744 \uC801\uC6A9\uD558\uC9C0 \uB9D0 \uAC83)
-
-   \uC608\uC2DC \uCD9C\uB825: \uBB34\uC81C\uD55C2, \uC5F0\uC7A51, <mark style="background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;">\uBAA8\uC5E3(1)</mark>, \uB9E5\uCF08\uB780 12y \uC794\uC220(1), <mark style="background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;">\uC544\uB984(3), \uC608\uB098(2)</mark>
-
-2. amount: \uC774\uBBF8\uC9C0\uC5D0\uC11C \uD30C\uC545\uD55C \uCD1D \uACB0\uC81C\uAE08\uC561 (\uC6D0 \uB2E8\uC704 \uC815\uC218, \uD30C\uC545 \uBD88\uAC00\uC2DC 0)
-   - \uC774\uBBF8\uC9C0\uC5D0 \uD569\uACC4 \uAE08\uC561\uC774 \uBA85\uC2DC\uB418\uC5B4 \uC788\uC73C\uBA74 \uADF8 \uAC12 \uC0AC\uC6A9
-   - \uC5C6\uC73C\uBA74 \uAC1C\uBCC4 \uD56D\uBAA9 \uAE08\uC561 \uD569\uC0B0
+2. amount: \uC774\uBBF8\uC9C0\uC5D0 "\uD569\uACC4/\uCD1D\uC561"\uB780\uC774 \uBCC4\uB3C4\uB85C \uBA85\uC2DC\uB418\uC5B4 \uC788\uC73C\uBA74 \uADF8 \uC22B\uC790 \uADF8\uB300\uB85C \uC0AC\uC6A9 (\uC6D0 \uB2E8\uC704 \uC815\uC218)
+   - \uBCC4\uB3C4 \uD569\uACC4\uB780\uC774 \uC5C6\uC73C\uBA74 0\uC73C\uB85C \uBC18\uD658 (items \uD569\uC0B0\uC740 \uC11C\uBC84\uC5D0\uC11C \uC790\uB3D9 \uACC4\uC0B0)
 
 3. confidence: \uBD84\uC11D \uC2E0\uB8B0\uB3C4 (high/medium/low)`
               }
@@ -7730,16 +7721,29 @@ ${pinkGuide}${userExcludeNote}
         response_format: {
           type: "json_schema",
           json_schema: {
-            name: "order_memo_v2",
+            name: "order_memo_v3",
             strict: true,
             schema: {
               type: "object",
               properties: {
-                memo: { type: "string", description: "\uD615\uAD11\uD39C HTML\uC774 \uD3EC\uD568\uB41C \uC8FC\uBB38 \uBA54\uBAA8 (\uD55C \uC904)" },
-                amount: { type: "integer", description: "\uCD1D \uACB0\uC81C\uAE08\uC561 (\uC6D0, \uD30C\uC545 \uBD88\uAC00\uC2DC 0)" },
+                items: {
+                  type: "array",
+                  description: "\uC774\uBBF8\uC9C0\uC5D0\uC11C \uC77D\uC740 \uAC1C\uBCC4 \uD56D\uBAA9 \uBAA9\uB85D (\uBE60\uC9D0\uC5C6\uC774 \uC804\uBD80, \uC9C0\uC5B4\uB0B4\uC9C0 \uB9D0 \uAC83)",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string", description: '\uD56D\uBAA9\uBA85 (\uC218\uB7C9\uC740 "\uC774\uB984(\uC22B\uC790)" \uD615\uC2DD)' },
+                      amount: { type: "integer", description: "\uD574\uB2F9 \uD56D\uBAA9 \uAE08\uC561 (\uC6D0)" },
+                      highlight: { type: "string", enum: ["yellow", "purple", "none"], description: "\uD615\uAD11\uD39C \uC0C9\uC0C1" }
+                    },
+                    required: ["name", "amount", "highlight"],
+                    additionalProperties: false
+                  }
+                },
+                amount: { type: "integer", description: "\uC774\uBBF8\uC9C0\uC5D0 \uD45C\uC2DC\uB41C \uCD1D \uACB0\uC81C\uAE08\uC561 (\uD569\uACC4\uB780\uC774 \uBA85\uC2DC\uB418\uC5B4 \uC788\uB294 \uACBD\uC6B0\uB9CC \uC0AC\uC6A9, \uC5C6\uC73C\uBA74 0)" },
                 confidence: { type: "string", description: "\uBD84\uC11D \uC2E0\uB8B0\uB3C4: high/medium/low" }
               },
-              required: ["memo", "amount", "confidence"],
+              required: ["items", "amount", "confidence"],
               additionalProperties: false
             }
           }
@@ -7749,6 +7753,22 @@ ${pinkGuide}${userExcludeNote}
       if (!rawContent) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "AI \uBD84\uC11D \uACB0\uACFC\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4" });
       const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
       const result = JSON.parse(content);
+      const HIGHLIGHT_STYLE = {
+        yellow: "background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;",
+        purple: "background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;"
+      };
+      const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      result.memo = Array.isArray(result.items) ? result.items.map((it) => {
+        const name = escapeHtml(String(it?.name ?? "").trim());
+        if (!name) return null;
+        const style = HIGHLIGHT_STYLE[it?.highlight];
+        return style ? `<mark style="${style}">${name}</mark>` : name;
+      }).filter(Boolean).join(", ") : "";
+      const itemsSum = Array.isArray(result.items) ? result.items.reduce((sum, it) => sum + (Number(it?.amount) || 0), 0) : 0;
+      if (itemsSum > 0) {
+        const modelAmount = Number(result.amount) || 0;
+        result.amount = modelAmount > 0 && Math.abs(modelAmount - itemsSum) <= 1e3 ? itemsSum : modelAmount > 0 ? modelAmount : itemsSum;
+      }
       const stripMarksContaining = (html, markPattern, excludedList) => {
         if (!html || excludedList.length === 0) return html;
         return html.replace(markPattern, (full, inner) => {
