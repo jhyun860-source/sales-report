@@ -1191,6 +1191,20 @@ function registerRestoreRoutes(app) {
         );
         return res.json({ mode, rows });
       }
+      if (mode === "recentmoves") {
+        const [rows] = await conn.query(
+          `SELECT m.id, m.branchId, b.name AS branchName, m.liquorItemId, li.name AS itemName,
+                  m.type, m.quantity, m.createdAt,
+                  inv.currentStock AS currentStockNow
+           FROM liquorStockMovements m
+           LEFT JOIN branches b ON b.id = m.branchId
+           LEFT JOIN liquorItems li ON li.id = m.liquorItemId
+           LEFT JOIN liquorInventories inv ON inv.branchId = m.branchId AND inv.liquorItemId = m.liquorItemId
+           ORDER BY m.createdAt DESC
+           LIMIT 15`
+        );
+        return res.json({ mode, rows });
+      }
       if (mode === "invcheck") {
         const [dupes] = await conn.query(
           `SELECT branchId, liquorItemId, COUNT(*) as cnt, GROUP_CONCAT(id) as ids, GROUP_CONCAT(currentStock) as stocks
