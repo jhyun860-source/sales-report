@@ -8,6 +8,7 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+  geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
   settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me",

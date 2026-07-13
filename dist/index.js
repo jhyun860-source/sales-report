@@ -344,6 +344,7 @@ var init_env = __esm({
       forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
       forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
       openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+      geminiApiKey: process.env.GEMINI_API_KEY ?? "",
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
       vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
       settlementApiKey: process.env.SETTLEMENT_API_KEY ?? "default-api-key-change-me",
@@ -960,11 +961,14 @@ function registerRestoreRoutes(app) {
       }
       if (mode === "aicheck") {
         const key = process.env.OPENAI_API_KEY || "";
+        const gkey = process.env.GEMINI_API_KEY || "";
         return res.json({
           mode,
           openaiKeySet: !!key,
           openaiKeyPrefix: key ? key.slice(0, 8) + "..." : null,
-          openaiKeyLength: key.length
+          geminiKeySet: !!gkey,
+          geminiKeyPrefix: gkey ? gkey.slice(0, 8) + "..." : null,
+          activeProvider: gkey ? "gemini" : key ? "openai" : "none"
         });
       }
       if (mode === "staffcheck") {
@@ -1775,13 +1779,16 @@ var normalizeToolChoice = (toolChoice, tools) => {
   }
   return toolChoice;
 };
-var useOpenAI = () => !ENV.forgeApiKey && !!ENV.openaiApiKey;
+var useGemini = () => !ENV.forgeApiKey && !!ENV.geminiApiKey;
+var useOpenAI = () => !ENV.forgeApiKey && !ENV.geminiApiKey && !!ENV.openaiApiKey;
 var resolveApiUrl = () => {
+  if (useGemini())
+    return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
   if (useOpenAI()) return "https://api.openai.com/v1/chat/completions";
   return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions` : "https://forge.manus.im/v1/chat/completions";
 };
 var assertApiKey = () => {
-  if (!ENV.forgeApiKey && !ENV.openaiApiKey) {
+  if (!ENV.forgeApiKey && !ENV.geminiApiKey && !ENV.openaiApiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
 };
@@ -1841,7 +1848,7 @@ async function invokeLLM(params) {
     payload.tool_choice = normalizedToolChoice;
   }
   payload.max_tokens = useOpenAI() ? 16384 : 32768;
-  if (!useOpenAI()) {
+  if (!useOpenAI() && !useGemini()) {
     payload.thinking = {
       "budget_tokens": 128
     };
@@ -1859,7 +1866,7 @@ async function invokeLLM(params) {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`
+      authorization: `Bearer ${useGemini() ? ENV.geminiApiKey : useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`
     },
     body: JSON.stringify(payload)
   });

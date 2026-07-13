@@ -164,11 +164,14 @@ export function registerRestoreRoutes(app: Express) {
 
       if (mode === "aicheck") {
         const key = process.env.OPENAI_API_KEY || "";
+        const gkey = process.env.GEMINI_API_KEY || "";
         return res.json({
           mode,
           openaiKeySet: !!key,
           openaiKeyPrefix: key ? key.slice(0, 8) + "..." : null,
-          openaiKeyLength: key.length,
+          geminiKeySet: !!gkey,
+          geminiKeyPrefix: gkey ? gkey.slice(0, 8) + "..." : null,
+          activeProvider: gkey ? "gemini" : key ? "openai" : "none",
         });
       }
 
