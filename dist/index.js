@@ -959,6 +959,27 @@ function registerRestoreRoutes(app) {
         await conn.query("SET FOREIGN_KEY_CHECKS=1");
         return res.json({ mode, report });
       }
+      if (mode === "geminicheck") {
+        try {
+          const { invokeLLM: invokeLLM2 } = await import("../_core/llm");
+          const start = Date.now();
+          const resp = await invokeLLM2({
+            messages: [{ role: "user", content: "hi, reply with just OK" }]
+          });
+          return res.json({
+            mode,
+            ok: true,
+            elapsedMs: Date.now() - start,
+            reply: resp.choices?.[0]?.message?.content ?? null
+          });
+        } catch (e) {
+          return res.json({
+            mode,
+            ok: false,
+            error: (e?.message ?? String(e)).slice(0, 500)
+          });
+        }
+      }
       if (mode === "accountscheck") {
         const [rows] = await conn.query(
           `SELECT id, loginId, role, branchId FROM storeAccounts ORDER BY loginId`

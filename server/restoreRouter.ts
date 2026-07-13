@@ -162,6 +162,28 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, report });
       }
 
+      if (mode === "geminicheck") {
+        try {
+          const { invokeLLM } = await import("../_core/llm");
+          const start = Date.now();
+          const resp = await invokeLLM({
+            messages: [{ role: "user", content: "hi, reply with just OK" }],
+          });
+          return res.json({
+            mode,
+            ok: true,
+            elapsedMs: Date.now() - start,
+            reply: resp.choices?.[0]?.message?.content ?? null,
+          });
+        } catch (e: any) {
+          return res.json({
+            mode,
+            ok: false,
+            error: (e?.message ?? String(e)).slice(0, 500),
+          });
+        }
+      }
+
       if (mode === "accountscheck") {
         const [rows] = await conn.query(
           `SELECT id, loginId, role, branchId FROM storeAccounts ORDER BY loginId`
