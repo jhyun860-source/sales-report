@@ -228,8 +228,12 @@ const providerUrl = (p: Provider) => {
     : "https://forge.manus.im/v1/chat/completions";
 };
 
-const providerModel = (p: Provider) =>
-  p === "openai" ? "gpt-4o" : p === "gemini" ? "gemini-3.5-flash" : "gemini-2.5-flash";
+const providerModels = (p: Provider): string[] =>
+  p === "openai"
+    ? ["gpt-4o"]
+    : p === "gemini"
+      ? ["gemini-2.5-flash", "gemini-3.5-flash"] // 2.5 먼저 시도(무료 한도 더 넉넉), 실패시 3.5로
+      : ["gemini-2.5-flash"];
 
 const providerKey = (p: Provider) =>
   p === "gemini" ? ENV.geminiApiKey : p === "openai" ? ENV.openaiApiKey : ENV.forgeApiKey;
@@ -308,14 +312,20 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   });
 
   const providers = availableProviders();
+  const attempts: { provider: Provider; model: string }[] = [];
+  for (const provider of providers) {
+    for (const model of providerModels(provider)) {
+      attempts.push({ provider, model });
+    }
+  }
   let lastError: unknown = null;
 
-  for (let i = 0; i < providers.length; i++) {
-    const provider = providers[i];
-    const isLast = i === providers.length - 1;
+  for (let i = 0; i < attempts.length; i++) {
+    const { provider, model } = attempts[i];
+    const isLast = i === attempts.length - 1;
 
     const payload: Record<string, unknown> = {
-      model: providerModel(provider),
+      model,
       messages: messages.map(normalizeMessage),
     };
     if (tools && tools.length > 0) payload.tools = tools;
@@ -340,16 +350,16 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
       if (!response.ok) {
         const errorText = await response.text();
-        const isRateLimited = response.status === 429;
-        // 사용량 한도 초과(429)이고 시도할 다음 프로바이더가 남아있으면 자동으로 다음 프로바이더로 전환
-        if (isRateLimited && !isLast) {
+        // 사용량 한도 초과(429)나 모델 사용불가(400) 등은 다음 시도로 자동 전환
+        const isRetryable = response.status === 429 || response.status === 400;
+        if (isRetryable && !isLast) {
           lastError = new Error(
-            `[${provider}] 사용량 한도 초과, 다음 프로바이더로 전환: ${errorText.slice(0, 200)}`
+            `[${provider}/${model}] 실패, 다음으로 전환: ${errorText.slice(0, 200)}`
           );
           continue;
         }
         throw new Error(
-          `LLM invoke failed (${provider}): ${response.status} ${response.statusText} – ${errorText}`
+          `LLM invoke failed (${provider}/${model}): ${response.status} ${response.statusText} – ${errorText}`
         );
       }
 
@@ -357,7 +367,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     } catch (e) {
       lastError = e;
       if (isLast) throw e;
-      // 네트워크 오류 등도 다음 프로바이더로 폴백 시도
+      // 네트워크 오류 등도 다음 시도로 폴백
     }
   }
 

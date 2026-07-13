@@ -860,12 +860,18 @@ async function invokeLLM(params) {
     output_schema
   });
   const providers = availableProviders();
+  const attempts = [];
+  for (const provider of providers) {
+    for (const model of providerModels(provider)) {
+      attempts.push({ provider, model });
+    }
+  }
   let lastError = null;
-  for (let i = 0; i < providers.length; i++) {
-    const provider = providers[i];
-    const isLast = i === providers.length - 1;
+  for (let i = 0; i < attempts.length; i++) {
+    const { provider, model } = attempts[i];
+    const isLast = i === attempts.length - 1;
     const payload = {
-      model: providerModel(provider),
+      model,
       messages: messages.map(normalizeMessage)
     };
     if (tools && tools.length > 0) payload.tools = tools;
@@ -888,15 +894,15 @@ async function invokeLLM(params) {
       });
       if (!response.ok) {
         const errorText = await response.text();
-        const isRateLimited = response.status === 429;
-        if (isRateLimited && !isLast) {
+        const isRetryable = response.status === 429 || response.status === 400;
+        if (isRetryable && !isLast) {
           lastError = new Error(
-            `[${provider}] \uC0AC\uC6A9\uB7C9 \uD55C\uB3C4 \uCD08\uACFC, \uB2E4\uC74C \uD504\uB85C\uBC14\uC774\uB354\uB85C \uC804\uD658: ${errorText.slice(0, 200)}`
+            `[${provider}/${model}] \uC2E4\uD328, \uB2E4\uC74C\uC73C\uB85C \uC804\uD658: ${errorText.slice(0, 200)}`
           );
           continue;
         }
         throw new Error(
-          `LLM invoke failed (${provider}): ${response.status} ${response.statusText} \u2013 ${errorText}`
+          `LLM invoke failed (${provider}/${model}): ${response.status} ${response.statusText} \u2013 ${errorText}`
         );
       }
       return await response.json();
@@ -907,7 +913,7 @@ async function invokeLLM(params) {
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
-var ensureArray, normalizeContentPart, normalizeMessage, normalizeToolChoice, availableProviders, providerUrl, providerModel, providerKey, assertApiKey, normalizeResponseFormat;
+var ensureArray, normalizeContentPart, normalizeMessage, normalizeToolChoice, availableProviders, providerUrl, providerModels, providerKey, assertApiKey, normalizeResponseFormat;
 var init_llm = __esm({
   "server/_core/llm.ts"() {
     "use strict";
@@ -995,7 +1001,7 @@ var init_llm = __esm({
       if (p === "openai") return "https://api.openai.com/v1/chat/completions";
       return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions` : "https://forge.manus.im/v1/chat/completions";
     };
-    providerModel = (p) => p === "openai" ? "gpt-4o" : p === "gemini" ? "gemini-3.5-flash" : "gemini-2.5-flash";
+    providerModels = (p) => p === "openai" ? ["gpt-4o"] : p === "gemini" ? ["gemini-2.5-flash", "gemini-3.5-flash"] : ["gemini-2.5-flash"];
     providerKey = (p) => p === "gemini" ? ENV.geminiApiKey : p === "openai" ? ENV.openaiApiKey : ENV.forgeApiKey;
     assertApiKey = () => {
       if (availableProviders().length === 0) {
