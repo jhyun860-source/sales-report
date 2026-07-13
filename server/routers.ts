@@ -5393,6 +5393,8 @@ export const appRouter = router({
 ⚠️ 정확도 최우선 규칙 (매우 중요):
 - 이미지에 실제로 적힌 글자만 그대로 옮겨 적을 것. 이전에 본 적 있는 메뉴 이름이나 패턴을 떠올려서 비슷하게 채워넣지 말 것
 - 글자가 흐릿하거나 잘 안 보이면, 안 보이는 대로 최대한 읽되 절대 다른 메뉴 이름으로 대체하거나 지어내지 말 것
+- 자모 하나하나를 정확히 구분해서 읽을 것 (예: "칵테일"과 "락테일"은 다른 글자이니 화면에 찍힌 자음/모음을 정확히 확인. "더 흔한 단어"로 자동 보정하지 말 것)
+- "잔술", "글라스", "병", "바틀" 등 단위를 나타내는 표기가 메뉴명 뒤에 붙어있으면, 반드시 name에 그대로 포함시킬 것 (수량 변환 시에도 절대 빠뜨리지 말 것. 예: "맥켈란 12y 잔술 x1" → "맥켈란 12y 잔술(1)", 절대 "맥켈란 12y(1)"처럼 잔술을 빼면 안 됨)
 - 이미지에 있는 줄(항목)은 하나도 빠짐없이 전부 포함할 것 (한 줄이라도 누락 금지)
 - 이미지에 없는 항목을 추가로 만들어내지 말 것
 
@@ -5475,6 +5477,20 @@ ${pinkGuide}${userExcludeNote}${examplesGuide}`,
         };
         const escapeHtml = (s: string) =>
           s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // [서버측 안전장치] AI가 형광펜 규칙을 어기는 경우를 대비해,
+        //   이름에 "잔술"/"잔"(글라스 단위) 표기가 있으면 무조건 yellow를 none으로 강제 교정한다.
+        //   (모델이 규칙을 지키지 않아도 결과적으로 항상 규칙이 지켜지도록 보장)
+        if (Array.isArray(result.items)) {
+          for (const it of result.items) {
+            if (!it || typeof it !== 'object') continue;
+            const nm = String(it.name ?? '');
+            const isGlassUnit = /잔술|글라스/.test(nm) || /(?<![가-힣])잔(?![가-힣])/.test(nm.replace(/\(\d+\)$/, ''));
+            if (isGlassUnit && it.highlight === 'yellow') {
+              it.highlight = 'none';
+            }
+          }
+        }
+
         result.memo = Array.isArray(result.items)
           ? result.items
               .map((it: any) => {
