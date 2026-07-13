@@ -164,7 +164,7 @@ export function registerRestoreRoutes(app: Express) {
 
       if (mode === "geminicheck") {
         try {
-          const { invokeLLM } = await import("../_core/llm");
+          const { invokeLLM } = await import("./_core/llm");
           const start = Date.now();
           const resp = await invokeLLM({
             messages: [{ role: "user", content: "hi, reply with just OK" }],

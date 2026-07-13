@@ -835,6 +835,190 @@ var init_db = __esm({
   }
 });
 
+// server/_core/llm.ts
+var llm_exports = {};
+__export(llm_exports, {
+  invokeLLM: () => invokeLLM
+});
+async function invokeLLM(params) {
+  assertApiKey();
+  const {
+    messages,
+    tools,
+    toolChoice,
+    tool_choice,
+    outputSchema,
+    output_schema,
+    responseFormat,
+    response_format
+  } = params;
+  const payload = {
+    model: useOpenAI() ? "gpt-4o" : useGemini() ? "gemini-3.5-flash" : "gemini-2.5-flash",
+    messages: messages.map(normalizeMessage)
+  };
+  if (tools && tools.length > 0) {
+    payload.tools = tools;
+  }
+  const normalizedToolChoice = normalizeToolChoice(
+    toolChoice || tool_choice,
+    tools
+  );
+  if (normalizedToolChoice) {
+    payload.tool_choice = normalizedToolChoice;
+  }
+  payload.max_tokens = useOpenAI() ? 16384 : 32768;
+  if (!useOpenAI() && !useGemini()) {
+    payload.thinking = {
+      "budget_tokens": 128
+    };
+  }
+  const normalizedResponseFormat = normalizeResponseFormat({
+    responseFormat,
+    response_format,
+    outputSchema,
+    output_schema
+  });
+  if (normalizedResponseFormat) {
+    payload.response_format = normalizedResponseFormat;
+  }
+  const response = await fetch(resolveApiUrl(), {
+    method: "POST",
+    signal: AbortSignal.timeout(45e3),
+    // 45초 응답 없으면 중단 (무한 로딩 방지)
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${useGemini() ? ENV.geminiApiKey : useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `LLM invoke failed: ${response.status} ${response.statusText} \u2013 ${errorText}`
+    );
+  }
+  return await response.json();
+}
+var ensureArray, normalizeContentPart, normalizeMessage, normalizeToolChoice, useGemini, useOpenAI, resolveApiUrl, assertApiKey, normalizeResponseFormat;
+var init_llm = __esm({
+  "server/_core/llm.ts"() {
+    "use strict";
+    init_env();
+    ensureArray = (value) => Array.isArray(value) ? value : [value];
+    normalizeContentPart = (part) => {
+      if (typeof part === "string") {
+        return { type: "text", text: part };
+      }
+      if (part.type === "text") {
+        return part;
+      }
+      if (part.type === "image_url") {
+        return part;
+      }
+      if (part.type === "file_url") {
+        return part;
+      }
+      throw new Error("Unsupported message content part");
+    };
+    normalizeMessage = (message) => {
+      const { role, name, tool_call_id } = message;
+      if (role === "tool" || role === "function") {
+        const content = ensureArray(message.content).map((part) => typeof part === "string" ? part : JSON.stringify(part)).join("\n");
+        return {
+          role,
+          name,
+          tool_call_id,
+          content
+        };
+      }
+      const contentParts = ensureArray(message.content).map(normalizeContentPart);
+      if (contentParts.length === 1 && contentParts[0].type === "text") {
+        return {
+          role,
+          name,
+          content: contentParts[0].text
+        };
+      }
+      return {
+        role,
+        name,
+        content: contentParts
+      };
+    };
+    normalizeToolChoice = (toolChoice, tools) => {
+      if (!toolChoice) return void 0;
+      if (toolChoice === "none" || toolChoice === "auto") {
+        return toolChoice;
+      }
+      if (toolChoice === "required") {
+        if (!tools || tools.length === 0) {
+          throw new Error(
+            "tool_choice 'required' was provided but no tools were configured"
+          );
+        }
+        if (tools.length > 1) {
+          throw new Error(
+            "tool_choice 'required' needs a single tool or specify the tool name explicitly"
+          );
+        }
+        return {
+          type: "function",
+          function: { name: tools[0].function.name }
+        };
+      }
+      if ("name" in toolChoice) {
+        return {
+          type: "function",
+          function: { name: toolChoice.name }
+        };
+      }
+      return toolChoice;
+    };
+    useGemini = () => !ENV.forgeApiKey && !!ENV.geminiApiKey;
+    useOpenAI = () => !ENV.forgeApiKey && !ENV.geminiApiKey && !!ENV.openaiApiKey;
+    resolveApiUrl = () => {
+      if (useGemini())
+        return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+      if (useOpenAI()) return "https://api.openai.com/v1/chat/completions";
+      return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions` : "https://forge.manus.im/v1/chat/completions";
+    };
+    assertApiKey = () => {
+      if (!ENV.forgeApiKey && !ENV.geminiApiKey && !ENV.openaiApiKey) {
+        throw new Error("OPENAI_API_KEY is not configured");
+      }
+    };
+    normalizeResponseFormat = ({
+      responseFormat,
+      response_format,
+      outputSchema,
+      output_schema
+    }) => {
+      const explicitFormat = responseFormat || response_format;
+      if (explicitFormat) {
+        if (explicitFormat.type === "json_schema" && !explicitFormat.json_schema?.schema) {
+          throw new Error(
+            "responseFormat json_schema requires a defined schema object"
+          );
+        }
+        return explicitFormat;
+      }
+      const schema = outputSchema || output_schema;
+      if (!schema) return void 0;
+      if (!schema.name || !schema.schema) {
+        throw new Error("outputSchema requires both name and schema");
+      }
+      return {
+        type: "json_schema",
+        json_schema: {
+          name: schema.name,
+          schema: schema.schema,
+          ...typeof schema.strict === "boolean" ? { strict: schema.strict } : {}
+        }
+      };
+    };
+  }
+});
+
 // server/restoreRouter.ts
 var restoreRouter_exports = {};
 __export(restoreRouter_exports, {
@@ -961,7 +1145,7 @@ function registerRestoreRoutes(app) {
       }
       if (mode === "geminicheck") {
         try {
-          const { invokeLLM: invokeLLM2 } = await import("../_core/llm");
+          const { invokeLLM: invokeLLM2 } = await Promise.resolve().then(() => (init_llm(), llm_exports));
           const start = Date.now();
           const resp = await invokeLLM2({
             messages: [{ role: "user", content: "hi, reply with just OK" }]
@@ -1729,186 +1913,11 @@ var systemRouter = router({
 init_env();
 init_db();
 init_schema();
+init_llm();
 import { z as z4 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
 import { SignJWT as SignJWT2, jwtVerify as jwtVerify4 } from "jose";
-
-// server/_core/llm.ts
-init_env();
-var ensureArray = (value) => Array.isArray(value) ? value : [value];
-var normalizeContentPart = (part) => {
-  if (typeof part === "string") {
-    return { type: "text", text: part };
-  }
-  if (part.type === "text") {
-    return part;
-  }
-  if (part.type === "image_url") {
-    return part;
-  }
-  if (part.type === "file_url") {
-    return part;
-  }
-  throw new Error("Unsupported message content part");
-};
-var normalizeMessage = (message) => {
-  const { role, name, tool_call_id } = message;
-  if (role === "tool" || role === "function") {
-    const content = ensureArray(message.content).map((part) => typeof part === "string" ? part : JSON.stringify(part)).join("\n");
-    return {
-      role,
-      name,
-      tool_call_id,
-      content
-    };
-  }
-  const contentParts = ensureArray(message.content).map(normalizeContentPart);
-  if (contentParts.length === 1 && contentParts[0].type === "text") {
-    return {
-      role,
-      name,
-      content: contentParts[0].text
-    };
-  }
-  return {
-    role,
-    name,
-    content: contentParts
-  };
-};
-var normalizeToolChoice = (toolChoice, tools) => {
-  if (!toolChoice) return void 0;
-  if (toolChoice === "none" || toolChoice === "auto") {
-    return toolChoice;
-  }
-  if (toolChoice === "required") {
-    if (!tools || tools.length === 0) {
-      throw new Error(
-        "tool_choice 'required' was provided but no tools were configured"
-      );
-    }
-    if (tools.length > 1) {
-      throw new Error(
-        "tool_choice 'required' needs a single tool or specify the tool name explicitly"
-      );
-    }
-    return {
-      type: "function",
-      function: { name: tools[0].function.name }
-    };
-  }
-  if ("name" in toolChoice) {
-    return {
-      type: "function",
-      function: { name: toolChoice.name }
-    };
-  }
-  return toolChoice;
-};
-var useGemini = () => !ENV.forgeApiKey && !!ENV.geminiApiKey;
-var useOpenAI = () => !ENV.forgeApiKey && !ENV.geminiApiKey && !!ENV.openaiApiKey;
-var resolveApiUrl = () => {
-  if (useGemini())
-    return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-  if (useOpenAI()) return "https://api.openai.com/v1/chat/completions";
-  return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions` : "https://forge.manus.im/v1/chat/completions";
-};
-var assertApiKey = () => {
-  if (!ENV.forgeApiKey && !ENV.geminiApiKey && !ENV.openaiApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
-};
-var normalizeResponseFormat = ({
-  responseFormat,
-  response_format,
-  outputSchema,
-  output_schema
-}) => {
-  const explicitFormat = responseFormat || response_format;
-  if (explicitFormat) {
-    if (explicitFormat.type === "json_schema" && !explicitFormat.json_schema?.schema) {
-      throw new Error(
-        "responseFormat json_schema requires a defined schema object"
-      );
-    }
-    return explicitFormat;
-  }
-  const schema = outputSchema || output_schema;
-  if (!schema) return void 0;
-  if (!schema.name || !schema.schema) {
-    throw new Error("outputSchema requires both name and schema");
-  }
-  return {
-    type: "json_schema",
-    json_schema: {
-      name: schema.name,
-      schema: schema.schema,
-      ...typeof schema.strict === "boolean" ? { strict: schema.strict } : {}
-    }
-  };
-};
-async function invokeLLM(params) {
-  assertApiKey();
-  const {
-    messages,
-    tools,
-    toolChoice,
-    tool_choice,
-    outputSchema,
-    output_schema,
-    responseFormat,
-    response_format
-  } = params;
-  const payload = {
-    model: useOpenAI() ? "gpt-4o" : useGemini() ? "gemini-3.5-flash" : "gemini-2.5-flash",
-    messages: messages.map(normalizeMessage)
-  };
-  if (tools && tools.length > 0) {
-    payload.tools = tools;
-  }
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
-  if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
-  }
-  payload.max_tokens = useOpenAI() ? 16384 : 32768;
-  if (!useOpenAI() && !useGemini()) {
-    payload.thinking = {
-      "budget_tokens": 128
-    };
-  }
-  const normalizedResponseFormat = normalizeResponseFormat({
-    responseFormat,
-    response_format,
-    outputSchema,
-    output_schema
-  });
-  if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
-  }
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    signal: AbortSignal.timeout(45e3),
-    // 45초 응답 없으면 중단 (무한 로딩 방지)
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${useGemini() ? ENV.geminiApiKey : useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`
-    },
-    body: JSON.stringify(payload)
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} \u2013 ${errorText}`
-    );
-  }
-  return await response.json();
-}
-
-// server/routers.ts
 import { eq as eq6, and as and5, desc as desc3, asc, like, sql, inArray, gte as gte4, lte as lte4, not } from "drizzle-orm";
 import { TRPCError as TRPCError5 } from "@trpc/server";
 
