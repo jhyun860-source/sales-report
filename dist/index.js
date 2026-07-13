@@ -1870,6 +1870,8 @@ async function invokeLLM(params) {
   }
   const response = await fetch(resolveApiUrl(), {
     method: "POST",
+    signal: AbortSignal.timeout(45e3),
+    // 45초 응답 없으면 중단 (무한 로딩 방지)
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${useGemini() ? ENV.geminiApiKey : useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`

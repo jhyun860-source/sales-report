@@ -716,19 +716,25 @@ export default function TableReport() {
         .filter(([, c]) => c >= EXCLUDE_THRESHOLD)
         .map(([w]) => w);
 
-      const { memo, amount } = await analyzeOrderMemo.mutateAsync({
-        imageBase64: base64,
-        mimeType: file.type || 'image/jpeg',
-        branchId: effectiveBranchId,
-        date: currentDate,
-        // 캐시된 패턴 전달 (DB 재조회 생략으로 속도 개선) - 사용자 제외 단어 필터링 적용
-        preloadedYellow: filteredYellow,
-        preloadedPink: filteredPink,
-        preloadedExamples: highlightPatterns?.recentMemoExamples,
-        // [추가] 사용자 학습형 제외 단어 (서버 측 LLM 프롬프트에 절대 금지 단어로 전달)
-        excludedYellow: excludedYellowWords,
-        excludedPink: excludedPinkWords,
-      });
+      const analyzeTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('시간이 너무 오래 걸립니다(40초 초과). 다시 시도해주세요.')), 40000)
+      );
+      const { memo, amount } = await Promise.race([
+        analyzeOrderMemo.mutateAsync({
+          imageBase64: base64,
+          mimeType: file.type || 'image/jpeg',
+          branchId: effectiveBranchId,
+          date: currentDate,
+          // 캐시된 패턴 전달 (DB 재조회 생략으로 속도 개선) - 사용자 제외 단어 필터링 적용
+          preloadedYellow: filteredYellow,
+          preloadedPink: filteredPink,
+          preloadedExamples: highlightPatterns?.recentMemoExamples,
+          // [추가] 사용자 학습형 제외 단어 (서버 측 LLM 프롬프트에 절대 금지 단어로 전달)
+          excludedYellow: excludedYellowWords,
+          excludedPink: excludedPinkWords,
+        }),
+        analyzeTimeout,
+      ]);
       if (memo) {
         updateItemField(localId, 'memo', memo);
         if (amount) {
