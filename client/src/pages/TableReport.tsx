@@ -523,7 +523,11 @@ export default function TableReport() {
     // 아직 저장 전인 신규 항목도 화면에서 먼저 정확히 합쳐지게 처리
     if (!target.id || !source.id || !reportId) {
       applyLocalMerge(mergedAmountLocal, mergedMemoLocal);
-      toast.success('합치기 완료! 저장하기를 누르면 서버에 반영됩니다.');
+      // [버그수정] 합치기 후 사용자가 "저장하기"를 누르지 않고 날짜 이동/이탈하면
+      //   합친 내용(과 미저장 항목)이 통째로 사라지는 문제가 있었음.
+      //   합치기 직후 자동으로 서버 저장까지 실행해 안전하게 보존.
+      setTimeout(() => { handleSave(); }, 150);
+      toast.success('합치기 완료! 자동으로 저장됩니다.');
       return;
     }
 
