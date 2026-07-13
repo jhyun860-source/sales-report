@@ -191,6 +191,20 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, rows });
       }
 
+      if (mode === "invcheck") {
+        const [dupes] = await conn.query(
+          `SELECT branchId, liquorItemId, COUNT(*) as cnt, GROUP_CONCAT(id) as ids, GROUP_CONCAT(currentStock) as stocks
+           FROM liquorInventories
+           GROUP BY branchId, liquorItemId
+           HAVING cnt > 1
+           ORDER BY branchId`
+        );
+        const [branch1Count]: any = await conn.query(
+          `SELECT COUNT(*) as c FROM liquorInventories WHERE branchId = 1`
+        );
+        return res.json({ mode, duplicates: dupes, branch1TotalRows: branch1Count?.[0]?.c });
+      }
+
       if (mode === "aicheck") {
         const key = process.env.OPENAI_API_KEY || "";
         const gkey = process.env.GEMINI_API_KEY || "";
