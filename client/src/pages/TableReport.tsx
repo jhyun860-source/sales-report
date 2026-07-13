@@ -525,9 +525,57 @@ export default function TableReport() {
       applyLocalMerge(mergedAmountLocal, mergedMemoLocal);
       // [버그수정] 합치기 후 사용자가 "저장하기"를 누르지 않고 날짜 이동/이탈하면
       //   합친 내용(과 미저장 항목)이 통째로 사라지는 문제가 있었음.
-      //   합치기 직후 자동으로 서버 저장까지 실행해 안전하게 보존.
-      setTimeout(() => { handleSave(); }, 150);
-      toast.success('합치기 완료! 자동으로 저장됩니다.');
+      //   React 상태 업데이트는 비동기라 handleSave()를 뒤늦게 호출하면
+      //   병합 "이전"의 오래된 state를 참조하는 위험이 있으므로,
+      //   병합 결과 배열을 여기서 직접 계산해 즉시 서버로 전송한다 (state 타이밍에 의존하지 않음).
+      const mergedItemsForSave = items
+        .map(it => it.localId === targetLocalId ? { ...it, amount: mergedAmountLocal, memo: mergedMemoLocal } : it)
+        .filter(it => it.localId !== sourceLocalId);
+      setIsSaving(true);
+      try {
+        await batchSave.mutateAsync({
+          date: currentDate,
+          teamCount,
+          notes,
+          branchId: effectiveBranchId,
+          items: mergedItemsForSave.map((it, i) => ({
+            id: it.id,
+            localId: it.localId,
+            tableNumber: it.tableNumber,
+            guestType: it.guestType,
+            guestName: it.guestName || null,
+            amount: it.amount || '0',
+            paymentMethod: it.paymentMethod,
+            memo: it.memo,
+            sortOrder: i,
+          })),
+          incentives: incentives.map((inc, i) => {
+            const autoCalculatedIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
+            const finalSalesIncentive = (inc.salesIncentive !== undefined && inc.salesIncentive !== null && inc.salesIncentive !== '')
+              ? Number(inc.salesIncentive)
+              : 0;
+            return {
+              id: inc.id,
+              localId: inc.localId,
+              staffName: inc.staffName,
+              staffType: inc.staffType,
+              glassCount: inc.glassCount || 0,
+              bottleCount: inc.bottleCount || 0,
+              beerBottleCount: inc.beerBottleCount || 0,
+              salesIncentive: String(finalSalesIncentive || autoCalculatedIncentive),
+              workStart: inc.workStart || null,
+              workEnd: inc.workEnd || null,
+              sortOrder: i,
+            };
+          }),
+        });
+        await utils.tableReport.getByDate.invalidate();
+        toast.success('합치기 완료! 자동으로 저장되었습니다.');
+      } catch (e: any) {
+        toast.error('합치기 후 저장 실패: ' + (e?.message ?? '알 수 없는 오류') + ' - 다시 저장하기를 눌러주세요.');
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
 
