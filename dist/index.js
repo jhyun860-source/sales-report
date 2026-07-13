@@ -1834,7 +1834,7 @@ async function invokeLLM(params) {
     response_format
   } = params;
   const payload = {
-    model: useOpenAI() ? "gpt-4o" : "gemini-2.5-flash",
+    model: useOpenAI() ? "gpt-4o" : useGemini() ? "gemini-3.5-flash" : "gemini-2.5-flash",
     messages: messages.map(normalizeMessage)
   };
   if (tools && tools.length > 0) {
