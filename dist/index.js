@@ -852,54 +852,62 @@ async function invokeLLM(params) {
     responseFormat,
     response_format
   } = params;
-  const payload = {
-    model: useOpenAI() ? "gpt-4o" : useGemini() ? "gemini-3.5-flash" : "gemini-2.5-flash",
-    messages: messages.map(normalizeMessage)
-  };
-  if (tools && tools.length > 0) {
-    payload.tools = tools;
-  }
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
-  if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
-  }
-  payload.max_tokens = useOpenAI() ? 16384 : 32768;
-  if (!useOpenAI() && !useGemini()) {
-    payload.thinking = {
-      "budget_tokens": 128
-    };
-  }
+  const normalizedToolChoice = normalizeToolChoice(toolChoice || tool_choice, tools);
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
     response_format,
     outputSchema,
     output_schema
   });
-  if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
+  const providers = availableProviders();
+  let lastError = null;
+  for (let i = 0; i < providers.length; i++) {
+    const provider = providers[i];
+    const isLast = i === providers.length - 1;
+    const payload = {
+      model: providerModel(provider),
+      messages: messages.map(normalizeMessage)
+    };
+    if (tools && tools.length > 0) payload.tools = tools;
+    if (normalizedToolChoice) payload.tool_choice = normalizedToolChoice;
+    if (normalizedResponseFormat) payload.response_format = normalizedResponseFormat;
+    payload.max_tokens = provider === "openai" ? 16384 : 32768;
+    if (provider === "forge") {
+      payload.thinking = { budget_tokens: 128 };
+    }
+    try {
+      const response = await fetch(providerUrl(provider), {
+        method: "POST",
+        signal: AbortSignal.timeout(45e3),
+        // 45초 응답 없으면 중단 (무한 로딩 방지)
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${providerKey(provider)}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        const isRateLimited = response.status === 429;
+        if (isRateLimited && !isLast) {
+          lastError = new Error(
+            `[${provider}] \uC0AC\uC6A9\uB7C9 \uD55C\uB3C4 \uCD08\uACFC, \uB2E4\uC74C \uD504\uB85C\uBC14\uC774\uB354\uB85C \uC804\uD658: ${errorText.slice(0, 200)}`
+          );
+          continue;
+        }
+        throw new Error(
+          `LLM invoke failed (${provider}): ${response.status} ${response.statusText} \u2013 ${errorText}`
+        );
+      }
+      return await response.json();
+    } catch (e) {
+      lastError = e;
+      if (isLast) throw e;
+    }
   }
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    signal: AbortSignal.timeout(45e3),
-    // 45초 응답 없으면 중단 (무한 로딩 방지)
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${useGemini() ? ENV.geminiApiKey : useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`
-    },
-    body: JSON.stringify(payload)
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} \u2013 ${errorText}`
-    );
-  }
-  return await response.json();
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
-var ensureArray, normalizeContentPart, normalizeMessage, normalizeToolChoice, useGemini, useOpenAI, resolveApiUrl, assertApiKey, normalizeResponseFormat;
+var ensureArray, normalizeContentPart, normalizeMessage, normalizeToolChoice, availableProviders, providerUrl, providerModel, providerKey, assertApiKey, normalizeResponseFormat;
 var init_llm = __esm({
   "server/_core/llm.ts"() {
     "use strict";
@@ -974,16 +982,23 @@ var init_llm = __esm({
       }
       return toolChoice;
     };
-    useGemini = () => !ENV.forgeApiKey && !!ENV.geminiApiKey;
-    useOpenAI = () => !ENV.forgeApiKey && !ENV.geminiApiKey && !!ENV.openaiApiKey;
-    resolveApiUrl = () => {
-      if (useGemini())
+    availableProviders = () => {
+      const list = [];
+      if (ENV.forgeApiKey) list.push("forge");
+      if (ENV.geminiApiKey) list.push("gemini");
+      if (ENV.openaiApiKey) list.push("openai");
+      return list;
+    };
+    providerUrl = (p) => {
+      if (p === "gemini")
         return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-      if (useOpenAI()) return "https://api.openai.com/v1/chat/completions";
+      if (p === "openai") return "https://api.openai.com/v1/chat/completions";
       return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions` : "https://forge.manus.im/v1/chat/completions";
     };
+    providerModel = (p) => p === "openai" ? "gpt-4o" : p === "gemini" ? "gemini-3.5-flash" : "gemini-2.5-flash";
+    providerKey = (p) => p === "gemini" ? ENV.geminiApiKey : p === "openai" ? ENV.openaiApiKey : ENV.forgeApiKey;
     assertApiKey = () => {
-      if (!ENV.forgeApiKey && !ENV.geminiApiKey && !ENV.openaiApiKey) {
+      if (availableProviders().length === 0) {
         throw new Error("OPENAI_API_KEY is not configured");
       }
     };

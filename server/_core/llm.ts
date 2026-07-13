@@ -209,20 +209,33 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const useGemini = () => !ENV.forgeApiKey && !!ENV.geminiApiKey;
-const useOpenAI = () => !ENV.forgeApiKey && !ENV.geminiApiKey && !!ENV.openaiApiKey;
+type Provider = "forge" | "gemini" | "openai";
 
-const resolveApiUrl = () => {
-  if (useGemini())
+const availableProviders = (): Provider[] => {
+  const list: Provider[] = [];
+  if (ENV.forgeApiKey) list.push("forge");
+  if (ENV.geminiApiKey) list.push("gemini");
+  if (ENV.openaiApiKey) list.push("openai");
+  return list;
+};
+
+const providerUrl = (p: Provider) => {
+  if (p === "gemini")
     return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-  if (useOpenAI()) return "https://api.openai.com/v1/chat/completions";
+  if (p === "openai") return "https://api.openai.com/v1/chat/completions";
   return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
 };
 
+const providerModel = (p: Provider) =>
+  p === "openai" ? "gpt-4o" : p === "gemini" ? "gemini-3.5-flash" : "gemini-2.5-flash";
+
+const providerKey = (p: Provider) =>
+  p === "gemini" ? ENV.geminiApiKey : p === "openai" ? ENV.openaiApiKey : ENV.forgeApiKey;
+
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey && !ENV.geminiApiKey && !ENV.openaiApiKey) {
+  if (availableProviders().length === 0) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
 };
@@ -286,31 +299,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     response_format,
   } = params;
 
-  const payload: Record<string, unknown> = {
-    model: useOpenAI() ? "gpt-4o" : useGemini() ? "gemini-3.5-flash" : "gemini-2.5-flash",
-    messages: messages.map(normalizeMessage),
-  };
-
-  if (tools && tools.length > 0) {
-    payload.tools = tools;
-  }
-
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
-  if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
-  }
-
-  payload.max_tokens = useOpenAI() ? 16384 : 32768
-  // "thinking" 파라미터는 Forge 게이트웨이 전용 확장 필드라 OpenAI/Gemini 직접 연결 시에는 보내지 않음
-  if (!useOpenAI() && !useGemini()) {
-    payload.thinking = {
-      "budget_tokens": 128
-    }
-  }
-
+  const normalizedToolChoice = normalizeToolChoice(toolChoice || tool_choice, tools);
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
     response_format,
@@ -318,26 +307,59 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     output_schema,
   });
 
-  if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
+  const providers = availableProviders();
+  let lastError: unknown = null;
+
+  for (let i = 0; i < providers.length; i++) {
+    const provider = providers[i];
+    const isLast = i === providers.length - 1;
+
+    const payload: Record<string, unknown> = {
+      model: providerModel(provider),
+      messages: messages.map(normalizeMessage),
+    };
+    if (tools && tools.length > 0) payload.tools = tools;
+    if (normalizedToolChoice) payload.tool_choice = normalizedToolChoice;
+    if (normalizedResponseFormat) payload.response_format = normalizedResponseFormat;
+    payload.max_tokens = provider === "openai" ? 16384 : 32768;
+    // "thinking" 파라미터는 Forge 게이트웨이 전용 확장 필드
+    if (provider === "forge") {
+      payload.thinking = { budget_tokens: 128 };
+    }
+
+    try {
+      const response = await fetch(providerUrl(provider), {
+        method: "POST",
+        signal: AbortSignal.timeout(45000), // 45초 응답 없으면 중단 (무한 로딩 방지)
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${providerKey(provider)}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const isRateLimited = response.status === 429;
+        // 사용량 한도 초과(429)이고 시도할 다음 프로바이더가 남아있으면 자동으로 다음 프로바이더로 전환
+        if (isRateLimited && !isLast) {
+          lastError = new Error(
+            `[${provider}] 사용량 한도 초과, 다음 프로바이더로 전환: ${errorText.slice(0, 200)}`
+          );
+          continue;
+        }
+        throw new Error(
+          `LLM invoke failed (${provider}): ${response.status} ${response.statusText} – ${errorText}`
+        );
+      }
+
+      return (await response.json()) as InvokeResult;
+    } catch (e) {
+      lastError = e;
+      if (isLast) throw e;
+      // 네트워크 오류 등도 다음 프로바이더로 폴백 시도
+    }
   }
 
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    signal: AbortSignal.timeout(45000), // 45초 응답 없으면 중단 (무한 로딩 방지)
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${useGemini() ? ENV.geminiApiKey : useOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-    );
-  }
-
-  return (await response.json()) as InvokeResult;
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
