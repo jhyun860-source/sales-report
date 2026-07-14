@@ -604,6 +604,8 @@ export default function TableReport() {
       // 두 항목이 모두 사라지는 레이스 컨디션을 일으킴.
       // 로컬 state(applyLocalMerge)만으로 화면은 이미 정확한 상태이며,
       // 매출 합계는 다음 페이지 이동/새로고침 시 자연스럽게 최신화됨.
+      // [추가] 화면이 병합 상태로 안정된 뒤(0.5초 후) 캐시만 안전하게 갱신 (기존 로직은 그대로 둠)
+      setTimeout(() => { utils.tableReport.getByDate.invalidate(); }, 500);
     } catch (e: any) {
       toast.error('합치기 실패: ' + (e?.message ?? '알 수 없는 오류'));
       setMergeTargetLocalId(null);

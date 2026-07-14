@@ -4738,6 +4738,17 @@ export const appRouter = router({
         const itemsToUpdate = validItems.filter(it => it.id);
         const itemsToInsert = validItems.filter(it => !it.id);
 
+        // [추가] DELETE: 프론트에서 넘어온 id 목록에 없는 기존 테이블 항목 삭제
+        //   (인센티브에는 이미 있던 동일한 로직을 tableItems에도 동일하게 추가함.
+        //    기존에는 이 삭제 로직이 없어서, 화면에서 지우거나 합쳐서 없앤 항목이
+        //    DB에는 계속 남아있다가 나중에 다시 나타나는 문제가 있었음)
+        const existingItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, reportId));
+        const incomingItemIds = new Set(validItems.filter(it => it.id).map(it => it.id!));
+        const itemsToDelete = existingItems.filter(it => !incomingItemIds.has(it.id));
+        if (itemsToDelete.length > 0) {
+          await Promise.all(itemsToDelete.map(it => db.delete(tableItems).where(eq(tableItems.id, it.id))));
+        }
+
         // UPDATE: 병렬 처리 (id가 확정된 항목이므로 안전)
         await Promise.all(itemsToUpdate.map(async (it) => {
           await db.update(tableItems).set({
