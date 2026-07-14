@@ -16541,9 +16541,9 @@
       "date": "2026-07-13",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "425000",
+      "card": "1340000",
       "cashTotal": "0",
-      "cardTotal": "12467000",
+      "cardTotal": "13382000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -16551,11 +16551,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-14 12:48:09",
+      "submittedAt": "2026-07-14 12:49:00",
       "createdAt": "2026-07-14 12:42:45",
-      "updatedAt": "2026-07-14 12:48:10",
-      "totalRevenue": "425000",
-      "commissionExpense": "72250",
+      "updatedAt": "2026-07-14 12:49:00",
+      "totalRevenue": "1340000",
+      "commissionExpense": "227800",
       "rentExpense": "166667",
       "managementFeeExpense": "0",
       "staffWageExpense": "136364",
@@ -16565,8 +16565,8 @@
       "staffDrinkExpense": "175000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1172600",
-      "netProfit": "-747600",
+      "totalExpenses": "1328150",
+      "netProfit": "11850",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -21506,10 +21506,10 @@
       "date": "2026-07-13",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "425000",
+      "cardAmount": "1340000",
       "notes": null,
       "createdAt": "2026-07-14 12:42:45",
-      "updatedAt": "2026-07-14 12:47:44"
+      "updatedAt": "2026-07-14 12:48:35"
     }
   ],
   "tableItems": [
@@ -52745,12 +52745,38 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "310000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "바탑 1시간 무제한(2), 바탑 연장 30분(2), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">재희(7)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">예림(7)</mark>",
       "sortOrder": 2,
       "createdAt": "2026-07-14 12:47:28",
-      "updatedAt": "2026-07-14 12:47:28"
+      "updatedAt": "2026-07-14 12:48:23"
+    },
+    {
+      "id": 16260029,
+      "tableReportId": 10380006,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "원술",
+      "amount": "125000",
+      "paymentMethod": "card",
+      "memo": "바탑 연장 30분(2), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">세정(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">윤아(3)</mark>, 외부음식 세팅비(1)",
+      "sortOrder": 3,
+      "createdAt": "2026-07-14 12:48:23",
+      "updatedAt": "2026-07-14 12:48:34"
+    },
+    {
+      "id": 16260030,
+      "tableReportId": 10380006,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "480000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">맥켈란 12y (700ml)(1)</mark>",
+      "sortOrder": 4,
+      "createdAt": "2026-07-14 12:48:34",
+      "updatedAt": "2026-07-14 12:48:34"
     }
   ],
   "staffIncentives": [
