@@ -1505,6 +1505,27 @@ function registerRestoreRoutes(app) {
         );
         return res.json({ mode, rows });
       }
+      if (mode === "checkreport") {
+        const branchId = Number(req.query.branchId) || 3;
+        const dates = String(req.query.dates || "2026-07-11,2026-07-13").split(",");
+        const results = [];
+        for (const date of dates) {
+          const [reports] = await conn.query(
+            `SELECT id, branchId, date, teamCount, notes, cashAmount, cardAmount, createdAt, updatedAt FROM tableReports WHERE branchId=? AND date=?`,
+            [branchId, date]
+          );
+          let items = [];
+          let incentives = [];
+          if (reports?.[0]) {
+            const [it] = await conn.query(`SELECT id, tableNumber, amount, memo FROM tableItems WHERE tableReportId=?`, [reports[0].id]);
+            items = it;
+            const [inc] = await conn.query(`SELECT id, staffName, workStart, workEnd FROM staffIncentives WHERE tableReportId=?`, [reports[0].id]);
+            incentives = inc;
+          }
+          results.push({ date, report: reports?.[0] ?? null, itemsCount: items.length, items, incentivesCount: incentives.length, incentives });
+        }
+        return res.json({ mode, branchId, results });
+      }
       if (mode === "liquorcostcheck") {
         try {
           const branchId = Number(req.query.branchId) || 6;
