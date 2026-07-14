@@ -1404,6 +1404,11 @@ function registerRestoreRoutes(app) {
     let conn = null;
     try {
       conn = await getConn();
+      if (mode === "schema" || mode === "data") {
+        return res.status(410).json({
+          error: "\uC774 \uAE30\uB2A5\uC740 \uC548\uC804\uC744 \uC704\uD574 \uBE44\uD65C\uC131\uD654\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uB370\uC774\uD130\uB97C \uB2E4\uC2DC \uBCF5\uC6D0\uD574\uC57C \uD558\uBA74 \uCF54\uB4DC\uB85C \uC9C1\uC811 \uC694\uCCAD\uD558\uC138\uC694."
+        });
+      }
       if (mode === "verify") {
         const [rows] = await conn.query(`
           SELECT b.name,

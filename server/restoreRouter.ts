@@ -62,6 +62,16 @@ export function registerRestoreRoutes(app: Express) {
     try {
       conn = await getConn();
 
+      if (mode === "schema" || mode === "data") {
+        // [보안] 이전 완료 후 위험한 전체 삭제/재삽입 기능을 영구 비활성화.
+        //   GET 요청만으로 실행되는 구조라, 실수로 링크를 다시 열거나 브라우저가
+        //   백그라운드에서 미리 불러오기만 해도 DB 전체가 백업 시점으로 되돌아가는
+        //   심각한 위험이 있었음(실제로 이 문제로 최근 데이터가 유실된 것으로 추정됨).
+        return res.status(410).json({
+          error: "이 기능은 안전을 위해 비활성화되었습니다. 데이터를 다시 복원해야 하면 코드로 직접 요청하세요.",
+        });
+      }
+
       if (mode === "verify") {
         const [rows] = await conn.query(`
           SELECT b.name,
