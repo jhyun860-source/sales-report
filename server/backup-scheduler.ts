@@ -20,6 +20,13 @@ function todayKST(): string {
   return kst.toISOString().slice(0, 10);
 }
 
+// KST 기준 현재 시:분 (HH-mm, 파일명용)
+function nowTimeKST(): string {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(11, 16).replace(':', '-');
+}
+
 // GitHub API: 파일 존재 여부 + sha 조회
 async function getFileSha(path: string): Promise<string | null> {
   try {
@@ -99,8 +106,17 @@ export async function runDailyBackup(): Promise<void> {
   try {
     const snapshot = await takeSnapshot();
     const json = JSON.stringify(snapshot, null, 2);
+    const timeStr = nowTimeKST();
 
-    // 1) 날짜별 파일 저장: backups/2026-06-01.json
+    // 0) 시각별 스냅샷 저장: backups/snapshots/2026-07-14_08-05.json (하루 여러 번, 서로 덮어쓰지 않음)
+    const snapshotPath = `backups/snapshots/${dateStr}_${timeStr}.json`;
+    await pushToGitHub(
+      snapshotPath,
+      json,
+      `[backup] 스냅샷 ${dateStr} ${timeStr} KST`
+    );
+
+    // 1) 날짜별 파일 저장: backups/2026-06-01.json (그날의 가장 최신 상태로 계속 갱신)
     const dailyPath = `backups/${dateStr}.json`;
     const ok1 = await pushToGitHub(
       dailyPath,
@@ -150,30 +166,19 @@ export async function runDailyBackup(): Promise<void> {
   }
 }
 
-// 매일 KST 00:05에 실행하는 스케줄러
+// 2시간마다 실행하는 스케줄러 (최악의 경우에도 데이터 손실 범위를 2시간 이내로 제한)
 export function startBackupScheduler(): void {
-  console.log('[backup] 자동 백업 스케줄러 시작');
+  console.log('[backup] 자동 백업 스케줄러 시작 (2시간 간격)');
 
-  function scheduleNext() {
-    const now = new Date();
-    // KST = UTC+9 → 목표: 다음 KST 00:05 = UTC 전날 15:05
-    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    const nextRun = new Date(kstNow);
-    nextRun.setUTCHours(0, 5, 0, 0); // KST 00:05
-    if (nextRun <= kstNow) {
-      nextRun.setUTCDate(nextRun.getUTCDate() + 1);
-    }
-    // UTC 기준으로 변환
-    const nextRunUTC = new Date(nextRun.getTime() - 9 * 60 * 60 * 1000);
-    const msUntilRun = nextRunUTC.getTime() - now.getTime();
+  const INTERVAL_MS = 2 * 60 * 60 * 1000; // 2시간
 
-    console.log(`[backup] 다음 백업 예정: ${nextRun.toISOString().slice(0, 16)} KST (${Math.round(msUntilRun / 60000)}분 후)`);
-
-    setTimeout(async () => {
-      await runDailyBackup();
-      scheduleNext(); // 다음 날 예약
-    }, msUntilRun);
+  async function runAndReschedule() {
+    await runDailyBackup();
+    const nextRun = new Date(Date.now() + INTERVAL_MS);
+    console.log(`[backup] 다음 백업 예정: ${nextRun.toISOString()} (약 2시간 후)`);
+    setTimeout(runAndReschedule, INTERVAL_MS);
   }
 
-  scheduleNext();
+  // 서버 기동 직후 1회 즉시 백업 후, 이후 2시간 간격 반복
+  runAndReschedule();
 }

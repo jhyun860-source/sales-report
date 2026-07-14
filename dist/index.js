@@ -8244,6 +8244,11 @@ function todayKST() {
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1e3);
   return kst.toISOString().slice(0, 10);
 }
+function nowTimeKST() {
+  const now = /* @__PURE__ */ new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1e3);
+  return kst.toISOString().slice(11, 16).replace(":", "-");
+}
 async function getFileSha(path4) {
   try {
     const res = await fetch(
@@ -8311,6 +8316,13 @@ async function runDailyBackup() {
   try {
     const snapshot = await takeSnapshot();
     const json2 = JSON.stringify(snapshot, null, 2);
+    const timeStr = nowTimeKST();
+    const snapshotPath = `backups/snapshots/${dateStr}_${timeStr}.json`;
+    await pushToGitHub(
+      snapshotPath,
+      json2,
+      `[backup] \uC2A4\uB0C5\uC0F7 ${dateStr} ${timeStr} KST`
+    );
     const dailyPath = `backups/${dateStr}.json`;
     const ok1 = await pushToGitHub(
       dailyPath,
@@ -8354,24 +8366,15 @@ async function runDailyBackup() {
   }
 }
 function startBackupScheduler() {
-  console.log("[backup] \uC790\uB3D9 \uBC31\uC5C5 \uC2A4\uCF00\uC904\uB7EC \uC2DC\uC791");
-  function scheduleNext() {
-    const now = /* @__PURE__ */ new Date();
-    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1e3);
-    const nextRun = new Date(kstNow);
-    nextRun.setUTCHours(0, 5, 0, 0);
-    if (nextRun <= kstNow) {
-      nextRun.setUTCDate(nextRun.getUTCDate() + 1);
-    }
-    const nextRunUTC = new Date(nextRun.getTime() - 9 * 60 * 60 * 1e3);
-    const msUntilRun = nextRunUTC.getTime() - now.getTime();
-    console.log(`[backup] \uB2E4\uC74C \uBC31\uC5C5 \uC608\uC815: ${nextRun.toISOString().slice(0, 16)} KST (${Math.round(msUntilRun / 6e4)}\uBD84 \uD6C4)`);
-    setTimeout(async () => {
-      await runDailyBackup();
-      scheduleNext();
-    }, msUntilRun);
+  console.log("[backup] \uC790\uB3D9 \uBC31\uC5C5 \uC2A4\uCF00\uC904\uB7EC \uC2DC\uC791 (2\uC2DC\uAC04 \uAC04\uACA9)");
+  const INTERVAL_MS = 2 * 60 * 60 * 1e3;
+  async function runAndReschedule() {
+    await runDailyBackup();
+    const nextRun = new Date(Date.now() + INTERVAL_MS);
+    console.log(`[backup] \uB2E4\uC74C \uBC31\uC5C5 \uC608\uC815: ${nextRun.toISOString()} (\uC57D 2\uC2DC\uAC04 \uD6C4)`);
+    setTimeout(runAndReschedule, INTERVAL_MS);
   }
-  scheduleNext();
+  runAndReschedule();
 }
 
 // server/_core/index.ts
