@@ -16296,9 +16296,9 @@
       "date": "2026-07-10",
       "posStartAmount": "82000",
       "cash": "105000",
-      "card": "1195500",
+      "card": "1191000",
       "cashTotal": "1070000",
-      "cardTotal": "11378500",
+      "cardTotal": "11374000",
       "posEndAmount": "82000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -16306,11 +16306,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-10 17:37:48",
+      "submittedAt": "2026-07-14 11:36:43",
       "createdAt": "2026-07-10 15:52:54",
-      "updatedAt": "2026-07-10 17:37:48",
-      "totalRevenue": "1300500",
-      "commissionExpense": "221085",
+      "updatedAt": "2026-07-14 11:36:45",
+      "totalRevenue": "1296000",
+      "commissionExpense": "220320",
       "rentExpense": "240741",
       "managementFeeExpense": "0",
       "staffWageExpense": "159090",
@@ -16320,8 +16320,8 @@
       "staffDrinkExpense": "104000",
       "salesIncentiveExpense": "0",
       "otherExpense": "22222",
-      "totalExpenses": "1241051",
-      "netProfit": "59449",
+      "totalExpenses": "1240286",
+      "netProfit": "55714",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -16403,7 +16403,7 @@
       "cash": "0",
       "card": "792000",
       "cashTotal": "1070000",
-      "cardTotal": "12170500",
+      "cardTotal": "12166000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -16413,7 +16413,7 @@
       "submittedBy": null,
       "submittedAt": "2026-07-14 11:09:02",
       "createdAt": "2026-07-14 11:04:54",
-      "updatedAt": "2026-07-14 11:09:03",
+      "updatedAt": "2026-07-14 11:36:43",
       "totalRevenue": "792000",
       "commissionExpense": "134640",
       "rentExpense": "240741",
@@ -16434,11 +16434,11 @@
       "id": 10410003,
       "branchId": 3,
       "date": "2026-07-13",
-      "posStartAmount": "82000",
+      "posStartAmount": "0",
       "cash": "0",
       "card": "0",
       "cashTotal": "1070000",
-      "cardTotal": "12170500",
+      "cardTotal": "12166000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -16448,7 +16448,7 @@
       "submittedBy": null,
       "submittedAt": "2026-07-14 11:32:54",
       "createdAt": "2026-07-14 11:10:16",
-      "updatedAt": "2026-07-14 11:32:54",
+      "updatedAt": "2026-07-14 11:36:44",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "240741",
@@ -21324,10 +21324,10 @@
       "date": "2026-07-10",
       "teamCount": 0,
       "cashAmount": "105000",
-      "cardAmount": "1195500",
+      "cardAmount": "1191000",
       "notes": null,
       "createdAt": "2026-07-10 15:52:54",
-      "updatedAt": "2026-07-10 17:37:00"
+      "updatedAt": "2026-07-14 11:36:42"
     },
     {
       "id": 10350001,
@@ -52064,9 +52064,9 @@
       "amount": "50000",
       "paymentMethod": "cash",
       "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">기네스</mark> 드래프트 (330ml)(2)",
-      "sortOrder": 8,
+      "sortOrder": 7,
       "createdAt": "2026-07-10 15:59:50",
-      "updatedAt": "2026-07-10 16:16:27"
+      "updatedAt": "2026-07-14 11:36:41"
     },
     {
       "id": 16020001,
@@ -52116,9 +52116,9 @@
       "amount": "300000",
       "paymentMethod": "card",
       "memo": "바탑 연장 30분(3), 바탑 1시간 무제한(1), <mark style=\"background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;\">스텝J<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: none; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>(2), <mark style=\"background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;\">스텝S<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: none; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>(6), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">기네스 드래프트 (33<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: none; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>0ml)(1), 칵테일(5)",
-      "sortOrder": 9,
+      "sortOrder": 8,
       "createdAt": "2026-07-10 16:16:27",
-      "updatedAt": "2026-07-10 16:17:43"
+      "updatedAt": "2026-07-14 11:36:41"
     },
     {
       "id": 16050002,
@@ -52129,9 +52129,9 @@
       "amount": "10000",
       "paymentMethod": "cash",
       "memo": "<br>",
-      "sortOrder": 10,
+      "sortOrder": 9,
       "createdAt": "2026-07-10 16:17:43",
-      "updatedAt": "2026-07-10 16:17:58"
+      "updatedAt": "2026-07-14 11:36:41"
     },
     {
       "id": 16080001,
@@ -52147,19 +52147,6 @@
       "updatedAt": "2026-07-10 16:52:36"
     },
     {
-      "id": 16110001,
-      "tableReportId": 10320001,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "4500",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 11,
-      "createdAt": "2026-07-10 17:36:14",
-      "updatedAt": "2026-07-10 17:36:14"
-    },
-    {
       "id": 16110002,
       "tableReportId": 10320001,
       "tableNumber": "",
@@ -52168,9 +52155,9 @@
       "amount": "45000",
       "paymentMethod": "cash",
       "memo": "바탑무제한1,스텝1",
-      "sortOrder": 11,
+      "sortOrder": 10,
       "createdAt": "2026-07-10 17:36:35",
-      "updatedAt": "2026-07-10 17:37:00"
+      "updatedAt": "2026-07-14 11:36:41"
     },
     {
       "id": 16140001,
