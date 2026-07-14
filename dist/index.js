@@ -2103,7 +2103,7 @@ async function calculateStaffDrinkExpense(tableReportId, branchName) {
   });
   return total;
 }
-async function calculateLiquorCostExpense2(branchId, date) {
+async function calculateLiquorCostExpense(branchId, date) {
   const db = await getDb();
   if (!db) return 0;
   const movements = await db.select().from(liquorStockMovements).where(
@@ -2168,7 +2168,7 @@ async function calculateDailySettlement(branchId, date, cash, card, staffCount, 
   const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
   const partTimeWageExpense = partTimeTotalHours > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours) : partTimeCount * partTimeHourlyWage * 8;
-  const liquorCostExpense = await calculateLiquorCostExpense2(branchId, date);
+  const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
   const staffDrinkExpense = tableReportId ? await calculateStaffDrinkExpense(tableReportId, branchName) : 0;
   const monthlyFixedExpense = bsData ? Number(bsData.monthlyFixedExpense || 0) : 0;
   const dailyFixedExpense = monthlyFixedExpense > 0 ? calculateDailyRent(monthlyFixedExpense, year, month) : 0;

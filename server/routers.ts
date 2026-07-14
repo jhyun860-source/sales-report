@@ -36,7 +36,7 @@ import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { calculateDailySettlement, saveDailySettlementRecord } from "./_core/settlementCalculations";
+import { calculateDailySettlement, saveDailySettlementRecord, calculateLiquorCostExpense } from "./_core/settlementCalculations";
 import { settlementRouter } from "./settlementRouter";
 import { branchSettingsRouter } from "./branchSettingsRouter";
 
