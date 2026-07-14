@@ -16541,9 +16541,9 @@
       "date": "2026-07-13",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "0",
+      "card": "425000",
       "cashTotal": "0",
-      "cardTotal": "12042000",
+      "cardTotal": "12467000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -16551,11 +16551,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-14 12:44:20",
+      "submittedAt": "2026-07-14 12:48:09",
       "createdAt": "2026-07-14 12:42:45",
-      "updatedAt": "2026-07-14 12:46:20",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-07-14 12:48:10",
+      "totalRevenue": "425000",
+      "commissionExpense": "72250",
       "rentExpense": "166667",
       "managementFeeExpense": "0",
       "staffWageExpense": "136364",
@@ -16565,8 +16565,8 @@
       "staffDrinkExpense": "175000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1100350",
-      "netProfit": "-1100350",
+      "totalExpenses": "1172600",
+      "netProfit": "-747600",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -21506,10 +21506,10 @@
       "date": "2026-07-13",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "0",
+      "cardAmount": "425000",
       "notes": null,
       "createdAt": "2026-07-14 12:42:45",
-      "updatedAt": "2026-07-14 12:42:45"
+      "updatedAt": "2026-07-14 12:47:44"
     }
   ],
   "tableItems": [
@@ -52719,12 +52719,38 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
+      "amount": "165000",
+      "paymentMethod": "card",
+      "memo": "헤네시 V.S.O.P Glass(2), 과일 &amp; 치즈(1), 칵테일 단품(2), 버드와이저 (생맥)(3)",
+      "sortOrder": 0,
+      "createdAt": "2026-07-14 12:42:45",
+      "updatedAt": "2026-07-14 12:47:44"
+    },
+    {
+      "id": 16260027,
+      "tableReportId": 10380006,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "원술",
+      "amount": "260000",
+      "paymentMethod": "card",
+      "memo": "바탑 1시간 무제한(2), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">세경(4)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">윤아(4)</mark>, 바탑 연장 30분(4)",
+      "sortOrder": 1,
+      "createdAt": "2026-07-14 12:47:28",
+      "updatedAt": "2026-07-14 12:47:44"
+    },
+    {
+      "id": 16260028,
+      "tableReportId": 10380006,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
       "amount": "0",
       "paymentMethod": "card",
       "memo": null,
-      "sortOrder": 0,
-      "createdAt": "2026-07-14 12:42:45",
-      "updatedAt": "2026-07-14 12:42:45"
+      "sortOrder": 2,
+      "createdAt": "2026-07-14 12:47:28",
+      "updatedAt": "2026-07-14 12:47:28"
     }
   ],
   "staffIncentives": [
