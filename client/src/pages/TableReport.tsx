@@ -165,16 +165,23 @@ export default function TableReport() {
     return getTodayString();
   });
 
-  const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
+  const setCurrentDate = async (dateOrUpdater: string | ((prev: string) => string)) => {
     const prevDate = currentDate;
     const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prevDate) : dateOrUpdater;
     if (next !== prevDate && saveTimeoutRef.current) {
       // [버그수정] 자동저장 타이머가 아직 안 끝난 상태에서 날짜를 이동하면,
       //   기존에는 타이머만 취소하고 저장 안 된 내용을 그대로 버려서 데이터가 사라졌음.
-      //   이제는 버리기 전에 현재 상태를 즉시 저장부터 한다.
+      //   이제는 버리기 전에 현재 상태를 즉시 저장하고, 저장이 "완료될 때까지 기다린 뒤"에만
+      //   날짜를 이동한다 (await 없이 호출만 하면 저장 완료 전에 화면이 넘어가 버리는 위험이 있었음).
+      //   저장이 실패하면 날짜 이동 자체를 막고 사용자에게 알려 데이터 유실을 방지한다.
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
-      handleSave();
+      try {
+        await handleSave();
+      } catch (e: any) {
+        toast.error('저장 중 오류가 발생했습니다. 날짜 이동을 취소합니다: ' + (e?.message ?? '알 수 없는 오류'));
+        return; // 저장 실패 시 날짜 이동 자체를 막아 미저장 데이터가 조용히 사라지는 것을 방지
+      }
     }
     setCurrentDateState(prev => {
       if (next !== prev) {
@@ -607,7 +614,11 @@ export default function TableReport() {
   // 저장 함수 - batchSave 단일 호출로 모든 항목 한 번에 저장
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    if (isSaving) return; // 중복 저장 방지
+    if (isSaving) {
+      // [버그수정] 기존에는 조용히 아무것도 안 하고 리턴해서, 호출자(날짜 이동 등)가
+      //   "저장 성공"으로 착각하고 넘어가버리는 위험이 있었음. 명확히 에러를 던져 알린다.
+      throw new Error('이미 저장 중입니다. 잠시 후 다시 시도해주세요.');
+    }
     setIsSaving(true);
     // 저장 중에는 loadedDateRef를 건드리지 않음 → useEffect가 중간에 상태를 덮어쓰지 않도록 방지
 
@@ -624,7 +635,11 @@ export default function TableReport() {
     }
 
     try {
-      const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError } = await batchSave.mutateAsync({
+      const saveTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('저장 요청이 25초 넘게 응답이 없습니다. 네트워크 상태를 확인 후 다시 시도해주세요.')), 25000)
+      );
+      const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError } = await Promise.race([
+        batchSave.mutateAsync({
         date: currentDate,
         teamCount,
         notes,
@@ -661,7 +676,9 @@ export default function TableReport() {
             sortOrder: i,
           };
         }),
-      });
+        }),
+        saveTimeout,
+      ]);
 
       // 저장 완료 후 reportId 및 새 id 반영
       setReportId(rId);
