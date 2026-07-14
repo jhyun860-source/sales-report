@@ -162,6 +162,17 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, report });
       }
 
+      if (mode === "bangicheck") {
+        const [rows] = await conn.query(
+          `SELECT si.staffName, si.staffType, si.workStart, si.workEnd, tr.date
+           FROM staffIncentives si
+           JOIN tableReports tr ON tr.id = si.tableReportId
+           WHERE tr.branchId = 6 AND tr.date >= '2026-06-29'
+           ORDER BY si.staffName, tr.date`
+        );
+        return res.json({ mode, rows });
+      }
+
       if (mode === "geminicheck") {
         try {
           const { invokeLLM } = await import("./_core/llm");
