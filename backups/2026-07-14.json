@@ -16569,6 +16569,41 @@
       "netProfit": "11850",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410007,
+      "branchId": 5,
+      "date": "2026-07-13",
+      "posStartAmount": "53200",
+      "cash": "0",
+      "card": "1275000",
+      "cashTotal": "0",
+      "cardTotal": "5471000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-07-14 12:50:51",
+      "createdAt": "2026-07-14 12:50:51",
+      "updatedAt": "2026-07-14 12:50:53",
+      "totalRevenue": "1275000",
+      "commissionExpense": "216750",
+      "rentExpense": "166667",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "383417",
+      "netProfit": "891583",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -21510,6 +21545,17 @@
       "notes": null,
       "createdAt": "2026-07-14 12:42:45",
       "updatedAt": "2026-07-14 12:48:35"
+    },
+    {
+      "id": 10380007,
+      "branchId": 5,
+      "date": "2026-07-13",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "1275000",
+      "notes": null,
+      "createdAt": "2026-07-14 12:50:50",
+      "updatedAt": "2026-07-14 12:50:50"
     }
   ],
   "tableItems": [
@@ -52777,6 +52823,19 @@
       "sortOrder": 4,
       "createdAt": "2026-07-14 12:48:34",
       "updatedAt": "2026-07-14 12:48:34"
+    },
+    {
+      "id": 16260031,
+      "tableReportId": 10380007,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "1275000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">발렌타인 21y (500ml)(1)</mark>, 계절과일(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">로얄살루트 21y (700ml)(1)</mark>",
+      "sortOrder": 0,
+      "createdAt": "2026-07-14 12:50:50",
+      "updatedAt": "2026-07-14 12:50:50"
     }
   ],
   "staffIncentives": [
