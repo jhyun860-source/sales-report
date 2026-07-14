@@ -16471,9 +16471,9 @@
       "date": "2026-07-11",
       "posStartAmount": "53200",
       "cash": "0",
-      "card": "60000",
+      "card": "0",
       "cashTotal": "0",
-      "cardTotal": "4256000",
+      "cardTotal": "4196000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -16481,22 +16481,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-14 12:36:59",
+      "submittedAt": "2026-07-14 12:39:44",
       "createdAt": "2026-07-14 12:36:21",
-      "updatedAt": "2026-07-14 12:36:59",
-      "totalRevenue": "60000",
-      "commissionExpense": "10200",
+      "updatedAt": "2026-07-14 12:39:45",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
       "rentExpense": "166667",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "0",
-      "partTimeWageExpense": "110000",
+      "partTimeWageExpense": "0",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "286867",
-      "netProfit": "-226867",
+      "totalExpenses": "166667",
+      "netProfit": "-166667",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -21414,10 +21414,10 @@
       "date": "2026-07-11",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "60000",
+      "cardAmount": "0",
       "notes": null,
       "createdAt": "2026-07-14 12:36:21",
-      "updatedAt": "2026-07-14 12:36:59"
+      "updatedAt": "2026-07-14 12:39:38"
     }
   ],
   "tableItems": [
@@ -52557,43 +52557,17 @@
       "updatedAt": "2026-07-14 12:12:12"
     },
     {
-      "id": 16260017,
+      "id": 16260021,
       "tableReportId": 10380004,
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "60000",
+      "amount": "0",
       "paymentMethod": "card",
-      "memo": "맥주, 칵테일, 위스키 무제한(2)",
+      "memo": null,
       "sortOrder": 0,
-      "createdAt": "2026-07-14 12:36:21",
-      "updatedAt": "2026-07-14 12:36:59"
-    },
-    {
-      "id": 16260018,
-      "tableReportId": 10380004,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 1,
-      "createdAt": "2026-07-14 12:36:46",
-      "updatedAt": "2026-07-14 12:36:46"
-    },
-    {
-      "id": 16260019,
-      "tableReportId": 10380004,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 2,
-      "createdAt": "2026-07-14 12:36:59",
-      "updatedAt": "2026-07-14 12:36:59"
+      "createdAt": "2026-07-14 12:39:38",
+      "updatedAt": "2026-07-14 12:39:38"
     }
   ],
   "staffIncentives": [
@@ -70641,21 +70615,6 @@
       "sortOrder": 3,
       "createdAt": "2026-07-11 05:40:37",
       "updatedAt": "2026-07-11 05:41:08"
-    },
-    {
-      "id": 11310005,
-      "tableReportId": 10380004,
-      "staffName": "지민",
-      "glassCount": 0,
-      "bottleCount": 0,
-      "beerBottleCount": 0,
-      "salesIncentive": "0",
-      "staffType": "parttime",
-      "workStart": "19:00",
-      "workEnd": "00:30",
-      "sortOrder": 0,
-      "createdAt": "2026-07-14 12:36:21",
-      "updatedAt": "2026-07-14 12:36:46"
     }
   ],
   "liquorItems": [
