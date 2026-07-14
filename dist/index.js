@@ -1506,25 +1506,26 @@ function registerRestoreRoutes(app) {
         return res.json({ mode, rows });
       }
       if (mode === "checkreport") {
-        const branchId = Number(req.query.branchId) || 3;
+        const branchIdParam = req.query.branchId;
         const dates = String(req.query.dates || "2026-07-11,2026-07-13").split(",");
         const results = [];
         for (const date of dates) {
-          const [reports] = await conn.query(
+          const [reports] = branchIdParam ? await conn.query(
             `SELECT id, branchId, date, teamCount, notes, cashAmount, cardAmount, createdAt, updatedAt FROM tableReports WHERE branchId=? AND date=?`,
-            [branchId, date]
+            [Number(branchIdParam), date]
+          ) : await conn.query(
+            `SELECT id, branchId, date, teamCount, notes, cashAmount, cardAmount, createdAt, updatedAt FROM tableReports WHERE date=?`,
+            [date]
           );
-          let items = [];
-          let incentives = [];
-          if (reports?.[0]) {
-            const [it] = await conn.query(`SELECT id, tableNumber, amount, memo FROM tableItems WHERE tableReportId=?`, [reports[0].id]);
-            items = it;
-            const [inc] = await conn.query(`SELECT id, staffName, workStart, workEnd FROM staffIncentives WHERE tableReportId=?`, [reports[0].id]);
-            incentives = inc;
+          const reportsArr = Array.isArray(reports) ? reports : [];
+          const perReport = [];
+          for (const r of reportsArr) {
+            const [it] = await conn.query(`SELECT id, tableNumber, amount, memo FROM tableItems WHERE tableReportId=?`, [r.id]);
+            perReport.push({ ...r, itemsCount: it.length });
           }
-          results.push({ date, report: reports?.[0] ?? null, itemsCount: items.length, items, incentivesCount: incentives.length, incentives });
+          results.push({ date, reportsFound: reportsArr.length, reports: perReport });
         }
-        return res.json({ mode, branchId, results });
+        return res.json({ mode, branchIdParam: branchIdParam ?? "ALL", results });
       }
       if (mode === "liquorcostcheck") {
         try {
