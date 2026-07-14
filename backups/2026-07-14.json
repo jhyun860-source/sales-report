@@ -16551,9 +16551,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-14 12:43:47",
+      "submittedAt": "2026-07-14 12:44:20",
       "createdAt": "2026-07-14 12:42:45",
-      "updatedAt": "2026-07-14 12:43:49",
+      "updatedAt": "2026-07-14 12:44:20",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "166667",
@@ -16562,11 +16562,11 @@
       "managerWageExpense": "195652",
       "partTimeWageExpense": "316667",
       "liquorCostExpense": "0",
-      "staffDrinkExpense": "0",
+      "staffDrinkExpense": "175000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "815350",
-      "netProfit": "-815350",
+      "totalExpenses": "990350",
+      "netProfit": "-990350",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -70807,8 +70807,8 @@
       "id": 11310008,
       "tableReportId": 10380006,
       "staffName": "세경",
-      "glassCount": 0,
-      "bottleCount": 0,
+      "glassCount": 6,
+      "bottleCount": 2,
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "staff",
@@ -70816,13 +70816,13 @@
       "workEnd": "04:00",
       "sortOrder": 1,
       "createdAt": "2026-07-14 12:42:45",
-      "updatedAt": "2026-07-14 12:43:21"
+      "updatedAt": "2026-07-14 12:44:05"
     },
     {
       "id": 11310009,
       "tableReportId": 10380006,
       "staffName": "재희",
-      "glassCount": 0,
+      "glassCount": 7,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
@@ -70831,13 +70831,13 @@
       "workEnd": "00:10",
       "sortOrder": 2,
       "createdAt": "2026-07-14 12:43:22",
-      "updatedAt": "2026-07-14 12:43:40"
+      "updatedAt": "2026-07-14 12:44:05"
     },
     {
       "id": 11310010,
       "tableReportId": 10380006,
       "staffName": "윤아",
-      "glassCount": 0,
+      "glassCount": 7,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
@@ -70846,14 +70846,14 @@
       "workEnd": "00:00",
       "sortOrder": 3,
       "createdAt": "2026-07-14 12:43:22",
-      "updatedAt": "2026-07-14 12:43:40"
+      "updatedAt": "2026-07-14 12:44:17"
     },
     {
       "id": 11310011,
       "tableReportId": 10380006,
       "staffName": "예림",
-      "glassCount": 0,
-      "bottleCount": 0,
+      "glassCount": 7,
+      "bottleCount": 2,
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
@@ -70861,7 +70861,7 @@
       "workEnd": "03:40",
       "sortOrder": 4,
       "createdAt": "2026-07-14 12:43:22",
-      "updatedAt": "2026-07-14 12:43:46"
+      "updatedAt": "2026-07-14 12:44:17"
     }
   ],
   "liquorItems": [
