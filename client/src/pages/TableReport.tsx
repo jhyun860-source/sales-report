@@ -166,17 +166,21 @@ export default function TableReport() {
   });
 
   const setCurrentDate = (dateOrUpdater: string | ((prev: string) => string)) => {
+    const prevDate = currentDate;
+    const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prevDate) : dateOrUpdater;
+    if (next !== prevDate && saveTimeoutRef.current) {
+      // [버그수정] 자동저장 타이머가 아직 안 끝난 상태에서 날짜를 이동하면,
+      //   기존에는 타이머만 취소하고 저장 안 된 내용을 그대로 버려서 데이터가 사라졌음.
+      //   이제는 버리기 전에 현재 상태를 즉시 저장부터 한다.
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+      handleSave();
+    }
     setCurrentDateState(prev => {
-      const next = typeof dateOrUpdater === 'function' ? dateOrUpdater(prev) : dateOrUpdater;
       if (next !== prev) {
         // 날짜가 달라지면 loadedDateRef 초기화 → 새 날짜 데이터 로드 허용
         loadedDateRef.current = null;
         setSaved(false);
-        // 자동저장 타이머 취소: 날짜 이동 시 이전 날짜 데이터가 새 날짜로 저장되는 것 방지
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-        }
       }
       try { localStorage.setItem('selectedDate', next); } catch {}
       return next;
