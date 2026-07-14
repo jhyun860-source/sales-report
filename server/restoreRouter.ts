@@ -173,6 +173,22 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, rows });
       }
 
+      if (mode === "liquorcostcheck") {
+        try {
+          const branchId = Number(req.query.branchId) || 6;
+          const date = String(req.query.date || new Date().toISOString().slice(0, 10));
+          const { calculateLiquorCostExpense } = await import("./_core/settlementCalculations");
+          const cost = await calculateLiquorCostExpense(branchId, date);
+          const [rec]: any = await conn.query(
+            `SELECT liquorCostExpense, totalExpenses, netProfit, totalRevenue FROM dailySalesRecords WHERE branchId=? AND date=?`,
+            [branchId, date]
+          );
+          return res.json({ mode, branchId, date, calculatedCost: cost, dbRecord: rec?.[0] ?? null });
+        } catch (e: any) {
+          return res.json({ mode, ok: false, error: (e?.message ?? String(e)).slice(0, 500) });
+        }
+      }
+
       if (mode === "geminicheck") {
         try {
           const { invokeLLM } = await import("./_core/llm");

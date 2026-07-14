@@ -1040,6 +1040,337 @@ var init_llm = __esm({
   }
 });
 
+// server/_core/settlementCalculations.ts
+var settlementCalculations_exports = {};
+__export(settlementCalculations_exports, {
+  calculateDailyRent: () => calculateDailyRent,
+  calculateDailySettlement: () => calculateDailySettlement,
+  calculateLiquorCostExpense: () => calculateLiquorCostExpense,
+  calculateMonthlySummary: () => calculateMonthlySummary,
+  calculateOtherExpenses: () => calculateOtherExpenses,
+  calculateStaffDrinkExpense: () => calculateStaffDrinkExpense,
+  getBusinessDaysInMonth: () => getBusinessDaysInMonth,
+  getStaffCounts: () => getStaffCounts,
+  saveDailySettlementRecord: () => saveDailySettlementRecord
+});
+import { eq as eq3, and as and3, gte as gte2, lte as lte2 } from "drizzle-orm";
+function getBusinessDaysInMonth(year, month, workType = "MON_FRI") {
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0);
+  let businessDays = 0;
+  for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
+    const dayOfWeek = date.getDay();
+    if (workType === "MON_FRI") {
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+    } else if (workType === "MON_SAT") {
+      if (dayOfWeek !== 0) businessDays++;
+    }
+  }
+  return businessDays;
+}
+function calculateDailyRent(monthlyRent, year, month, workType = "MON_FRI") {
+  const businessDays = getBusinessDaysInMonth(year, month, workType);
+  if (businessDays === 0) return 0;
+  return Math.round(monthlyRent / businessDays);
+}
+async function getStaffCounts(tableReportId) {
+  const db = await getDb();
+  if (!db) return { staffCount: 0, partTimeCount: 0, managerCount: 0, partTimeTotalHours: 0 };
+  const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
+  const staffCount = incentives.filter((i) => i.staffType === "staff").length;
+  const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
+  const managerCount = incentives.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
+  let partTimeTotalHours = 0;
+  for (const inc of incentives.filter((i) => i.staffType === "parttime")) {
+    if (inc.workStart && inc.workEnd) {
+      try {
+        const [sh, sm] = inc.workStart.split(":").map(Number);
+        const [eh, em] = inc.workEnd.split(":").map(Number);
+        let startMin = sh * 60 + sm;
+        let endMin = eh * 60 + em;
+        if (endMin <= startMin) endMin += 24 * 60;
+        partTimeTotalHours += (endMin - startMin) / 60;
+      } catch {
+      }
+    }
+  }
+  return { staffCount, partTimeCount, managerCount, partTimeTotalHours };
+}
+async function calculateStaffDrinkExpense(tableReportId, branchName) {
+  const db = await getDb();
+  if (!db) return 0;
+  const config = BRANCH_CONFIG[branchName];
+  const glassPrice = config?.glassUnitPrice ?? 5e3;
+  const bottlePrice = config?.bottleUnitPrice ?? 1e4;
+  const beerBottlePrice = config?.beerBottleUnitPrice ?? 3e3;
+  const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
+  let total = 0;
+  incentives.forEach((inc) => {
+    total += Number(inc.glassCount || 0) * glassPrice;
+    total += Number(inc.bottleCount || 0) * bottlePrice;
+    total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
+  });
+  return total;
+}
+async function calculateLiquorCostExpense(branchId, date) {
+  const db = await getDb();
+  if (!db) return 0;
+  const movements = await db.select().from(liquorStockMovements).where(
+    and3(
+      eq3(liquorStockMovements.branchId, branchId),
+      eq3(liquorStockMovements.date, date),
+      eq3(liquorStockMovements.type, "OUT")
+    )
+  );
+  return movements.reduce((sum, m) => sum + Number(m.totalCost || 0), 0);
+}
+function calculateOtherExpenses(expenses) {
+  if (!Array.isArray(expenses)) return 0;
+  return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+}
+async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount = 0, partTimeTotalHours = 0, externalDb, deputyCount = 0) {
+  const zero = {
+    totalRevenue: 0,
+    commissionExpense: 0,
+    rentExpense: 0,
+    managementFeeExpense: 0,
+    staffWageExpense: 0,
+    managerWageExpense: 0,
+    partTimeWageExpense: 0,
+    liquorCostExpense: 0,
+    staffDrinkExpense: 0,
+    otherExpense: 0,
+    totalExpenses: 0,
+    netProfit: 0
+  };
+  const db = externalDb ?? await getDb();
+  if (!db) {
+    console.log("[\uC815\uC0B0\uACC4\uC0B0] DB \uC5F0\uACB0 \uC2E4\uD328");
+    return zero;
+  }
+  const branchData = await db.select().from(branches).where(eq3(branches.id, branchId)).limit(1);
+  if (!branchData || branchData.length === 0) {
+    console.log("[\uC815\uC0B0\uACC4\uC0B0] \uC9C0\uC810 \uC5C6\uC74C branchId:", branchId);
+    return zero;
+  }
+  console.log("[\uC815\uC0B0\uACC4\uC0B0] \uC2DC\uC791 branchId:", branchId, "date:", date, "cash:", cash, "card:", card, "managerCount:", managerCount);
+  const [bsData] = await db.select().from(branchSettings).where(eq3(branchSettings.branchId, branchId)).limit(1);
+  const branchName = branchData[0].name;
+  const hardConfig = BRANCH_CONFIG[branchName];
+  const [year, month] = date.split("-").map(Number);
+  const totalRevenue = cash + card;
+  const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : hardConfig?.commissionRate ?? 0.17;
+  const commissionExpense = Math.round(totalRevenue * commissionRate);
+  const workType = bsData?.workType || "MON_SAT";
+  const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : hardConfig?.monthlyRent ?? 0;
+  const rentExpense = calculateDailyRent(monthlyRent, year, month, "MON_SAT");
+  const managementFeeExpense = 0;
+  const staffMonthlySalary = bsData ? Number(bsData.staffMonthlySalary || 0) : 0;
+  const staffDailyWage = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
+  const staffWageExpense = staffCount * staffDailyWage;
+  const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
+  const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
+  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
+  console.log("[\uC815\uC0B0\uACC4\uC0B0] managerBusinessDays:", managerBusinessDays, "managerMonthlySalary:", managerMonthlySalary);
+  const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
+  const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
+  const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
+  const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
+  const partTimeWageExpense = partTimeTotalHours > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours) : partTimeCount * partTimeHourlyWage * 8;
+  const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
+  const staffDrinkExpense = tableReportId ? await calculateStaffDrinkExpense(tableReportId, branchName) : 0;
+  const monthlyFixedExpense = bsData ? Number(bsData.monthlyFixedExpense || 0) : 0;
+  const dailyFixedExpense = monthlyFixedExpense > 0 ? calculateDailyRent(monthlyFixedExpense, year, month) : 0;
+  const webExpense = calculateOtherExpenses(expenses);
+  const otherExpense = dailyFixedExpense + webExpense;
+  const totalExpenses = commissionExpense + rentExpense + managementFeeExpense + staffWageExpense + managerWageExpense + partTimeWageExpense + liquorCostExpense + staffDrinkExpense + otherExpense;
+  const netProfit = totalRevenue - totalExpenses;
+  return {
+    totalRevenue,
+    commissionExpense,
+    rentExpense,
+    managementFeeExpense,
+    staffWageExpense,
+    managerWageExpense,
+    partTimeWageExpense,
+    liquorCostExpense,
+    staffDrinkExpense,
+    otherExpense,
+    totalExpenses,
+    netProfit
+  };
+}
+async function calculateMonthlySummary(branchId, year, month) {
+  const db = await getDb();
+  const zero = {
+    totalRevenue: 0,
+    commissionExpense: 0,
+    rentExpense: 0,
+    managementFeeExpense: 0,
+    staffWageExpense: 0,
+    managerWageExpense: 0,
+    partTimeWageExpense: 0,
+    liquorCostExpense: 0,
+    staffDrinkExpense: 0,
+    salesIncentiveExpense: 0,
+    otherExpense: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    ratios: {}
+  };
+  if (!db) return zero;
+  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+  const endDate = `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`;
+  const records = await db.select().from(dailySalesRecords).where(
+    and3(
+      eq3(dailySalesRecords.branchId, branchId),
+      gte2(dailySalesRecords.date, startDate),
+      lte2(dailySalesRecords.date, endDate)
+    )
+  );
+  let totalRevenue = 0, commissionExpense = 0, rentExpense = 0;
+  let managementFeeExpense = 0, staffWageExpense = 0, managerWageExpense = 0, partTimeWageExpense = 0;
+  let liquorCostExpense = 0, staffDrinkExpense = 0, salesIncentiveExpense = 0, otherExpense = 0;
+  let totalExpenses = 0, netProfit = 0;
+  records.forEach((record) => {
+    totalRevenue += Number(record.totalRevenue || 0);
+    commissionExpense += Number(record.commissionExpense || 0);
+    rentExpense += Number(record.rentExpense || 0);
+    managementFeeExpense += Number(record.managementFeeExpense || 0);
+    staffWageExpense += Number(record.staffWageExpense || 0);
+    managerWageExpense += Number(record.managerWageExpense || 0);
+    partTimeWageExpense += Number(record.partTimeWageExpense || 0);
+    liquorCostExpense += Number(record.liquorCostExpense || 0);
+    staffDrinkExpense += Number(record.staffDrinkExpense || 0);
+    salesIncentiveExpense += Number(record.salesIncentiveExpense || 0);
+    otherExpense += Number(record.otherExpense || 0);
+    totalExpenses += Number(record.totalExpenses || 0);
+    netProfit += Number(record.netProfit || 0);
+  });
+  const ratios = {};
+  if (totalRevenue > 0) {
+    ratios.commission = Math.round(commissionExpense / totalRevenue * 100);
+    ratios.rent = Math.round(rentExpense / totalRevenue * 100);
+    ratios.managementFee = Math.round(managementFeeExpense / totalRevenue * 100);
+    ratios.staffWage = Math.round(staffWageExpense / totalRevenue * 100);
+    ratios.managerWage = Math.round(managerWageExpense / totalRevenue * 100);
+    ratios.partTimeWage = Math.round(partTimeWageExpense / totalRevenue * 100);
+    ratios.liquorCost = Math.round(liquorCostExpense / totalRevenue * 100);
+    ratios.staffDrink = Math.round(staffDrinkExpense / totalRevenue * 100);
+    ratios.salesIncentive = Math.round(salesIncentiveExpense / totalRevenue * 100);
+    ratios.otherExpense = Math.round(otherExpense / totalRevenue * 100);
+    ratios.netProfit = Math.round(netProfit / totalRevenue * 100);
+  }
+  return {
+    totalRevenue,
+    commissionExpense,
+    rentExpense,
+    managementFeeExpense,
+    staffWageExpense,
+    managerWageExpense,
+    partTimeWageExpense,
+    liquorCostExpense,
+    staffDrinkExpense,
+    otherExpense,
+    totalExpenses,
+    netProfit,
+    ratios
+  };
+}
+async function saveDailySettlementRecord(branchId, date, settlement) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(dailySalesRecords).where(and3(eq3(dailySalesRecords.branchId, branchId), eq3(dailySalesRecords.date, date))).limit(1);
+  const fields = {
+    totalRevenue: String(settlement.totalRevenue),
+    commissionExpense: String(settlement.commissionExpense),
+    rentExpense: String(settlement.rentExpense),
+    managementFeeExpense: String(settlement.managementFeeExpense),
+    staffWageExpense: String(settlement.staffWageExpense),
+    managerWageExpense: String(settlement.managerWageExpense ?? 0),
+    partTimeWageExpense: String(settlement.partTimeWageExpense),
+    liquorCostExpense: String(settlement.liquorCostExpense),
+    staffDrinkExpense: String(settlement.staffDrinkExpense),
+    otherExpense: String(settlement.otherExpense),
+    totalExpenses: String(settlement.totalExpenses),
+    netProfit: String(settlement.netProfit),
+    updatedAt: /* @__PURE__ */ new Date()
+  };
+  if (existing && existing.length > 0) {
+    await db.update(dailySalesRecords).set(fields).where(eq3(dailySalesRecords.id, existing[0].id));
+  }
+}
+var BRANCH_CONFIG;
+var init_settlementCalculations = __esm({
+  "server/_core/settlementCalculations.ts"() {
+    "use strict";
+    init_db();
+    init_schema();
+    BRANCH_CONFIG = {
+      "\uB300\uCE58\uC810": {
+        monthlyRent: 9e6,
+        managementFee: 0,
+        staffDailyWage: 136363,
+        partTimeDailyWage: 2e4,
+        commissionRate: 0.17,
+        hasManager: true,
+        managerDailyWage: 272727,
+        glassUnitPrice: 5e3,
+        bottleUnitPrice: 1e4,
+        beerBottleUnitPrice: 3e3
+      },
+      "\uC120\uB989\uC810": {
+        monthlyRent: 65e5,
+        managementFee: 0,
+        staffDailyWage: 136363,
+        partTimeDailyWage: 2e4,
+        commissionRate: 0.17,
+        hasManager: true,
+        managerDailyWage: 25e4,
+        glassUnitPrice: 5e3,
+        bottleUnitPrice: 1e4,
+        beerBottleUnitPrice: 3e3
+      },
+      "\uC0BC\uC131\uC810": {
+        monthlyRent: 65e5,
+        managementFee: 0,
+        staffDailyWage: 159090,
+        partTimeDailyWage: 2e4,
+        commissionRate: 0.17,
+        hasManager: true,
+        managerDailyWage: 181818,
+        glassUnitPrice: 5e3,
+        bottleUnitPrice: 1e4,
+        beerBottleUnitPrice: 3e3
+      },
+      "\uBB38\uC8151\uD638\uC810": {
+        monthlyRent: 45e5,
+        managementFee: 0,
+        staffDailyWage: 136363,
+        partTimeDailyWage: 2e4,
+        commissionRate: 0.17,
+        hasManager: true,
+        managerDailyWage: 204545,
+        glassUnitPrice: 5e3,
+        bottleUnitPrice: 1e4,
+        beerBottleUnitPrice: 3e3
+      },
+      "\uBB38\uC8152\uD638\uC810": {
+        monthlyRent: 45e5,
+        managementFee: 0,
+        staffDailyWage: 136363,
+        partTimeDailyWage: 2e4,
+        commissionRate: 0.17,
+        hasManager: true,
+        managerDailyWage: 181818,
+        glassUnitPrice: 5e3,
+        bottleUnitPrice: 1e4,
+        beerBottleUnitPrice: 3e3
+      }
+    };
+  }
+});
+
 // server/restoreRouter.ts
 var restoreRouter_exports = {};
 __export(restoreRouter_exports, {
@@ -1173,6 +1504,21 @@ function registerRestoreRoutes(app) {
            ORDER BY si.staffName, tr.date`
         );
         return res.json({ mode, rows });
+      }
+      if (mode === "liquorcostcheck") {
+        try {
+          const branchId = Number(req.query.branchId) || 6;
+          const date = String(req.query.date || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10));
+          const { calculateLiquorCostExpense: calculateLiquorCostExpense2 } = await Promise.resolve().then(() => (init_settlementCalculations(), settlementCalculations_exports));
+          const cost = await calculateLiquorCostExpense2(branchId, date);
+          const [rec] = await conn.query(
+            `SELECT liquorCostExpense, totalExpenses, netProfit, totalRevenue FROM dailySalesRecords WHERE branchId=? AND date=?`,
+            [branchId, date]
+          );
+          return res.json({ mode, branchId, date, calculatedCost: cost, dbRecord: rec?.[0] ?? null });
+        } catch (e) {
+          return res.json({ mode, ok: false, error: (e?.message ?? String(e)).slice(0, 500) });
+        }
       }
       if (mode === "geminicheck") {
         try {
@@ -1972,6 +2318,7 @@ init_env();
 init_db();
 init_schema();
 init_llm();
+init_settlementCalculations();
 import { z as z4 } from "zod";
 import webpush from "web-push";
 import bcrypt from "bcryptjs";
@@ -1979,326 +2326,14 @@ import { SignJWT as SignJWT2, jwtVerify as jwtVerify4 } from "jose";
 import { eq as eq6, and as and5, desc as desc3, asc, like, sql, inArray, gte as gte4, lte as lte4, not } from "drizzle-orm";
 import { TRPCError as TRPCError5 } from "@trpc/server";
 
-// server/_core/settlementCalculations.ts
-init_db();
-init_schema();
-import { eq as eq3, and as and3, gte as gte2, lte as lte2 } from "drizzle-orm";
-var BRANCH_CONFIG = {
-  "\uB300\uCE58\uC810": {
-    monthlyRent: 9e6,
-    managementFee: 0,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 272727,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uC120\uB989\uC810": {
-    monthlyRent: 65e5,
-    managementFee: 0,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 25e4,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uC0BC\uC131\uC810": {
-    monthlyRent: 65e5,
-    managementFee: 0,
-    staffDailyWage: 159090,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 181818,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uBB38\uC8151\uD638\uC810": {
-    monthlyRent: 45e5,
-    managementFee: 0,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 204545,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  },
-  "\uBB38\uC8152\uD638\uC810": {
-    monthlyRent: 45e5,
-    managementFee: 0,
-    staffDailyWage: 136363,
-    partTimeDailyWage: 2e4,
-    commissionRate: 0.17,
-    hasManager: true,
-    managerDailyWage: 181818,
-    glassUnitPrice: 5e3,
-    bottleUnitPrice: 1e4,
-    beerBottleUnitPrice: 3e3
-  }
-};
-function getBusinessDaysInMonth(year, month, workType = "MON_FRI") {
-  const firstDay = new Date(year, month - 1, 1);
-  const lastDay = new Date(year, month, 0);
-  let businessDays = 0;
-  for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
-    const dayOfWeek = date.getDay();
-    if (workType === "MON_FRI") {
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
-    } else if (workType === "MON_SAT") {
-      if (dayOfWeek !== 0) businessDays++;
-    }
-  }
-  return businessDays;
-}
-function calculateDailyRent(monthlyRent, year, month, workType = "MON_FRI") {
-  const businessDays = getBusinessDaysInMonth(year, month, workType);
-  if (businessDays === 0) return 0;
-  return Math.round(monthlyRent / businessDays);
-}
-async function getStaffCounts(tableReportId) {
-  const db = await getDb();
-  if (!db) return { staffCount: 0, partTimeCount: 0, managerCount: 0, partTimeTotalHours: 0 };
-  const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
-  const staffCount = incentives.filter((i) => i.staffType === "staff").length;
-  const partTimeCount = incentives.filter((i) => i.staffType === "parttime").length;
-  const managerCount = incentives.filter((i) => i.staffType === "manager" || i.staffType === "deputy").length;
-  let partTimeTotalHours = 0;
-  for (const inc of incentives.filter((i) => i.staffType === "parttime")) {
-    if (inc.workStart && inc.workEnd) {
-      try {
-        const [sh, sm] = inc.workStart.split(":").map(Number);
-        const [eh, em] = inc.workEnd.split(":").map(Number);
-        let startMin = sh * 60 + sm;
-        let endMin = eh * 60 + em;
-        if (endMin <= startMin) endMin += 24 * 60;
-        partTimeTotalHours += (endMin - startMin) / 60;
-      } catch {
-      }
-    }
-  }
-  return { staffCount, partTimeCount, managerCount, partTimeTotalHours };
-}
-async function calculateStaffDrinkExpense(tableReportId, branchName) {
-  const db = await getDb();
-  if (!db) return 0;
-  const config = BRANCH_CONFIG[branchName];
-  const glassPrice = config?.glassUnitPrice ?? 5e3;
-  const bottlePrice = config?.bottleUnitPrice ?? 1e4;
-  const beerBottlePrice = config?.beerBottleUnitPrice ?? 3e3;
-  const incentives = await db.select().from(staffIncentives).where(eq3(staffIncentives.tableReportId, tableReportId));
-  let total = 0;
-  incentives.forEach((inc) => {
-    total += Number(inc.glassCount || 0) * glassPrice;
-    total += Number(inc.bottleCount || 0) * bottlePrice;
-    total += Number(inc.beerBottleCount || 0) * beerBottlePrice;
-  });
-  return total;
-}
-async function calculateLiquorCostExpense(branchId, date) {
-  const db = await getDb();
-  if (!db) return 0;
-  const movements = await db.select().from(liquorStockMovements).where(
-    and3(
-      eq3(liquorStockMovements.branchId, branchId),
-      eq3(liquorStockMovements.date, date),
-      eq3(liquorStockMovements.type, "OUT")
-    )
-  );
-  return movements.reduce((sum, m) => sum + Number(m.totalCost || 0), 0);
-}
-function calculateOtherExpenses(expenses) {
-  if (!Array.isArray(expenses)) return 0;
-  return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
-}
-async function calculateDailySettlement(branchId, date, cash, card, staffCount, partTimeCount, expenses, tableReportId, managerCount = 0, partTimeTotalHours = 0, externalDb, deputyCount = 0) {
-  const zero = {
-    totalRevenue: 0,
-    commissionExpense: 0,
-    rentExpense: 0,
-    managementFeeExpense: 0,
-    staffWageExpense: 0,
-    managerWageExpense: 0,
-    partTimeWageExpense: 0,
-    liquorCostExpense: 0,
-    staffDrinkExpense: 0,
-    otherExpense: 0,
-    totalExpenses: 0,
-    netProfit: 0
-  };
-  const db = externalDb ?? await getDb();
-  if (!db) {
-    console.log("[\uC815\uC0B0\uACC4\uC0B0] DB \uC5F0\uACB0 \uC2E4\uD328");
-    return zero;
-  }
-  const branchData = await db.select().from(branches).where(eq3(branches.id, branchId)).limit(1);
-  if (!branchData || branchData.length === 0) {
-    console.log("[\uC815\uC0B0\uACC4\uC0B0] \uC9C0\uC810 \uC5C6\uC74C branchId:", branchId);
-    return zero;
-  }
-  console.log("[\uC815\uC0B0\uACC4\uC0B0] \uC2DC\uC791 branchId:", branchId, "date:", date, "cash:", cash, "card:", card, "managerCount:", managerCount);
-  const [bsData] = await db.select().from(branchSettings).where(eq3(branchSettings.branchId, branchId)).limit(1);
-  const branchName = branchData[0].name;
-  const hardConfig = BRANCH_CONFIG[branchName];
-  const [year, month] = date.split("-").map(Number);
-  const totalRevenue = cash + card;
-  const commissionRate = bsData ? Number(bsData.commissionRate || 0.17) : hardConfig?.commissionRate ?? 0.17;
-  const commissionExpense = Math.round(totalRevenue * commissionRate);
-  const workType = bsData?.workType || "MON_SAT";
-  const monthlyRent = bsData ? Number(bsData.monthlyRent || 0) : hardConfig?.monthlyRent ?? 0;
-  const rentExpense = calculateDailyRent(monthlyRent, year, month, "MON_SAT");
-  const managementFeeExpense = 0;
-  const staffMonthlySalary = bsData ? Number(bsData.staffMonthlySalary || 0) : 0;
-  const staffDailyWage = staffMonthlySalary > 0 ? Math.round(staffMonthlySalary / 22) : bsData ? Number(bsData.staffDailyWage || 0) : hardConfig?.staffDailyWage ?? 0;
-  const staffWageExpense = staffCount * staffDailyWage;
-  const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : hardConfig?.monthlyRent ?? 0;
-  const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
-  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
-  console.log("[\uC815\uC0B0\uACC4\uC0B0] managerBusinessDays:", managerBusinessDays, "managerMonthlySalary:", managerMonthlySalary);
-  const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
-  const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
-  const managerWageExpense = managerCount * managerDailyWage + deputyCount * deputyDailyWage;
-  const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : hardConfig?.partTimeDailyWage ?? 9860;
-  const partTimeWageExpense = partTimeTotalHours > 0 ? Math.round(partTimeHourlyWage * partTimeTotalHours) : partTimeCount * partTimeHourlyWage * 8;
-  const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);
-  const staffDrinkExpense = tableReportId ? await calculateStaffDrinkExpense(tableReportId, branchName) : 0;
-  const monthlyFixedExpense = bsData ? Number(bsData.monthlyFixedExpense || 0) : 0;
-  const dailyFixedExpense = monthlyFixedExpense > 0 ? calculateDailyRent(monthlyFixedExpense, year, month) : 0;
-  const webExpense = calculateOtherExpenses(expenses);
-  const otherExpense = dailyFixedExpense + webExpense;
-  const totalExpenses = commissionExpense + rentExpense + managementFeeExpense + staffWageExpense + managerWageExpense + partTimeWageExpense + liquorCostExpense + staffDrinkExpense + otherExpense;
-  const netProfit = totalRevenue - totalExpenses;
-  return {
-    totalRevenue,
-    commissionExpense,
-    rentExpense,
-    managementFeeExpense,
-    staffWageExpense,
-    managerWageExpense,
-    partTimeWageExpense,
-    liquorCostExpense,
-    staffDrinkExpense,
-    otherExpense,
-    totalExpenses,
-    netProfit
-  };
-}
-async function calculateMonthlySummary(branchId, year, month) {
-  const db = await getDb();
-  const zero = {
-    totalRevenue: 0,
-    commissionExpense: 0,
-    rentExpense: 0,
-    managementFeeExpense: 0,
-    staffWageExpense: 0,
-    managerWageExpense: 0,
-    partTimeWageExpense: 0,
-    liquorCostExpense: 0,
-    staffDrinkExpense: 0,
-    salesIncentiveExpense: 0,
-    otherExpense: 0,
-    totalExpenses: 0,
-    netProfit: 0,
-    ratios: {}
-  };
-  if (!db) return zero;
-  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-  const endDate = `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`;
-  const records = await db.select().from(dailySalesRecords).where(
-    and3(
-      eq3(dailySalesRecords.branchId, branchId),
-      gte2(dailySalesRecords.date, startDate),
-      lte2(dailySalesRecords.date, endDate)
-    )
-  );
-  let totalRevenue = 0, commissionExpense = 0, rentExpense = 0;
-  let managementFeeExpense = 0, staffWageExpense = 0, managerWageExpense = 0, partTimeWageExpense = 0;
-  let liquorCostExpense = 0, staffDrinkExpense = 0, salesIncentiveExpense = 0, otherExpense = 0;
-  let totalExpenses = 0, netProfit = 0;
-  records.forEach((record) => {
-    totalRevenue += Number(record.totalRevenue || 0);
-    commissionExpense += Number(record.commissionExpense || 0);
-    rentExpense += Number(record.rentExpense || 0);
-    managementFeeExpense += Number(record.managementFeeExpense || 0);
-    staffWageExpense += Number(record.staffWageExpense || 0);
-    managerWageExpense += Number(record.managerWageExpense || 0);
-    partTimeWageExpense += Number(record.partTimeWageExpense || 0);
-    liquorCostExpense += Number(record.liquorCostExpense || 0);
-    staffDrinkExpense += Number(record.staffDrinkExpense || 0);
-    salesIncentiveExpense += Number(record.salesIncentiveExpense || 0);
-    otherExpense += Number(record.otherExpense || 0);
-    totalExpenses += Number(record.totalExpenses || 0);
-    netProfit += Number(record.netProfit || 0);
-  });
-  const ratios = {};
-  if (totalRevenue > 0) {
-    ratios.commission = Math.round(commissionExpense / totalRevenue * 100);
-    ratios.rent = Math.round(rentExpense / totalRevenue * 100);
-    ratios.managementFee = Math.round(managementFeeExpense / totalRevenue * 100);
-    ratios.staffWage = Math.round(staffWageExpense / totalRevenue * 100);
-    ratios.managerWage = Math.round(managerWageExpense / totalRevenue * 100);
-    ratios.partTimeWage = Math.round(partTimeWageExpense / totalRevenue * 100);
-    ratios.liquorCost = Math.round(liquorCostExpense / totalRevenue * 100);
-    ratios.staffDrink = Math.round(staffDrinkExpense / totalRevenue * 100);
-    ratios.salesIncentive = Math.round(salesIncentiveExpense / totalRevenue * 100);
-    ratios.otherExpense = Math.round(otherExpense / totalRevenue * 100);
-    ratios.netProfit = Math.round(netProfit / totalRevenue * 100);
-  }
-  return {
-    totalRevenue,
-    commissionExpense,
-    rentExpense,
-    managementFeeExpense,
-    staffWageExpense,
-    managerWageExpense,
-    partTimeWageExpense,
-    liquorCostExpense,
-    staffDrinkExpense,
-    otherExpense,
-    totalExpenses,
-    netProfit,
-    ratios
-  };
-}
-async function saveDailySettlementRecord(branchId, date, settlement) {
-  const db = await getDb();
-  if (!db) return;
-  const existing = await db.select().from(dailySalesRecords).where(and3(eq3(dailySalesRecords.branchId, branchId), eq3(dailySalesRecords.date, date))).limit(1);
-  const fields = {
-    totalRevenue: String(settlement.totalRevenue),
-    commissionExpense: String(settlement.commissionExpense),
-    rentExpense: String(settlement.rentExpense),
-    managementFeeExpense: String(settlement.managementFeeExpense),
-    staffWageExpense: String(settlement.staffWageExpense),
-    managerWageExpense: String(settlement.managerWageExpense ?? 0),
-    partTimeWageExpense: String(settlement.partTimeWageExpense),
-    liquorCostExpense: String(settlement.liquorCostExpense),
-    staffDrinkExpense: String(settlement.staffDrinkExpense),
-    otherExpense: String(settlement.otherExpense),
-    totalExpenses: String(settlement.totalExpenses),
-    netProfit: String(settlement.netProfit),
-    updatedAt: /* @__PURE__ */ new Date()
-  };
-  if (existing && existing.length > 0) {
-    await db.update(dailySalesRecords).set(fields).where(eq3(dailySalesRecords.id, existing[0].id));
-  }
-}
-
 // server/settlementRouter.ts
 init_db();
 init_schema();
+init_settlementCalculations();
+init_db();
 import { z as z2 } from "zod";
 import { TRPCError as TRPCError3 } from "@trpc/server";
 import { eq as eq4, and as and4, gte as gte3, lte as lte3, desc as desc2 } from "drizzle-orm";
-init_db();
 init_env();
 import { jwtVerify as jwtVerify2 } from "jose";
 async function parseStoreCookie(cookieHeader, authHeader) {
