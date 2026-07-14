@@ -8374,7 +8374,7 @@ function startBackupScheduler() {
     console.log(`[backup] \uB2E4\uC74C \uBC31\uC5C5 \uC608\uC815: ${nextRun.toISOString()} (\uC57D 2\uC2DC\uAC04 \uD6C4)`);
     setTimeout(runAndReschedule, INTERVAL_MS);
   }
-  runAndReschedule();
+  setTimeout(runAndReschedule, 10 * 60 * 1e3);
 }
 
 // server/_core/index.ts

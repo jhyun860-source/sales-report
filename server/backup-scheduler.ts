@@ -179,6 +179,8 @@ export function startBackupScheduler(): void {
     setTimeout(runAndReschedule, INTERVAL_MS);
   }
 
-  // 서버 기동 직후 1회 즉시 백업 후, 이후 2시간 간격 반복
-  runAndReschedule();
+  // [긴급수정] 서버 기동 즉시 백업하면, 그 백업 커밋이 새 배포를 유발하고
+  //   그 새 배포가 켜지자마자 또 즉시 백업하는 식으로 배포가 꼬리를 무는
+  //   무한루프가 발생할 수 있음이 확인됨. 기동 후 10분 지연 후 첫 백업 실행.
+  setTimeout(runAndReschedule, 10 * 60 * 1000);
 }
