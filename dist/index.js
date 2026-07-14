@@ -7338,12 +7338,6 @@ var appRouter = router({
       const validItems = input.items.filter((it) => it.tableNumber || it.amount || it.memo);
       const itemsToUpdate = validItems.filter((it) => it.id);
       const itemsToInsert = validItems.filter((it) => !it.id);
-      const existingItems = await db.select().from(tableItems).where(eq6(tableItems.tableReportId, reportId));
-      const incomingItemIds = new Set(validItems.filter((it) => it.id).map((it) => it.id));
-      const itemsToDelete = existingItems.filter((it) => !incomingItemIds.has(it.id));
-      if (itemsToDelete.length > 0) {
-        await Promise.all(itemsToDelete.map((it) => db.delete(tableItems).where(eq6(tableItems.id, it.id))));
-      }
       await Promise.all(itemsToUpdate.map(async (it) => {
         await db.update(tableItems).set({
           tableNumber: it.tableNumber,
