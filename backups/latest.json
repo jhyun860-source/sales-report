@@ -16446,9 +16446,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-14 11:47:40",
+      "submittedAt": "2026-07-14 11:50:06",
       "createdAt": "2026-07-14 11:10:16",
-      "updatedAt": "2026-07-14 11:47:42",
+      "updatedAt": "2026-07-14 11:50:06",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "240741",
@@ -52459,19 +52459,6 @@
       "updatedAt": "2026-07-14 11:10:14"
     },
     {
-      "id": 16260008,
-      "tableReportId": 10380003,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 3,
-      "createdAt": "2026-07-14 11:10:14",
-      "updatedAt": "2026-07-14 11:32:05"
-    },
-    {
       "id": 16260009,
       "tableReportId": 10380003,
       "tableNumber": "",
@@ -52480,9 +52467,9 @@
       "amount": "0",
       "paymentMethod": "card",
       "memo": null,
-      "sortOrder": 5,
+      "sortOrder": 4,
       "createdAt": "2026-07-14 11:10:14",
-      "updatedAt": "2026-07-14 11:32:05"
+      "updatedAt": "2026-07-14 11:50:05"
     },
     {
       "id": 16260010,
@@ -52493,22 +52480,9 @@
       "amount": "0",
       "paymentMethod": "card",
       "memo": null,
-      "sortOrder": 7,
+      "sortOrder": 6,
       "createdAt": "2026-07-14 11:10:15",
-      "updatedAt": "2026-07-14 11:32:05"
-    },
-    {
-      "id": 16260012,
-      "tableReportId": 10380003,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 2,
-      "createdAt": "2026-07-14 11:10:18",
-      "updatedAt": "2026-07-14 11:32:05"
+      "updatedAt": "2026-07-14 11:50:05"
     },
     {
       "id": 16260013,
@@ -52519,9 +52493,9 @@
       "amount": "0",
       "paymentMethod": "card",
       "memo": null,
-      "sortOrder": 4,
+      "sortOrder": 3,
       "createdAt": "2026-07-14 11:10:18",
-      "updatedAt": "2026-07-14 11:32:05"
+      "updatedAt": "2026-07-14 11:50:05"
     },
     {
       "id": 16260014,
@@ -52532,9 +52506,9 @@
       "amount": "0",
       "paymentMethod": "card",
       "memo": null,
-      "sortOrder": 6,
+      "sortOrder": 5,
       "createdAt": "2026-07-14 11:10:18",
-      "updatedAt": "2026-07-14 11:32:05"
+      "updatedAt": "2026-07-14 11:50:05"
     },
     {
       "id": 16260015,
@@ -52545,9 +52519,9 @@
       "amount": "0",
       "paymentMethod": "card",
       "memo": null,
-      "sortOrder": 8,
+      "sortOrder": 7,
       "createdAt": "2026-07-14 11:10:18",
-      "updatedAt": "2026-07-14 11:32:05"
+      "updatedAt": "2026-07-14 11:50:05"
     },
     {
       "id": 16260016,
@@ -52558,9 +52532,9 @@
       "amount": "0",
       "paymentMethod": "card",
       "memo": null,
-      "sortOrder": 9,
+      "sortOrder": 8,
       "createdAt": "2026-07-14 11:12:09",
-      "updatedAt": "2026-07-14 11:32:05"
+      "updatedAt": "2026-07-14 11:50:05"
     }
   ],
   "staffIncentives": [
