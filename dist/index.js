@@ -1169,7 +1169,7 @@ function registerRestoreRoutes(app) {
           `SELECT si.staffName, si.staffType, si.workStart, si.workEnd, tr.date
            FROM staffIncentives si
            JOIN tableReports tr ON tr.id = si.tableReportId
-           WHERE tr.branchId = 6 AND tr.date >= '2026-06-01'
+           WHERE tr.branchId = 6 AND tr.date >= '2026-06-29'
            ORDER BY si.staffName, tr.date`
         );
         return res.json({ mode, rows });
@@ -7565,6 +7565,7 @@ var appRouter = router({
       const staffWeeklyMap = {};
       const staffWeeklyDaysMap = {};
       const staffTotalMinutes = {};
+      const staffInMonthMinutes = {};
       for (const row of detailRows) {
         const key = `${row.staffName}__${row.staffType}`;
         const mins = calcWorkMinutes(row.workStart, row.workEnd);
@@ -7574,6 +7575,9 @@ var appRouter = router({
         staffWeeklyMap[key][weekLabel] = (staffWeeklyMap[key][weekLabel] || 0) + mins;
         staffWeeklyDaysMap[key][weekLabel] = (staffWeeklyDaysMap[key][weekLabel] || 0) + 1;
         staffTotalMinutes[key] = (staffTotalMinutes[key] || 0) + mins;
+        if (row.date.startsWith(input.yearMonth)) {
+          staffInMonthMinutes[key] = (staffInMonthMinutes[key] || 0) + mins;
+        }
       }
       const GLASS_PRICE = 5e3;
       const BOTTLE_PRICE = 1e4;
@@ -7592,7 +7596,7 @@ var appRouter = router({
         const beer = Number(row.totalBeerBottle) || 0;
         const salesInc = Number(row.totalSalesIncentive) || 0;
         const incentiveAmount = glass * GLASS_PRICE + bottle * BOTTLE_PRICE + beer * BEER_PRICE + salesInc;
-        const totalMins = staffTotalMinutes[key] || 0;
+        const totalMins = staffInMonthMinutes[key] || 0;
         const weeklyHours = staffWeeklyMap[key] || {};
         const weekCount = Object.keys(weeklyHours).length || 1;
         const avgWeeklyIncentive = Math.round(incentiveAmount / weekCount);

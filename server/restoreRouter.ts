@@ -167,7 +167,7 @@ export function registerRestoreRoutes(app: Express) {
           `SELECT si.staffName, si.staffType, si.workStart, si.workEnd, tr.date
            FROM staffIncentives si
            JOIN tableReports tr ON tr.id = si.tableReportId
-           WHERE tr.branchId = 6 AND tr.date >= '2026-06-01'
+           WHERE tr.branchId = 6 AND tr.date >= '2026-06-29'
            ORDER BY si.staffName, tr.date`
         );
         return res.json({ mode, rows });

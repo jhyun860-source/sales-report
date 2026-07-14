@@ -5098,7 +5098,8 @@ export const appRouter = router({
         // 직원별 주간 근무시간 집계
         const staffWeeklyMap: Record<string, Record<string, number>> = {};
         const staffWeeklyDaysMap: Record<string, Record<string, number>> = {}; // 주차별 출근일수
-        const staffTotalMinutes: Record<string, number> = {};
+        const staffTotalMinutes: Record<string, number> = {}; // 주간표시용 (경계주 포함, 화면의 주간근무시간 테이블과 합이 일치해야 함)
+        const staffInMonthMinutes: Record<string, number> = {}; // 월합계/초과근무 비교용 (반드시 해당 캘린더월 날짜만, 기준시간과 동일 범위여야 함)
 
         for (const row of detailRows) {
           const key = `${row.staffName}__${row.staffType}`;
@@ -5109,6 +5110,11 @@ export const appRouter = router({
           staffWeeklyMap[key][weekLabel] = (staffWeeklyMap[key][weekLabel] || 0) + mins;
           staffWeeklyDaysMap[key][weekLabel] = (staffWeeklyDaysMap[key][weekLabel] || 0) + 1;
           staffTotalMinutes[key] = (staffTotalMinutes[key] || 0) + mins;
+          // [버그수정] 월 합계/초과근무 비교는 기준시간(workDays×7h, 해당월 출근일만)과
+          //   반드시 동일한 범위여야 하므로, 경계주의 인접월 날짜는 여기서 제외한다.
+          if (row.date.startsWith(input.yearMonth)) {
+            staffInMonthMinutes[key] = (staffInMonthMinutes[key] || 0) + mins;
+          }
         }
 
         // 인센티브 단가 계산
@@ -5138,7 +5144,7 @@ export const appRouter = router({
           const salesInc = Number(row.totalSalesIncentive) || 0;
           const incentiveAmount = glass * GLASS_PRICE + bottle * BOTTLE_PRICE + beer * BEER_PRICE + salesInc;
 
-          const totalMins = staffTotalMinutes[key] || 0;
+          const totalMins = staffInMonthMinutes[key] || 0;
           const weeklyHours = staffWeeklyMap[key] || {};
           const weekCount = Object.keys(weeklyHours).length || 1;
           const avgWeeklyIncentive = Math.round(incentiveAmount / weekCount);
