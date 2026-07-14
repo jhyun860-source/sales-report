@@ -1505,6 +1505,17 @@ function registerRestoreRoutes(app) {
         );
         return res.json({ mode, rows });
       }
+      if (mode === "datecoverage") {
+        const [rows] = await conn.query(
+          `SELECT date, branchId, b.name AS branchName, COUNT(*) AS cnt
+           FROM tableReports tr
+           LEFT JOIN branches b ON b.id = tr.branchId
+           WHERE date >= '2026-07-05'
+           GROUP BY date, branchId
+           ORDER BY date, branchId`
+        );
+        return res.json({ mode, rows });
+      }
       if (mode === "checkreport") {
         const branchIdParam = req.query.branchId;
         const dates = String(req.query.dates || "2026-07-11,2026-07-13").split(",");
