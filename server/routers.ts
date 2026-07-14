@@ -5096,10 +5096,14 @@ export const appRouter = router({
         }
 
         // 직원별 주간 근무시간 집계
+        //   - staffWeeklyMap/staffWeeklyDaysMap: 주급 계산용 "주간 근무시간" 표에 쓰임.
+        //     경계주(월 경계에 걸친 주)라도 항상 7일 전체를 온전히 보여준다 (여기서 필터링하지 않음).
+        //   - staffInMonthMinutes/staffInMonthDays: "월 합계 / 기준시간 대비" 계산 전용.
+        //     반드시 해당 캘린더월(input.yearMonth) 날짜만 세어, 겹치는 날이 양쪽 달에 중복 집계되지 않도록 한다.
         const staffWeeklyMap: Record<string, Record<string, number>> = {};
         const staffWeeklyDaysMap: Record<string, Record<string, number>> = {}; // 주차별 출근일수
-        const staffTotalMinutes: Record<string, number> = {}; // 주간표시용 (경계주 포함, 화면의 주간근무시간 테이블과 합이 일치해야 함)
-        const staffInMonthMinutes: Record<string, number> = {}; // 월합계/초과근무 비교용 (반드시 해당 캘린더월 날짜만, 기준시간과 동일 범위여야 함)
+        const staffInMonthMinutes: Record<string, number> = {};
+        const staffInMonthDays: Record<string, number> = {};
 
         for (const row of detailRows) {
           const key = `${row.staffName}__${row.staffType}`;
@@ -5109,11 +5113,9 @@ export const appRouter = router({
           const weekLabel = getWeekLabel(row.date);
           staffWeeklyMap[key][weekLabel] = (staffWeeklyMap[key][weekLabel] || 0) + mins;
           staffWeeklyDaysMap[key][weekLabel] = (staffWeeklyDaysMap[key][weekLabel] || 0) + 1;
-          staffTotalMinutes[key] = (staffTotalMinutes[key] || 0) + mins;
-          // [버그수정] 월 합계/초과근무 비교는 기준시간(workDays×7h, 해당월 출근일만)과
-          //   반드시 동일한 범위여야 하므로, 경계주의 인접월 날짜는 여기서 제외한다.
           if (row.date.startsWith(input.yearMonth)) {
             staffInMonthMinutes[key] = (staffInMonthMinutes[key] || 0) + mins;
+            staffInMonthDays[key] = (staffInMonthDays[key] || 0) + 1;
           }
         }
 
@@ -5149,14 +5151,15 @@ export const appRouter = router({
           const weekCount = Object.keys(weeklyHours).length || 1;
           const avgWeeklyIncentive = Math.round(incentiveAmount / weekCount);
 
-          // 기준 시간: 출근일수 × 7시간(420분)
-          const workDays = Number(row.workDays) || 0;
+          // 기준 시간: 출근일수 × 7시간(420분) - 반드시 이번 달 날짜만 (totalMins와 동일 범위)
+          const workDays = staffInMonthDays[key] || 0;
           const standardMinutes = workDays * 420; // 7시간 = 420분
           const workDiffMinutes = totalMins - standardMinutes; // 양수=초과, 음수=부족
 
           return {
             ...row,
             incentiveAmount,
+            workDays,
             totalWorkMinutes: totalMins,
             standardMinutes,
             workDiffMinutes,

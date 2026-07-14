@@ -7564,8 +7564,8 @@ var appRouter = router({
       }
       const staffWeeklyMap = {};
       const staffWeeklyDaysMap = {};
-      const staffTotalMinutes = {};
       const staffInMonthMinutes = {};
+      const staffInMonthDays = {};
       for (const row of detailRows) {
         const key = `${row.staffName}__${row.staffType}`;
         const mins = calcWorkMinutes(row.workStart, row.workEnd);
@@ -7574,9 +7574,9 @@ var appRouter = router({
         const weekLabel = getWeekLabel(row.date);
         staffWeeklyMap[key][weekLabel] = (staffWeeklyMap[key][weekLabel] || 0) + mins;
         staffWeeklyDaysMap[key][weekLabel] = (staffWeeklyDaysMap[key][weekLabel] || 0) + 1;
-        staffTotalMinutes[key] = (staffTotalMinutes[key] || 0) + mins;
         if (row.date.startsWith(input.yearMonth)) {
           staffInMonthMinutes[key] = (staffInMonthMinutes[key] || 0) + mins;
+          staffInMonthDays[key] = (staffInMonthDays[key] || 0) + 1;
         }
       }
       const GLASS_PRICE = 5e3;
@@ -7600,12 +7600,13 @@ var appRouter = router({
         const weeklyHours = staffWeeklyMap[key] || {};
         const weekCount = Object.keys(weeklyHours).length || 1;
         const avgWeeklyIncentive = Math.round(incentiveAmount / weekCount);
-        const workDays = Number(row.workDays) || 0;
+        const workDays = staffInMonthDays[key] || 0;
         const standardMinutes = workDays * 420;
         const workDiffMinutes = totalMins - standardMinutes;
         return {
           ...row,
           incentiveAmount,
+          workDays,
           totalWorkMinutes: totalMins,
           standardMinutes,
           workDiffMinutes,
