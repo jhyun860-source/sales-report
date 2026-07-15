@@ -11,7 +11,7 @@ import { sql } from 'drizzle-orm';
 
 const GITHUB_TOKEN = process.env.GITHUB_BACKUP_TOKEN ?? '';
 const GITHUB_REPO = 'jhyun860-source/sales-report';
-const BACKUP_BRANCH = 'main';
+const BACKUP_BRANCH = 'backups';
 
 // KST 기준 오늘 날짜 문자열
 function todayKST(): string {

@@ -122,7 +122,7 @@ async function startServer() {
       // [긴급 임시조치] 백업 자동커밋이 재배포를 계속 유발하는 문제로 인해
       //   배포 폭풍이 발생, 앱이 계속 다운되는 상황이라 백업 기능을 임시로 완전히 중단함.
       //   앱이 안정화된 후 안전한 방식으로 다시 켤 예정.
-      // startBackupScheduler();
+      startBackupScheduler();
       console.log('[backup] 임시 비활성화 상태 (배포 안정화 대기중)');
     }
   });
