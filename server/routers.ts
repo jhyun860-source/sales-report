@@ -4275,6 +4275,27 @@ export const appRouter = router({
             try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${existing.branchId}, ${existing.liquorItemId}, ${Number(existing.currentStock || 0)}, ${Number(nextStock)}, ${'deleteMovement'}, ${account?.id ?? null})`); } catch {}
         }
         await db.delete(liquorStockMovements).where(eq(liquorStockMovements.id, input.id));
+        // [버그수정] 출고/입고 기록 삭제 시에도 해당 날짜 정산의 liquorCostExpense를 재계산.
+        //   기존에는 기록 "저장" 시에만 동기화되고 "삭제" 시에는 동기화가 안 되어,
+        //   삭제 후에도 예전 원가 값이 정산에 유령처럼 남아있는 문제가 있었음.
+        try {
+          const newLiquorCost = await calculateLiquorCostExpense(movement.branchId, movement.date);
+          const existingRec = await getDailySalesRecord(movement.branchId, movement.date);
+          if (existingRec) {
+            const newTotalExpenses =
+              Number(existingRec.commissionExpense || 0) + Number(existingRec.rentExpense || 0)
+              + Number(existingRec.managementFeeExpense || 0) + Number(existingRec.staffWageExpense || 0)
+              + Number(existingRec.managerWageExpense || 0) + Number(existingRec.partTimeWageExpense || 0)
+              + newLiquorCost + Number(existingRec.staffDrinkExpense || 0)
+              + Number(existingRec.salesIncentiveExpense || 0) + Number(existingRec.otherExpense || 0);
+            const newNetProfit = Number(existingRec.totalRevenue || 0) - newTotalExpenses;
+            await db.update(dailySalesRecords).set({
+              liquorCostExpense: String(newLiquorCost),
+              totalExpenses: String(newTotalExpenses),
+              netProfit: String(newNetProfit),
+            }).where(eq(dailySalesRecords.id, existingRec.id));
+          }
+        } catch (e) { console.error('[deleteMovement] liquorCostExpense 자동 동기화 오류', e); }
         return { success: true };
       }),
 
