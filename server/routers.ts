@@ -4249,6 +4249,27 @@ export const appRouter = router({
           await db.insert(liquorInventories).values({ branchId: base.branchId, liquorItemId: input.liquorItemId, currentStock: String(nextStock) });
           try { await db.execute(sql`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source, accountId) VALUES (${base.branchId}, ${input.liquorItemId}, 0, ${Number(nextStock)}, ${'addMovementToGroup-new'}, ${account?.id ?? null})`); } catch {}
         }
+        // [버그수정] 이 경로(그룹에 항목 추가)는 재고는 갱신하면서 그날 정산(liquorCostExpense)은
+        //   재계산하지 않아, 반영이 안 되거나 예전 값이 그대로 남는 문제가 있었음.
+        //   재고출고 저장 시 쓰는 것과 동일한 재계산 로직을 그대로 재사용.
+        try {
+          const newLiquorCost = await calculateLiquorCostExpense(base.branchId, input.date);
+          const existingRec = await getDailySalesRecord(base.branchId, input.date);
+          if (existingRec) {
+            const newTotalExpenses =
+              Number(existingRec.commissionExpense || 0) + Number(existingRec.rentExpense || 0)
+              + Number(existingRec.managementFeeExpense || 0) + Number(existingRec.staffWageExpense || 0)
+              + Number(existingRec.managerWageExpense || 0) + Number(existingRec.partTimeWageExpense || 0)
+              + newLiquorCost + Number(existingRec.staffDrinkExpense || 0)
+              + Number(existingRec.salesIncentiveExpense || 0) + Number(existingRec.otherExpense || 0);
+            const newNetProfit = Number(existingRec.totalRevenue || 0) - newTotalExpenses;
+            await db.update(dailySalesRecords).set({
+              liquorCostExpense: String(newLiquorCost),
+              totalExpenses: String(newTotalExpenses),
+              netProfit: String(newNetProfit),
+            }).where(eq(dailySalesRecords.id, existingRec.id));
+          }
+        } catch (e) { console.error('[addMovementToGroup] liquorCostExpense 자동 동기화 오류', e); }
         return { success: true };
       }),
 
