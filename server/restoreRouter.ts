@@ -265,6 +265,24 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, rows });
       }
 
+      if (mode === "fixliquor0721") {
+        // [1회성 데이터 수정] 대치점(branchId=2) 7/21 정산에 남아있던 유령 주류원가(889000) 제거
+        //   실제 출고기록 없음(calculatedCost=0) 확인됨. 이 값만 0으로 되돌리고 totalExpenses/netProfit 재계산.
+        const [rows] = await conn.query(
+          `SELECT id, liquorCostExpense, totalExpenses, netProfit FROM dailySalesRecords WHERE branchId = 2 AND date = '2026-07-21' LIMIT 1`
+        );
+        const rec = (rows as any[])[0];
+        if (!rec) return res.json({ mode, result: "no record found, nothing to fix" });
+        const liquorCost = Number(rec.liquorCostExpense || 0);
+        const newTotalExpenses = Number(rec.totalExpenses || 0) - liquorCost;
+        const newNetProfit = Number(rec.netProfit || 0) + liquorCost;
+        await conn.query(
+          `UPDATE dailySalesRecords SET liquorCostExpense = '0', totalExpenses = ?, netProfit = ? WHERE id = ?`,
+          [String(newTotalExpenses), String(newNetProfit), rec.id]
+        );
+        return res.json({ mode, result: "fixed", before: rec, after: { liquorCostExpense: "0", totalExpenses: String(newTotalExpenses), netProfit: String(newNetProfit) } });
+      }
+
       if (mode === "recentmoves") {
         const [rows] = await conn.query(
           `SELECT m.id, m.branchId, b.name AS branchName, m.liquorItemId, li.name AS itemName,
