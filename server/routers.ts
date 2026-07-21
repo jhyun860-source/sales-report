@@ -4356,6 +4356,14 @@ export const appRouter = router({
         try {
           const newLiquorCost = await calculateLiquorCostExpense(movement.branchId, movement.date);
           const existingRec = await getDailySalesRecord(movement.branchId, movement.date);
+          console.log('[deleteMovement][DEBUG]', {
+            movementDate: movement.date,
+            movementBranchId: movement.branchId,
+            newLiquorCost,
+            existingRecFound: !!existingRec,
+            existingRecId: existingRec?.id,
+            existingRecLiquorCostBefore: existingRec?.liquorCostExpense,
+          });
           if (existingRec) {
             const newTotalExpenses =
               Number(existingRec.commissionExpense || 0) + Number(existingRec.rentExpense || 0)
