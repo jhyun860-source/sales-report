@@ -4123,6 +4123,29 @@ export const appRouter = router({
             await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
           }
         }
+        // [버그수정] 수정 시에도 재고만 갱신되고 정산(liquorCostExpense)은 재계산되지 않던 문제 수정.
+        //   날짜가 바뀐 경우 예전 날짜/새 날짜 둘 다 재계산.
+        const datesToSync = movement.date === input.date ? [input.date] : [movement.date, input.date];
+        for (const d of datesToSync) {
+          try {
+            const newLiquorCost = await calculateLiquorCostExpense(movement.branchId, d);
+            const existingRec = await getDailySalesRecord(movement.branchId, d);
+            if (existingRec) {
+              const newTotalExpenses =
+                Number(existingRec.commissionExpense || 0) + Number(existingRec.rentExpense || 0)
+                + Number(existingRec.managementFeeExpense || 0) + Number(existingRec.staffWageExpense || 0)
+                + Number(existingRec.managerWageExpense || 0) + Number(existingRec.partTimeWageExpense || 0)
+                + newLiquorCost + Number(existingRec.staffDrinkExpense || 0)
+                + Number(existingRec.salesIncentiveExpense || 0) + Number(existingRec.otherExpense || 0);
+              const newNetProfit = Number(existingRec.totalRevenue || 0) - newTotalExpenses;
+              await db.update(dailySalesRecords).set({
+                liquorCostExpense: String(newLiquorCost),
+                totalExpenses: String(newTotalExpenses),
+                netProfit: String(newNetProfit),
+              }).where(eq(dailySalesRecords.id, existingRec.id));
+            }
+          } catch (e) { console.error('[updateMovement] liquorCostExpense 자동 동기화 오류', e); }
+        }
         return { success: true };
       }),
 
@@ -4194,6 +4217,37 @@ export const appRouter = router({
               await db.insert(liquorInventories).values({ branchId: movement.branchId, liquorItemId: movement.liquorItemId, currentStock: String(diff) });
             }
           }
+        }
+        // [버그수정] 재고만 갱신되고 정산(liquorCostExpense)은 재계산되지 않던 문제 수정.
+        //   영향받은 모든 지점/날짜(수정 전 날짜들 + 새 날짜)를 재계산.
+        const branchDatePairs: Array<{ branchId: number; date: string }> = [];
+        for (const movement of rows) {
+          branchDatePairs.push({ branchId: movement.branchId, date: movement.date });
+          branchDatePairs.push({ branchId: movement.branchId, date: input.date });
+        }
+        const seenPairs = new Set<string>();
+        for (const { branchId: bId, date: d } of branchDatePairs) {
+          const pairKey = bId + '|' + d;
+          if (seenPairs.has(pairKey)) continue;
+          seenPairs.add(pairKey);
+          try {
+            const newLiquorCost = await calculateLiquorCostExpense(bId, d);
+            const existingRec = await getDailySalesRecord(bId, d);
+            if (existingRec) {
+              const newTotalExpenses =
+                Number(existingRec.commissionExpense || 0) + Number(existingRec.rentExpense || 0)
+                + Number(existingRec.managementFeeExpense || 0) + Number(existingRec.staffWageExpense || 0)
+                + Number(existingRec.managerWageExpense || 0) + Number(existingRec.partTimeWageExpense || 0)
+                + newLiquorCost + Number(existingRec.staffDrinkExpense || 0)
+                + Number(existingRec.salesIncentiveExpense || 0) + Number(existingRec.otherExpense || 0);
+              const newNetProfit = Number(existingRec.totalRevenue || 0) - newTotalExpenses;
+              await db.update(dailySalesRecords).set({
+                liquorCostExpense: String(newLiquorCost),
+                totalExpenses: String(newTotalExpenses),
+                netProfit: String(newNetProfit),
+              }).where(eq(dailySalesRecords.id, existingRec.id));
+            }
+          } catch (e) { console.error('[updateMovementGroup] liquorCostExpense 자동 동기화 오류', e); }
         }
         return { success: true };
       }),
