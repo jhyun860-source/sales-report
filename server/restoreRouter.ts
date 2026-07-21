@@ -283,6 +283,16 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, result: "fixed", before: rec, after: { liquorCostExpense: "0", totalExpenses: String(newTotalExpenses), netProfit: String(newNetProfit) } });
       }
 
+      if (mode === "dupitems") {
+        const [rows] = await conn.query(
+          `SELECT name, COUNT(*) as cnt, GROUP_CONCAT(id) as ids
+           FROM liquorItems
+           GROUP BY name
+           HAVING cnt > 1`
+        );
+        return res.json({ mode, duplicates: rows });
+      }
+
       if (mode === "recentmoves") {
         const [rows] = await conn.query(
           `SELECT m.id, m.branchId, b.name AS branchName, m.liquorItemId, li.name AS itemName,
