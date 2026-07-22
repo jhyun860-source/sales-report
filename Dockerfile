@@ -21,12 +21,9 @@ FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
-
-# 프로덕션 의존성만 설치 (패치 파일 포함)
-COPY package.json pnpm-lock.yaml ./
-COPY patches ./patches
-RUN pnpm install --prod
+# builder에서 이미 성공적으로 설치된 node_modules를 그대로 재사용 (재설치 시도 안 함)
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json ./
 
 # 빌드 결과물만 명시적으로 복사 (서버 번들 + 클라이언트 정적 파일)
 COPY --from=builder /app/dist ./dist
