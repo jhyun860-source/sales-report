@@ -4,7 +4,7 @@ buildCommand = "pnpm install && pnpm build"
 watchPatterns = ["**"]
 
 [build.nixpacksPlan.phases.setup]
-nixPkgs = ["nodejs_20", "nodePackages.pnpm"]
+nixPkgs = ["nodejs_20", "nodePackages.pnpm", "caddy"]
 
 [build.nixpacksPlan.phases.install]
 cmds = ["pnpm install"]
@@ -13,6 +13,7 @@ cmds = ["pnpm install"]
 cmds = ["pnpm build"]
 
 [deploy]
-startCommand = "node dist/index.js"
+startCommand = "caddy start --config /assets/Caddyfile & sleep 2 && node dist/index.js"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+

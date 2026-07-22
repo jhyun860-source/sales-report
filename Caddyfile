@@ -1,0 +1,34 @@
+# global options
+{
+	admin off
+	persist_config off
+	auto_https off
+	log {
+		format json
+	}
+	servers {
+		trusted_proxies static private_ranges 100.0.0.0/8
+	}
+}
+
+:{$PORT:8080} {
+	log {
+		format json
+	}
+
+	# health check for railway
+	rewrite /health /*
+
+	# serve static files from dist/public
+	root * /app/dist/public
+
+	# enable gzipping responses
+	encode gzip
+
+	# serve files statically
+	file_server
+
+	# if path doesn't exist, redirect to index.html for client-side routing
+	try_files {path} /index.html
+}
+
