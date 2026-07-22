@@ -9,7 +9,7 @@ RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
 # 의존성 설치 (lockfile 그대로 사용)
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # 소스 전체 복사 후 빌드 (기존과 동일한 빌드 명령)
 COPY . .
@@ -24,7 +24,7 @@ RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
 # 프로덕션 의존성만 설치
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --prod
 
 # 빌드 결과물만 명시적으로 복사 (서버 번들 + 클라이언트 정적 파일)
 COPY --from=builder /app/dist ./dist
