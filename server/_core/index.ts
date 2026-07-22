@@ -108,12 +108,11 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
+  // [버그수정] 예전에는 지정된 포트가 사용 중이면 조용히 다른 포트로 옮겨서 실행했음.
+  //   Railway 같은 PaaS 환경에서는 플랫폼이 지정한 포트($PORT)로만 트래픽을 보내기 때문에,
+  //   서버가 몰래 다른 포트로 옮겨가면 플랫폼은 앱을 못 찾고 요청이 이상하게 처리될 수 있음.
+  //   이제 지정된 포트에 그대로 바인딩하고, 실패하면 조용히 우회하지 않고 바로 에러를 내도록 변경.
+  const port = parseInt(process.env.PORT || "3000");
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
