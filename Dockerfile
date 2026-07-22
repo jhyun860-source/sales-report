@@ -7,8 +7,9 @@ WORKDIR /app
 # pnpm 설치
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
-# 의존성 설치 (lockfile 그대로 사용)
+# 의존성 설치 (lockfile + 패치 파일 그대로 사용)
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install
 
 # 소스 전체 복사 후 빌드 (기존과 동일한 빌드 명령)
@@ -22,8 +23,9 @@ ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
-# 프로덕션 의존성만 설치
+# 프로덕션 의존성만 설치 (패치 파일 포함)
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --prod
 
 # 빌드 결과물만 명시적으로 복사 (서버 번들 + 클라이언트 정적 파일)
