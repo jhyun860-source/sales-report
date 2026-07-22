@@ -672,8 +672,9 @@ export default function LiquorStockReport() {
             onEditMovement={setEditingMovement}
             onEditMovementGroup={setEditingMovementGroup}
             onDeleteMovement={(movement: any) => {
-              if (!window.confirm(`${movement.itemName} 히스토리를 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return;
+              if (!window.confirm(`${movement.itemName} 히스토리를 삭제할까요? 삭제하면 재고도 원래대로 복구됩니다.`)) return false;
               deleteMovement.mutate({ id: movement.id });
+              return true;
             }}
             onAddMovementToGroup={addMovementToGroup.mutate}
             items={historySelectableItems}
@@ -1182,7 +1183,7 @@ function HistoryDetailView({ group, isAdmin, close, onEditMovement, onEditMoveme
           <div className={`text-xl font-black shrink-0 ${color}`}>{Number(m.quantity) > 0 ? "+" : ""}{qty(Number(m.quantity || 0))}</div>
           <div className="flex flex-row items-center gap-2 shrink-0">
             <button onClick={() => onEditMovement?.(m)} className="h-8 min-w-[44px] px-3 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-black whitespace-nowrap leading-none flex items-center justify-center">수정</button>
-            <button onClick={() => onDeleteMovement?.(m)} className="h-8 min-w-[44px] px-3 rounded-lg bg-red-50 border border-red-100 text-red-500 text-xs font-black whitespace-nowrap leading-none flex items-center justify-center">삭제</button>
+            <button onClick={() => { if (onDeleteMovement?.(m) !== false) close(); }} className="h-8 min-w-[44px] px-3 rounded-lg bg-red-50 border border-red-100 text-red-500 text-xs font-black whitespace-nowrap leading-none flex items-center justify-center">삭제</button>
           </div>
         </div>)}
         <div className="rounded-2xl border border-slate-200 p-3 bg-slate-50 space-y-2 mt-6">
