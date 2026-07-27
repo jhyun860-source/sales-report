@@ -195,6 +195,17 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, rows });
       }
 
+      if (mode === "settlementcheck") {
+        const branchIdParam = Number(req.query.branchId || 2);
+        const date = String(req.query.date || "2026-07-25");
+        const [rows]: any = await conn.query(
+          `SELECT date, branchId, totalRevenue, staffWageExpense, managerWageExpense, partTimeWageExpense, staffDrinkExpense, salesIncentiveExpense, liquorCostExpense, totalExpenses, netProfit
+           FROM dailySalesRecords WHERE branchId=? AND date=?`,
+          [branchIdParam, date]
+        );
+        return res.json({ mode, branchId: branchIdParam, date, rows });
+      }
+
       if (mode === "checkreport") {
         const branchIdParam = req.query.branchId;
         const dates = String(req.query.dates || "2026-07-11,2026-07-13").split(",");
