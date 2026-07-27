@@ -220,6 +220,45 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, date, rows });
       }
 
+      if (mode === "adjustsettlement") {
+        const branchIdParam = Number(req.query.branchId);
+        const date = String(req.query.date || "");
+        const field = String(req.query.field || "");
+        const newValue = Number(req.query.newValue);
+        const ALLOWED_FIELDS = [
+          "staffWageExpense", "managerWageExpense", "partTimeWageExpense",
+          "staffDrinkExpense", "salesIncentiveExpense", "liquorCostExpense", "otherExpense",
+        ];
+        if (!branchIdParam || !date || !ALLOWED_FIELDS.includes(field) || Number.isNaN(newValue)) {
+          return res.status(400).json({ error: "branchId, date, field(허용된 필드명), newValue 필요", allowedFields: ALLOWED_FIELDS });
+        }
+        const [rows]: any = await conn.query(
+          `SELECT id, totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
+                  staffWageExpense, managerWageExpense, partTimeWageExpense,
+                  staffDrinkExpense, salesIncentiveExpense, liquorCostExpense, otherExpense
+           FROM dailySalesRecords WHERE branchId=? AND date=? LIMIT 1`,
+          [branchIdParam, date]
+        );
+        const rec = rows[0];
+        if (!rec) return res.json({ mode, result: "no record found" });
+        const before = Number(rec[field] || 0);
+        const totalExpenses =
+          Number(rec.commissionExpense || 0) + Number(rec.rentExpense || 0) + Number(rec.managementFeeExpense || 0) +
+          (field === "staffWageExpense" ? newValue : Number(rec.staffWageExpense || 0)) +
+          (field === "managerWageExpense" ? newValue : Number(rec.managerWageExpense || 0)) +
+          (field === "partTimeWageExpense" ? newValue : Number(rec.partTimeWageExpense || 0)) +
+          (field === "staffDrinkExpense" ? newValue : Number(rec.staffDrinkExpense || 0)) +
+          (field === "salesIncentiveExpense" ? newValue : Number(rec.salesIncentiveExpense || 0)) +
+          (field === "liquorCostExpense" ? newValue : Number(rec.liquorCostExpense || 0)) +
+          (field === "otherExpense" ? newValue : Number(rec.otherExpense || 0));
+        const netProfit = Number(rec.totalRevenue || 0) - totalExpenses;
+        await conn.query(
+          `UPDATE dailySalesRecords SET ${field} = ?, totalExpenses = ?, netProfit = ? WHERE id = ?`,
+          [String(newValue), String(totalExpenses), String(netProfit), rec.id]
+        );
+        return res.json({ mode, branchId: branchIdParam, date, field, before, after: newValue, totalExpenses, netProfit });
+      }
+
       if (mode === "checkreport") {
         const branchIdParam = req.query.branchId;
         const dates = String(req.query.dates || "2026-07-11,2026-07-13").split(",");
