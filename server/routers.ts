@@ -4758,6 +4758,45 @@ export const appRouter = router({
         if (rest.workStart !== undefined) updateData.workStart = rest.workStart;
         if (rest.workEnd !== undefined) updateData.workEnd = rest.workEnd;
         await db.update(staffIncentives).set(updateData).where(eq(staffIncentives.id, id));
+
+        // [버그수정] 인센티브 수정(출퇴근시간 등) 후에도 정산이 재계산되지 않아,
+        //   출퇴근시간 입력 전 임시로 계산된 값(인원×시급×8시간)이 그대로 남아있던 문제 수정.
+        try {
+          const [incRow] = await db.select().from(staffIncentives).where(eq(staffIncentives.id, id)).limit(1);
+          if (incRow) {
+            const [report] = await db.select().from(tableReports).where(eq(tableReports.id, incRow.tableReportId)).limit(1);
+            if (report) {
+              const branchId = report.branchId;
+              const date = report.date;
+              const allInc = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, incRow.tableReportId));
+              const sc = allInc.filter((i: any) => i.staffType === 'staff').length;
+              const pc = allInc.filter((i: any) => i.staffType === 'parttime').length;
+              const mc = allInc.filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
+              let pth = 0;
+              for (const inc of allInc.filter((i: any) => i.staffType === 'parttime')) {
+                if (inc.workStart && inc.workEnd) {
+                  try {
+                    const [sh, sm] = (inc.workStart as string).split(':').map(Number);
+                    const [eh, em] = (inc.workEnd as string).split(':').map(Number);
+                    let startMin = sh * 60 + sm;
+                    let endMin = eh * 60 + em;
+                    if (endMin <= startMin) endMin += 24 * 60;
+                    pth += (endMin - startMin) / 60;
+                  } catch {}
+                }
+              }
+              const existingRec = await getDailySalesRecord(branchId, date);
+              if (existingRec) {
+                const cash = parseInt(existingRec.cash || '0');
+                const card = parseInt(existingRec.card || '0');
+                const expenses = Array.isArray(existingRec.expenses) ? existingRec.expenses as any : [];
+                const settlement = await calculateDailySettlement(branchId, date, cash, card, sc, pc, expenses, incRow.tableReportId, mc, pth);
+                await saveDailySettlementRecord(branchId, date, settlement);
+              }
+            }
+          }
+        } catch (e) { console.error('[updateIncentive] 정산 재계산 오류', e); }
+
         return { success: true };
       }),
     // 직원 인센티브 삭제
@@ -4766,7 +4805,45 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const [incRow] = await db.select().from(staffIncentives).where(eq(staffIncentives.id, input.id)).limit(1);
         await db.delete(staffIncentives).where(eq(staffIncentives.id, input.id));
+
+        // [버그수정] 인센티브 삭제 후에도 정산이 재계산되지 않던 문제 수정.
+        try {
+          if (incRow) {
+            const [report] = await db.select().from(tableReports).where(eq(tableReports.id, incRow.tableReportId)).limit(1);
+            if (report) {
+              const branchId = report.branchId;
+              const date = report.date;
+              const allInc = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, incRow.tableReportId));
+              const sc = allInc.filter((i: any) => i.staffType === 'staff').length;
+              const pc = allInc.filter((i: any) => i.staffType === 'parttime').length;
+              const mc = allInc.filter((i: any) => i.staffType === 'manager' || i.staffType === 'deputy').length;
+              let pth = 0;
+              for (const inc of allInc.filter((i: any) => i.staffType === 'parttime')) {
+                if (inc.workStart && inc.workEnd) {
+                  try {
+                    const [sh, sm] = (inc.workStart as string).split(':').map(Number);
+                    const [eh, em] = (inc.workEnd as string).split(':').map(Number);
+                    let startMin = sh * 60 + sm;
+                    let endMin = eh * 60 + em;
+                    if (endMin <= startMin) endMin += 24 * 60;
+                    pth += (endMin - startMin) / 60;
+                  } catch {}
+                }
+              }
+              const existingRec = await getDailySalesRecord(branchId, date);
+              if (existingRec) {
+                const cash = parseInt(existingRec.cash || '0');
+                const card = parseInt(existingRec.card || '0');
+                const expenses = Array.isArray(existingRec.expenses) ? existingRec.expenses as any : [];
+                const settlement = await calculateDailySettlement(branchId, date, cash, card, sc, pc, expenses, incRow.tableReportId, mc, pth);
+                await saveDailySettlementRecord(branchId, date, settlement);
+              }
+            }
+          }
+        } catch (e) { console.error('[deleteIncentive] 정산 재계산 오류', e); }
+
         return { success: true };
       }),
 
