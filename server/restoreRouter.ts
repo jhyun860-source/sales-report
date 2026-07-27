@@ -195,6 +195,20 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, rows });
       }
 
+      if (mode === "staffcheck2") {
+        const branchIdParam = Number(req.query.branchId || 2);
+        const date = String(req.query.date || "2026-07-25");
+        const staffName = String(req.query.staffName || "");
+        const [rows]: any = await conn.query(
+          `SELECT si.id, si.staffName, si.staffType, si.workStart, si.workEnd, si.glassCount, si.bottleCount, si.beerBottleCount, si.salesIncentive, tr.date, tr.branchId
+           FROM staffIncentives si
+           JOIN tableReports tr ON tr.id = si.tableReportId
+           WHERE tr.branchId=? AND tr.date=? AND si.staffName LIKE ?`,
+          [branchIdParam, date, `%${staffName}%`]
+        );
+        return res.json({ mode, branchId: branchIdParam, date, staffName, rows });
+      }
+
       if (mode === "settlementcheck") {
         const branchIdParam = Number(req.query.branchId || 2);
         const date = String(req.query.date || "2026-07-25");
