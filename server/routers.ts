@@ -4919,6 +4919,17 @@ export const appRouter = router({
         const itemsToUpdate = validItems.filter(it => it.id);
         const itemsToInsert = validItems.filter(it => !it.id);
 
+        // DELETE: 프론트에서 넘어온 id 목록에 없는 기존 테이블 항목 삭제
+        // (validItems가 아닌 input.items 전체 기준으로 판단 — 입력 중 잠깐 비어있는
+        //  기존 항목까지 삭제되는 부작용을 막기 위함. id가 있으면 "여전히 존재하는 항목",
+        //  id가 아예 안 넘어온 경우만 "사용자가 삭제/병합으로 뺀 항목"으로 간주)
+        const existingItems = await db.select().from(tableItems).where(eq(tableItems.tableReportId, reportId));
+        const incomingItemIds = new Set(input.items.filter(it => it.id).map(it => it.id!));
+        const itemsToDelete = existingItems.filter(it => !incomingItemIds.has(it.id));
+        if (itemsToDelete.length > 0) {
+          await Promise.all(itemsToDelete.map(it => db.delete(tableItems).where(eq(tableItems.id, it.id))));
+        }
+
         // UPDATE: 병렬 처리 (id가 확정된 항목이므로 안전)
         await Promise.all(itemsToUpdate.map(async (it) => {
           await db.update(tableItems).set({
