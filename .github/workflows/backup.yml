@@ -1,0 +1,14 @@
+name: DB Backup Trigger
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  trigger-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call backup endpoint
+        run: |
+          curl -sf "https://mywhiskytable.up.railway.app/admin/restore-db?key=${{ secrets.RESTORE_KEY }}&mode=runbackup"
