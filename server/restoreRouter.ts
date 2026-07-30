@@ -8,6 +8,7 @@ import type { Express } from "express";
 import fs from "node:fs";
 import path from "node:path";
 import mysql from "mysql2/promise";
+import { runDailyBackup } from "./backup-scheduler";
 
 const RESTORE_KEY = "mwt-restore-20260711-xK4";
 const BACKUP_FILE = "backups/backup-2026-06-05-before-manager-wage.json";
@@ -412,7 +413,12 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, rows });
       }
 
-      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck" });
+      if (mode === "runbackup") {
+        await runDailyBackup();
+        return res.json({ mode, ok: true, message: "수동 백업 트리거 완료" });
+      }
+
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup" });
     } catch (e: any) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
