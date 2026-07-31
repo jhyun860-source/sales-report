@@ -20146,10 +20146,10 @@
       "branchId": 3,
       "date": "2026-07-31",
       "posStartAmount": "82000",
-      "cash": "0",
-      "card": "0",
-      "cashTotal": "5091000",
-      "cardTotal": "32999000",
+      "cash": "60000",
+      "card": "125000",
+      "cashTotal": "5151000",
+      "cardTotal": "33124000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -20157,11 +20157,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-31 16:06:34",
+      "submittedAt": "2026-07-31 16:50:38",
       "createdAt": "2026-07-31 16:06:07",
-      "updatedAt": "2026-07-31 16:06:34",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-07-31 16:50:38",
+      "totalRevenue": "185000",
+      "commissionExpense": "31450",
       "rentExpense": "240741",
       "managementFeeExpense": "0",
       "staffWageExpense": "318180",
@@ -20171,8 +20171,8 @@
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "22222",
-      "totalExpenses": "825056",
-      "netProfit": "-825056",
+      "totalExpenses": "856506",
+      "netProfit": "-671506",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -26178,11 +26178,11 @@
       "branchId": 3,
       "date": "2026-07-31",
       "teamCount": 0,
-      "cashAmount": "0",
-      "cardAmount": "0",
+      "cashAmount": "60000",
+      "cardAmount": "125000",
       "notes": null,
       "createdAt": "2026-07-31 16:06:07",
-      "updatedAt": "2026-07-31 16:06:07"
+      "updatedAt": "2026-07-31 16:50:37"
     }
   ],
   "tableItems": [
@@ -63203,12 +63203,25 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "125000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(3), 치즈 플레이터(1)",
       "sortOrder": 0,
       "createdAt": "2026-07-31 16:06:07",
-      "updatedAt": "2026-07-31 16:06:07"
+      "updatedAt": "2026-07-31 16:50:26"
+    },
+    {
+      "id": 16260555,
+      "tableReportId": 10380103,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "60000",
+      "paymentMethod": "cash",
+      "memo": "바탐 1시간 무제한(2)",
+      "sortOrder": 1,
+      "createdAt": "2026-07-31 16:50:26",
+      "updatedAt": "2026-07-31 16:50:37"
     }
   ],
   "staffIncentives": [
