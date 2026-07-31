@@ -20046,9 +20046,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-07-31 10:23:54",
+      "submittedAt": "2026-07-31 10:50:32",
       "createdAt": "2026-07-31 10:23:53",
-      "updatedAt": "2026-07-31 10:23:54",
+      "updatedAt": "2026-07-31 10:50:32",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "166667",
@@ -20062,6 +20062,41 @@
       "otherExpense": "0",
       "totalExpenses": "978683",
       "netProfit": "-978683",
+      "staffCount": 0,
+      "partTimeCount": 0
+    },
+    {
+      "id": 10410104,
+      "branchId": 1,
+      "date": "2026-07-30",
+      "posStartAmount": "48100",
+      "cash": "0",
+      "card": "2917000",
+      "cashTotal": "419000",
+      "cardTotal": "51630000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-07-31 11:25:24",
+      "createdAt": "2026-07-31 11:20:58",
+      "updatedAt": "2026-07-31 11:26:03",
+      "totalRevenue": "2917000",
+      "commissionExpense": "495890",
+      "rentExpense": "259259",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "136363",
+      "managerWageExpense": "260870",
+      "partTimeWageExpense": "250000",
+      "liquorCostExpense": "1002000",
+      "staffDrinkExpense": "20000",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "2424382",
+      "netProfit": "492618",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -26039,6 +26074,17 @@
       "notes": null,
       "createdAt": "2026-07-31 10:23:53",
       "updatedAt": "2026-07-31 10:23:53"
+    },
+    {
+      "id": 10380101,
+      "branchId": 1,
+      "date": "2026-07-30",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "2917000",
+      "notes": null,
+      "createdAt": "2026-07-31 11:20:58",
+      "updatedAt": "2026-07-31 11:22:35"
     }
   ],
   "tableItems": [
@@ -62909,6 +62955,97 @@
       "sortOrder": 0,
       "createdAt": "2026-07-31 10:23:53",
       "updatedAt": "2026-07-31 10:23:53"
+    },
+    {
+      "id": 16260542,
+      "tableReportId": 10380101,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "준영",
+      "amount": "1400000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">조니워커 블루 (700ml)(1)</mark>, <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">돔 페리뇽(1)</mark>",
+      "sortOrder": 0,
+      "createdAt": "2026-07-31 11:20:58",
+      "updatedAt": "2026-07-31 11:21:17"
+    },
+    {
+      "id": 16260543,
+      "tableReportId": 10380101,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "재만",
+      "amount": "370000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">레미마틴 v.s.o.p(1)</mark>",
+      "sortOrder": 1,
+      "createdAt": "2026-07-31 11:20:58",
+      "updatedAt": "2026-07-31 11:21:46"
+    },
+    {
+      "id": 16260544,
+      "tableReportId": 10380101,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "재방문",
+      "amount": "422000",
+      "paymentMethod": "card",
+      "memo": "글렌피딕15y잔술(2), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">발렌타인 17y (500ml)(1)</mark>",
+      "sortOrder": 2,
+      "createdAt": "2026-07-31 11:20:58",
+      "updatedAt": "2026-07-31 11:21:46"
+    },
+    {
+      "id": 16260545,
+      "tableReportId": 10380101,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "주원",
+      "amount": "530000",
+      "paymentMethod": "card",
+      "memo": "위스키 보관비용(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">맥캘란 12y (700ml)(1)</mark>",
+      "sortOrder": 3,
+      "createdAt": "2026-07-31 11:20:58",
+      "updatedAt": "2026-07-31 11:22:00"
+    },
+    {
+      "id": 16260546,
+      "tableReportId": 10380101,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "60000",
+      "paymentMethod": "card",
+      "memo": "무제한2",
+      "sortOrder": 4,
+      "createdAt": "2026-07-31 11:20:58",
+      "updatedAt": "2026-07-31 11:22:24"
+    },
+    {
+      "id": 16260547,
+      "tableReportId": 10380101,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "135000",
+      "paymentMethod": "card",
+      "memo": "아드백10잔술(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">혀나링(1)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">유나링(1)</mark>, 칵테일(3)",
+      "sortOrder": 5,
+      "createdAt": "2026-07-31 11:22:24",
+      "updatedAt": "2026-07-31 11:22:35"
+    },
+    {
+      "id": 16260548,
+      "tableReportId": 10380101,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 6,
+      "createdAt": "2026-07-31 11:22:24",
+      "updatedAt": "2026-07-31 11:22:24"
     }
   ],
   "staffIncentives": [
@@ -85046,11 +85183,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "staff",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 1,
       "createdAt": "2026-07-31 10:23:53",
-      "updatedAt": "2026-07-31 10:23:53"
+      "updatedAt": "2026-07-31 10:50:28"
     },
     {
       "id": 11310289,
@@ -85061,11 +85198,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 2,
       "createdAt": "2026-07-31 10:23:53",
-      "updatedAt": "2026-07-31 10:23:53"
+      "updatedAt": "2026-07-31 10:50:28"
     },
     {
       "id": 11310290,
@@ -85076,11 +85213,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 3,
       "createdAt": "2026-07-31 10:23:53",
-      "updatedAt": "2026-07-31 10:23:53"
+      "updatedAt": "2026-07-31 10:50:28"
     },
     {
       "id": 11310291,
@@ -85091,11 +85228,71 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 4,
       "createdAt": "2026-07-31 10:23:53",
-      "updatedAt": "2026-07-31 10:23:53"
+      "updatedAt": "2026-07-31 10:50:28"
+    },
+    {
+      "id": 11310292,
+      "tableReportId": 10380101,
+      "staffName": "시현",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-07-31 11:24:57",
+      "updatedAt": "2026-07-31 11:24:57"
+    },
+    {
+      "id": 11310293,
+      "tableReportId": 10380101,
+      "staffName": "지민",
+      "glassCount": 0,
+      "bottleCount": 1,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "20:00",
+      "workEnd": "03:00",
+      "sortOrder": 1,
+      "createdAt": "2026-07-31 11:24:57",
+      "updatedAt": "2026-07-31 11:24:57"
+    },
+    {
+      "id": 11310294,
+      "tableReportId": 10380101,
+      "staffName": "현아",
+      "glassCount": 1,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:00",
+      "workEnd": "03:00",
+      "sortOrder": 2,
+      "createdAt": "2026-07-31 11:24:57",
+      "updatedAt": "2026-07-31 11:24:57"
+    },
+    {
+      "id": 11310295,
+      "tableReportId": 10380101,
+      "staffName": "유나",
+      "glassCount": 1,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:00",
+      "workEnd": "01:30",
+      "sortOrder": 3,
+      "createdAt": "2026-07-31 11:24:57",
+      "updatedAt": "2026-07-31 11:24:57"
     }
   ],
   "liquorItems": [
@@ -86679,8 +86876,8 @@
       "id": 5,
       "branchId": 1,
       "liquorItemId": 1,
-      "currentStock": "5.00",
-      "updatedAt": "2026-07-30 10:18:08"
+      "currentStock": "4.00",
+      "updatedAt": "2026-07-31 11:26:03"
     },
     {
       "id": 30001,
@@ -88814,8 +89011,8 @@
       "id": 30387,
       "branchId": 1,
       "liquorItemId": 40,
-      "currentStock": "1.00",
-      "updatedAt": "2026-07-08 10:34:29"
+      "currentStock": "0.00",
+      "updatedAt": "2026-07-31 11:26:03"
     },
     {
       "id": 30388,
@@ -88835,15 +89032,15 @@
       "id": 30390,
       "branchId": 1,
       "liquorItemId": 59,
-      "currentStock": "3.00",
-      "updatedAt": "2026-07-07 09:40:07"
+      "currentStock": "2.00",
+      "updatedAt": "2026-07-31 11:26:03"
     },
     {
       "id": 30391,
       "branchId": 1,
       "liquorItemId": 45,
-      "currentStock": "1.00",
-      "updatedAt": "2026-07-24 10:01:48"
+      "currentStock": "0.00",
+      "updatedAt": "2026-07-31 11:26:03"
     },
     {
       "id": 30392,
@@ -88891,8 +89088,8 @@
       "id": 30398,
       "branchId": 1,
       "liquorItemId": 23,
-      "currentStock": "2.00",
-      "updatedAt": "2026-07-16 16:34:23"
+      "currentStock": "1.00",
+      "updatedAt": "2026-07-31 11:26:03"
     },
     {
       "id": 30399,
@@ -89115,8 +89312,8 @@
       "id": 30432,
       "branchId": 1,
       "liquorItemId": 22,
-      "currentStock": "2.00",
-      "updatedAt": "2026-07-23 10:17:59"
+      "currentStock": "1.00",
+      "updatedAt": "2026-07-31 11:26:03"
     },
     {
       "id": 30434,
@@ -124567,6 +124764,90 @@
       "createdBy": 3,
       "createdAt": "2026-07-31 09:53:52",
       "updatedAt": "2026-07-31 09:53:52"
+    },
+    {
+      "id": 12870472,
+      "branchId": 1,
+      "liquorItemId": 23,
+      "date": "2026-07-30",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "110000",
+      "totalCost": "110000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-07-31 11:26:03",
+      "updatedAt": "2026-07-31 11:26:03"
+    },
+    {
+      "id": 12870473,
+      "branchId": 1,
+      "liquorItemId": 59,
+      "date": "2026-07-30",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "8000",
+      "totalCost": "8000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-07-31 11:26:03",
+      "updatedAt": "2026-07-31 11:26:03"
+    },
+    {
+      "id": 12870474,
+      "branchId": 1,
+      "liquorItemId": 45,
+      "date": "2026-07-30",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "110000",
+      "totalCost": "110000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-07-31 11:26:03",
+      "updatedAt": "2026-07-31 11:26:03"
+    },
+    {
+      "id": 12870475,
+      "branchId": 1,
+      "liquorItemId": 1,
+      "date": "2026-07-30",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "114000",
+      "totalCost": "114000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-07-31 11:26:03",
+      "updatedAt": "2026-07-31 11:26:03"
+    },
+    {
+      "id": 12870476,
+      "branchId": 1,
+      "liquorItemId": 22,
+      "date": "2026-07-30",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "300000",
+      "totalCost": "300000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-07-31 11:26:03",
+      "updatedAt": "2026-07-31 11:26:03"
+    },
+    {
+      "id": 12870477,
+      "branchId": 1,
+      "liquorItemId": 40,
+      "date": "2026-07-30",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "360000",
+      "totalCost": "360000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-07-31 11:26:03",
+      "updatedAt": "2026-07-31 11:26:03"
     }
   ],
   "liquorHiddenItems": [
