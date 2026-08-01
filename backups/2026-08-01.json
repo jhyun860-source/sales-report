@@ -20052,9 +20052,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-01 01:56:59",
+      "submittedAt": "2026-08-01 05:00:58",
       "createdAt": "2026-07-31 10:23:53",
-      "updatedAt": "2026-08-01 01:56:59",
+      "updatedAt": "2026-08-01 05:00:58",
       "totalRevenue": "1775000",
       "commissionExpense": "301750",
       "rentExpense": "166667",
@@ -63515,15 +63515,15 @@
     {
       "id": 16260574,
       "tableReportId": 10380100,
-      "tableNumber": "교찬",
+      "tableNumber": "",
       "guestType": "named",
-      "guestName": null,
+      "guestName": "교찬",
       "amount": "410000",
       "paymentMethod": "card",
       "memo": "위스키 보관비용(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">글랜리벳 12y (700ml) / [Glenlivet 12 Year](1)</mark>",
       "sortOrder": 2,
       "createdAt": "2026-07-31 18:43:14",
-      "updatedAt": "2026-07-31 18:44:49"
+      "updatedAt": "2026-08-01 04:25:44"
     },
     {
       "id": 16260575,
@@ -63550,6 +63550,19 @@
       "sortOrder": 4,
       "createdAt": "2026-07-31 18:43:14",
       "updatedAt": "2026-07-31 18:45:22"
+    },
+    {
+      "id": 16260578,
+      "tableReportId": 10380100,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "임플란트할배",
+      "amount": "0",
+      "paymentMethod": "cash",
+      "memo": "바탑 1시간 무제한(1)",
+      "sortOrder": 5,
+      "createdAt": "2026-08-01 04:24:59",
+      "updatedAt": "2026-08-01 04:24:59"
     }
   ],
   "staffIncentives": [
