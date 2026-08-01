@@ -20054,7 +20054,7 @@
       "submittedBy": null,
       "submittedAt": "2026-08-01 05:00:58",
       "createdAt": "2026-07-31 10:23:53",
-      "updatedAt": "2026-08-01 05:00:58",
+      "updatedAt": "2026-08-01 08:02:45",
       "totalRevenue": "1775000",
       "commissionExpense": "301750",
       "rentExpense": "166667",
@@ -20062,12 +20062,12 @@
       "staffWageExpense": "136364",
       "managerWageExpense": "195652",
       "partTimeWageExpense": "330000",
-      "liquorCostExpense": "665400",
+      "liquorCostExpense": "568400",
       "staffDrinkExpense": "52000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1847833",
-      "netProfit": "-72833",
+      "totalExpenses": "1750833",
+      "netProfit": "24167",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -88161,8 +88161,8 @@
       "id": 30107,
       "branchId": 4,
       "liquorItemId": 7,
-      "currentStock": "0.00",
-      "updatedAt": "2026-07-31 18:47:05"
+      "currentStock": "1.00",
+      "updatedAt": "2026-08-01 08:02:45"
     },
     {
       "id": 30108,
@@ -88238,8 +88238,8 @@
       "id": 30118,
       "branchId": 4,
       "liquorItemId": 59,
-      "currentStock": "3.00",
-      "updatedAt": "2026-07-28 11:22:02"
+      "currentStock": "2.00",
+      "updatedAt": "2026-08-01 07:39:11"
     },
     {
       "id": 30119,
@@ -88392,8 +88392,8 @@
       "id": 30140,
       "branchId": 4,
       "liquorItemId": 58,
-      "currentStock": "3.00",
-      "updatedAt": "2026-07-27 09:27:50"
+      "currentStock": "2.00",
+      "updatedAt": "2026-08-01 07:39:11"
     },
     {
       "id": 30141,
@@ -91661,8 +91661,8 @@
       "id": 1350005,
       "branchId": 6,
       "liquorItemId": 59,
-      "currentStock": "2.00",
-      "updatedAt": "2026-07-23 10:27:37"
+      "currentStock": "3.00",
+      "updatedAt": "2026-08-01 07:40:12"
     },
     {
       "id": 1350006,
@@ -91920,8 +91920,8 @@
       "id": 1560001,
       "branchId": 6,
       "liquorItemId": 58,
-      "currentStock": "1.00",
-      "updatedAt": "2026-07-28 10:17:55"
+      "currentStock": "2.00",
+      "updatedAt": "2026-08-01 07:40:12"
     },
     {
       "id": 1590001,
@@ -125706,13 +125706,13 @@
       "liquorItemId": 7,
       "date": "2026-07-31",
       "type": "OUT",
-      "quantity": "-2.00",
+      "quantity": "-1.00",
       "unitCost": "97000",
-      "totalCost": "194000",
+      "totalCost": "97000",
       "memo": null,
       "createdBy": 4,
       "createdAt": "2026-07-31 18:47:05",
-      "updatedAt": "2026-07-31 18:47:05"
+      "updatedAt": "2026-08-01 08:02:46"
     },
     {
       "id": 12870490,
@@ -125727,6 +125727,62 @@
       "createdBy": 4,
       "createdAt": "2026-07-31 18:47:05",
       "updatedAt": "2026-07-31 18:47:05"
+    },
+    {
+      "id": 12870491,
+      "branchId": 4,
+      "liquorItemId": 59,
+      "date": "2026-08-01",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "8000",
+      "totalCost": "8000",
+      "memo": "문정 > 방이 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-01 07:39:11",
+      "updatedAt": "2026-08-01 07:39:28"
+    },
+    {
+      "id": 12870492,
+      "branchId": 4,
+      "liquorItemId": 58,
+      "date": "2026-08-01",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "7000",
+      "totalCost": "7000",
+      "memo": "문정 > 방이 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-01 07:39:11",
+      "updatedAt": "2026-08-01 07:39:28"
+    },
+    {
+      "id": 12870493,
+      "branchId": 6,
+      "liquorItemId": 59,
+      "date": "2026-08-01",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "8000",
+      "totalCost": "8000",
+      "memo": "문정 > 방이 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-01 07:40:12",
+      "updatedAt": "2026-08-01 07:40:49"
+    },
+    {
+      "id": 12870494,
+      "branchId": 6,
+      "liquorItemId": 58,
+      "date": "2026-08-01",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "7000",
+      "totalCost": "7000",
+      "memo": "문정 > 방이 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-01 07:40:12",
+      "updatedAt": "2026-08-01 07:40:49"
     }
   ],
   "liquorHiddenItems": [
