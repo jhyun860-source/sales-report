@@ -227,7 +227,7 @@ export function registerRestoreRoutes(app: Express) {
         const field = String(req.query.field || "");
         const newValue = Number(req.query.newValue);
         const ALLOWED_FIELDS = [
-          "staffWageExpense", "managerWageExpense", "partTimeWageExpense",
+          "rentExpense", "staffWageExpense", "managerWageExpense", "partTimeWageExpense",
           "staffDrinkExpense", "salesIncentiveExpense", "liquorCostExpense", "otherExpense",
         ];
         if (!branchIdParam || !date || !ALLOWED_FIELDS.includes(field) || Number.isNaN(newValue)) {
@@ -244,7 +244,7 @@ export function registerRestoreRoutes(app: Express) {
         if (!rec) return res.json({ mode, result: "no record found" });
         const before = Number(rec[field] || 0);
         const totalExpenses =
-          Number(rec.commissionExpense || 0) + Number(rec.rentExpense || 0) + Number(rec.managementFeeExpense || 0) +
+          Number(rec.commissionExpense || 0) + (field === "rentExpense" ? newValue : Number(rec.rentExpense || 0)) + Number(rec.managementFeeExpense || 0) +
           (field === "staffWageExpense" ? newValue : Number(rec.staffWageExpense || 0)) +
           (field === "managerWageExpense" ? newValue : Number(rec.managerWageExpense || 0)) +
           (field === "partTimeWageExpense" ? newValue : Number(rec.partTimeWageExpense || 0)) +
