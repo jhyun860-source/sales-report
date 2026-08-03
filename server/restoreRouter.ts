@@ -413,12 +413,51 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, rows });
       }
 
+      if (mode === "julymanagerfix") {
+        // 1회성: 대치점(branchId=2) 7월 아름 점장 일급을 318,182원으로 일괄 재계산
+        // (매니저 월급÷근무일수 자동계산 대신, 실제 출근한 25일에 고정 일급 적용)
+        const branchIdParam = 2;
+        const dailyWage = 318182;
+        const julyDates = [
+          "2026-07-01","2026-07-02","2026-07-03","2026-07-04",
+          "2026-07-06","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11",
+          "2026-07-13","2026-07-14","2026-07-15","2026-07-16","2026-07-17",
+          "2026-07-20","2026-07-21","2026-07-22","2026-07-23","2026-07-24",
+          "2026-07-27","2026-07-28","2026-07-29","2026-07-30","2026-07-31",
+        ];
+        const results: any[] = [];
+        for (const date of julyDates) {
+          const [rows]: any = await conn.query(
+            `SELECT id, totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
+                    staffWageExpense, managerWageExpense, partTimeWageExpense,
+                    staffDrinkExpense, salesIncentiveExpense, liquorCostExpense, otherExpense
+             FROM dailySalesRecords WHERE branchId=? AND date=? LIMIT 1`,
+            [branchIdParam, date]
+          );
+          const rec = rows[0];
+          if (!rec) { results.push({ date, result: "no record found" }); continue; }
+          const before = Number(rec.managerWageExpense || 0);
+          const totalExpenses =
+            Number(rec.commissionExpense || 0) + Number(rec.rentExpense || 0) + Number(rec.managementFeeExpense || 0) +
+            Number(rec.staffWageExpense || 0) + dailyWage + Number(rec.partTimeWageExpense || 0) +
+            Number(rec.staffDrinkExpense || 0) + Number(rec.salesIncentiveExpense || 0) +
+            Number(rec.liquorCostExpense || 0) + Number(rec.otherExpense || 0);
+          const netProfit = Number(rec.totalRevenue || 0) - totalExpenses;
+          await conn.query(
+            `UPDATE dailySalesRecords SET managerWageExpense = ?, totalExpenses = ?, netProfit = ? WHERE id = ?`,
+            [String(dailyWage), String(totalExpenses), String(netProfit), rec.id]
+          );
+          results.push({ date, before, after: dailyWage });
+        }
+        return res.json({ mode, branchId: branchIdParam, dailyWage, count: results.length, results });
+      }
+
       if (mode === "runbackup") {
         await runDailyBackup();
         return res.json({ mode, ok: true, message: "수동 백업 트리거 완료" });
       }
 
-      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup" });
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix" });
     } catch (e: any) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
