@@ -6,6 +6,7 @@ import { branchSettings } from '../drizzle/schema';
 import { TRPCError } from '@trpc/server';
 import { jwtVerify } from 'jose';
 import { ENV } from './_core/env';
+import { getBusinessDaysInMonth } from './_core/settlementCalculations';
 
 const COOKIE_NAME = 'app_session_id';
 
@@ -200,6 +201,10 @@ export const branchSettingsRouter = router({
         const endDate = `${year}-${month}-31`;
 
         console.log('[설정 저장] 재계산 시작:', { branchId: input.branchId, startDate, endDate });
+
+        // 임대료는 항상 그 달 실제 캘린더 기준 월~토 영업일수로 나눔
+        // (기존엔 "이미 입력된 날짜 수"로 나눠서 월초엔 임대료가 비정상적으로 커지는 버그가 있었음)
+        const rentBusinessDays = getBusinessDaysInMonth(year, Number(month), 'MON_SAT');
         
         const result = await db.execute(`
           UPDATE dailySalesRecords d
@@ -215,15 +220,7 @@ export const branchSettingsRouter = router({
               WHERE tr.branchId = d.branchId AND tr.date = d.date
             ),
             d.commissionExpense = ROUND(d.totalRevenue * ${input.commissionRate}),
-            d.rentExpense = ROUND(${input.monthlyRent} / (
-              SELECT COUNT(*) FROM (
-                SELECT date FROM dailySalesRecords
-                WHERE branchId = ${input.branchId}
-                AND date BETWEEN '${startDate}' AND '${endDate}'
-                AND DAYOFWEEK(date) != 1
-                AND totalRevenue > 0
-              ) sub
-            )),
+            d.rentExpense = ROUND(${input.monthlyRent} / ${rentBusinessDays}),
             d.totalExpenses = d.commissionExpense + d.rentExpense + d.managementFeeExpense
               + (d.staffCount * ${input.staffDailyWage})
               + (SELECT COALESCE(SUM(CASE
