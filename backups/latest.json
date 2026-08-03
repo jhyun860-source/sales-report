@@ -20461,6 +20461,41 @@
       "netProfit": "-34000",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410115,
+      "branchId": 4,
+      "date": "2026-08-03",
+      "posStartAmount": "61000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "0",
+      "cardTotal": "175000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-08-03 11:46:45",
+      "createdAt": "2026-08-03 11:46:45",
+      "updatedAt": "2026-08-03 11:46:45",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "173077",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "136364",
+      "managerWageExpense": "214286",
+      "partTimeWageExpense": "480000",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "1003727",
+      "netProfit": "-1003727",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -26546,6 +26581,17 @@
       "notes": null,
       "createdAt": "2026-08-03 09:55:32",
       "updatedAt": "2026-08-03 09:59:09"
+    },
+    {
+      "id": 10380111,
+      "branchId": 4,
+      "date": "2026-08-03",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "0",
+      "notes": null,
+      "createdAt": "2026-08-03 11:46:44",
+      "updatedAt": "2026-08-03 11:46:44"
     }
   ],
   "tableItems": [
@@ -64027,6 +64073,19 @@
       "sortOrder": 1,
       "createdAt": "2026-08-03 10:01:28",
       "updatedAt": "2026-08-03 10:01:43"
+    },
+    {
+      "id": 16260598,
+      "tableReportId": 10380111,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-03 11:46:44",
+      "updatedAt": "2026-08-03 11:46:44"
     }
   ],
   "staffIncentives": [
@@ -86559,6 +86618,81 @@
       "sortOrder": 0,
       "createdAt": "2026-08-03 09:57:02",
       "updatedAt": "2026-08-03 10:03:25"
+    },
+    {
+      "id": 11310316,
+      "tableReportId": 10380111,
+      "staffName": "보라",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-03 11:46:44",
+      "updatedAt": "2026-08-03 11:46:44"
+    },
+    {
+      "id": 11310317,
+      "tableReportId": 10380111,
+      "staffName": "세경",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 1,
+      "createdAt": "2026-08-03 11:46:44",
+      "updatedAt": "2026-08-03 11:46:44"
+    },
+    {
+      "id": 11310318,
+      "tableReportId": 10380111,
+      "staffName": "재희",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 2,
+      "createdAt": "2026-08-03 11:46:44",
+      "updatedAt": "2026-08-03 11:46:44"
+    },
+    {
+      "id": 11310319,
+      "tableReportId": 10380111,
+      "staffName": "예림",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 3,
+      "createdAt": "2026-08-03 11:46:44",
+      "updatedAt": "2026-08-03 11:46:44"
+    },
+    {
+      "id": 11310320,
+      "tableReportId": 10380111,
+      "staffName": "수영",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 4,
+      "createdAt": "2026-08-03 11:46:44",
+      "updatedAt": "2026-08-03 11:46:44"
     }
   ],
   "liquorItems": [
@@ -89570,8 +89704,8 @@
       "id": 30255,
       "branchId": 5,
       "liquorItemId": 22,
-      "currentStock": "1.00",
-      "updatedAt": "2026-07-31 18:40:14"
+      "currentStock": "2.00",
+      "updatedAt": "2026-08-03 11:18:35"
     },
     {
       "id": 30256,
@@ -91754,8 +91888,8 @@
       "id": 840116,
       "branchId": 5,
       "liquorItemId": 630015,
-      "currentStock": "2.00",
-      "updatedAt": "2026-07-31 18:40:14"
+      "currentStock": "3.00",
+      "updatedAt": "2026-08-03 11:18:35"
     },
     {
       "id": 840125,
@@ -126926,6 +127060,34 @@
       "createdBy": 90001,
       "createdAt": "2026-08-03 11:00:22",
       "updatedAt": "2026-08-03 11:00:22"
+    },
+    {
+      "id": 12870537,
+      "branchId": 5,
+      "liquorItemId": 22,
+      "date": "2026-08-03",
+      "type": "IN",
+      "quantity": "1.00",
+      "unitCost": "300000",
+      "totalCost": "300000",
+      "memo": null,
+      "createdBy": 5,
+      "createdAt": "2026-08-03 11:18:35",
+      "updatedAt": "2026-08-03 11:18:35"
+    },
+    {
+      "id": 12870538,
+      "branchId": 5,
+      "liquorItemId": 630015,
+      "date": "2026-08-03",
+      "type": "IN",
+      "quantity": "1.00",
+      "unitCost": "7000",
+      "totalCost": "7000",
+      "memo": null,
+      "createdBy": 5,
+      "createdAt": "2026-08-03 11:18:35",
+      "updatedAt": "2026-08-03 11:18:35"
     }
   ],
   "liquorHiddenItems": [
