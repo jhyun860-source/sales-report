@@ -21401,6 +21401,41 @@
       "netProfit": "338153",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410141,
+      "branchId": 6,
+      "date": "2026-08-07",
+      "posStartAmount": "0",
+      "cash": "0",
+      "card": "315000",
+      "cashTotal": "0",
+      "cardTotal": "1537000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-08-07 15:49:36",
+      "createdAt": "2026-08-07 15:21:07",
+      "updatedAt": "2026-08-07 15:49:36",
+      "totalRevenue": "315000",
+      "commissionExpense": "53550",
+      "rentExpense": "173077",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "119000",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "20000",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "365627",
+      "netProfit": "-50627",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -27761,6 +27796,17 @@
       "notes": null,
       "createdAt": "2026-08-07 12:49:08",
       "updatedAt": "2026-08-07 12:49:56"
+    },
+    {
+      "id": 10380136,
+      "branchId": 6,
+      "date": "2026-08-07",
+      "teamCount": 3,
+      "cashAmount": "0",
+      "cardAmount": "315000",
+      "notes": null,
+      "createdAt": "2026-08-07 15:32:15",
+      "updatedAt": "2026-08-07 15:49:36"
     }
   ],
   "tableItems": [
@@ -66763,6 +66809,45 @@
       "sortOrder": 4,
       "createdAt": "2026-08-07 12:49:08",
       "updatedAt": "2026-08-07 12:49:08"
+    },
+    {
+      "id": 16260744,
+      "tableReportId": 10380136,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "75000",
+      "paymentMethod": "card",
+      "memo": "나쵸(1), 1시간 무제한(2)",
+      "sortOrder": 0,
+      "createdAt": "2026-08-07 15:32:15",
+      "updatedAt": "2026-08-07 15:33:38"
+    },
+    {
+      "id": 16260746,
+      "tableReportId": 10380136,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "145000",
+      "paymentMethod": "card",
+      "memo": "1시간 무제한(2), 바탐 연장 30분(서브)(2), 스텝음료(3)",
+      "sortOrder": 1,
+      "createdAt": "2026-08-07 15:33:12",
+      "updatedAt": "2026-08-07 15:33:38"
+    },
+    {
+      "id": 16260747,
+      "tableReportId": 10380136,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "95000",
+      "paymentMethod": "card",
+      "memo": "1시간 무제한(2), 칵테일 단품(2), 아이스크림(1)",
+      "sortOrder": 2,
+      "createdAt": "2026-08-07 15:33:38",
+      "updatedAt": "2026-08-07 15:49:36"
     }
   ],
   "staffIncentives": [
@@ -90480,6 +90565,21 @@
       "sortOrder": 4,
       "createdAt": "2026-08-07 12:49:08",
       "updatedAt": "2026-08-07 12:49:08"
+    },
+    {
+      "id": 11310402,
+      "tableReportId": 10380136,
+      "staffName": "나형",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "19:00",
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-07 15:33:38",
+      "updatedAt": "2026-08-07 15:33:38"
     }
   ],
   "liquorItems": [
@@ -96123,8 +96223,8 @@
       "id": 1350001,
       "branchId": 6,
       "liquorItemId": 64,
-      "currentStock": "5.00",
-      "updatedAt": "2026-06-23 10:16:24"
+      "currentStock": "4.00",
+      "updatedAt": "2026-08-07 15:21:07"
     },
     {
       "id": 1350002,
@@ -132275,6 +132375,20 @@
       "createdBy": 4,
       "createdAt": "2026-08-07 10:22:18",
       "updatedAt": "2026-08-07 10:22:18"
+    },
+    {
+      "id": 12870643,
+      "branchId": 6,
+      "liquorItemId": 64,
+      "date": "2026-08-07",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "20000",
+      "totalCost": "20000",
+      "memo": null,
+      "createdBy": 90001,
+      "createdAt": "2026-08-07 15:21:07",
+      "updatedAt": "2026-08-07 15:21:07"
     }
   ],
   "liquorHiddenItems": [
