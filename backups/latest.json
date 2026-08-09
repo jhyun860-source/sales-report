@@ -21453,9 +21453,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-08 10:06:41",
+      "submittedAt": "2026-08-09 03:37:28",
       "createdAt": "2026-08-08 10:05:41",
-      "updatedAt": "2026-08-08 10:06:41",
+      "updatedAt": "2026-08-09 03:37:28",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "173077",
@@ -90860,11 +90860,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "staff",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 1,
       "createdAt": "2026-08-08 10:05:41",
-      "updatedAt": "2026-08-08 10:06:32"
+      "updatedAt": "2026-08-09 03:37:27"
     },
     {
       "id": 11310408,
@@ -90875,11 +90875,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 2,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-08 10:06:40"
+      "updatedAt": "2026-08-09 03:37:27"
     },
     {
       "id": 11310409,
@@ -90890,11 +90890,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 3,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-08 10:06:40"
+      "updatedAt": "2026-08-09 03:37:27"
     },
     {
       "id": 11310410,
@@ -90905,11 +90905,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 4,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-08 10:06:40"
+      "updatedAt": "2026-08-09 03:37:27"
     },
     {
       "id": 11310411,
@@ -90920,11 +90920,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 5,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-08 10:06:40"
+      "updatedAt": "2026-08-09 03:37:27"
     },
     {
       "id": 11310412,
