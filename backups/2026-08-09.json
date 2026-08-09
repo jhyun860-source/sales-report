@@ -21453,22 +21453,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-09 03:37:28",
+      "submittedAt": "2026-08-09 11:37:25",
       "createdAt": "2026-08-08 10:05:41",
-      "updatedAt": "2026-08-09 03:37:28",
+      "updatedAt": "2026-08-09 11:37:25",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "136364",
       "managerWageExpense": "214286",
-      "partTimeWageExpense": "640000",
+      "partTimeWageExpense": "380000",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1163727",
-      "netProfit": "-1163727",
+      "totalExpenses": "903727",
+      "netProfit": "-903727",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -90861,10 +90861,10 @@
       "salesIncentive": "0",
       "staffType": "staff",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "02:00",
       "sortOrder": 1,
       "createdAt": "2026-08-08 10:05:41",
-      "updatedAt": "2026-08-09 03:37:27"
+      "updatedAt": "2026-08-09 11:37:00"
     },
     {
       "id": 11310408,
@@ -90876,10 +90876,10 @@
       "salesIncentive": "0",
       "staffType": "parttime",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "01:00",
       "sortOrder": 2,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-09 03:37:27"
+      "updatedAt": "2026-08-09 11:35:12"
     },
     {
       "id": 11310409,
@@ -90891,10 +90891,10 @@
       "salesIncentive": "0",
       "staffType": "parttime",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "23:00",
       "sortOrder": 3,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-09 03:37:27"
+      "updatedAt": "2026-08-09 11:29:47"
     },
     {
       "id": 11310410,
@@ -90906,10 +90906,10 @@
       "salesIncentive": "0",
       "staffType": "parttime",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "02:00",
       "sortOrder": 4,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-09 03:37:27"
+      "updatedAt": "2026-08-09 11:37:10"
     },
     {
       "id": 11310411,
@@ -90921,10 +90921,10 @@
       "salesIncentive": "0",
       "staffType": "parttime",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "01:00",
       "sortOrder": 5,
       "createdAt": "2026-08-08 10:06:40",
-      "updatedAt": "2026-08-09 03:37:27"
+      "updatedAt": "2026-08-09 11:35:12"
     },
     {
       "id": 11310412,
