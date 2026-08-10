@@ -21793,9 +21793,9 @@
       "date": "2026-08-10",
       "posStartAmount": "1175000",
       "cash": "0",
-      "card": "150000",
+      "card": "1065000",
       "cashTotal": "125000",
-      "cardTotal": "17381000",
+      "cardTotal": "18296000",
       "posEndAmount": "1095000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -21809,11 +21809,11 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-10 16:05:44",
+      "submittedAt": "2026-08-10 16:06:46",
       "createdAt": "2026-08-10 10:59:24",
-      "updatedAt": "2026-08-10 16:05:44",
-      "totalRevenue": "150000",
-      "commissionExpense": "25500",
+      "updatedAt": "2026-08-10 16:06:46",
+      "totalRevenue": "1065000",
+      "commissionExpense": "181050",
       "rentExpense": "346154",
       "managementFeeExpense": "0",
       "staffWageExpense": "136363",
@@ -21823,8 +21823,8 @@
       "staffDrinkExpense": "68000",
       "salesIncentiveExpense": "0",
       "otherExpense": "118462",
-      "totalExpenses": "1146145",
-      "netProfit": "-996145",
+      "totalExpenses": "1301695",
+      "netProfit": "-236695",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -21836,7 +21836,7 @@
       "cash": "0",
       "card": "0",
       "cashTotal": "125000",
-      "cardTotal": "17381000",
+      "cardTotal": "18296000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -21846,7 +21846,7 @@
       "submittedBy": null,
       "submittedAt": null,
       "createdAt": "2026-08-10 15:06:35",
-      "updatedAt": "2026-08-10 16:05:44",
+      "updatedAt": "2026-08-10 16:06:46",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "0",
@@ -28339,10 +28339,10 @@
       "date": "2026-08-10",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "150000",
+      "cardAmount": "1065000",
       "notes": null,
       "createdAt": "2026-08-10 12:07:26",
-      "updatedAt": "2026-08-10 16:05:43"
+      "updatedAt": "2026-08-10 16:06:45"
     },
     {
       "id": 10380147,
@@ -68063,12 +68063,12 @@
       "tableNumber": "하창경",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "180000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(1), 양념 팝콘(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">아름J(3)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">민경(4)</mark>",
       "sortOrder": 1,
       "createdAt": "2026-08-10 16:05:29",
-      "updatedAt": "2026-08-10 16:05:43"
+      "updatedAt": "2026-08-10 16:06:45"
     },
     {
       "id": 16260804,
@@ -68076,12 +68076,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "735000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "계절과일(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">기네스 드래프트 (330ml)(28)</mark>",
       "sortOrder": 2,
       "createdAt": "2026-08-10 16:05:29",
-      "updatedAt": "2026-08-10 16:05:29"
+      "updatedAt": "2026-08-10 16:06:45"
     }
   ],
   "staffIncentives": [
