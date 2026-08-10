@@ -21548,9 +21548,9 @@
       "date": "2026-08-10",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "690000",
+      "card": "1233000",
       "cashTotal": "250000",
-      "cardTotal": "11965000",
+      "cardTotal": "12508000",
       "posEndAmount": "61000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -21558,22 +21558,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-10 16:02:33",
+      "submittedAt": "2026-08-10 17:39:07",
       "createdAt": "2026-08-10 09:22:43",
-      "updatedAt": "2026-08-10 16:02:33",
-      "totalRevenue": "690000",
-      "commissionExpense": "117300",
+      "updatedAt": "2026-08-10 17:39:07",
+      "totalRevenue": "1233000",
+      "commissionExpense": "209610",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "214286",
       "partTimeWageExpense": "196667",
       "liquorCostExpense": "0",
-      "staffDrinkExpense": "0",
+      "staffDrinkExpense": "75000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "701330",
-      "netProfit": "-11330",
+      "totalExpenses": "868640",
+      "netProfit": "364360",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -21809,9 +21809,9 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-10 16:06:46",
+      "submittedAt": "2026-08-10 17:08:09",
       "createdAt": "2026-08-10 10:59:24",
-      "updatedAt": "2026-08-10 16:06:46",
+      "updatedAt": "2026-08-10 17:14:29",
       "totalRevenue": "1065000",
       "commissionExpense": "181050",
       "rentExpense": "346154",
@@ -21819,12 +21819,12 @@
       "staffWageExpense": "136363",
       "managerWageExpense": "333333",
       "partTimeWageExpense": "118333",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "155800",
       "staffDrinkExpense": "68000",
       "salesIncentiveExpense": "0",
       "otherExpense": "118462",
-      "totalExpenses": "1301695",
-      "netProfit": "-236695",
+      "totalExpenses": "1457495",
+      "netProfit": "-392495",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -21846,7 +21846,7 @@
       "submittedBy": null,
       "submittedAt": null,
       "createdAt": "2026-08-10 15:06:35",
-      "updatedAt": "2026-08-10 16:06:46",
+      "updatedAt": "2026-08-10 17:14:29",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "0",
@@ -21854,12 +21854,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "0",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "155800",
+      "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "155800",
-      "netProfit": "-155800",
+      "totalExpenses": "0",
+      "netProfit": "0",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -28350,10 +28350,10 @@
       "date": "2026-08-10",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "690000",
+      "cardAmount": "1233000",
       "notes": null,
       "createdAt": "2026-08-10 13:02:45",
-      "updatedAt": "2026-08-10 14:49:53"
+      "updatedAt": "2026-08-10 17:26:16"
     },
     {
       "id": 10380148,
@@ -68037,12 +68037,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "543000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "바탑 1시간 무제한(2), 블랙 러시안 (Black Russian)(2), * <mark style=\"background: rgb(255, 179, 209); border-radius: 2px; padding: 0px 1px;\">재희(6)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button>, * 예림(11</mark>)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button>, 스텝음료(4)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button>, 바탑 연장 30분(8)",
       "sortOrder": 2,
       "createdAt": "2026-08-10 15:48:53",
-      "updatedAt": "2026-08-10 15:48:53"
+      "updatedAt": "2026-08-10 17:26:21"
     },
     {
       "id": 16260802,
@@ -68082,6 +68082,19 @@
       "sortOrder": 2,
       "createdAt": "2026-08-10 16:05:29",
       "updatedAt": "2026-08-10 16:06:45"
+    },
+    {
+      "id": 16260805,
+      "tableReportId": 10380147,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 4,
+      "createdAt": "2026-08-10 17:39:07",
+      "updatedAt": "2026-08-10 17:39:07"
     }
   ],
   "staffIncentives": [
@@ -92134,7 +92147,7 @@
       "id": 11310431,
       "tableReportId": 10380147,
       "staffName": "지민",
-      "glassCount": 0,
+      "glassCount": 4,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
@@ -92143,7 +92156,7 @@
       "workEnd": "00:50",
       "sortOrder": 1,
       "createdAt": "2026-08-10 13:03:15",
-      "updatedAt": "2026-08-10 15:48:53"
+      "updatedAt": "2026-08-10 17:26:47"
     },
     {
       "id": 11310432,
@@ -92164,7 +92177,7 @@
       "id": 11310433,
       "tableReportId": 10380147,
       "staffName": "재희",
-      "glassCount": 0,
+      "glassCount": 11,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
@@ -92173,7 +92186,7 @@
       "workEnd": "01:00",
       "sortOrder": 3,
       "createdAt": "2026-08-10 13:03:15",
-      "updatedAt": "2026-08-10 16:02:29"
+      "updatedAt": "2026-08-10 17:27:14"
     },
     {
       "id": 11310434,
@@ -134717,7 +134730,7 @@
       "id": 12870695,
       "branchId": 2,
       "liquorItemId": 57,
-      "date": "2026-08-11",
+      "date": "2026-08-10",
       "type": "OUT",
       "quantity": "-1.00",
       "unitCost": "7000",
@@ -134725,13 +134738,13 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-10 15:06:34",
-      "updatedAt": "2026-08-10 15:06:34"
+      "updatedAt": "2026-08-10 17:14:29"
     },
     {
       "id": 12870696,
       "branchId": 2,
       "liquorItemId": 30,
-      "date": "2026-08-11",
+      "date": "2026-08-10",
       "type": "OUT",
       "quantity": "-1.00",
       "unitCost": "20000",
@@ -134739,13 +134752,13 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-10 15:06:34",
-      "updatedAt": "2026-08-10 15:06:34"
+      "updatedAt": "2026-08-10 17:14:29"
     },
     {
       "id": 12870697,
       "branchId": 2,
       "liquorItemId": 85,
-      "date": "2026-08-11",
+      "date": "2026-08-10",
       "type": "OUT",
       "quantity": "-28.00",
       "unitCost": "4600",
@@ -134753,7 +134766,7 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-10 15:06:34",
-      "updatedAt": "2026-08-10 15:06:34"
+      "updatedAt": "2026-08-10 17:14:29"
     },
     {
       "id": 12870698,
