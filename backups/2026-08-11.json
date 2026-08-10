@@ -21548,9 +21548,9 @@
       "date": "2026-08-10",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "1233000",
+      "card": "2346000",
       "cashTotal": "250000",
-      "cardTotal": "12508000",
+      "cardTotal": "13621000",
       "posEndAmount": "61000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -21558,22 +21558,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-10 18:37:37",
+      "submittedAt": "2026-08-10 19:28:22",
       "createdAt": "2026-08-10 09:22:43",
-      "updatedAt": "2026-08-10 18:37:37",
-      "totalRevenue": "1233000",
-      "commissionExpense": "209610",
+      "updatedAt": "2026-08-10 19:29:03",
+      "totalRevenue": "2346000",
+      "commissionExpense": "398820",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "214286",
       "partTimeWageExpense": "490000",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "372000",
       "staffDrinkExpense": "75000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1161973",
-      "netProfit": "71027",
+      "totalExpenses": "1723183",
+      "netProfit": "622817",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -28350,10 +28350,10 @@
       "date": "2026-08-10",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "1233000",
+      "cardAmount": "2346000",
       "notes": null,
       "createdAt": "2026-08-10 13:02:45",
-      "updatedAt": "2026-08-10 17:26:16"
+      "updatedAt": "2026-08-10 19:28:21"
     },
     {
       "id": 10380148,
@@ -68048,14 +68048,14 @@
       "id": 16260802,
       "tableReportId": 10380147,
       "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
+      "guestType": "named",
+      "guestName": "익형주방",
+      "amount": "237000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "바탑 1시간 무제한(1), 카발란 디스틸러리 셀렉트 Glass(2), 아드벡 10y Glass(1), 맥코넬스 Glass(1), 헤네시 V.S.O.P Glass(3)",
       "sortOrder": 3,
       "createdAt": "2026-08-10 15:48:53",
-      "updatedAt": "2026-08-10 15:48:53"
+      "updatedAt": "2026-08-10 19:27:42"
     },
     {
       "id": 16260803,
@@ -68089,12 +68089,25 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "506000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "탈리스커 10y Glass(2), 발베니 12y Glass(1), 계절과일(1), 글렌피딕 15y Glass(5), 헤네시 X.O Glass(2), 발베니 14y Glass(2)",
       "sortOrder": 4,
       "createdAt": "2026-08-10 17:39:07",
-      "updatedAt": "2026-08-10 17:39:07"
+      "updatedAt": "2026-08-10 19:28:21"
+    },
+    {
+      "id": 16260807,
+      "tableReportId": 10380147,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "익형주방",
+      "amount": "370000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">멈 그랑 꼬르동 로제 (MUM, Grand Cordon Rose)(1)</mark>",
+      "sortOrder": 5,
+      "createdAt": "2026-08-10 19:27:56",
+      "updatedAt": "2026-08-10 19:28:21"
     }
   ],
   "staffIncentives": [
@@ -94534,8 +94547,8 @@
       "id": 30130,
       "branchId": 4,
       "liquorItemId": 37,
-      "currentStock": "1.00",
-      "updatedAt": "2026-05-03 04:50:27"
+      "currentStock": "0.00",
+      "updatedAt": "2026-08-10 19:29:03"
     },
     {
       "id": 30131,
@@ -94618,8 +94631,8 @@
       "id": 30142,
       "branchId": 4,
       "liquorItemId": 2,
-      "currentStock": "2.00",
-      "updatedAt": "2026-08-04 09:29:22"
+      "currentStock": "1.00",
+      "updatedAt": "2026-08-10 19:29:03"
     },
     {
       "id": 30143,
@@ -96368,8 +96381,8 @@
       "id": 270002,
       "branchId": 4,
       "liquorItemId": 120001,
-      "currentStock": "2.00",
-      "updatedAt": "2026-07-29 09:38:18"
+      "currentStock": "1.00",
+      "updatedAt": "2026-08-10 19:29:03"
     },
     {
       "id": 300001,
@@ -134823,6 +134836,48 @@
       "createdBy": 5,
       "createdAt": "2026-08-10 15:44:22",
       "updatedAt": "2026-08-10 15:44:22"
+    },
+    {
+      "id": 12870702,
+      "branchId": 4,
+      "liquorItemId": 120001,
+      "date": "2026-08-10",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "100000",
+      "totalCost": "100000",
+      "memo": null,
+      "createdBy": 4,
+      "createdAt": "2026-08-10 19:29:03",
+      "updatedAt": "2026-08-10 19:29:03"
+    },
+    {
+      "id": 12870703,
+      "branchId": 4,
+      "liquorItemId": 2,
+      "date": "2026-08-10",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "180000",
+      "totalCost": "180000",
+      "memo": null,
+      "createdBy": 4,
+      "createdAt": "2026-08-10 19:29:03",
+      "updatedAt": "2026-08-10 19:29:03"
+    },
+    {
+      "id": 12870704,
+      "branchId": 4,
+      "liquorItemId": 37,
+      "date": "2026-08-10",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "92000",
+      "totalCost": "92000",
+      "memo": null,
+      "createdBy": 4,
+      "createdAt": "2026-08-10 19:29:03",
+      "updatedAt": "2026-08-10 19:29:03"
     }
   ],
   "liquorHiddenItems": [
