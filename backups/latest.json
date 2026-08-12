@@ -22389,7 +22389,7 @@
       "submittedBy": null,
       "submittedAt": "2026-08-12 18:10:08",
       "createdAt": "2026-08-12 18:08:14",
-      "updatedAt": "2026-08-12 18:10:08",
+      "updatedAt": "2026-08-12 18:11:11",
       "totalRevenue": "175000",
       "commissionExpense": "29750",
       "rentExpense": "173077",
@@ -22397,12 +22397,12 @@
       "staffWageExpense": "119000",
       "managerWageExpense": "0",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "8000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "321827",
-      "netProfit": "-146827",
+      "totalExpenses": "329827",
+      "netProfit": "-154827",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -99831,8 +99831,8 @@
       "id": 1350005,
       "branchId": 6,
       "liquorItemId": 59,
-      "currentStock": "8.00",
-      "updatedAt": "2026-08-08 15:33:17"
+      "currentStock": "7.00",
+      "updatedAt": "2026-08-12 18:11:10"
     },
     {
       "id": 1350006,
@@ -137425,6 +137425,20 @@
       "createdBy": 2,
       "createdAt": "2026-08-12 16:43:37",
       "updatedAt": "2026-08-12 16:43:37"
+    },
+    {
+      "id": 12870748,
+      "branchId": 6,
+      "liquorItemId": 59,
+      "date": "2026-08-12",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "8000",
+      "totalCost": "8000",
+      "memo": null,
+      "createdBy": 90001,
+      "createdAt": "2026-08-12 18:11:10",
+      "updatedAt": "2026-08-12 18:11:10"
     }
   ],
   "liquorHiddenItems": [
