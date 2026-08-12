@@ -21840,9 +21840,9 @@
       "date": "2026-08-11",
       "posStartAmount": "1095000",
       "cash": "0",
-      "card": "2802000",
+      "card": "3389000",
       "cashTotal": "125000",
-      "cardTotal": "21098000",
+      "cardTotal": "21685000",
       "posEndAmount": "1005000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -21856,11 +21856,11 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-11 18:40:16",
+      "submittedAt": "2026-08-12 05:25:57",
       "createdAt": "2026-08-10 15:06:35",
-      "updatedAt": "2026-08-11 18:40:16",
-      "totalRevenue": "2802000",
-      "commissionExpense": "476340",
+      "updatedAt": "2026-08-12 05:25:57",
+      "totalRevenue": "3389000",
+      "commissionExpense": "576130",
       "rentExpense": "346154",
       "managementFeeExpense": "0",
       "staffWageExpense": "136363",
@@ -21870,8 +21870,8 @@
       "staffDrinkExpense": "95000",
       "salesIncentiveExpense": "0",
       "otherExpense": "128462",
-      "totalExpenses": "1872285",
-      "netProfit": "929715",
+      "totalExpenses": "1972075",
+      "netProfit": "1416925",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -22128,7 +22128,7 @@
       "cash": "0",
       "card": "0",
       "cashTotal": "125000",
-      "cardTotal": "21098000",
+      "cardTotal": "21685000",
       "posEndAmount": "915000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -22144,7 +22144,7 @@
       "submittedBy": null,
       "submittedAt": "2026-08-11 18:40:30",
       "createdAt": "2026-08-11 18:40:30",
-      "updatedAt": "2026-08-11 18:40:30",
+      "updatedAt": "2026-08-12 05:24:33",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "346154",
@@ -28736,10 +28736,10 @@
       "date": "2026-08-11",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "2802000",
+      "cardAmount": "3389000",
       "notes": null,
       "createdAt": "2026-08-11 18:13:00",
-      "updatedAt": "2026-08-11 18:39:16"
+      "updatedAt": "2026-08-12 05:24:33"
     }
   ],
   "tableItems": [
@@ -68802,12 +68802,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "490000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">달모어 12y (700ml)(1)</mark>",
       "sortOrder": 7,
       "createdAt": "2026-08-11 18:15:53",
-      "updatedAt": "2026-08-11 18:39:16"
+      "updatedAt": "2026-08-12 05:24:30"
     },
     {
       "id": 16260834,
@@ -68815,12 +68815,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "97000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "아이스크림(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">발렌타인 마스터즈(4)</mark>",
       "sortOrder": 8,
       "createdAt": "2026-08-11 18:15:53",
-      "updatedAt": "2026-08-11 18:39:16"
+      "updatedAt": "2026-08-12 05:24:33"
     }
   ],
   "staffIncentives": [
@@ -93153,6 +93153,36 @@
       "sortOrder": 3,
       "createdAt": "2026-08-11 18:39:16",
       "updatedAt": "2026-08-11 18:40:15"
+    },
+    {
+      "id": 11310452,
+      "tableReportId": 10380155,
+      "staffName": "아름",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 2,
+      "createdAt": "2026-08-12 05:25:32",
+      "updatedAt": "2026-08-12 05:25:32"
+    },
+    {
+      "id": 11310453,
+      "tableReportId": 10380155,
+      "staffName": "민경",
+      "glassCount": 3,
+      "bottleCount": 1,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "20:00",
+      "workEnd": "03:40",
+      "sortOrder": 3,
+      "createdAt": "2026-08-12 05:25:32",
+      "updatedAt": "2026-08-12 05:25:56"
     }
   ],
   "liquorItems": [
