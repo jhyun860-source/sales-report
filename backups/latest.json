@@ -22126,9 +22126,9 @@
       "date": "2026-08-12",
       "posStartAmount": "1005000",
       "cash": "0",
-      "card": "338000",
+      "card": "1892000",
       "cashTotal": "125000",
-      "cardTotal": "22023000",
+      "cardTotal": "23577000",
       "posEndAmount": "915000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -22142,22 +22142,22 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-12 16:47:12",
+      "submittedAt": "2026-08-12 17:18:31",
       "createdAt": "2026-08-11 18:40:30",
-      "updatedAt": "2026-08-12 16:47:12",
-      "totalRevenue": "338000",
-      "commissionExpense": "57460",
+      "updatedAt": "2026-08-12 17:18:31",
+      "totalRevenue": "1892000",
+      "commissionExpense": "321640",
       "rentExpense": "346154",
       "managementFeeExpense": "0",
       "staffWageExpense": "136363",
       "managerWageExpense": "333333",
       "partTimeWageExpense": "280000",
       "liquorCostExpense": "131200",
-      "staffDrinkExpense": "72000",
+      "staffDrinkExpense": "77000",
       "salesIncentiveExpense": "0",
       "otherExpense": "128462",
-      "totalExpenses": "1484972",
-      "netProfit": "-1146972",
+      "totalExpenses": "1754152",
+      "netProfit": "137848",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -22368,6 +22368,41 @@
       "otherExpense": "0",
       "totalExpenses": "173077",
       "netProfit": "-173077",
+      "staffCount": 0,
+      "partTimeCount": 0
+    },
+    {
+      "id": 10410168,
+      "branchId": 6,
+      "date": "2026-08-12",
+      "posStartAmount": "123000",
+      "cash": "0",
+      "card": "175000",
+      "cashTotal": "0",
+      "cardTotal": "3541100",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-08-12 18:10:08",
+      "createdAt": "2026-08-12 18:08:14",
+      "updatedAt": "2026-08-12 18:10:08",
+      "totalRevenue": "175000",
+      "commissionExpense": "29750",
+      "rentExpense": "173077",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "119000",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "321827",
+      "netProfit": "-146827",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -28990,10 +29025,10 @@
       "date": "2026-08-12",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "338000",
+      "cardAmount": "1892000",
       "notes": null,
       "createdAt": "2026-08-12 14:04:36",
-      "updatedAt": "2026-08-12 14:05:22"
+      "updatedAt": "2026-08-12 17:18:31"
     },
     {
       "id": 10380160,
@@ -29016,6 +29051,17 @@
       "notes": null,
       "createdAt": "2026-08-12 15:43:36",
       "updatedAt": "2026-08-12 15:43:36"
+    },
+    {
+      "id": 10380162,
+      "branchId": 6,
+      "date": "2026-08-12",
+      "teamCount": 2,
+      "cashAmount": "0",
+      "cardAmount": "175000",
+      "notes": null,
+      "createdAt": "2026-08-12 18:08:13",
+      "updatedAt": "2026-08-12 18:09:36"
     }
   ],
   "tableItems": [
@@ -69383,6 +69429,45 @@
       "sortOrder": 1,
       "createdAt": "2026-08-12 15:47:09",
       "updatedAt": "2026-08-12 15:47:25"
+    },
+    {
+      "id": 16260857,
+      "tableReportId": 10380159,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "1554000",
+      "paymentMethod": "card",
+      "memo": "계절과일(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">글랜리벳 12y (700ml)(2)</mark>, 육포 &amp; 모듬안주(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">기네스 드래프트 (330ml)(28)</mark>",
+      "sortOrder": 3,
+      "createdAt": "2026-08-12 16:51:10",
+      "updatedAt": "2026-08-12 17:18:31"
+    },
+    {
+      "id": 16260858,
+      "tableReportId": 10380162,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "65000",
+      "paymentMethod": "card",
+      "memo": "킵 비용, 발렌타인 17y 진술, 음료, 칵테일 딘품",
+      "sortOrder": 0,
+      "createdAt": "2026-08-12 18:08:13",
+      "updatedAt": "2026-08-12 18:10:07"
+    },
+    {
+      "id": 16260859,
+      "tableReportId": 10380162,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "110000",
+      "paymentMethod": "card",
+      "memo": "1시간 무제한 x2, 아이스크림, 스텝음료",
+      "sortOrder": 1,
+      "createdAt": "2026-08-12 18:09:36",
+      "updatedAt": "2026-08-12 18:09:36"
     }
   ],
   "staffIncentives": [
@@ -94035,7 +94120,7 @@
       "id": 11310473,
       "tableReportId": 10380159,
       "staffName": "수정",
-      "glassCount": 3,
+      "glassCount": 4,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
@@ -94044,7 +94129,7 @@
       "workEnd": "00:00",
       "sortOrder": 3,
       "createdAt": "2026-08-12 16:46:22",
-      "updatedAt": "2026-08-12 16:47:11"
+      "updatedAt": "2026-08-12 16:48:33"
     },
     {
       "id": 11310474,
@@ -94060,6 +94145,21 @@
       "sortOrder": 4,
       "createdAt": "2026-08-12 16:46:22",
       "updatedAt": "2026-08-12 16:47:11"
+    },
+    {
+      "id": 11310475,
+      "tableReportId": 10380162,
+      "staffName": "나형",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "19:00",
+      "workEnd": "03:00",
+      "sortOrder": 0,
+      "createdAt": "2026-08-12 18:09:36",
+      "updatedAt": "2026-08-12 18:09:57"
     }
   ],
   "liquorItems": [
