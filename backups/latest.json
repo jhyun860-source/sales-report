@@ -22533,9 +22533,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-13 15:37:11",
+      "submittedAt": "2026-08-13 16:38:50",
       "createdAt": "2026-08-13 10:52:29",
-      "updatedAt": "2026-08-13 15:37:11",
+      "updatedAt": "2026-08-13 16:38:50",
       "totalRevenue": "976000",
       "commissionExpense": "165920",
       "rentExpense": "173077",
@@ -22544,11 +22544,11 @@
       "managerWageExpense": "214286",
       "partTimeWageExpense": "343333",
       "liquorCostExpense": "0",
-      "staffDrinkExpense": "85000",
+      "staffDrinkExpense": "115000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "981616",
-      "netProfit": "-5616",
+      "totalExpenses": "1011616",
+      "netProfit": "-35616",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -94672,8 +94672,8 @@
       "id": 11310485,
       "tableReportId": 10380165,
       "staffName": "수영",
-      "glassCount": 0,
-      "bottleCount": 0,
+      "glassCount": 2,
+      "bottleCount": 2,
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
@@ -94681,7 +94681,7 @@
       "workEnd": null,
       "sortOrder": 4,
       "createdAt": "2026-08-13 10:53:04",
-      "updatedAt": "2026-08-13 10:58:19"
+      "updatedAt": "2026-08-13 16:23:37"
     },
     {
       "id": 11310486,
