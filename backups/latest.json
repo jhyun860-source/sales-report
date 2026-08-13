@@ -22523,9 +22523,9 @@
       "date": "2026-08-13",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "0",
+      "card": "208000",
       "cashTotal": "250000",
-      "cardTotal": "13989000",
+      "cardTotal": "14197000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -22533,11 +22533,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-13 10:58:19",
+      "submittedAt": "2026-08-13 12:50:56",
       "createdAt": "2026-08-13 10:52:29",
-      "updatedAt": "2026-08-13 10:58:20",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-08-13 12:50:56",
+      "totalRevenue": "208000",
+      "commissionExpense": "35360",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
@@ -22547,8 +22547,8 @@
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1187363",
-      "netProfit": "-1187363",
+      "totalExpenses": "1222723",
+      "netProfit": "-1014723",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -29237,10 +29237,10 @@
       "date": "2026-08-13",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "0",
+      "cardAmount": "208000",
       "notes": null,
       "createdAt": "2026-08-13 10:52:29",
-      "updatedAt": "2026-08-13 10:52:29"
+      "updatedAt": "2026-08-13 12:50:55"
     }
   ],
   "tableItems": [
@@ -69719,12 +69719,25 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "90000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(2), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">* 예림(1)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">* 수영(1)</mark>",
       "sortOrder": 0,
       "createdAt": "2026-08-13 10:52:29",
-      "updatedAt": "2026-08-13 10:52:29"
+      "updatedAt": "2026-08-13 12:50:55"
+    },
+    {
+      "id": 16260866,
+      "tableReportId": 10380165,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "118000",
+      "paymentMethod": "card",
+      "memo": "과일 &amp; 치즈(1), 조니워커 블랙 glass(2), 프리미엄 칵테일(1), 칵테일 단품(1)",
+      "sortOrder": 1,
+      "createdAt": "2026-08-13 12:50:42",
+      "updatedAt": "2026-08-13 12:50:55"
     }
   ],
   "staffIncentives": [
