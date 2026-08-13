@@ -22275,29 +22275,35 @@
       "card": "270000",
       "cashTotal": "230000",
       "cardTotal": "9750000",
-      "posEndAmount": "0",
+      "posEndAmount": "72000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
       "paymentChangeDate": null,
       "paymentChangeAmount": "0",
-      "expenses": [],
+      "expenses": [
+        {
+          "id": "exp_1786588135287",
+          "amount": "5000",
+          "description": "거스름돈"
+        }
+      ],
       "submittedBy": null,
-      "submittedAt": "2026-08-12 15:41:17",
+      "submittedAt": "2026-08-13 02:29:06",
       "createdAt": "2026-08-12 15:38:46",
-      "updatedAt": "2026-08-12 15:41:17",
+      "updatedAt": "2026-08-13 02:29:06",
       "totalRevenue": "335000",
       "commissionExpense": "56950",
       "rentExpense": "250000",
       "managementFeeExpense": "0",
       "staffWageExpense": "159090",
       "managerWageExpense": "190476",
-      "partTimeWageExpense": "140000",
+      "partTimeWageExpense": "320000",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "55000",
       "salesIncentiveExpense": "0",
-      "otherExpense": "23077",
-      "totalExpenses": "874593",
-      "netProfit": "-539593",
+      "otherExpense": "33571",
+      "totalExpenses": "1065087",
+      "netProfit": "-730087",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -22403,6 +22409,41 @@
       "otherExpense": "0",
       "totalExpenses": "329827",
       "netProfit": "-154827",
+      "staffCount": 0,
+      "partTimeCount": 0
+    },
+    {
+      "id": 10410169,
+      "branchId": 3,
+      "date": "2026-08-13",
+      "posStartAmount": "72000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "230000",
+      "cardTotal": "9750000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-08-13 02:29:49",
+      "createdAt": "2026-08-13 02:29:42",
+      "updatedAt": "2026-08-13 02:29:49",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "250000",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "160000",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "23077",
+      "totalExpenses": "433077",
+      "netProfit": "-433077",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -29062,6 +29103,17 @@
       "notes": null,
       "createdAt": "2026-08-12 18:08:13",
       "updatedAt": "2026-08-12 18:09:36"
+    },
+    {
+      "id": 10380163,
+      "branchId": 3,
+      "date": "2026-08-13",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "0",
+      "notes": null,
+      "createdAt": "2026-08-13 02:29:41",
+      "updatedAt": "2026-08-13 02:29:41"
     }
   ],
   "tableItems": [
@@ -69468,6 +69520,19 @@
       "sortOrder": 1,
       "createdAt": "2026-08-12 18:09:36",
       "updatedAt": "2026-08-12 18:09:36"
+    },
+    {
+      "id": 16260860,
+      "tableReportId": 10380163,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-13 02:29:41",
+      "updatedAt": "2026-08-13 02:29:41"
     }
   ],
   "staffIncentives": [
@@ -94081,10 +94146,10 @@
       "salesIncentive": "0",
       "staffType": "staff",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "01:30",
       "sortOrder": 1,
       "createdAt": "2026-08-12 15:38:46",
-      "updatedAt": "2026-08-12 15:38:46"
+      "updatedAt": "2026-08-13 02:28:18"
     },
     {
       "id": 11310471,
@@ -94160,6 +94225,21 @@
       "sortOrder": 0,
       "createdAt": "2026-08-12 18:09:36",
       "updatedAt": "2026-08-12 18:09:57"
+    },
+    {
+      "id": 11310476,
+      "tableReportId": 10380163,
+      "staffName": "지우",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-13 02:29:41",
+      "updatedAt": "2026-08-13 02:29:48"
     }
   ],
   "liquorItems": [
