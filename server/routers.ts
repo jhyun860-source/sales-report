@@ -39,6 +39,7 @@ import { TRPCError } from "@trpc/server";
 import { calculateDailySettlement, saveDailySettlementRecord, calculateLiquorCostExpense } from "./_core/settlementCalculations";
 import { settlementRouter } from "./settlementRouter";
 import { branchSettingsRouter } from "./branchSettingsRouter";
+import { staffAdminRouter } from "./staffAdminRouter";
 
 
 function formatKstDateString(date: Date): string {
@@ -5754,6 +5755,7 @@ ${pinkGuide}${userExcludeNote}${examplesGuide}`,
   }),
   settlement: settlementRouter,
   branchSettings: branchSettingsRouter,
+  staffAdmin: staffAdminRouter,
 });
 
 export type AppRouter = typeof appRouter;
