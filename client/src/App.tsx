@@ -14,6 +14,7 @@ import StaffIncentiveStats from "./pages/StaffIncentiveStats";
 import LiquorStockReport from "./pages/LiquorStockReport";
 import SettlementDashboard from "./pages/SettlementDashboard";
 import BranchSettings from "./pages/BranchSettings";
+import StaffAdmin from "./pages/StaffAdmin";
 import { UpdateBanner } from "./components/UpdateBanner";
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -29,6 +30,7 @@ function Router() {
       <Route path={"/liquor-stock"} component={LiquorStockReport} />
       <Route path={"/settlement"} component={SettlementDashboard} />
       <Route path={"/branch-settings"} component={BranchSettings} />
+      <Route path={"/staff-admin"} component={StaffAdmin} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
