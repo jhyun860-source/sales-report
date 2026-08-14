@@ -22755,9 +22755,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-14 14:38:43",
+      "submittedAt": "2026-08-14 14:42:05",
       "createdAt": "2026-08-14 14:14:00",
-      "updatedAt": "2026-08-14 14:38:44",
+      "updatedAt": "2026-08-14 14:42:07",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "269231",
@@ -95652,21 +95652,6 @@
       "updatedAt": "2026-08-14 13:41:02"
     },
     {
-      "id": 11310503,
-      "tableReportId": 10380173,
-      "staffName": "리즈",
-      "glassCount": 0,
-      "bottleCount": 0,
-      "beerBottleCount": 0,
-      "salesIncentive": "0",
-      "staffType": "staff",
-      "workStart": null,
-      "workEnd": null,
-      "sortOrder": 1,
-      "createdAt": "2026-08-14 14:14:00",
-      "updatedAt": "2026-08-14 14:14:00"
-    },
-    {
       "id": 11310505,
       "tableReportId": 10380167,
       "staffName": "아름",
@@ -95710,21 +95695,6 @@
       "sortOrder": 3,
       "createdAt": "2026-08-14 14:37:04",
       "updatedAt": "2026-08-14 14:37:04"
-    },
-    {
-      "id": 11310508,
-      "tableReportId": 10380173,
-      "staffName": "현아",
-      "glassCount": 0,
-      "bottleCount": 0,
-      "beerBottleCount": 0,
-      "salesIncentive": "0",
-      "staffType": "parttime",
-      "workStart": null,
-      "workEnd": null,
-      "sortOrder": 1,
-      "createdAt": "2026-08-14 14:38:41",
-      "updatedAt": "2026-08-14 14:38:41"
     }
   ],
   "liquorItems": [
