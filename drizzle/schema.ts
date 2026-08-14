@@ -202,7 +202,7 @@ export const branchStaff = mysqlTable("branchStaff", {
   branchId: int("branchId").notNull(),
   realName: varchar("realName", { length: 50 }).notNull(), // 실명
   alias: varchar("alias", { length: 50 }).notNull(), // 가명 (테이블 기록에 표시되는 이름)
-  staffType: mysqlEnum("staffType", ["staff", "parttime"]).notNull(), // 직원 | 알바
+  staffType: mysqlEnum("staffType", ["staff", "parttime", "manager", "deputy"]).notNull(), // 직원 | 알바 | 점장 | 매니저
   active: int("active").default(1).notNull(), // 1=재직중, 0=퇴사(목록에서 숨김)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
