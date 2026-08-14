@@ -22720,9 +22720,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-14 14:07:27",
+      "submittedAt": "2026-08-14 14:54:32",
       "createdAt": "2026-08-14 14:07:16",
-      "updatedAt": "2026-08-14 14:07:29",
+      "updatedAt": "2026-08-14 14:54:33",
       "totalRevenue": "120000",
       "commissionExpense": "20400",
       "rentExpense": "173077",
@@ -22730,12 +22730,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "0",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "15000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "193477",
-      "netProfit": "-73477",
+      "totalExpenses": "208477",
+      "netProfit": "-88477",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -22806,6 +22806,41 @@
       "otherExpense": "0",
       "totalExpenses": "292077",
       "netProfit": "-292077",
+      "staffCount": 0,
+      "partTimeCount": 0
+    },
+    {
+      "id": 10410180,
+      "branchId": 4,
+      "date": "2026-08-15",
+      "posStartAmount": "61000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "250000",
+      "cardTotal": "15215000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-08-14 15:11:20",
+      "createdAt": "2026-08-14 15:10:24",
+      "updatedAt": "2026-08-14 15:11:20",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "173077",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "214286",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "387363",
+      "netProfit": "-387363",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -29597,6 +29632,17 @@
       "notes": null,
       "createdAt": "2026-08-14 14:47:41",
       "updatedAt": "2026-08-14 14:47:41"
+    },
+    {
+      "id": 10380175,
+      "branchId": 4,
+      "date": "2026-08-15",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "0",
+      "notes": null,
+      "createdAt": "2026-08-14 15:10:24",
+      "updatedAt": "2026-08-14 15:10:24"
     }
   ],
   "tableItems": [
@@ -70627,6 +70673,19 @@
       "sortOrder": 0,
       "createdAt": "2026-08-14 14:47:42",
       "updatedAt": "2026-08-14 14:47:42"
+    },
+    {
+      "id": 16260911,
+      "tableReportId": 10380175,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-14 15:10:24",
+      "updatedAt": "2026-08-14 15:10:24"
     }
   ],
   "staffIncentives": [
@@ -98521,8 +98580,8 @@
       "id": 30207,
       "branchId": 5,
       "liquorItemId": 59,
-      "currentStock": "3.00",
-      "updatedAt": "2026-06-30 11:08:21"
+      "currentStock": "2.00",
+      "updatedAt": "2026-08-14 14:54:24"
     },
     {
       "id": 30208,
@@ -98661,8 +98720,8 @@
       "id": 30229,
       "branchId": 5,
       "liquorItemId": 58,
-      "currentStock": "3.00",
-      "updatedAt": "2026-07-15 03:18:18"
+      "currentStock": "2.00",
+      "updatedAt": "2026-08-14 14:54:22"
     },
     {
       "id": 30230,
@@ -139538,6 +139597,34 @@
       "createdBy": 3,
       "createdAt": "2026-08-14 10:08:03",
       "updatedAt": "2026-08-14 10:08:03"
+    },
+    {
+      "id": 12870785,
+      "branchId": 5,
+      "liquorItemId": 58,
+      "date": "2026-08-14",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "7000",
+      "totalCost": "7000",
+      "memo": null,
+      "createdBy": 5,
+      "createdAt": "2026-08-14 14:54:22",
+      "updatedAt": "2026-08-14 14:54:22"
+    },
+    {
+      "id": 12870786,
+      "branchId": 5,
+      "liquorItemId": 59,
+      "date": "2026-08-14",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "8000",
+      "totalCost": "8000",
+      "memo": null,
+      "createdBy": 5,
+      "createdAt": "2026-08-14 14:54:23",
+      "updatedAt": "2026-08-14 14:54:23"
     }
   ],
   "liquorHiddenItems": [
