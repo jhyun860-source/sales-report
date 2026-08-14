@@ -464,6 +464,40 @@ export function registerRestoreRoutes(app: Express) {
         }
       }
 
+      if (mode === "normalizestaffnames") {
+        // 안전장치: dryrun=1 이면 실제로 바꾸지 않고 몇 건이 바뀔지만 미리 보여줌
+        const dryRun = req.query.dryrun === "1";
+        try {
+          const [staffRows]: any = await conn.query(
+            `SELECT id, branchId, realName, alias FROM branchStaff`
+          );
+          const results: any[] = [];
+          for (const s of staffRows) {
+            const newName = `${s.alias}(${s.realName})`;
+            const [matchRows]: any = await conn.query(
+              `SELECT si.id FROM staffIncentives si
+               JOIN tableReports tr ON tr.id = si.tableReportId
+               WHERE tr.branchId = ? AND si.staffName = ?`,
+              [s.branchId, s.alias]
+            );
+            if (matchRows.length === 0) continue;
+            if (!dryRun) {
+              await conn.query(
+                `UPDATE staffIncentives si
+                 JOIN tableReports tr ON tr.id = si.tableReportId
+                 SET si.staffName = ?
+                 WHERE tr.branchId = ? AND si.staffName = ?`,
+                [newName, s.branchId, s.alias]
+              );
+            }
+            results.push({ branchId: s.branchId, alias: s.alias, realName: s.realName, matched: matchRows.length, newName });
+          }
+          return res.json({ mode, dryRun, ok: true, changedStaff: results.length, results });
+        } catch (e: any) {
+          return res.status(500).json({ mode, ok: false, error: String(e?.message || e) });
+        }
+      }
+
       if (mode === "createstafftable") {
         // 안전: CREATE TABLE IF NOT EXISTS 하나만 실행. 기존 테이블/데이터는 전혀 건드리지 않음.
         try {
@@ -489,7 +523,7 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, ok: true, message: "수동 백업 트리거 완료" });
       }
 
-      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes" });
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes|normalizestaffnames" });
     } catch (e: any) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
