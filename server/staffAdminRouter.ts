@@ -66,7 +66,7 @@ export const staffAdminRouter = router({
       branchId: z.number().optional(),
       realName: z.string().min(1),
       alias: z.string().min(1),
-      staffType: z.enum(['staff', 'parttime']),
+      staffType: z.enum(['staff', 'parttime', 'manager', 'deputy']),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
