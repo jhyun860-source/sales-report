@@ -11,7 +11,7 @@ import { useLocation, useSearch } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw, Package } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw, Package, Users } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import { isStaffLiquorOnly } from '@/lib/accountAccess';
 import {
@@ -709,6 +709,20 @@ export default function Home() {
           >
             <ClipboardList size={14} />
             테이블
+          </button>}
+
+          {/* 직원 관리 버튼 */}
+          {!isStaffOnly && <button
+            onClick={() => navigate(`/staff-admin${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
+            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+            style={{
+              background: 'oklch(0.92 0.015 85)',
+              color: 'oklch(0.25 0.01 50)',
+              borderColor: 'oklch(0.78 0.012 85)',
+            }}
+          >
+            <Users size={14} />
+            직원관리
           </button>}
 
 
