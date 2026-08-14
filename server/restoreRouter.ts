@@ -452,6 +452,18 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, dailyWage, count: results.length, results });
       }
 
+      if (mode === "addstafftypes") {
+        // 안전: 컬럼 타입만 확장(ENUM에 값 추가). 기존 데이터는 그대로 유지됨.
+        try {
+          await conn.query(
+            "ALTER TABLE `branchStaff` MODIFY COLUMN `staffType` ENUM('staff','parttime','manager','deputy') NOT NULL"
+          );
+          return res.json({ mode, ok: true, message: "staffType에 manager/deputy 추가 완료" });
+        } catch (e: any) {
+          return res.status(500).json({ mode, ok: false, error: String(e?.message || e) });
+        }
+      }
+
       if (mode === "createstafftable") {
         // 안전: CREATE TABLE IF NOT EXISTS 하나만 실행. 기존 테이블/데이터는 전혀 건드리지 않음.
         try {
@@ -477,7 +489,7 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, ok: true, message: "수동 백업 트리거 완료" });
       }
 
-      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable" });
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes" });
     } catch (e: any) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
