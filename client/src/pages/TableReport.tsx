@@ -1183,7 +1183,7 @@ export default function TableReport() {
                   <button
                     key={s.id}
                     onClick={() => {
-                      setIncentives(prev => [...prev, { ...emptyIncentive(), staffName: s.alias, staffType: s.staffType }]);
+                      setIncentives(prev => [...prev, { ...emptyIncentive(), staffName: `${s.alias}(${s.realName})`, staffType: s.staffType }]);
                       setShowStaffPicker(false);
                       try { navigator.vibrate?.(60); } catch {}
                     }}
