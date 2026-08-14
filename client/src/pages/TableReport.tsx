@@ -196,7 +196,7 @@ export default function TableReport() {
   const [teamCount, setTeamCount] = useState(0);
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<TableItemLocal[]>([emptyItem()]);
-  const [incentives, setIncentives] = useState<IncentiveLocal[]>([emptyIncentive()]);
+  const [incentives, setIncentives] = useState<IncentiveLocal[]>([]);
   const [reportId, setReportId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -300,14 +300,14 @@ export default function TableReport() {
           workEndMin: fromHHMM(inc.workEnd ?? '').min,
         })));
       } else {
-        setIncentives([emptyIncentive()]);
+        setIncentives([]);
       }
     } else if (reportData === null) {
       setReportId(null);
       setTeamCount(0);
       setNotes('');
       setItems([emptyItem()]);
-      setIncentives([emptyIncentive()]);
+      setIncentives([]);
     }
     // 날짜가 실제로 변경되었을 때만 saved 리셋 (저장 완료 후 데이터 로드 시에는 saved 유지)
     // setSaved(false)를 여기서 호출하면 저장 완료 후 서버 데이터가 다시 들어올 때 saved 표시가 사라짘
@@ -757,10 +757,7 @@ export default function TableReport() {
     if (inc.id) {
       try { await deleteIncentive.mutateAsync({ id: inc.id }); } catch {}
     }
-    setIncentives(prev => {
-      const next = prev.filter(i => i.localId !== inc.localId);
-      return next.length === 0 ? [emptyIncentive()] : next;
-    });
+    setIncentives(prev => prev.filter(i => i.localId !== inc.localId));
     // 삭제 후 즉시 저장 (날짜 이동 시 복구 방지)
     setTimeout(() => handleSave(), 100);
   };
