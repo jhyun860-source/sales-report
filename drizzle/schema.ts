@@ -193,6 +193,23 @@ export const branchSettings = mysqlTable("branchSettings", {
 export type BranchSettings = typeof branchSettings.$inferSelect;
 export type InsertBranchSettings = typeof branchSettings.$inferInsert;
 
+/**
+ * 지점별 등록 직원 목록
+ * 테이블 기록에서 이름을 직접 입력하는 대신 여기서 선택하도록 하기 위한 테이블
+ */
+export const branchStaff = mysqlTable("branchStaff", {
+  id: int("id").autoincrement().primaryKey(),
+  branchId: int("branchId").notNull(),
+  realName: varchar("realName", { length: 50 }).notNull(), // 실명
+  alias: varchar("alias", { length: 50 }).notNull(), // 가명 (테이블 기록에 표시되는 이름)
+  staffType: mysqlEnum("staffType", ["staff", "parttime"]).notNull(), // 직원 | 알바
+  active: int("active").default(1).notNull(), // 1=재직중, 0=퇴사(목록에서 숨김)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BranchStaff = typeof branchStaff.$inferSelect;
+export type InsertBranchStaff = typeof branchStaff.$inferInsert;
+
 export const dailySalesRecordsRelations = relations(dailySalesRecords, ({ one }) => ({
   branch: one(branches, {
     fields: [dailySalesRecords.branchId],
