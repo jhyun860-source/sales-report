@@ -18,6 +18,13 @@ export default function StaffAdmin() {
   const MUTED = 'oklch(0.55 0.01 50)';
   const CHIP_BG = 'oklch(0.94 0.02 60)';
 
+  const TYPE_META: Record<string, { label: string; bg: string; color: string }> = {
+    staff: { label: '직원', bg: 'oklch(0.93 0.02 60)', color: PRIMARY },
+    parttime: { label: '알바', bg: 'oklch(0.93 0.05 150)', color: 'oklch(0.4 0.1 150)' },
+    manager: { label: '점장', bg: 'oklch(0.9 0.05 260)', color: 'oklch(0.4 0.12 260)' },
+    deputy: { label: '매니저', bg: 'oklch(0.92 0.05 300)', color: 'oklch(0.42 0.12 300)' },
+  };
+
   const urlBranchId = (() => {
     const v = new URLSearchParams(search).get('branchId');
     return v ? Number(v) : undefined;
@@ -39,7 +46,7 @@ export default function StaffAdmin() {
   const [showForm, setShowForm] = useState(false);
   const [realName, setRealName] = useState('');
   const [alias, setAlias] = useState('');
-  const [staffType, setStaffType] = useState<'staff' | 'parttime'>('staff');
+  const [staffType, setStaffType] = useState<'staff' | 'parttime' | 'manager' | 'deputy'>('staff');
   const [error, setError] = useState('');
 
   const handleAdd = () => {
@@ -126,11 +133,11 @@ export default function StaffAdmin() {
                   <span
                     className="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-md"
                     style={{
-                      background: s.staffType === 'staff' ? 'oklch(0.93 0.02 60)' : 'oklch(0.93 0.05 150)',
-                      color: s.staffType === 'staff' ? PRIMARY : 'oklch(0.4 0.1 150)',
+                      background: TYPE_META[s.staffType]?.bg,
+                      color: TYPE_META[s.staffType]?.color,
                     }}
                   >
-                    {s.staffType === 'staff' ? '직원' : '알바'}
+                    {TYPE_META[s.staffType]?.label}
                   </span>
                 </div>
               </div>
@@ -186,21 +193,20 @@ export default function StaffAdmin() {
             </div>
             <div>
               <label className="text-xs font-medium block mb-1.5" style={{ color: MUTED }}>구분</label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setStaffType('staff')}
-                  className="px-4 py-2 rounded-full text-sm font-medium"
-                  style={{ background: staffType === 'staff' ? PRIMARY : CHIP_BG, color: staffType === 'staff' ? '#fff' : TEXT }}
-                >
-                  직원
-                </button>
-                <button
-                  onClick={() => setStaffType('parttime')}
-                  className="px-4 py-2 rounded-full text-sm font-medium"
-                  style={{ background: staffType === 'parttime' ? 'oklch(0.4 0.1 150)' : CHIP_BG, color: staffType === 'parttime' ? '#fff' : TEXT }}
-                >
-                  알바
-                </button>
+              <div className="flex flex-wrap gap-2">
+                {(['staff', 'parttime', 'manager', 'deputy'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setStaffType(t)}
+                    className="px-4 py-2 rounded-full text-sm font-medium"
+                    style={{
+                      background: staffType === t ? TYPE_META[t].color : CHIP_BG,
+                      color: staffType === t ? '#fff' : TEXT,
+                    }}
+                  >
+                    {TYPE_META[t].label}
+                  </button>
+                ))}
               </div>
             </div>
             {error && <p className="text-xs" style={{ color: 'oklch(0.5 0.2 25)' }}>{error}</p>}
