@@ -892,13 +892,6 @@ export default function TableReport() {
               </span>
             )}
             <button
-              onClick={() => navigate('/staff-admin')}
-              className="px-2.5 py-1.5 rounded text-xs font-medium"
-              style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
-            >
-              직원관리
-            </button>
-            <button
               onClick={() => navigate('/')}
               className="px-2.5 py-1.5 rounded text-xs font-medium"
               style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
