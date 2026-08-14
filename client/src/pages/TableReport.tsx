@@ -233,6 +233,14 @@ export default function TableReport() {
     try { localStorage.setItem('selectedBranchId', String(effectiveBranchId)); } catch {}
   }, [effectiveBranchId]);
 
+  // 등록된 직원 목록 (출근자 인센티브에서 이름 직접 입력 대신 선택하기 위함)
+  const { data: staffRoster } = trpc.staffAdmin.list.useQuery(
+    { branchId: effectiveBranchId },
+    { enabled: !!account && !!effectiveBranchId }
+  );
+  const [showStaffPicker, setShowStaffPicker] = useState(false);
+  const STAFF_TYPE_LABEL: Record<string, string> = { staff: '직원', parttime: '아르바', manager: '점장', deputy: '매니저' };
+
   // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
   const { data: reportData, dataUpdatedAt } = trpc.tableReport.getByDate.useQuery(
     { date: currentDate, branchId: effectiveBranchId },
@@ -1159,13 +1167,52 @@ export default function TableReport() {
               <div className="text-sm font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>■ 출근자 인센티브</div>
             </div>
             <button
-              onClick={() => { setIncentives(prev => [...prev, emptyIncentive()]); try { navigator.vibrate?.(60); } catch {} }}
+              onClick={() => { setShowStaffPicker(v => !v); try { navigator.vibrate?.(60); } catch {} }}
               className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
               style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
             >
               <Plus size={12} />추가
             </button>
           </div>
+
+          {showStaffPicker && (
+            <div className="mb-2 rounded-lg p-2" style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
+              <div className="text-xs px-1 pb-1.5" style={{ color: MUTED }}>등록된 직원 중 선택</div>
+              {(staffRoster ?? []).length === 0 && (
+                <div className="text-xs px-1 pb-1.5" style={{ color: MUTED }}>등록된 직원이 없습니다. 매출보고 화면의 "직원관리"에서 먼저 등록해주세요.</div>
+              )}
+              <div className="flex flex-wrap gap-1.5 mb-1.5">
+                {(staffRoster ?? []).map((s: any) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setIncentives(prev => [...prev, { ...emptyIncentive(), staffName: s.alias, staffType: s.staffType }]);
+                      setShowStaffPicker(false);
+                      try { navigator.vibrate?.(60); } catch {}
+                    }}
+                    className="flex items-center gap-1 pl-1 pr-2 py-1 rounded-full text-xs font-medium"
+                    style={{ background: HEADER_BG, color: TEXT, border: `1px solid ${BORDER}` }}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                      style={{ background: PRIMARY }}
+                    >
+                      {s.alias?.[0]}
+                    </span>
+                    {s.alias}
+                    <span style={{ color: MUTED }}>· {STAFF_TYPE_LABEL[s.staffType]}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => { setIncentives(prev => [...prev, emptyIncentive()]); setShowStaffPicker(false); try { navigator.vibrate?.(60); } catch {} }}
+                className="text-xs font-medium px-2 py-1 rounded"
+                style={{ color: MUTED }}
+              >
+                + 목록에 없음 (직접 입력)
+              </button>
+            </div>
+          )}
 
           <div className="space-y-2">
             {incentives.map(inc => (
