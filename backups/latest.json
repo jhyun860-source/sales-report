@@ -22557,11 +22557,11 @@
       "branchId": 2,
       "date": "2026-08-14",
       "posStartAmount": "825000",
-      "cash": "0",
-      "card": "0",
-      "cashTotal": "465000",
-      "cardTotal": "26824000",
-      "posEndAmount": "825000",
+      "cash": "44000",
+      "card": "1621000",
+      "cashTotal": "509000",
+      "cardTotal": "28445000",
+      "posEndAmount": "745000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
       "paymentChangeDate": null,
@@ -22569,27 +22569,27 @@
       "expenses": [
         {
           "id": "exp_1786693557109",
-          "amount": "",
+          "amount": "80000",
           "description": "Pr"
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-14 14:37:05",
+      "submittedAt": "2026-08-14 16:19:02",
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-14 15:23:41",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-08-14 16:19:05",
+      "totalRevenue": "1665000",
+      "commissionExpense": "283050",
       "rentExpense": "346154",
       "managementFeeExpense": "0",
-      "staffWageExpense": "0",
+      "staffWageExpense": "136363",
       "managerWageExpense": "333333",
-      "partTimeWageExpense": "320000",
+      "partTimeWageExpense": "297667",
       "liquorCostExpense": "0",
-      "staffDrinkExpense": "0",
+      "staffDrinkExpense": "111000",
       "salesIncentiveExpense": "0",
-      "otherExpense": "38462",
-      "totalExpenses": "1037949",
-      "netProfit": "-1037949",
+      "otherExpense": "118462",
+      "totalExpenses": "1626029",
+      "netProfit": "38971",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -22615,9 +22615,9 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-14 15:23:40",
+      "submittedAt": "2026-08-14 16:19:56",
       "createdAt": "2026-08-13 21:13:21",
-      "updatedAt": "2026-08-14 15:23:42",
+      "updatedAt": "2026-08-14 16:19:59",
       "totalRevenue": "3587000",
       "commissionExpense": "609790",
       "rentExpense": "346154",
@@ -29550,11 +29550,11 @@
       "branchId": 2,
       "date": "2026-08-14",
       "teamCount": 0,
-      "cashAmount": "0",
-      "cardAmount": "0",
+      "cashAmount": "44000",
+      "cardAmount": "1621000",
       "notes": null,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:50:34"
     },
     {
       "id": 10380168,
@@ -70238,12 +70238,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "169000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "발렌타인 17y Glass(1), 양념 팝콘(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">하이네캔 (330ml)(2)</mark>, <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">카프리 (330ml)(1)</mark>, 기네스 드래프트 (330ml)(2), 글렌피딕 12y Glass(1)",
       "sortOrder": 0,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:43:33"
     },
     {
       "id": 16260875,
@@ -70251,12 +70251,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "100000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "양념 팝콘(1), 발렌타인 17y Glass(2), 발베니 14y Glass(2)",
       "sortOrder": 1,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:43:33"
     },
     {
       "id": 16260876,
@@ -70264,12 +70264,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
+      "amount": "44000",
+      "paymentMethod": "cash",
+      "memo": "양념 팝콘(1), 발렌타인 17y Glass(2), 발베니 14y Glass(2)",
       "sortOrder": 2,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:44:33"
     },
     {
       "id": 16260877,
@@ -70277,12 +70277,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "133000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "기네스 드래프트 (330ml)(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">카프리 (330ml)(6)</mark>",
       "sortOrder": 3,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:44:33"
     },
     {
       "id": 16260878,
@@ -70290,12 +70290,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "75000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(2), 양념 나쵸(1)",
       "sortOrder": 4,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:45:15"
     },
     {
       "id": 16260879,
@@ -70303,12 +70303,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "225000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(1), 양념 나쵸(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">수정(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">예나(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">민경(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">유주(2)</mark>, 외부(1)",
       "sortOrder": 5,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:45:15"
     },
     {
       "id": 16260880,
@@ -70316,12 +70316,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "579000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(3), 아이스크림(2), 롱아일랜드 아이스티 (Long Island Iced Tea)(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">민경(3)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">수정(4)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">아름J(5)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">예나(5)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">유주(5)</mark>, 연장 30분(6)",
       "sortOrder": 6,
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-13 17:38:11"
+      "updatedAt": "2026-08-14 15:45:39"
     },
     {
       "id": 16260881,
@@ -70699,6 +70699,19 @@
       "sortOrder": 9,
       "createdAt": "2026-08-14 15:21:49",
       "updatedAt": "2026-08-14 15:23:38"
+    },
+    {
+      "id": 16260914,
+      "tableReportId": 10380167,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "340000",
+      "paymentMethod": "card",
+      "memo": "발렌타인 17y (500ml)(1)",
+      "sortOrder": 7,
+      "createdAt": "2026-08-14 15:48:08",
+      "updatedAt": "2026-08-14 15:50:33"
     }
   ],
   "staffIncentives": [
@@ -87745,7 +87758,7 @@
     {
       "id": 10650005,
       "tableReportId": 9750001,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 9,
       "bottleCount": 0,
       "beerBottleCount": 0,
@@ -87755,7 +87768,7 @@
       "workEnd": "01:10",
       "sortOrder": 4,
       "createdAt": "2026-07-07 17:11:39",
-      "updatedAt": "2026-07-07 17:19:09"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 10650006,
@@ -88165,7 +88178,7 @@
     {
       "id": 10950004,
       "tableReportId": 10080001,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 0,
       "bottleCount": 0,
       "beerBottleCount": 0,
@@ -88175,7 +88188,7 @@
       "workEnd": "01:00",
       "sortOrder": 3,
       "createdAt": "2026-07-09 15:31:25",
-      "updatedAt": "2026-07-09 15:31:25"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 10950005,
@@ -88480,7 +88493,7 @@
     {
       "id": 11130006,
       "tableReportId": 10260001,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 1,
       "bottleCount": 1,
       "beerBottleCount": 3,
@@ -88490,7 +88503,7 @@
       "workEnd": "00:00",
       "sortOrder": 4,
       "createdAt": "2026-07-10 10:49:21",
-      "updatedAt": "2026-08-04 16:10:17"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11130007,
@@ -89365,7 +89378,7 @@
     {
       "id": 11310052,
       "tableReportId": 10380018,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 4,
       "bottleCount": 0,
       "beerBottleCount": 0,
@@ -89375,7 +89388,7 @@
       "workEnd": "00:30",
       "sortOrder": 2,
       "createdAt": "2026-07-15 15:30:23",
-      "updatedAt": "2026-07-15 15:32:11"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310053,
@@ -90190,7 +90203,7 @@
     {
       "id": 11310108,
       "tableReportId": 10380045,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 2,
       "bottleCount": 0,
       "beerBottleCount": 0,
@@ -90200,7 +90213,7 @@
       "workEnd": "01:15",
       "sortOrder": 2,
       "createdAt": "2026-07-20 11:04:58",
-      "updatedAt": "2026-07-20 18:44:33"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310109,
@@ -90895,7 +90908,7 @@
     {
       "id": 11310158,
       "tableReportId": 10380058,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 5,
       "bottleCount": 0,
       "beerBottleCount": 0,
@@ -90905,7 +90918,7 @@
       "workEnd": "01:00",
       "sortOrder": 5,
       "createdAt": "2026-07-22 16:42:24",
-      "updatedAt": "2026-07-22 16:49:25"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310159,
@@ -91105,7 +91118,7 @@
     {
       "id": 11310172,
       "tableReportId": 10380062,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 4,
       "bottleCount": 0,
       "beerBottleCount": 0,
@@ -91115,7 +91128,7 @@
       "workEnd": "00:40",
       "sortOrder": 5,
       "createdAt": "2026-07-23 11:09:13",
-      "updatedAt": "2026-07-23 17:16:17"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310174,
@@ -91315,7 +91328,7 @@
     {
       "id": 11310187,
       "tableReportId": 10380067,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 6,
       "bottleCount": 3,
       "beerBottleCount": 0,
@@ -91325,7 +91338,7 @@
       "workEnd": "05:40",
       "sortOrder": 3,
       "createdAt": "2026-07-24 09:44:22",
-      "updatedAt": "2026-08-04 16:10:42"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310188,
@@ -91990,7 +92003,7 @@
     {
       "id": 11310232,
       "tableReportId": 10380082,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 0,
       "bottleCount": 1,
       "beerBottleCount": 0,
@@ -92000,7 +92013,7 @@
       "workEnd": "01:00",
       "sortOrder": 2,
       "createdAt": "2026-07-28 10:32:51",
-      "updatedAt": "2026-07-28 16:21:40"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310233,
@@ -92425,7 +92438,7 @@
     {
       "id": 11310261,
       "tableReportId": 10380092,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 0,
       "bottleCount": 2,
       "beerBottleCount": 0,
@@ -92435,7 +92448,7 @@
       "workEnd": "01:00",
       "sortOrder": 2,
       "createdAt": "2026-07-29 18:45:58",
-      "updatedAt": "2026-07-29 18:49:59"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310262,
@@ -92995,7 +93008,7 @@
     {
       "id": 11310299,
       "tableReportId": 10380102,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 0,
       "bottleCount": 2,
       "beerBottleCount": 3,
@@ -93005,7 +93018,7 @@
       "workEnd": "02:15",
       "sortOrder": 3,
       "createdAt": "2026-07-31 13:36:44",
-      "updatedAt": "2026-07-31 18:08:07"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310300,
@@ -94405,7 +94418,7 @@
     {
       "id": 11310401,
       "tableReportId": 10380135,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 0,
       "bottleCount": 0,
       "beerBottleCount": 0,
@@ -94415,7 +94428,7 @@
       "workEnd": "00:00",
       "sortOrder": 4,
       "createdAt": "2026-08-07 12:49:08",
-      "updatedAt": "2026-08-07 16:29:10"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310402,
@@ -95365,7 +95378,7 @@
     {
       "id": 11310474,
       "tableReportId": 10380159,
-      "staffName": "태리",
+      "staffName": "태리(홍태영)",
       "glassCount": 0,
       "bottleCount": 0,
       "beerBottleCount": 8,
@@ -95375,7 +95388,7 @@
       "workEnd": "01:00",
       "sortOrder": 4,
       "createdAt": "2026-08-12 16:46:22",
-      "updatedAt": "2026-08-12 16:47:11"
+      "updatedAt": "2026-08-14 15:32:10"
     },
     {
       "id": 11310475,
@@ -95600,7 +95613,7 @@
       "workEnd": "02:25",
       "sortOrder": 2,
       "createdAt": "2026-08-14 07:46:32",
-      "updatedAt": "2026-08-14 15:24:54"
+      "updatedAt": "2026-08-14 16:01:22"
     },
     {
       "id": 11310490,
@@ -95801,31 +95814,16 @@
       "id": 11310506,
       "tableReportId": 10380167,
       "staffName": "유주(정예지)",
-      "glassCount": 0,
+      "glassCount": 7,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
-      "workEnd": null,
+      "workStart": "20:07",
+      "workEnd": "01:00",
       "sortOrder": 2,
       "createdAt": "2026-08-14 14:37:04",
-      "updatedAt": "2026-08-14 15:24:54"
-    },
-    {
-      "id": 11310507,
-      "tableReportId": 10380167,
-      "staffName": "유주(정예지)",
-      "glassCount": 0,
-      "bottleCount": 0,
-      "beerBottleCount": 0,
-      "salesIncentive": "0",
-      "staffType": "parttime",
-      "workStart": null,
-      "workEnd": null,
-      "sortOrder": 3,
-      "createdAt": "2026-08-14 14:37:04",
-      "updatedAt": "2026-08-14 15:24:54"
+      "updatedAt": "2026-08-14 16:00:31"
     },
     {
       "id": 11310509,
@@ -95841,6 +95839,51 @@
       "sortOrder": 0,
       "createdAt": "2026-08-14 14:48:10",
       "updatedAt": "2026-08-14 15:24:54"
+    },
+    {
+      "id": 11310511,
+      "tableReportId": 10380167,
+      "staffName": "수정(도정민)",
+      "glassCount": 5,
+      "bottleCount": 0,
+      "beerBottleCount": 2,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:00",
+      "workEnd": "01:00",
+      "sortOrder": 2,
+      "createdAt": "2026-08-14 15:45:40",
+      "updatedAt": "2026-08-14 16:18:31"
+    },
+    {
+      "id": 11310512,
+      "tableReportId": 10380167,
+      "staffName": "예나(손아정)",
+      "glassCount": 7,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "21:00",
+      "workEnd": "02:00",
+      "sortOrder": 3,
+      "createdAt": "2026-08-14 15:45:40",
+      "updatedAt": "2026-08-14 15:52:40"
+    },
+    {
+      "id": 11310513,
+      "tableReportId": 10380167,
+      "staffName": "민경(문민경)",
+      "glassCount": 2,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "18:30",
+      "workEnd": null,
+      "sortOrder": 4,
+      "createdAt": "2026-08-14 15:45:40",
+      "updatedAt": "2026-08-14 15:53:51"
     }
   ],
   "liquorItems": [
