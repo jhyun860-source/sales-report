@@ -29,7 +29,14 @@ export default function StaffAdmin() {
     const v = new URLSearchParams(search).get('branchId');
     return v ? Number(v) : undefined;
   })();
-  const effectiveBranchId = account?.role === 'admin' ? urlBranchId : account?.branchId;
+  const storedBranchId = (() => {
+    try {
+      const saved = localStorage.getItem('selectedBranchId');
+      const parsed = saved ? parseInt(saved, 10) : NaN;
+      return Number.isFinite(parsed) ? parsed : undefined;
+    } catch { return undefined; }
+  })();
+  const effectiveBranchId = urlBranchId ?? (account?.role === 'admin' ? storedBranchId : account?.branchId) ?? undefined;
 
   const utils = trpc.useUtils();
   const { data: staffList, isLoading } = trpc.staffAdmin.list.useQuery(
@@ -38,9 +45,11 @@ export default function StaffAdmin() {
   );
   const createMutation = trpc.staffAdmin.create.useMutation({
     onSuccess: () => utils.staffAdmin.list.invalidate(),
+    onError: (e) => setError(e.message || '등록에 실패했습니다'),
   });
   const removeMutation = trpc.staffAdmin.remove.useMutation({
     onSuccess: () => utils.staffAdmin.list.invalidate(),
+    onError: (e) => setError(e.message || '삭제에 실패했습니다'),
   });
 
   const [showForm, setShowForm] = useState(false);
