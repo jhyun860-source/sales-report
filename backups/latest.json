@@ -22560,7 +22560,7 @@
       "cash": "0",
       "card": "0",
       "cashTotal": "125000",
-      "cardTotal": "23809000",
+      "cardTotal": "24294000",
       "posEndAmount": "825000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -22576,7 +22576,7 @@
       "submittedBy": null,
       "submittedAt": "2026-08-14 07:46:10",
       "createdAt": "2026-08-13 17:38:11",
-      "updatedAt": "2026-08-14 12:14:15",
+      "updatedAt": "2026-08-14 12:15:44",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "346154",
@@ -22599,9 +22599,9 @@
       "date": "2026-08-13",
       "posStartAmount": "915000",
       "cash": "0",
-      "card": "232000",
+      "card": "717000",
       "cashTotal": "125000",
-      "cardTotal": "23809000",
+      "cardTotal": "24294000",
       "posEndAmount": "825000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -22615,11 +22615,11 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-14 12:14:15",
+      "submittedAt": "2026-08-14 12:15:44",
       "createdAt": "2026-08-13 21:13:21",
-      "updatedAt": "2026-08-14 12:14:15",
-      "totalRevenue": "232000",
-      "commissionExpense": "39440",
+      "updatedAt": "2026-08-14 12:15:44",
+      "totalRevenue": "717000",
+      "commissionExpense": "121890",
       "rentExpense": "346154",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
@@ -22629,8 +22629,8 @@
       "staffDrinkExpense": "50000",
       "salesIncentiveExpense": "0",
       "otherExpense": "128462",
-      "totalExpenses": "1130722",
-      "netProfit": "-898722",
+      "totalExpenses": "1213172",
+      "netProfit": "-496172",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -29422,10 +29422,10 @@
       "date": "2026-08-13",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "232000",
+      "cardAmount": "717000",
       "notes": null,
       "createdAt": "2026-08-14 07:46:32",
-      "updatedAt": "2026-08-14 12:14:15"
+      "updatedAt": "2026-08-14 12:15:43"
     },
     {
       "id": 10380169,
@@ -70392,12 +70392,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "95000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(2), 아이스크림(1), 타 지점(2)",
       "sortOrder": 3,
       "createdAt": "2026-08-14 12:12:49",
-      "updatedAt": "2026-08-14 12:12:49"
+      "updatedAt": "2026-08-14 12:15:04"
     },
     {
       "id": 16260902,
@@ -70405,12 +70405,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "340000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "발렌타인 17y (500ml)(1)",
       "sortOrder": 4,
       "createdAt": "2026-08-14 12:12:49",
-      "updatedAt": "2026-08-14 12:12:49"
+      "updatedAt": "2026-08-14 12:15:43"
     },
     {
       "id": 16260903,
@@ -70418,12 +70418,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "50000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "킵 비용(1)",
       "sortOrder": 5,
       "createdAt": "2026-08-14 12:12:49",
-      "updatedAt": "2026-08-14 12:12:49"
+      "updatedAt": "2026-08-14 12:15:43"
     },
     {
       "id": 16260904,
