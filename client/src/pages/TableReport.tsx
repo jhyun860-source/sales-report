@@ -238,7 +238,7 @@ export default function TableReport() {
     { branchId: effectiveBranchId },
     { enabled: !!account && !!effectiveBranchId }
   );
-  const [showStaffPicker, setShowStaffPicker] = useState(false);
+  const [showStaffPicker, setShowStaffPicker] = useState(true);
   const STAFF_TYPE_LABEL: Record<string, string> = { staff: '직원', parttime: '아르바', manager: '점장', deputy: '매니저' };
 
   // 날짜별 기록 조회 - staleTime을 길게 설정해 자동 리페치 방지
