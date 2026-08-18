@@ -22825,22 +22825,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-15 05:56:19",
+      "submittedAt": "2026-08-18 09:37:46",
       "createdAt": "2026-08-14 15:10:24",
-      "updatedAt": "2026-08-15 05:56:21",
+      "updatedAt": "2026-08-18 09:37:47",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "0",
-      "partTimeWageExpense": "160000",
+      "partTimeWageExpense": "133333",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "333077",
-      "netProfit": "-333077",
+      "totalExpenses": "306410",
+      "netProfit": "-306410",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -96345,21 +96345,6 @@
       "updatedAt": "2026-08-14 18:13:19"
     },
     {
-      "id": 11310514,
-      "tableReportId": 10380175,
-      "staffName": "재희(한희정)",
-      "glassCount": 0,
-      "bottleCount": 0,
-      "beerBottleCount": 0,
-      "salesIncentive": "0",
-      "staffType": "parttime",
-      "workStart": "19:00",
-      "workEnd": null,
-      "sortOrder": 0,
-      "createdAt": "2026-08-15 05:56:18",
-      "updatedAt": "2026-08-15 05:56:18"
-    },
-    {
       "id": 11310515,
       "tableReportId": 10380176,
       "staffName": "리즈(김수빈)",
@@ -96433,6 +96418,21 @@
       "sortOrder": 0,
       "createdAt": "2026-08-18 02:40:10",
       "updatedAt": "2026-08-18 02:40:10"
+    },
+    {
+      "id": 11310522,
+      "tableReportId": 10380175,
+      "staffName": "재희(한희정)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "19:00",
+      "workEnd": "01:40",
+      "sortOrder": 1,
+      "createdAt": "2026-08-18 09:37:08",
+      "updatedAt": "2026-08-18 09:37:16"
     }
   ],
   "liquorItems": [
@@ -98016,8 +98016,8 @@
       "id": 5,
       "branchId": 1,
       "liquorItemId": 1,
-      "currentStock": "4.00",
-      "updatedAt": "2026-08-14 09:55:09"
+      "currentStock": "10.00",
+      "updatedAt": "2026-08-18 09:35:23"
     },
     {
       "id": 30001,
@@ -100452,8 +100452,8 @@
       "id": 30432,
       "branchId": 1,
       "liquorItemId": 22,
-      "currentStock": "0.00",
-      "updatedAt": "2026-08-17 09:56:31"
+      "currentStock": "3.00",
+      "updatedAt": "2026-08-18 09:35:24"
     },
     {
       "id": 30434,
@@ -100550,8 +100550,8 @@
       "id": 150001,
       "branchId": 1,
       "liquorItemId": 44,
-      "currentStock": "0.00",
-      "updatedAt": "2026-08-17 15:23:56"
+      "currentStock": "2.00",
+      "updatedAt": "2026-08-18 09:35:24"
     },
     {
       "id": 180001,
@@ -140468,6 +140468,48 @@
       "createdBy": 1,
       "createdAt": "2026-08-17 15:23:55",
       "updatedAt": "2026-08-17 15:23:55"
+    },
+    {
+      "id": 12870804,
+      "branchId": 1,
+      "liquorItemId": 1,
+      "date": "2026-08-18",
+      "type": "IN",
+      "quantity": "6.00",
+      "unitCost": "114000",
+      "totalCost": "684000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-08-18 09:35:23",
+      "updatedAt": "2026-08-18 09:35:23"
+    },
+    {
+      "id": 12870805,
+      "branchId": 1,
+      "liquorItemId": 22,
+      "date": "2026-08-18",
+      "type": "IN",
+      "quantity": "3.00",
+      "unitCost": "300000",
+      "totalCost": "900000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-08-18 09:35:23",
+      "updatedAt": "2026-08-18 09:35:23"
+    },
+    {
+      "id": 12870806,
+      "branchId": 1,
+      "liquorItemId": 44,
+      "date": "2026-08-18",
+      "type": "IN",
+      "quantity": "2.00",
+      "unitCost": "90000",
+      "totalCost": "180000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-08-18 09:35:24",
+      "updatedAt": "2026-08-18 09:35:24"
     }
   ],
   "liquorHiddenItems": [
