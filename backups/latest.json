@@ -23286,22 +23286,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-19 14:03:02",
+      "submittedAt": "2026-08-19 14:49:17",
       "createdAt": "2026-08-19 06:04:29",
-      "updatedAt": "2026-08-19 14:03:03",
+      "updatedAt": "2026-08-19 14:49:18",
       "totalRevenue": "503000",
       "commissionExpense": "85510",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "214286",
-      "partTimeWageExpense": "60000",
+      "partTimeWageExpense": "136667",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "532873",
-      "netProfit": "-29873",
+      "totalExpenses": "609540",
+      "netProfit": "-106540",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -97977,11 +97977,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 1,
       "createdAt": "2026-08-19 06:04:28",
-      "updatedAt": "2026-08-19 06:04:28"
+      "updatedAt": "2026-08-19 14:49:15"
     },
     {
       "id": 11310545,
@@ -97992,11 +97992,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 2,
       "createdAt": "2026-08-19 06:04:28",
-      "updatedAt": "2026-08-19 06:04:28"
+      "updatedAt": "2026-08-19 14:49:15"
     },
     {
       "id": 11310546,
@@ -98007,11 +98007,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
-      "workEnd": null,
+      "workStart": "20:00",
+      "workEnd": "23:50",
       "sortOrder": 3,
       "createdAt": "2026-08-19 06:04:28",
-      "updatedAt": "2026-08-19 06:04:28"
+      "updatedAt": "2026-08-19 14:49:15"
     },
     {
       "id": 11310547,
