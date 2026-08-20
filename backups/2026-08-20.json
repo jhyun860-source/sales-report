@@ -23677,22 +23677,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-20 13:22:42",
+      "submittedAt": "2026-08-20 14:19:45",
       "createdAt": "2026-08-20 09:58:28",
-      "updatedAt": "2026-08-20 13:22:43",
+      "updatedAt": "2026-08-20 14:19:47",
       "totalRevenue": "158000",
       "commissionExpense": "26860",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "214286",
-      "partTimeWageExpense": "640000",
+      "partTimeWageExpense": "130000",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1054223",
-      "netProfit": "-896223",
+      "totalExpenses": "544223",
+      "netProfit": "-386223",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -99260,10 +99260,10 @@
       "salesIncentive": "0",
       "staffType": "parttime",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "23:30",
       "sortOrder": 1,
       "createdAt": "2026-08-20 09:58:26",
-      "updatedAt": "2026-08-20 11:32:24"
+      "updatedAt": "2026-08-20 14:19:44"
     },
     {
       "id": 11310573,
@@ -99305,10 +99305,10 @@
       "salesIncentive": "0",
       "staffType": "parttime",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "23:00",
       "sortOrder": 4,
       "createdAt": "2026-08-20 09:58:26",
-      "updatedAt": "2026-08-20 11:32:24"
+      "updatedAt": "2026-08-20 14:19:44"
     }
   ],
   "liquorItems": [
