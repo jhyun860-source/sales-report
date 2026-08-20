@@ -23677,9 +23677,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-20 15:38:21",
+      "submittedAt": "2026-08-20 16:13:57",
       "createdAt": "2026-08-20 09:58:28",
-      "updatedAt": "2026-08-20 15:38:23",
+      "updatedAt": "2026-08-20 16:13:59",
       "totalRevenue": "383000",
       "commissionExpense": "65110",
       "rentExpense": "173077",
@@ -23782,9 +23782,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-20 15:08:02",
+      "submittedAt": "2026-08-20 16:01:24",
       "createdAt": "2026-08-20 15:07:46",
-      "updatedAt": "2026-08-20 15:08:04",
+      "updatedAt": "2026-08-20 16:01:25",
       "totalRevenue": "274000",
       "commissionExpense": "46580",
       "rentExpense": "173077",
@@ -99418,10 +99418,10 @@
       "salesIncentive": "0",
       "staffType": "staff",
       "workStart": "19:00",
-      "workEnd": null,
+      "workEnd": "01:00",
       "sortOrder": 0,
       "createdAt": "2026-08-20 15:08:01",
-      "updatedAt": "2026-08-20 15:08:01"
+      "updatedAt": "2026-08-20 16:01:23"
     }
   ],
   "liquorItems": [
