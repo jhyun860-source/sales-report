@@ -23677,9 +23677,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-20 09:58:28",
+      "submittedAt": "2026-08-20 11:32:25",
       "createdAt": "2026-08-20 09:58:28",
-      "updatedAt": "2026-08-20 09:58:29",
+      "updatedAt": "2026-08-20 11:32:26",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "173077",
@@ -99076,11 +99076,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 1,
       "createdAt": "2026-08-20 09:58:26",
-      "updatedAt": "2026-08-20 09:58:26"
+      "updatedAt": "2026-08-20 11:32:24"
     },
     {
       "id": 11310573,
@@ -99091,11 +99091,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 2,
       "createdAt": "2026-08-20 09:58:26",
-      "updatedAt": "2026-08-20 09:58:26"
+      "updatedAt": "2026-08-20 11:32:24"
     },
     {
       "id": 11310574,
@@ -99106,11 +99106,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 3,
       "createdAt": "2026-08-20 09:58:26",
-      "updatedAt": "2026-08-20 09:58:26"
+      "updatedAt": "2026-08-20 11:32:24"
     },
     {
       "id": 11310575,
@@ -99121,11 +99121,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 4,
       "createdAt": "2026-08-20 09:58:26",
-      "updatedAt": "2026-08-20 09:58:26"
+      "updatedAt": "2026-08-20 11:32:24"
     }
   ],
   "liquorItems": [
