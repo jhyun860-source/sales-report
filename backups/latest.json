@@ -23853,9 +23853,9 @@
       "date": "2026-08-21",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "0",
+      "card": "90000",
       "cashTotal": "280000",
-      "cardTotal": "19998000",
+      "cardTotal": "20088000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -23863,11 +23863,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-21 04:04:09",
+      "submittedAt": "2026-08-21 11:17:55",
       "createdAt": "2026-08-21 04:04:08",
-      "updatedAt": "2026-08-21 04:04:10",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-08-21 11:17:56",
+      "totalRevenue": "90000",
+      "commissionExpense": "15300",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
@@ -23877,8 +23877,8 @@
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "867363",
-      "netProfit": "-867363",
+      "totalExpenses": "882663",
+      "netProfit": "-792663",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -31022,10 +31022,10 @@
       "date": "2026-08-21",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "0",
+      "cardAmount": "90000",
       "notes": null,
       "createdAt": "2026-08-21 04:04:06",
-      "updatedAt": "2026-08-21 04:04:06"
+      "updatedAt": "2026-08-21 11:17:54"
     },
     {
       "id": 10380201,
@@ -73606,12 +73606,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "90000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(3)",
       "sortOrder": 0,
       "createdAt": "2026-08-21 04:04:06",
-      "updatedAt": "2026-08-21 04:04:06"
+      "updatedAt": "2026-08-21 11:17:53"
     },
     {
       "id": 16261067,
@@ -99979,11 +99979,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 1,
       "createdAt": "2026-08-21 04:04:07",
-      "updatedAt": "2026-08-21 04:04:07"
+      "updatedAt": "2026-08-21 11:17:28"
     },
     {
       "id": 11310587,
@@ -99994,11 +99994,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 2,
       "createdAt": "2026-08-21 04:04:07",
-      "updatedAt": "2026-08-21 04:04:07"
+      "updatedAt": "2026-08-21 11:17:28"
     },
     {
       "id": 11310588,
@@ -100009,11 +100009,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 3,
       "createdAt": "2026-08-21 04:04:07",
-      "updatedAt": "2026-08-21 04:04:07"
+      "updatedAt": "2026-08-21 11:17:28"
     },
     {
       "id": 11310589,
@@ -101935,8 +101935,8 @@
       "id": 30032,
       "branchId": 2,
       "liquorItemId": 54,
-      "currentStock": "0.00",
-      "updatedAt": "2026-08-20 16:54:38"
+      "currentStock": "1.00",
+      "updatedAt": "2026-08-21 11:25:51"
     },
     {
       "id": 30033,
@@ -103601,8 +103601,8 @@
       "id": 30338,
       "branchId": 3,
       "liquorItemId": 62,
-      "currentStock": "4.00",
-      "updatedAt": "2026-07-30 10:07:52"
+      "currentStock": "8.00",
+      "updatedAt": "2026-08-21 11:13:55"
     },
     {
       "id": 30339,
@@ -145920,6 +145920,34 @@
       "createdBy": 3,
       "createdAt": "2026-08-21 10:08:47",
       "updatedAt": "2026-08-21 10:08:47"
+    },
+    {
+      "id": 12870929,
+      "branchId": 3,
+      "liquorItemId": 62,
+      "date": "2026-08-21",
+      "type": "IN",
+      "quantity": "4.00",
+      "unitCost": "24800",
+      "totalCost": "99200",
+      "memo": null,
+      "createdBy": 3,
+      "createdAt": "2026-08-21 11:13:55",
+      "updatedAt": "2026-08-21 11:13:55"
+    },
+    {
+      "id": 12870930,
+      "branchId": 2,
+      "liquorItemId": 54,
+      "date": "2026-08-21",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "85000",
+      "totalCost": "85000",
+      "memo": "방이 > 대치 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-21 11:25:51",
+      "updatedAt": "2026-08-21 11:25:51"
     }
   ],
   "liquorHiddenItems": [
