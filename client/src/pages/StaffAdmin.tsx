@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { trpc } from '@/lib/trpc';
-import { Plus, X, ChevronLeft } from 'lucide-react';
+import { Plus, X, ChevronLeft, Pencil, Check } from 'lucide-react';
 
 export default function StaffAdmin() {
   const [, navigate] = useLocation();
@@ -51,6 +51,37 @@ export default function StaffAdmin() {
     onSuccess: () => utils.staffAdmin.list.invalidate(),
     onError: (e) => setError(e.message || '삭제에 실패했습니다'),
   });
+  const updateMutation = trpc.staffAdmin.update.useMutation({
+    onSuccess: () => { utils.staffAdmin.list.invalidate(); setEditingId(null); },
+    onError: (e) => setError(e.message || '수정에 실패했습니다'),
+  });
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editRealName, setEditRealName] = useState('');
+  const [editAlias, setEditAlias] = useState('');
+  const [editType, setEditType] = useState<'staff' | 'parttime' | 'manager' | 'deputy'>('staff');
+
+  const startEdit = (s: any) => {
+    setEditingId(s.id);
+    setEditRealName(s.realName);
+    setEditAlias(s.alias);
+    setEditType(s.staffType);
+    setError('');
+  };
+  const saveEdit = (id: number) => {
+    if (!editRealName.trim() || !editAlias.trim()) {
+      setError('실명과 가명을 모두 입력해주세요');
+      return;
+    }
+    setError('');
+    updateMutation.mutate({
+      id,
+      branchId: effectiveBranchId,
+      realName: editRealName.trim(),
+      alias: editAlias.trim(),
+      staffType: editType,
+    });
+  };
 
   const [showForm, setShowForm] = useState(false);
   const [realName, setRealName] = useState('');
@@ -122,44 +153,109 @@ export default function StaffAdmin() {
           {(staffList ?? []).map((s: any) => (
             <div
               key={s.id}
-              className="flex items-center justify-between rounded-xl px-3 py-3"
+              className="rounded-xl px-3 py-3"
               style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
-                  style={{ background: CHIP_BG, color: PRIMARY }}
-                >
-                  {s.alias?.[0]}
+              {editingId === s.id ? (
+                <div className="space-y-2.5">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-xs font-medium" style={{ color: MUTED }}>실명</label>
+                      <input
+                        value={editRealName}
+                        onChange={(e) => setEditRealName(e.target.value)}
+                        className="w-full mt-1 rounded-lg px-2.5 py-1.5 text-sm outline-none"
+                        style={{ background: BG, border: `1px solid ${BORDER}`, color: TEXT }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs font-medium" style={{ color: MUTED }}>가명</label>
+                      <input
+                        value={editAlias}
+                        onChange={(e) => setEditAlias(e.target.value)}
+                        className="w-full mt-1 rounded-lg px-2.5 py-1.5 text-sm outline-none"
+                        style={{ background: BG, border: `1px solid ${BORDER}`, color: TEXT }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(['staff', 'parttime', 'manager', 'deputy'] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setEditType(t)}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium"
+                        style={{
+                          background: editType === t ? TYPE_META[t].color : CHIP_BG,
+                          color: editType === t ? '#fff' : TEXT,
+                        }}
+                      >
+                        {TYPE_META[t].label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-0.5">
+                    <button
+                      onClick={() => { setEditingId(null); setError(''); }}
+                      className="flex-1 rounded-lg py-2 text-sm font-medium"
+                      style={{ background: CHIP_BG, color: MUTED }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={() => saveEdit(s.id)}
+                      disabled={updateMutation.isPending}
+                      className="flex-1 flex items-center justify-center gap-1 rounded-lg py-2 text-sm font-medium text-white disabled:opacity-60"
+                      style={{ background: PRIMARY }}
+                    >
+                      <Check size={14} />
+                      {updateMutation.isPending ? '저장 중...' : '저장'}
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium" style={{ color: TEXT }}>
-                    {s.alias}{' '}
-                    <span className="text-xs font-normal" style={{ color: MUTED }}>
-                      ({s.realName})
-                    </span>
-                  </p>
-                  <span
-                    className="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-md"
-                    style={{
-                      background: TYPE_META[s.staffType]?.bg,
-                      color: TYPE_META[s.staffType]?.color,
-                    }}
-                  >
-                    {TYPE_META[s.staffType]?.label}
-                  </span>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
+                      style={{ background: CHIP_BG, color: PRIMARY }}
+                    >
+                      {s.alias?.[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: TEXT }}>
+                        {s.alias}{' '}
+                        <span className="text-xs font-normal" style={{ color: MUTED }}>
+                          ({s.realName})
+                        </span>
+                      </p>
+                      <span
+                        className="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-md"
+                        style={{
+                          background: TYPE_META[s.staffType]?.bg,
+                          color: TYPE_META[s.staffType]?.color,
+                        }}
+                      >
+                        {TYPE_META[s.staffType]?.label}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => startEdit(s)} style={{ color: MUTED }}>
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`${s.alias}님을 목록에서 삭제할까요?`)) {
+                          removeMutation.mutate({ id: s.id, branchId: effectiveBranchId });
+                        }
+                      }}
+                      style={{ color: MUTED }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() => {
-                  if (confirm(`${s.alias}님을 목록에서 삭제할까요?`)) {
-                    removeMutation.mutate({ id: s.id, branchId: effectiveBranchId });
-                  }
-                }}
-                style={{ color: MUTED }}
-              >
-                <X size={16} />
-              </button>
+              )}
             </div>
           ))}
           {!isLoading && (staffList ?? []).length === 0 && (
