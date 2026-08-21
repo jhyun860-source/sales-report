@@ -23869,22 +23869,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-21 11:17:55",
+      "submittedAt": "2026-08-21 14:46:15",
       "createdAt": "2026-08-21 04:04:08",
-      "updatedAt": "2026-08-21 11:17:56",
+      "updatedAt": "2026-08-21 14:46:15",
       "totalRevenue": "90000",
       "commissionExpense": "15300",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "214286",
-      "partTimeWageExpense": "480000",
+      "partTimeWageExpense": "75000",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "882663",
-      "netProfit": "-792663",
+      "totalExpenses": "477663",
+      "netProfit": "-387663",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -73761,6 +73761,19 @@
       "sortOrder": 4,
       "createdAt": "2026-08-21 10:03:58",
       "updatedAt": "2026-08-21 10:20:12"
+    },
+    {
+      "id": 16261083,
+      "tableReportId": 10380200,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 1,
+      "createdAt": "2026-08-21 14:46:14",
+      "updatedAt": "2026-08-21 14:46:14"
     }
   ],
   "staffIncentives": [
@@ -99859,10 +99872,10 @@
       "salesIncentive": "0",
       "staffType": "parttime",
       "workStart": "20:00",
-      "workEnd": null,
+      "workEnd": "23:45",
       "sortOrder": 1,
       "createdAt": "2026-08-21 04:04:07",
-      "updatedAt": "2026-08-21 11:17:28"
+      "updatedAt": "2026-08-21 14:46:14"
     },
     {
       "id": 11310587,
