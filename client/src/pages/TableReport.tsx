@@ -197,6 +197,14 @@ export default function TableReport() {
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<TableItemLocal[]>([emptyItem()]);
   const [incentives, setIncentives] = useState<IncentiveLocal[]>([]);
+  // [버그수정] scheduleAutoSave()가 setIncentives 직후 같은 이벤트 핸들러 안에서
+  //   동기적으로 호출되다 보니, 그 시점의 handleSave 클로저가 "방금 이 수정 이전" 상태의
+  //   incentives를 참조하는 stale closure 문제가 있었음. 5초 뒤 실제 저장이 실행될 때는
+  //   ref를 통해 항상 최신 값을 읽도록 해서, 마지막으로 입력한 출퇴근시간 등이
+  //   저장에서 누락되고 그 결과 알바 인건비가 예비식(인원×시급×8시간)으로 잘못
+  //   저장되는 문제를 방지한다.
+  const incentivesRef = useRef(incentives);
+  useEffect(() => { incentivesRef.current = incentives; }, [incentives]);
   const [reportId, setReportId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -665,7 +673,7 @@ export default function TableReport() {
           memo: it.memo,
           sortOrder: i,
         })),
-        incentives: incentives.map((inc, i) => {
+        incentives: incentivesRef.current.map((inc, i) => {
           // 자동 계산: glassCount * 5000 + bottleCount * 10000 + beerBottleCount * 3000
           const autoCalculatedIncentive = (inc.glassCount || 0) * 5000 + (inc.bottleCount || 0) * 10000 + (inc.beerBottleCount || 0) * 3000;
           // 영업인센: 직접 입력값 그대로 저장 (비어있으면 0)
