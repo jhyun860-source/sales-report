@@ -23821,16 +23821,22 @@
       "card": "0",
       "cashTotal": "1017000",
       "cardTotal": "37335000",
-      "posEndAmount": "660000",
+      "posEndAmount": "538000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
       "paymentChangeDate": null,
       "paymentChangeAmount": "0",
-      "expenses": [],
+      "expenses": [
+        {
+          "id": "exp_1787313930603",
+          "amount": "",
+          "description": "Pr"
+        }
+      ],
       "submittedBy": null,
-      "submittedAt": "2026-08-20 18:43:01",
+      "submittedAt": "2026-08-21 12:05:39",
       "createdAt": "2026-08-20 16:47:49",
-      "updatedAt": "2026-08-20 18:43:26",
+      "updatedAt": "2026-08-21 12:05:40",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "346154",
