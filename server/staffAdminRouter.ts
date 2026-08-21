@@ -82,6 +82,25 @@ export const staffAdminRouter = router({
       return { ok: true };
     }),
 
+  // 직원 정보 수정 (실명/가명/구분)
+  update: publicProcedure
+    .input(z.object({
+      id: z.number(),
+      branchId: z.number().optional(),
+      realName: z.string().min(1),
+      alias: z.string().min(1),
+      staffType: z.enum(['staff', 'parttime', 'manager', 'deputy']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const effectiveBranchId = await requireEffectiveBranchId(ctx, input.branchId);
+      await db.update(branchStaff)
+        .set({ realName: input.realName, alias: input.alias, staffType: input.staffType })
+        .where(and(eq(branchStaff.id, input.id), eq(branchStaff.branchId, effectiveBranchId)));
+      return { ok: true };
+    }),
+
   // 직원 삭제 (실제 삭제 대신 active=0으로 목록에서만 숨김 - 과거 인센티브 기록과의 연결 보존)
   remove: publicProcedure
     .input(z.object({ id: z.number(), branchId: z.number().optional() }))
