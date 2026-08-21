@@ -313,7 +313,7 @@ export default function SettlementDashboard() {
               <table className="w-full text-xs" style={{ minWidth: '700px' }}>
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-2 py-2 text-left text-gray-500 font-medium whitespace-nowrap">날짜</th>
+                    <th className="px-2 py-2 text-left text-gray-500 font-medium whitespace-nowrap sticky left-0 z-10 bg-gray-50">날짜</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">총매출</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">세금17%</th>
                     <th className="px-2 py-2 text-right text-gray-500 font-medium whitespace-nowrap">임대료</th>
@@ -331,8 +331,8 @@ export default function SettlementDashboard() {
                     const totalWage = Number(s.staffWageExpense || 0) + Number(s.managerWageExpense || 0) + Number(s.partTimeWageExpense || 0) + Number(s.staffDrinkExpense || 0) + Number(s.salesIncentiveExpense || 0);
                     const liquor = Number(s.liquorCostExpense || 0);
                     return (
-                      <tr key={s.date} className={`hover:bg-gray-50 ${(s as any)._empty ? 'opacity-40' : ''}` }>
-                        <td className="px-2 py-2 text-gray-700 whitespace-nowrap">{s.date?.slice(5)} ({getDayOfWeek(s.date)})</td>
+                      <tr key={s.date} className={`group hover:bg-gray-50 ${(s as any)._empty ? 'opacity-40' : ''}` }>
+                        <td className="px-2 py-2 text-gray-700 whitespace-nowrap sticky left-0 z-10 bg-white group-hover:bg-gray-50">{s.date?.slice(5)} ({getDayOfWeek(s.date)})</td>
                         <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{formatWon(rev)}</td>
                         <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.commissionExpense || 0))}</td>
                         <td className="px-2 py-2 text-right text-gray-500 whitespace-nowrap">{formatWon(Number(s.rentExpense || 0))}</td>
@@ -357,7 +357,7 @@ export default function SettlementDashboard() {
                 </tbody>
                 <tfoot className="bg-gray-50 border-t-2 border-gray-200">
                   <tr>
-                    <td className="px-3 py-2 font-bold text-gray-700">합계</td>
+                    <td className="px-3 py-2 font-bold text-gray-700 whitespace-nowrap sticky left-0 z-10 bg-gray-50">합계</td>
                     <td className="px-2 py-2 text-right font-bold text-gray-700">{formatWon(monthlyTotal.totalRevenue)}</td>
                     <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.commissionExpense)}</td>
                     <td className="px-2 py-2 text-right font-bold text-gray-600">{formatWon(monthlyTotal.rentExpense)}</td>
