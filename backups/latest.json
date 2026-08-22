@@ -24011,7 +24011,7 @@
       "submittedBy": null,
       "submittedAt": null,
       "createdAt": "2026-08-21 18:46:04",
-      "updatedAt": "2026-08-21 18:48:01",
+      "updatedAt": "2026-08-22 08:32:11",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "0",
@@ -24019,12 +24019,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "0",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "302400",
+      "liquorCostExpense": "180000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "302400",
-      "netProfit": "-302400",
+      "totalExpenses": "180000",
+      "netProfit": "-180000",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -102153,8 +102153,8 @@
       "id": 30010,
       "branchId": 2,
       "liquorItemId": 5,
-      "currentStock": "0.00",
-      "updatedAt": "2026-08-21 18:46:04"
+      "currentStock": "1.00",
+      "updatedAt": "2026-08-22 08:31:46"
     },
     {
       "id": 30011,
@@ -102545,8 +102545,8 @@
       "id": 30077,
       "branchId": 2,
       "liquorItemId": 74,
-      "currentStock": "2.00",
-      "updatedAt": "2026-08-21 18:48:01"
+      "currentStock": "3.00",
+      "updatedAt": "2026-08-22 08:32:11"
     },
     {
       "id": 30084,
@@ -146371,20 +146371,6 @@
       "updatedAt": "2026-08-21 16:41:40"
     },
     {
-      "id": 12870935,
-      "branchId": 2,
-      "liquorItemId": 5,
-      "date": "2026-08-22",
-      "type": "OUT",
-      "quantity": "-1.00",
-      "unitCost": "92400",
-      "totalCost": "92400",
-      "memo": null,
-      "createdBy": 2,
-      "createdAt": "2026-08-21 18:46:04",
-      "updatedAt": "2026-08-21 18:48:10"
-    },
-    {
       "id": 12870936,
       "branchId": 2,
       "liquorItemId": 2,
@@ -146411,20 +146397,6 @@
       "createdBy": 2,
       "createdAt": "2026-08-21 18:47:37",
       "updatedAt": "2026-08-21 18:47:37"
-    },
-    {
-      "id": 12870938,
-      "branchId": 2,
-      "liquorItemId": 74,
-      "date": "2026-08-22",
-      "type": "OUT",
-      "quantity": "-1.00",
-      "unitCost": "30000",
-      "totalCost": "30000",
-      "memo": null,
-      "createdBy": 2,
-      "createdAt": "2026-08-21 18:46:04",
-      "updatedAt": "2026-08-21 18:48:10"
     }
   ],
   "liquorHiddenItems": [
