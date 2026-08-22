@@ -24062,6 +24062,41 @@
       "netProfit": "330807",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410215,
+      "branchId": 3,
+      "date": "2026-08-22",
+      "posStartAmount": "92000",
+      "cash": "0",
+      "card": "473000",
+      "cashTotal": "230000",
+      "cardTotal": "20343000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-08-22 14:27:34",
+      "createdAt": "2026-08-22 14:23:15",
+      "updatedAt": "2026-08-22 14:27:34",
+      "totalRevenue": "473000",
+      "commissionExpense": "80410",
+      "rentExpense": "250000",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "190476",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "23077",
+      "totalExpenses": "543963",
+      "netProfit": "-70963",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -31192,6 +31227,17 @@
       "notes": null,
       "createdAt": "2026-08-22 10:48:45",
       "updatedAt": "2026-08-22 10:53:33"
+    },
+    {
+      "id": 10380206,
+      "branchId": 3,
+      "date": "2026-08-22",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "473000",
+      "notes": null,
+      "createdAt": "2026-08-22 14:23:15",
+      "updatedAt": "2026-08-22 14:27:33"
     }
   ],
   "tableItems": [
@@ -74146,6 +74192,58 @@
       "sortOrder": 5,
       "createdAt": "2026-08-22 10:53:33",
       "updatedAt": "2026-08-22 10:54:06"
+    },
+    {
+      "id": 16261102,
+      "tableReportId": 10380206,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "99000",
+      "paymentMethod": "card",
+      "memo": "맥주, 칵테일, 위스키 무제한(2), 칼루아 밀크 (Kahlua &amp; Milk)(1), 치즈 플레이팅(1)",
+      "sortOrder": 0,
+      "createdAt": "2026-08-22 14:23:15",
+      "updatedAt": "2026-08-22 14:23:52"
+    },
+    {
+      "id": 16261103,
+      "tableReportId": 10380206,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "155000",
+      "paymentMethod": "card",
+      "memo": "바탑 1시간 무제한(3), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">스텝음료(2)</mark>, 계절과일(1)",
+      "sortOrder": 1,
+      "createdAt": "2026-08-22 14:23:52",
+      "updatedAt": "2026-08-22 14:25:02"
+    },
+    {
+      "id": 16261104,
+      "tableReportId": 10380206,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "90000",
+      "paymentMethod": "card",
+      "memo": "맥주, 칵테일, 위스키 무제한(3)",
+      "sortOrder": 2,
+      "createdAt": "2026-08-22 14:25:02",
+      "updatedAt": "2026-08-22 14:25:28"
+    },
+    {
+      "id": 16261106,
+      "tableReportId": 10380206,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "129000",
+      "paymentMethod": "card",
+      "memo": "맥주, 칵테일, 위스키 무제한(3), 프리미엄(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">호가든 (330ml)(1)</mark>",
+      "sortOrder": 3,
+      "createdAt": "2026-08-22 14:26:16",
+      "updatedAt": "2026-08-22 14:27:33"
     }
   ],
   "staffIncentives": [
@@ -100698,6 +100796,21 @@
       "sortOrder": 3,
       "createdAt": "2026-08-22 10:48:45",
       "updatedAt": "2026-08-22 10:49:34"
+    },
+    {
+      "id": 11310619,
+      "tableReportId": 10380206,
+      "staffName": "지우(정해선)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-22 14:23:15",
+      "updatedAt": "2026-08-22 14:23:15"
     }
   ],
   "liquorItems": [
