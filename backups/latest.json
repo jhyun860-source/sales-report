@@ -106234,8 +106234,8 @@
       "id": 30421,
       "branchId": 1,
       "liquorItemId": 49,
-      "currentStock": "2.00",
-      "updatedAt": "2026-06-29 09:38:15"
+      "currentStock": "3.00",
+      "updatedAt": "2026-08-25 16:12:44"
     },
     {
       "id": 30422,
@@ -107879,8 +107879,8 @@
       "id": 1230024,
       "branchId": 6,
       "liquorItemId": 49,
-      "currentStock": "1.00",
-      "updatedAt": "2026-06-22 14:55:56"
+      "currentStock": "0.00",
+      "updatedAt": "2026-08-25 16:02:36"
     },
     {
       "id": 1230025,
@@ -148966,6 +148966,34 @@
       "createdBy": 90001,
       "createdAt": "2026-08-25 14:11:39",
       "updatedAt": "2026-08-25 14:11:39"
+    },
+    {
+      "id": 12870997,
+      "branchId": 6,
+      "liquorItemId": 49,
+      "date": "2026-08-26",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "120000",
+      "totalCost": "120000",
+      "memo": "방이 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-25 16:02:36",
+      "updatedAt": "2026-08-25 16:02:36"
+    },
+    {
+      "id": 12870998,
+      "branchId": 1,
+      "liquorItemId": 49,
+      "date": "2026-08-26",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "120000",
+      "totalCost": "120000",
+      "memo": "방이 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-25 16:12:44",
+      "updatedAt": "2026-08-25 16:12:44"
     }
   ],
   "liquorHiddenItems": [
