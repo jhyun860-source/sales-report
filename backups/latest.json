@@ -24627,9 +24627,9 @@
       "date": "2026-08-26",
       "posStartAmount": "300000",
       "cash": "0",
-      "card": "0",
+      "card": "455000",
       "cashTotal": "1966000",
-      "cardTotal": "42889000",
+      "cardTotal": "43344000",
       "posEndAmount": "300000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -24643,22 +24643,22 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-08-26 10:00:26",
+      "submittedAt": "2026-08-26 13:44:55",
       "createdAt": "2026-08-25 19:45:59",
-      "updatedAt": "2026-08-26 10:00:26",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-08-26 13:44:55",
+      "totalRevenue": "455000",
+      "commissionExpense": "77350",
       "rentExpense": "346154",
       "managementFeeExpense": "0",
       "staffWageExpense": "136363",
       "managerWageExpense": "333333",
       "partTimeWageExpense": "320000",
       "liquorCostExpense": "0",
-      "staffDrinkExpense": "0",
-      "salesIncentiveExpense": "0",
-      "otherExpense": "47619",
-      "totalExpenses": "1183469",
-      "netProfit": "-1183469",
+      "staffDrinkExpense": "40000",
+      "salesIncentiveExpense": "24500",
+      "otherExpense": "38462",
+      "totalExpenses": "1316162",
+      "netProfit": "-861162",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -24748,22 +24748,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-26 10:32:03",
+      "submittedAt": "2026-08-26 14:29:11",
       "createdAt": "2026-08-26 10:00:19",
-      "updatedAt": "2026-08-26 10:32:03",
+      "updatedAt": "2026-08-26 14:29:11",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "214286",
-      "partTimeWageExpense": "640000",
+      "partTimeWageExpense": "135000",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1027363",
-      "netProfit": "-1027363",
+      "totalExpenses": "522363",
+      "netProfit": "-522363",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -32101,10 +32101,10 @@
       "date": "2026-08-26",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "0",
+      "cardAmount": "455000",
       "notes": null,
       "createdAt": "2026-08-26 10:00:10",
-      "updatedAt": "2026-08-26 10:00:10"
+      "updatedAt": "2026-08-26 13:44:07"
     },
     {
       "id": 10380225,
@@ -75987,12 +75987,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "215000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(2), 양념 나초(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">새미(1)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">태리(3)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">민경(3)</mark>",
       "sortOrder": 0,
       "createdAt": "2026-08-26 10:00:10",
-      "updatedAt": "2026-08-26 10:00:10"
+      "updatedAt": "2026-08-26 13:43:39"
     },
     {
       "id": 16261200,
@@ -76000,12 +76000,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "40000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "연장 30분(2)",
       "sortOrder": 1,
       "createdAt": "2026-08-26 10:00:14",
-      "updatedAt": "2026-08-26 10:00:14"
+      "updatedAt": "2026-08-26 13:43:39"
     },
     {
       "id": 16261201,
@@ -76013,12 +76013,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "200000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "맥주, 칵테일, 위스키 무제한(3), 과일 &amp; 치즈(1), 블랙 러시안 (Black Russian)(1), 화이트 러시안 (White Russian)(2), 연장 30분(3)",
       "sortOrder": 2,
       "createdAt": "2026-08-26 10:00:14",
-      "updatedAt": "2026-08-26 10:00:14"
+      "updatedAt": "2026-08-26 13:44:07"
     },
     {
       "id": 16261202,
@@ -103202,16 +103202,16 @@
       "id": 11310660,
       "tableReportId": 10380224,
       "staffName": "민경(문민경)",
-      "glassCount": 0,
+      "glassCount": 4,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "staff",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 1,
       "createdAt": "2026-08-26 10:00:10",
-      "updatedAt": "2026-08-26 10:00:10"
+      "updatedAt": "2026-08-26 13:44:55"
     },
     {
       "id": 11310661,
@@ -103220,28 +103220,28 @@
       "glassCount": 0,
       "bottleCount": 0,
       "beerBottleCount": 0,
-      "salesIncentive": "0",
+      "salesIncentive": "24500",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 2,
       "createdAt": "2026-08-26 10:00:10",
-      "updatedAt": "2026-08-26 10:00:10"
+      "updatedAt": "2026-08-26 13:44:55"
     },
     {
       "id": 11310662,
       "tableReportId": 10380224,
       "staffName": "태리(홍태영)",
-      "glassCount": 0,
+      "glassCount": 4,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
+      "workStart": "20:00",
       "workEnd": null,
       "sortOrder": 3,
       "createdAt": "2026-08-26 10:00:10",
-      "updatedAt": "2026-08-26 10:00:10"
+      "updatedAt": "2026-08-26 13:44:55"
     },
     {
       "id": 11310663,
@@ -103267,11 +103267,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
-      "workEnd": null,
+      "workStart": "20:00",
+      "workEnd": "23:15",
       "sortOrder": 1,
       "createdAt": "2026-08-26 10:00:19",
-      "updatedAt": "2026-08-26 10:00:19"
+      "updatedAt": "2026-08-26 14:16:14"
     },
     {
       "id": 11310665,
@@ -103312,11 +103312,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
-      "workEnd": null,
+      "workStart": "20:00",
+      "workEnd": "23:30",
       "sortOrder": 4,
       "createdAt": "2026-08-26 10:00:19",
-      "updatedAt": "2026-08-26 10:00:19"
+      "updatedAt": "2026-08-26 14:29:10"
     }
   ],
   "liquorItems": [
