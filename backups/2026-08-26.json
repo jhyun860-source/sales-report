@@ -24132,7 +24132,7 @@
       "submittedBy": null,
       "submittedAt": "2026-08-22 16:28:43",
       "createdAt": "2026-08-22 16:28:42",
-      "updatedAt": "2026-08-26 02:31:45",
+      "updatedAt": "2026-08-26 04:33:11",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "173077",
@@ -24140,12 +24140,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "0",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "219000",
+      "liquorCostExpense": "134000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "392077",
-      "netProfit": "-392077",
+      "totalExpenses": "307077",
+      "netProfit": "-307077",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -108180,7 +108180,7 @@
       "branchId": 6,
       "liquorItemId": 54,
       "currentStock": "1.00",
-      "updatedAt": "2026-08-24 13:28:58"
+      "updatedAt": "2026-08-26 04:34:08"
     },
     {
       "id": 1230018,
@@ -149107,20 +149107,6 @@
       "updatedAt": "2026-08-26 02:31:45"
     },
     {
-      "id": 12870982,
-      "branchId": 6,
-      "liquorItemId": 54,
-      "date": "2026-08-21",
-      "type": "OUT",
-      "quantity": "-1.00",
-      "unitCost": "85000",
-      "totalCost": "85000",
-      "memo": null,
-      "createdBy": 90001,
-      "createdAt": "2026-08-24 13:28:58",
-      "updatedAt": "2026-08-26 02:31:45"
-    },
-    {
       "id": 12870983,
       "branchId": 2,
       "liquorItemId": 1,
@@ -149441,6 +149427,20 @@
       "createdBy": 2,
       "createdAt": "2026-08-25 19:51:40",
       "updatedAt": "2026-08-25 19:51:40"
+    },
+    {
+      "id": 12871006,
+      "branchId": 6,
+      "liquorItemId": 54,
+      "date": "2026-08-26",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "85000",
+      "totalCost": "85000",
+      "memo": "방이 > 대치 이동",
+      "createdBy": 6,
+      "createdAt": "2026-08-26 04:34:08",
+      "updatedAt": "2026-08-26 04:34:08"
     }
   ],
   "liquorHiddenItems": [
