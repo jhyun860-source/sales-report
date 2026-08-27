@@ -106,6 +106,7 @@ type IncentiveLocal = {
   workEndHour: string;     // 표시용 시간 (1~12)
   workStartMin: string;    // 표시용 분 (00~59)
   workEndMin: string;      // 표시용 분 (00~59)
+  wageExempt: boolean;     // true면 출근/잔추가는 인정하되 시급(인건비) 계산에서 제외
 };
 
 function makeLocalId() {
@@ -117,7 +118,7 @@ function emptyItem(): TableItemLocal {
 }
 
 function emptyIncentive(): IncentiveLocal {
-  return { localId: makeLocalId(), staffName: '', staffType: 'staff', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '', workStartAmPm: 'PM', workEndAmPm: 'PM', workStartHour: '', workEndHour: '', workStartMin: '', workEndMin: '' };
+  return { localId: makeLocalId(), staffName: '', staffType: 'staff', glassCount: 0, bottleCount: 0, beerBottleCount: 0, salesIncentive: '', workStart: '', workEnd: '', workStartAmPm: 'PM', workEndAmPm: 'PM', workStartHour: '', workEndHour: '', workStartMin: '', workEndMin: '', wageExempt: false };
 }
 
 // HH:mm → 오전/오후, 시간(1~12), 분 역변환
@@ -306,6 +307,7 @@ export default function TableReport() {
           workEndHour: fromHHMM(inc.workEnd ?? '').hour,
           workStartMin: fromHHMM(inc.workStart ?? '').min,
           workEndMin: fromHHMM(inc.workEnd ?? '').min,
+          wageExempt: !!inc.wageExempt,
         })));
       } else {
         setIncentives([]);
@@ -592,6 +594,7 @@ export default function TableReport() {
               salesIncentive: String(finalSalesIncentive || autoCalculatedIncentive),
               workStart: inc.workStart || null,
               workEnd: inc.workEnd || null,
+              wageExempt: inc.wageExempt,
               sortOrder: i,
             };
           }),
@@ -691,6 +694,7 @@ export default function TableReport() {
             salesIncentive: String(finalSalesIncentive),
             workStart: inc.workStart || undefined,
             workEnd: inc.workEnd || undefined,
+            wageExempt: inc.wageExempt,
             sortOrder: i,
           };
         }),
@@ -1246,6 +1250,18 @@ export default function TableReport() {
                     }}
                   >
                     {inc.staffType === 'staff' ? '직원' : inc.staffType === 'parttime' ? '아르바' : inc.staffType === 'manager' ? '점장' : '매니저'}
+                  </button>
+                  <button
+                    onClick={() => { updateIncentiveField(inc.localId, 'wageExempt', !inc.wageExempt as any); try { navigator.vibrate?.(30); } catch {} }}
+                    className="text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap border"
+                    style={{
+                      background: inc.wageExempt ? 'oklch(0.55 0.18 25)' : 'transparent',
+                      color: inc.wageExempt ? 'white' : MUTED,
+                      borderColor: inc.wageExempt ? 'oklch(0.55 0.18 25)' : BORDER,
+                    }}
+                    title="체크하면 이 사람은 출근/잔추가는 인정되지만 시급(인건비) 계산에서는 빠집니다"
+                  >
+                    시급 미대상{inc.wageExempt ? ' ✓' : ''}
                   </button>
                   <button onClick={() => { removeIncentive(inc); try { navigator.vibrate?.(60); } catch {} }} className="p-1 opacity-40 hover:opacity-70 flex-shrink-0">
                     <Trash2 size={13} />
