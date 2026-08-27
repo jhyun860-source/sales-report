@@ -452,6 +452,24 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, dailyWage, count: results.length, results });
       }
 
+      if (mode === "addwageexempt") {
+        // 안전: 컬럼 추가만 함 (없으면 추가, 있으면 그대로 통과). 기존 데이터는 전혀 안 건드림.
+        try {
+          const [cols]: any = await conn.query(
+            `SHOW COLUMNS FROM staffIncentives LIKE 'wageExempt'`
+          );
+          if (cols.length === 0) {
+            await conn.query(
+              `ALTER TABLE staffIncentives ADD COLUMN wageExempt INT NOT NULL DEFAULT 0`
+            );
+            return res.json({ mode, ok: true, message: "wageExempt 컬럼 추가 완료" });
+          }
+          return res.json({ mode, ok: true, message: "wageExempt 컬럼 이미 존재함" });
+        } catch (e: any) {
+          return res.status(500).json({ mode, ok: false, error: String(e?.message || e) });
+        }
+      }
+
       if (mode === "addstafftypes") {
         // 안전: 컬럼 타입만 확장(ENUM에 값 추가). 기존 데이터는 그대로 유지됨.
         try {
@@ -554,7 +572,7 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, ok: true, message: "수동 백업 트리거 완료" });
       }
 
-      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes|normalizestaffnames|renamestaffname" });
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes|normalizestaffnames|renamestaffname|addwageexempt" });
     } catch (e: any) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
