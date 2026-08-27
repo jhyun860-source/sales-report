@@ -274,6 +274,7 @@ export const staffIncentives = mysqlTable("staffIncentives", {
   beerBottleCount: int("beerBottleCount").default(0).notNull(), // 맥주 병추가 수
   salesIncentive: decimal("salesIncentive", { precision: 15, scale: 0 }).default("0").notNull(), // 영업 인센티브 금액
   staffType: mysqlEnum("staffType", ["staff", "parttime", "manager", "deputy"]).default("staff").notNull(), // 직원/아르바이트/점장
+  wageExempt: int("wageExempt").default(0).notNull(), // 1이면 출근/잔추가는 인정하되 시급(인건비) 계산에서 제외
   workStart: varchar("workStart", { length: 5 }), // 근무 시작 시간 (HH:mm)
   workEnd: varchar("workEnd", { length: 5 }), // 근무 종료 시간 (HH:mm)
   sortOrder: int("sortOrder").default(0).notNull(),
