@@ -4877,6 +4877,7 @@ export const appRouter = router({
           salesIncentive: z.string().default('0'),
           workStart: z.string().optional(),
           workEnd: z.string().optional(),
+          wageExempt: z.boolean().optional().default(false),
           sortOrder: z.number().default(0),
         })),
       }))
@@ -4986,6 +4987,7 @@ export const appRouter = router({
             salesIncentive: inc.salesIncentive || '0',
             workStart: inc.workStart || null,
             workEnd: inc.workEnd || null,
+            wageExempt: inc.wageExempt ? 1 : 0,
           }).where(eq(staffIncentives.id, inc.id!));
           incentiveIdMap[inc.localId] = inc.id!;
         }));
@@ -5002,6 +5004,7 @@ export const appRouter = router({
             salesIncentive: inc.salesIncentive || '0',
             workStart: inc.workStart || null,
             workEnd: inc.workEnd || null,
+            wageExempt: inc.wageExempt ? 1 : 0,
             sortOrder: inc.sortOrder,
           });
           incentiveIdMap[inc.localId] = (result as any).insertId;
@@ -5050,12 +5053,13 @@ export const appRouter = router({
           const rec2 = salesRec2 && salesRec2.length > 0 ? salesRec2[0] : null;
           // DB 재조회 대신 input.incentives에서 직접 계산 (INSERT 타이밍 문제 방지)
           const validInc2 = input.incentives.filter(inc => inc.staffName);
-          const sc2 = validInc2.filter(i => i.staffType === 'staff').length;
-          const pc2 = validInc2.filter(i => i.staffType === 'parttime').length;
-          const mc2 = validInc2.filter(i => i.staffType === 'manager').length;
-          const dc2 = validInc2.filter(i => i.staffType === 'deputy').length;
+          const wageEligible2 = validInc2.filter((i: any) => !i.wageExempt); // 시급 미대상 제외 (잔추가/영업인센은 validInc2 그대로 사용해서 영향 없음)
+          const sc2 = wageEligible2.filter(i => i.staffType === 'staff').length;
+          const pc2 = wageEligible2.filter(i => i.staffType === 'parttime').length;
+          const mc2 = wageEligible2.filter(i => i.staffType === 'manager').length;
+          const dc2 = wageEligible2.filter(i => i.staffType === 'deputy').length;
           let pth2 = 0;
-          for (const inc of validInc2.filter((i: any) => i.staffType === 'parttime')) {
+          for (const inc of wageEligible2.filter((i: any) => i.staffType === 'parttime')) {
             if (inc.workStart && inc.workEnd) {
               try {
                 const [sh, sm] = (inc.workStart as string).split(':').map(Number);
