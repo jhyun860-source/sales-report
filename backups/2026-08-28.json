@@ -25035,10 +25035,10 @@
       "branchId": 6,
       "date": "2026-08-27",
       "posStartAmount": "123000",
-      "cash": "0",
-      "card": "560000",
-      "cashTotal": "220000",
-      "cardTotal": "7762100",
+      "cash": "385000",
+      "card": "175000",
+      "cashTotal": "605000",
+      "cardTotal": "7377100",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -25046,9 +25046,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-08-27 18:58:44",
+      "submittedAt": "2026-08-28 05:18:53",
       "createdAt": "2026-08-27 18:57:51",
-      "updatedAt": "2026-08-27 18:58:44",
+      "updatedAt": "2026-08-28 05:18:54",
       "totalRevenue": "560000",
       "commissionExpense": "95200",
       "rentExpense": "173077",
@@ -32497,11 +32497,11 @@
       "branchId": 6,
       "date": "2026-08-27",
       "teamCount": 1,
-      "cashAmount": "0",
-      "cardAmount": "560000",
+      "cashAmount": "385000",
+      "cardAmount": "175000",
       "notes": null,
       "createdAt": "2026-08-27 18:57:51",
-      "updatedAt": "2026-08-27 18:58:43"
+      "updatedAt": "2026-08-28 05:18:52"
     }
   ],
   "tableItems": [
@@ -76959,11 +76959,11 @@
       "guestType": "walking",
       "guestName": null,
       "amount": "385000",
-      "paymentMethod": "card",
+      "paymentMethod": "cash",
       "memo": "1시간 무제한(1), 나쵸(1), 바탑 연장 30분(서브O)(2), 발렌타인17y잔술(12)",
       "sortOrder": 0,
       "createdAt": "2026-08-27 18:57:51",
-      "updatedAt": "2026-08-27 18:58:43"
+      "updatedAt": "2026-08-28 05:18:51"
     },
     {
       "id": 16261252,
