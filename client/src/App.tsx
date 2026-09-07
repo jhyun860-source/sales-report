@@ -16,21 +16,43 @@ import SettlementDashboard from "./pages/SettlementDashboard";
 import BranchSettings from "./pages/BranchSettings";
 import StaffAdmin from "./pages/StaffAdmin";
 import { UpdateBanner } from "./components/UpdateBanner";
+import StaffLiquorGuard from "./components/StaffLiquorGuard";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      {/* 직원(주류 전용) 계정도 접근 가능한 페이지 */}
       <Route path={"/login"} component={Login} />
-      <Route path={"/history"} component={History} />
-      <Route path={"/admin"} component={AdminDashboard} />
-      <Route path={"/admin/manage"} component={AdminManage} />
-      <Route path={"/table-report"} component={TableReport} />
-      <Route path={"/staff-incentive"} component={StaffIncentiveStats} />
       <Route path={"/liquor-stock"} component={LiquorStockReport} />
-      <Route path={"/settlement"} component={SettlementDashboard} />
-      <Route path={"/branch-settings"} component={BranchSettings} />
-      <Route path={"/staff-admin"} component={StaffAdmin} />
+
+      {/* 아래는 매니저/관리자 전용 — 직원 계정은 주류 화면으로 되돌립니다 */}
+      <Route path={"/"}>
+        <StaffLiquorGuard><Home /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/history"}>
+        <StaffLiquorGuard><History /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/admin"}>
+        <StaffLiquorGuard><AdminDashboard /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/admin/manage"}>
+        <StaffLiquorGuard><AdminManage /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/table-report"}>
+        <StaffLiquorGuard><TableReport /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/staff-incentive"}>
+        <StaffLiquorGuard><StaffIncentiveStats /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/settlement"}>
+        <StaffLiquorGuard><SettlementDashboard /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/branch-settings"}>
+        <StaffLiquorGuard><BranchSettings /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/staff-admin"}>
+        <StaffLiquorGuard><StaffAdmin /></StaffLiquorGuard>
+      </Route>
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
