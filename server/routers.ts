@@ -2711,6 +2711,10 @@ function getSeedCategory(rawCategory: string): string {
 }
 
 async function ensureBoxHeroBranchStockSeeded(db: Awaited<ReturnType<typeof getDb>>) {
+  // [2026-09-10 비활성화] BoxHero 초기 이관용 시딩. 이관은 완료되었고,
+  // 이 시딩이 재실행되면 품목을 새로 생성하면서 다른 지점 숨김 처리를 하지 않아
+  // 전 지점에 품목이 자동 노출되는 문제가 반복되었음. 이후 품목은 화면에서만 추가한다.
+  return;
   if (!db) return;
   await ensureLiquorTables(db);
   const existingSeed: any = await db.execute(sql`SELECT seedKey FROM liquorSeedMeta WHERE seedKey = ${BOXHERO_STOCK_SEED_VERSION} LIMIT 1`);
