@@ -14,6 +14,27 @@ import { useStoreAuth } from '@/hooks/useStoreAuth';
 import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw, Package, Users } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import { isStaffLiquorOnly } from '@/lib/accountAccess';
+
+// [백업 경고 배너] 관리자에게만 표시. 마지막 백업 성공이 4시간 이상 지났거나 실패 기록이 있으면 빨간 경고.
+function BackupWarningBanner() {
+  const [st, setSt] = useState<{ lastSuccessAt: string | null; lastError: string | null; hoursSinceSuccess: number | null; stale: boolean } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => fetch('/api/backup-status').then(r => r.json()).then(d => { if (alive) setSt(d); }).catch(() => {});
+    load();
+    const t = setInterval(load, 10 * 60 * 1000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+  if (!st || !st.stale) return null;
+  const last = st.lastSuccessAt ? new Date(st.lastSuccessAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '기록 없음';
+  const hrs = st.hoursSinceSuccess === null ? null : Math.floor(st.hoursSinceSuccess);
+  return (
+    <div className="bg-red-600 text-white px-4 py-2 text-sm font-bold">
+      ⚠️ 자동 백업 이상 — 마지막 성공: {last}{hrs !== null ? ` (${hrs}시간 전)` : ''}
+      {st.lastError ? <div className="text-xs font-normal opacity-90 mt-0.5">원인: {st.lastError}</div> : null}
+    </div>
+  );
+}
 import {
   type ExpenseItem,
   parseAmount,
@@ -566,6 +587,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ background: 'oklch(0.985 0.008 85)' }}>
+      {user.role === 'admin' && <BackupWarningBanner />}
       {/* ── 상단 헤더: 2줄 구조 ── */}
       <header
         className="sticky top-0 z-10 border-b"
