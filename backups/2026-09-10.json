@@ -116479,11 +116479,11 @@
       "id": 240002,
       "name": "시바스리갈(12y)",
       "category": "위스키",
-      "unitCost": "0",
+      "unitCost": "50000",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-05-07 10:36:01",
-      "updatedAt": "2026-05-07 10:36:01"
+      "updatedAt": "2026-09-09 20:00:11"
     },
     {
       "id": 240003,
@@ -116758,12 +116758,12 @@
     {
       "id": 630006,
       "name": "카스 논알콜맥주",
-      "category": "위스키",
+      "category": "맥주",
       "unitCost": "0",
       "isActive": 1,
       "sortOrder": 135,
       "createdAt": "2026-05-31 01:48:50",
-      "updatedAt": "2026-05-31 01:48:50"
+      "updatedAt": "2026-09-09 19:58:44"
     },
     {
       "id": 630007,
@@ -116959,21 +116959,21 @@
       "id": 690002,
       "name": "발베니 12",
       "category": "위스키",
-      "unitCost": "0",
+      "unitCost": "120000",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-07-17 11:09:24",
-      "updatedAt": "2026-07-17 11:09:24"
+      "updatedAt": "2026-09-09 19:57:04"
     },
     {
       "id": 690003,
       "name": "글렌버기12y (500ml)",
       "category": "위스키",
-      "unitCost": "0",
+      "unitCost": "85000",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-07-28 17:56:54",
-      "updatedAt": "2026-07-28 17:56:54"
+      "updatedAt": "2026-09-09 19:59:44"
     },
     {
       "id": 690004,
@@ -119949,13 +119949,6 @@
       "updatedAt": "2026-05-31 01:48:52"
     },
     {
-      "id": 840016,
-      "branchId": 2,
-      "liquorItemId": 630010,
-      "currentStock": "2.00",
-      "updatedAt": "2026-05-31 01:48:53"
-    },
-    {
       "id": 840018,
       "branchId": 30001,
       "liquorItemId": 48,
@@ -120614,13 +120607,6 @@
       "updatedAt": "2026-08-03 11:18:35"
     },
     {
-      "id": 840125,
-      "branchId": 5,
-      "liquorItemId": 240005,
-      "currentStock": "0.00",
-      "updatedAt": "2026-05-31 01:49:18"
-    },
-    {
       "id": 840126,
       "branchId": 3,
       "liquorItemId": 450001,
@@ -120710,13 +120696,6 @@
       "liquorItemId": 660001,
       "currentStock": "1.00",
       "updatedAt": "2026-06-01 14:57:19"
-    },
-    {
-      "id": 960001,
-      "branchId": 3,
-      "liquorItemId": 630001,
-      "currentStock": "0.00",
-      "updatedAt": "2026-06-01 14:06:38"
     },
     {
       "id": 990001,
@@ -123079,12 +123058,12 @@
       "date": "2026-05-07",
       "type": "ADJUST",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "50000",
+      "totalCost": "100000",
       "memo": "제품 등록 초기 재고",
       "createdBy": 4,
       "createdAt": "2026-05-07 10:36:01",
-      "updatedAt": "2026-05-07 10:36:01"
+      "updatedAt": "2026-09-09 20:00:11"
     },
     {
       "id": 840005,
@@ -150659,12 +150638,12 @@
       "date": "2026-07-17",
       "type": "ADJUST",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "240000",
       "memo": "재고수정: 0개 → 2개 (+2)",
       "createdBy": 2,
       "createdAt": "2026-07-17 11:13:00",
-      "updatedAt": "2026-07-17 11:13:00"
+      "updatedAt": "2026-09-09 19:57:04"
     },
     {
       "id": 12870156,
@@ -150673,12 +150652,12 @@
       "date": "2026-07-16",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "120000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-07-17 11:09:04",
-      "updatedAt": "2026-07-17 11:13:25"
+      "updatedAt": "2026-09-09 19:57:04"
     },
     {
       "id": 12870157,
@@ -151037,12 +151016,12 @@
       "date": "2026-07-20",
       "type": "IN",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "240000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-07-20 10:13:26",
-      "updatedAt": "2026-07-20 10:13:26"
+      "updatedAt": "2026-09-09 19:57:04"
     },
     {
       "id": 12870183,
@@ -153137,12 +153116,12 @@
       "date": "2026-07-24",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "120000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-07-24 21:00:53",
-      "updatedAt": "2026-07-24 21:01:12"
+      "updatedAt": "2026-09-09 19:57:04"
     },
     {
       "id": 12870350,
@@ -153949,12 +153928,12 @@
       "date": "2026-07-29",
       "type": "ADJUST",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "85000",
+      "totalCost": "170000",
       "memo": "제품 등록 초기 재고",
       "createdBy": 4,
       "createdAt": "2026-07-28 17:56:54",
-      "updatedAt": "2026-07-28 17:56:54"
+      "updatedAt": "2026-09-09 19:59:44"
     },
     {
       "id": 12870408,
@@ -155951,12 +155930,12 @@
       "date": "2026-08-03",
       "type": "OUT",
       "quantity": "-2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "240000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-03 17:46:36",
-      "updatedAt": "2026-08-03 17:52:38"
+      "updatedAt": "2026-09-09 19:57:04"
     },
     {
       "id": 12870557,
@@ -156021,12 +156000,12 @@
       "date": "2026-08-04",
       "type": "IN",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "240000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-04 10:15:12",
-      "updatedAt": "2026-08-04 10:15:12"
+      "updatedAt": "2026-09-09 19:57:04"
     },
     {
       "id": 12870562,
@@ -163525,12 +163504,12 @@
       "date": "2026-08-31",
       "type": "ADJUST",
       "quantity": "1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "120000",
       "memo": "삼성 > 대치 이동",
       "createdBy": 6,
       "createdAt": "2026-08-31 14:20:01",
-      "updatedAt": "2026-08-31 14:20:01"
+      "updatedAt": "2026-09-09 19:57:05"
     },
     {
       "id": 12871106,
@@ -163679,12 +163658,12 @@
       "date": "2026-08-31",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "120000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-31 17:28:14",
-      "updatedAt": "2026-08-31 17:28:14"
+      "updatedAt": "2026-09-09 19:57:05"
     },
     {
       "id": 12871117,
@@ -164953,12 +164932,12 @@
       "date": "2026-09-03",
       "type": "ADJUST",
       "quantity": "1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "120000",
       "memo": "삼성->대치",
       "createdBy": 2,
       "createdAt": "2026-09-03 12:16:09",
-      "updatedAt": "2026-09-03 12:16:09"
+      "updatedAt": "2026-09-09 19:57:05"
     },
     {
       "id": 12871210,
@@ -165821,12 +165800,12 @@
       "date": "2026-09-08",
       "type": "IN",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "240000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-09-08 09:43:38",
-      "updatedAt": "2026-09-08 09:43:38"
+      "updatedAt": "2026-09-09 19:57:05"
     },
     {
       "id": 12871272,
@@ -165877,12 +165856,12 @@
       "date": "2026-09-07",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "120000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-09-07 16:38:52",
-      "updatedAt": "2026-09-08 09:48:19"
+      "updatedAt": "2026-09-09 19:57:05"
     },
     {
       "id": 12871276,
@@ -166633,12 +166612,12 @@
       "date": "2026-09-10",
       "type": "ADJUST",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "120000",
+      "totalCost": "120000",
       "memo": "대치->선릉",
       "createdBy": 2,
       "createdAt": "2026-09-09 17:02:33",
-      "updatedAt": "2026-09-09 17:02:33"
+      "updatedAt": "2026-09-09 19:57:05"
     },
     {
       "id": 12871330,
@@ -168505,6 +168484,42 @@
       "branchId": 1,
       "liquorItemId": 630001,
       "createdAt": "2026-09-09 19:36:58"
+    },
+    {
+      "id": 840065,
+      "branchId": 5,
+      "liquorItemId": 240005,
+      "createdAt": "2026-09-09 19:40:16"
+    },
+    {
+      "id": 840066,
+      "branchId": 3,
+      "liquorItemId": 30041,
+      "createdAt": "2026-09-09 19:40:44"
+    },
+    {
+      "id": 840067,
+      "branchId": 3,
+      "liquorItemId": 630001,
+      "createdAt": "2026-09-09 19:40:49"
+    },
+    {
+      "id": 840068,
+      "branchId": 6,
+      "liquorItemId": 630001,
+      "createdAt": "2026-09-09 19:41:01"
+    },
+    {
+      "id": 840069,
+      "branchId": 6,
+      "liquorItemId": 30041,
+      "createdAt": "2026-09-09 19:41:07"
+    },
+    {
+      "id": 840070,
+      "branchId": 2,
+      "liquorItemId": 630010,
+      "createdAt": "2026-09-09 19:57:28"
     }
   ]
 }
