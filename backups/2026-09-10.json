@@ -168399,6 +168399,12 @@
       "branchId": 3,
       "liquorItemId": 630010,
       "createdAt": "2026-09-09 19:28:27"
+    },
+    {
+      "id": 840045,
+      "branchId": 4,
+      "liquorItemId": 360002,
+      "createdAt": "2026-09-09 19:29:25"
     }
   ]
 }
