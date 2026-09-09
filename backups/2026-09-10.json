@@ -116559,11 +116559,11 @@
       "id": 360002,
       "name": "버드와이저",
       "category": "맥주",
-      "unitCost": "0",
+      "unitCost": "2000",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-05-12 15:19:40",
-      "updatedAt": "2026-05-12 15:19:40"
+      "updatedAt": "2026-09-09 19:35:33"
     },
     {
       "id": 360003,
@@ -116599,31 +116599,31 @@
       "id": 360006,
       "name": "켈리(생맥주)",
       "category": "맥주",
-      "unitCost": "0",
+      "unitCost": "100000",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-05-12 15:22:37",
-      "updatedAt": "2026-05-12 15:22:37"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 360007,
       "name": "코로나",
       "category": "맥주",
-      "unitCost": "0",
+      "unitCost": "3300",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-05-12 15:23:09",
-      "updatedAt": "2026-05-12 15:23:09"
+      "updatedAt": "2026-09-09 19:35:47"
     },
     {
       "id": 360008,
       "name": "타이거",
       "category": "맥주",
-      "unitCost": "0",
+      "unitCost": "3300",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-05-12 15:24:00",
-      "updatedAt": "2026-05-12 15:24:00"
+      "updatedAt": "2026-09-09 19:35:56"
     },
     {
       "id": 390001,
@@ -116869,11 +116869,11 @@
       "id": 630017,
       "name": "론디아즈",
       "category": "리큐르",
-      "unitCost": "20000",
+      "unitCost": "30000",
       "isActive": 1,
       "sortOrder": 146,
       "createdAt": "2026-05-31 01:49:10",
-      "updatedAt": "2026-07-17 04:21:48"
+      "updatedAt": "2026-09-09 19:36:42"
     },
     {
       "id": 630018,
@@ -119193,13 +119193,6 @@
       "updatedAt": "2026-08-10 09:31:29"
     },
     {
-      "id": 30395,
-      "branchId": 1,
-      "liquorItemId": 30041,
-      "currentStock": "0.00",
-      "updatedAt": "2026-06-01 18:45:04"
-    },
-    {
       "id": 30396,
       "branchId": 1,
       "liquorItemId": 70,
@@ -120661,13 +120654,6 @@
       "liquorItemId": 30055,
       "currentStock": "0.00",
       "updatedAt": "2026-05-31 01:49:26"
-    },
-    {
-      "id": 840136,
-      "branchId": 3,
-      "liquorItemId": 630021,
-      "currentStock": "0.00",
-      "updatedAt": "2026-05-31 01:49:27"
     },
     {
       "id": 840137,
@@ -124829,12 +124815,12 @@
       "date": "2026-05-13",
       "type": "ADJUST",
       "quantity": "61.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "2000",
+      "totalCost": "122000",
       "memo": "제품 등록 초기 재고",
       "createdBy": 5,
       "createdAt": "2026-05-12 15:19:40",
-      "updatedAt": "2026-05-12 15:19:40"
+      "updatedAt": "2026-09-09 19:35:33"
     },
     {
       "id": 1410004,
@@ -124927,12 +124913,12 @@
       "date": "2026-05-13",
       "type": "ADJUST",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "100000",
+      "totalCost": "200000",
       "memo": "제품 등록 초기 재고",
       "createdBy": 5,
       "createdAt": "2026-05-12 15:22:38",
-      "updatedAt": "2026-05-12 15:22:38"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 1410011,
@@ -124941,12 +124927,12 @@
       "date": "2026-05-13",
       "type": "ADJUST",
       "quantity": "20.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "66000",
       "memo": "제품 등록 초기 재고",
       "createdBy": 5,
       "createdAt": "2026-05-12 15:23:09",
-      "updatedAt": "2026-05-12 15:23:09"
+      "updatedAt": "2026-09-09 19:35:47"
     },
     {
       "id": 1410012,
@@ -124969,12 +124955,12 @@
       "date": "2026-05-13",
       "type": "ADJUST",
       "quantity": "14.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "46200",
       "memo": "제품 등록 초기 재고",
       "createdBy": 5,
       "createdAt": "2026-05-12 15:24:00",
-      "updatedAt": "2026-05-12 15:24:00"
+      "updatedAt": "2026-09-09 19:35:56"
     },
     {
       "id": 1410014,
@@ -126243,12 +126229,12 @@
       "date": "2026-05-15",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "100000",
+      "totalCost": "100000",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-05-16 07:08:13",
-      "updatedAt": "2026-05-16 07:08:13"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 2070002,
@@ -126831,12 +126817,12 @@
       "date": "2026-05-18",
       "type": "IN",
       "quantity": "1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "100000",
+      "totalCost": "100000",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-05-18 11:03:13",
-      "updatedAt": "2026-05-18 11:03:13"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 2250001,
@@ -134335,12 +134321,12 @@
       "date": "2026-06-04",
       "type": "IN",
       "quantity": "1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "2000",
+      "totalCost": "2000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-06-04 10:10:12",
-      "updatedAt": "2026-06-04 10:10:12"
+      "updatedAt": "2026-09-09 19:35:33"
     },
     {
       "id": 5040017,
@@ -134825,12 +134811,12 @@
       "date": "2026-06-05",
       "type": "OUT",
       "quantity": "-11.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "36300",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-06-05 17:07:34",
-      "updatedAt": "2026-06-05 17:07:34"
+      "updatedAt": "2026-09-09 19:35:47"
     },
     {
       "id": 5280003,
@@ -139081,12 +139067,12 @@
       "date": "2026-06-18",
       "type": "OUT",
       "quantity": "-6.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "19800",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-06-18 18:08:03",
-      "updatedAt": "2026-06-18 18:08:03"
+      "updatedAt": "2026-09-09 19:35:47"
     },
     {
       "id": 7680003,
@@ -139417,12 +139403,12 @@
       "date": "2026-06-19",
       "type": "IN",
       "quantity": "24.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "79200",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-06-19 11:52:42",
-      "updatedAt": "2026-06-19 11:52:42"
+      "updatedAt": "2026-09-09 19:35:47"
     },
     {
       "id": 7920001,
@@ -148405,12 +148391,12 @@
       "date": "2026-07-10",
       "type": "OUT",
       "quantity": "-2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "2000",
+      "totalCost": "4000",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-07-10 17:41:19",
-      "updatedAt": "2026-07-10 17:41:19"
+      "updatedAt": "2026-09-09 19:35:33"
     },
     {
       "id": 12810001,
@@ -149357,12 +149343,12 @@
       "date": "2026-07-15",
       "type": "OUT",
       "quantity": "-5.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "16500",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-07-15 15:34:53",
-      "updatedAt": "2026-07-15 15:34:53"
+      "updatedAt": "2026-09-09 19:35:47"
     },
     {
       "id": 12870059,
@@ -149371,12 +149357,12 @@
       "date": "2026-07-15",
       "type": "OUT",
       "quantity": "-2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "6600",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-07-15 15:34:53",
-      "updatedAt": "2026-07-15 15:34:53"
+      "updatedAt": "2026-09-09 19:35:56"
     },
     {
       "id": 12870060,
@@ -149413,12 +149399,12 @@
       "date": "2026-07-15",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "100000",
+      "totalCost": "100000",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-07-15 15:34:55",
-      "updatedAt": "2026-07-15 15:34:55"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 12870063,
@@ -149749,12 +149735,12 @@
       "date": "2026-07-16",
       "type": "IN",
       "quantity": "1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "100000",
+      "totalCost": "100000",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-07-16 09:50:59",
-      "updatedAt": "2026-07-16 09:50:59"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 12870087,
@@ -153487,12 +153473,12 @@
       "date": "2026-07-27",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "2000",
+      "totalCost": "2000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-07-27 16:42:44",
-      "updatedAt": "2026-07-27 17:12:23"
+      "updatedAt": "2026-09-09 19:35:33"
     },
     {
       "id": 12870374,
@@ -157995,12 +157981,12 @@
       "date": "2026-08-10",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "100000",
+      "totalCost": "100000",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-08-10 15:44:22",
-      "updatedAt": "2026-08-10 15:44:22"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 12870702,
@@ -158177,12 +158163,12 @@
       "date": "2026-08-11",
       "type": "IN",
       "quantity": "1.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "100000",
+      "totalCost": "100000",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-08-11 11:30:56",
-      "updatedAt": "2026-08-11 11:30:56"
+      "updatedAt": "2026-09-09 19:35:17"
     },
     {
       "id": 12870715,
@@ -166227,12 +166213,12 @@
       "date": "2026-09-08",
       "type": "OUT",
       "quantity": "-6.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "3300",
+      "totalCost": "19800",
       "memo": null,
       "createdBy": 5,
       "createdAt": "2026-09-08 16:13:16",
-      "updatedAt": "2026-09-08 16:13:16"
+      "updatedAt": "2026-09-09 19:35:56"
     },
     {
       "id": 12871300,
@@ -168405,6 +168391,120 @@
       "branchId": 4,
       "liquorItemId": 360002,
       "createdAt": "2026-09-09 19:29:25"
+    },
+    {
+      "id": 840046,
+      "branchId": 1,
+      "liquorItemId": 360002,
+      "createdAt": "2026-09-09 19:32:10"
+    },
+    {
+      "id": 840047,
+      "branchId": 1,
+      "liquorItemId": 120001,
+      "createdAt": "2026-09-09 19:32:22"
+    },
+    {
+      "id": 840048,
+      "branchId": 1,
+      "liquorItemId": 150001,
+      "createdAt": "2026-09-09 19:32:42"
+    },
+    {
+      "id": 840049,
+      "branchId": 1,
+      "liquorItemId": 630010,
+      "createdAt": "2026-09-09 19:32:42"
+    },
+    {
+      "id": 840050,
+      "branchId": 1,
+      "liquorItemId": 630018,
+      "createdAt": "2026-09-09 19:33:02"
+    },
+    {
+      "id": 840051,
+      "branchId": 1,
+      "liquorItemId": 360006,
+      "createdAt": "2026-09-09 19:33:02"
+    },
+    {
+      "id": 840052,
+      "branchId": 1,
+      "liquorItemId": 630021,
+      "createdAt": "2026-09-09 19:33:24"
+    },
+    {
+      "id": 840053,
+      "branchId": 1,
+      "liquorItemId": 630003,
+      "createdAt": "2026-09-09 19:33:24"
+    },
+    {
+      "id": 840054,
+      "branchId": 3,
+      "liquorItemId": 630021,
+      "createdAt": "2026-09-09 19:33:45"
+    },
+    {
+      "id": 840055,
+      "branchId": 3,
+      "liquorItemId": 630003,
+      "createdAt": "2026-09-09 19:33:45"
+    },
+    {
+      "id": 840056,
+      "branchId": 3,
+      "liquorItemId": 630018,
+      "createdAt": "2026-09-09 19:34:05"
+    },
+    {
+      "id": 840057,
+      "branchId": 3,
+      "liquorItemId": 360006,
+      "createdAt": "2026-09-09 19:34:05"
+    },
+    {
+      "id": 840058,
+      "branchId": 3,
+      "liquorItemId": 360007,
+      "createdAt": "2026-09-09 19:34:05"
+    },
+    {
+      "id": 840059,
+      "branchId": 3,
+      "liquorItemId": 360008,
+      "createdAt": "2026-09-09 19:34:05"
+    },
+    {
+      "id": 840060,
+      "branchId": 3,
+      "liquorItemId": 360003,
+      "createdAt": "2026-09-09 19:34:05"
+    },
+    {
+      "id": 840061,
+      "branchId": 5,
+      "liquorItemId": 150001,
+      "createdAt": "2026-09-09 19:35:04"
+    },
+    {
+      "id": 840062,
+      "branchId": 5,
+      "liquorItemId": 630010,
+      "createdAt": "2026-09-09 19:35:04"
+    },
+    {
+      "id": 840063,
+      "branchId": 1,
+      "liquorItemId": 30041,
+      "createdAt": "2026-09-09 19:36:34"
+    },
+    {
+      "id": 840064,
+      "branchId": 1,
+      "liquorItemId": 630001,
+      "createdAt": "2026-09-09 19:36:58"
     }
   ]
 }
