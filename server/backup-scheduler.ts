@@ -46,6 +46,7 @@ async function getFileSha(path: string): Promise<string | null> {
 async function pushToGitHub(path: string, content: string, message: string): Promise<boolean> {
   if (!GITHUB_TOKEN) {
     console.warn('[backup] GITHUB_BACKUP_TOKEN 미설정 - 백업 스킵');
+    lastPushError = 'GITHUB_BACKUP_TOKEN 미설정';
     return false;
   }
   const sha = await getFileSha(path);
@@ -68,7 +69,50 @@ async function pushToGitHub(path: string, content: string, message: string): Pro
       body: JSON.stringify(body),
     }
   );
+  if (!res.ok) {
+    lastPushError = res.status === 401 ? 'GitHub 인증 실패 (토큰 만료 가능성)' : `GitHub 업로드 실패 (HTTP ${res.status})`;
+  }
   return res.ok;
+}
+
+// [백업 상태 기록] 마지막 성공/실패 시각과 사유를 DB에 남겨 관리자 화면에서 확인할 수 있게 함
+let lastPushError = '';
+async function recordBackupStatus(ok: boolean, error: string): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS backupStatus (
+      id INT PRIMARY KEY,
+      lastAttemptAt DATETIME NULL,
+      lastSuccessAt DATETIME NULL,
+      lastError VARCHAR(500) NULL
+    )`);
+    if (ok) {
+      await db.execute(sql`INSERT INTO backupStatus (id, lastAttemptAt, lastSuccessAt, lastError) VALUES (1, NOW(), NOW(), NULL)
+        ON DUPLICATE KEY UPDATE lastAttemptAt = NOW(), lastSuccessAt = NOW(), lastError = NULL`);
+    } else {
+      await db.execute(sql`INSERT INTO backupStatus (id, lastAttemptAt, lastSuccessAt, lastError) VALUES (1, NOW(), NULL, ${error.slice(0, 500)})
+        ON DUPLICATE KEY UPDATE lastAttemptAt = NOW(), lastError = ${error.slice(0, 500)}`);
+    }
+  } catch (e) {
+    console.error('[backup] 상태 기록 실패:', e);
+  }
+}
+
+export async function getBackupStatus(): Promise<{ lastAttemptAt: string | null; lastSuccessAt: string | null; lastError: string | null; hoursSinceSuccess: number | null }> {
+  const db = await getDb();
+  if (!db) return { lastAttemptAt: null, lastSuccessAt: null, lastError: 'DB 연결 실패', hoursSinceSuccess: null };
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS backupStatus (
+    id INT PRIMARY KEY, lastAttemptAt DATETIME NULL, lastSuccessAt DATETIME NULL, lastError VARCHAR(500) NULL
+  )`);
+  const rows: any = await db.execute(sql`SELECT lastAttemptAt, lastSuccessAt, lastError FROM backupStatus WHERE id = 1 LIMIT 1`);
+  const data = Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : rows;
+  const row = (data as any[])?.[0];
+  if (!row) return { lastAttemptAt: null, lastSuccessAt: null, lastError: '백업 기록 없음', hoursSinceSuccess: null };
+  const toIso = (v: any) => (v ? new Date(v).toISOString() : null);
+  const lastSuccessAt = toIso(row.lastSuccessAt);
+  const hoursSinceSuccess = lastSuccessAt ? (Date.now() - new Date(lastSuccessAt).getTime()) / 3600000 : null;
+  return { lastAttemptAt: toIso(row.lastAttemptAt), lastSuccessAt, lastError: row.lastError ?? null, hoursSinceSuccess };
 }
 
 // DB 전체 스냅샷 추출
@@ -99,9 +143,10 @@ async function takeSnapshot(): Promise<Record<string, unknown[]>> {
 }
 
 // 메인 백업 함수 (외부에서도 호출 가능)
-export async function runDailyBackup(): Promise<void> {
+export async function runDailyBackup(): Promise<{ ok: boolean; error?: string }> {
   const dateStr = todayKST();
   console.log(`[backup] ${dateStr} 백업 시작`);
+  lastPushError = '';
 
   try {
     const snapshot = await takeSnapshot();
@@ -158,11 +203,19 @@ export async function runDailyBackup(): Promise<void> {
 
     if (ok1 && ok2) {
       console.log(`[backup] ${dateStr} 백업 완료 → backups/${dateStr}.json`);
+      await recordBackupStatus(true, '');
+      return { ok: true };
     } else {
-      console.error(`[backup] ${dateStr} 백업 일부 실패 (ok1=${ok1}, ok2=${ok2})`);
+      const error = lastPushError || `백업 일부 실패 (daily=${ok1}, latest=${ok2})`;
+      console.error(`[backup] ${dateStr} ${error}`);
+      await recordBackupStatus(false, error);
+      return { ok: false, error };
     }
-  } catch (err) {
-    console.error('[backup] 백업 오류:', err);
+  } catch (err: any) {
+    const error = `백업 오류: ${err?.message || String(err)}`;
+    console.error('[backup]', error);
+    await recordBackupStatus(false, error);
+    return { ok: false, error };
   }
 }
 
