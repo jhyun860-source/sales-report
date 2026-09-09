@@ -310,15 +310,19 @@ export function registerRestoreRoutes(app: Express) {
         const itemId = Number(req.query.itemId);
         const unitCost = Number(req.query.unitCost);
         const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        const force = String(req.query.force ?? "0") === "1"; // force=1: 단가가 0이 아닌 기록도 모두 새 단가로 정정
         if (!branchIdParam || !itemId || !(unitCost > 0)) {
-          return res.status(400).json({ error: "branchId, itemId, unitCost(>0) 필요. dryrun=0 으로 실제 실행" });
+          return res.status(400).json({ error: "branchId, itemId, unitCost(>0) 필요. dryrun=0 으로 실제 실행, force=1 로 전체 기록 정정" });
         }
         const [itemRows]: any = await conn.query(`SELECT id, name, unitCost FROM liquorItems WHERE id=? LIMIT 1`, [itemId]);
         const item = itemRows?.[0];
         if (!item) return res.json({ mode, ok: false, error: "품목 없음" });
         const [mvRows]: any = await conn.query(
-          `SELECT id, date, type, quantity, unitCost, totalCost FROM liquorStockMovements
-           WHERE branchId=? AND liquorItemId=? AND (unitCost IS NULL OR unitCost = 0) ORDER BY date, id`,
+          force
+            ? `SELECT id, date, type, quantity, unitCost, totalCost FROM liquorStockMovements
+               WHERE branchId=? AND liquorItemId=? ORDER BY date, id`
+            : `SELECT id, date, type, quantity, unitCost, totalCost FROM liquorStockMovements
+               WHERE branchId=? AND liquorItemId=? AND (unitCost IS NULL OR unitCost = 0) ORDER BY date, id`,
           [branchIdParam, itemId]
         );
         const movements: any[] = Array.isArray(mvRows) ? mvRows : [];
@@ -370,7 +374,7 @@ export function registerRestoreRoutes(app: Express) {
           }
           settlementChanges.push({ date, liquorCostBefore: Number(rec.liquorCostExpense || 0), liquorCostAfter: newLiquorCost, totalExpenses, netProfit });
         }
-        return res.json({ mode, dryrun, item: { id: item.id, name: item.name, unitCostBefore: Number(item.unitCost || 0), unitCostAfter: unitCost },
+        return res.json({ mode, dryrun, force, item: { id: item.id, name: item.name, unitCostBefore: Number(item.unitCost || 0), unitCostAfter: unitCost },
           movementsUpdated: plannedMovements.length, movements: plannedMovements, settlementChanges });
       }
 
