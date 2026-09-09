@@ -8,7 +8,7 @@ import type { Express } from "express";
 import fs from "node:fs";
 import path from "node:path";
 import mysql from "mysql2/promise";
-import { runDailyBackup } from "./backup-scheduler";
+import { runDailyBackup, getBackupStatus } from "./backup-scheduler";
 
 const RESTORE_KEY = "mwt-restore-20260711-xK4";
 const BACKUP_FILE = "backups/backup-2026-06-05-before-manager-wage.json";
@@ -53,6 +53,16 @@ async function getConn() {
 }
 
 export function registerRestoreRoutes(app: Express) {
+  // [백업 경고 배너용] 마지막 백업 성공 시각/실패 사유만 반환 (민감정보 없음)
+  app.get("/api/backup-status", async (_req, res) => {
+    try {
+      const st = await getBackupStatus();
+      return res.json({ ...st, stale: st.hoursSinceSuccess === null || st.hoursSinceSuccess > 4 });
+    } catch (e: any) {
+      return res.json({ lastAttemptAt: null, lastSuccessAt: null, lastError: (e?.message || String(e)).slice(0, 200), hoursSinceSuccess: null, stale: true });
+    }
+  });
+
   app.get("/admin/restore-db", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
     if (req.query.key !== RESTORE_KEY) {
@@ -258,6 +268,77 @@ export function registerRestoreRoutes(app: Express) {
           [String(newValue), String(totalExpenses), String(netProfit), rec.id]
         );
         return res.json({ mode, branchId: branchIdParam, date, field, before, after: newValue, totalExpenses, netProfit });
+      }
+
+      if (mode === "fixliquorcost") {
+        // 원가 0으로 기록된 특정 품목의 입출고 단가/총액을 소급 수정하고, 영향받는 날짜의 정산 주류원가를 재계산
+        // 사용: &branchId=2&itemId=690002&unitCost=110000&dryrun=1
+        const branchIdParam = Number(req.query.branchId);
+        const itemId = Number(req.query.itemId);
+        const unitCost = Number(req.query.unitCost);
+        const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        if (!branchIdParam || !itemId || !(unitCost > 0)) {
+          return res.status(400).json({ error: "branchId, itemId, unitCost(>0) 필요. dryrun=0 으로 실제 실행" });
+        }
+        const [itemRows]: any = await conn.query(`SELECT id, name, unitCost FROM liquorItems WHERE id=? LIMIT 1`, [itemId]);
+        const item = itemRows?.[0];
+        if (!item) return res.json({ mode, ok: false, error: "품목 없음" });
+        const [mvRows]: any = await conn.query(
+          `SELECT id, date, type, quantity, unitCost, totalCost FROM liquorStockMovements
+           WHERE branchId=? AND liquorItemId=? AND (unitCost IS NULL OR unitCost = 0) ORDER BY date, id`,
+          [branchIdParam, itemId]
+        );
+        const movements: any[] = Array.isArray(mvRows) ? mvRows : [];
+        const plannedMovements = movements.map((m: any) => ({
+          id: m.id, date: m.date, type: m.type, quantity: Number(m.quantity),
+          before: { unitCost: Number(m.unitCost || 0), totalCost: Number(m.totalCost || 0) },
+          after: { unitCost, totalCost: Math.abs(Number(m.quantity)) * unitCost },
+        }));
+        const affectedDates = Array.from(new Set(movements.filter((m: any) => m.type === "OUT").map((m: any) => String(m.date))));
+
+        if (!dryrun) {
+          await conn.query(`UPDATE liquorItems SET unitCost=? WHERE id=?`, [String(unitCost), itemId]);
+          for (const pm of plannedMovements) {
+            await conn.query(`UPDATE liquorStockMovements SET unitCost=?, totalCost=? WHERE id=?`,
+              [String(pm.after.unitCost), String(pm.after.totalCost), pm.id]);
+          }
+        }
+
+        const settlementChanges: any[] = [];
+        for (const date of affectedDates) {
+          const [outRows]: any = await conn.query(
+            `SELECT quantity, unitCost, totalCost FROM liquorStockMovements WHERE branchId=? AND date=? AND type='OUT'`,
+            [branchIdParam, date]
+          );
+          const newLiquorCost = (Array.isArray(outRows) ? outRows : []).reduce((sum: number, r: any) => {
+            // dryrun 시에는 아직 DB가 안 바뀌었으므로 이 품목분은 계획값으로 대체
+            return sum + Number(r.totalCost || 0);
+          }, 0) + (dryrun
+            ? plannedMovements.filter(pm => pm.type === "OUT" && String(pm.date) === date)
+                .reduce((a, pm) => a + (pm.after.totalCost - pm.before.totalCost), 0)
+            : 0);
+          const [recRows]: any = await conn.query(
+            `SELECT id, totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
+                    staffWageExpense, managerWageExpense, partTimeWageExpense,
+                    staffDrinkExpense, salesIncentiveExpense, liquorCostExpense, otherExpense
+             FROM dailySalesRecords WHERE branchId=? AND date=? LIMIT 1`,
+            [branchIdParam, date]
+          );
+          const rec = recRows?.[0];
+          if (!rec) { settlementChanges.push({ date, result: "no record" }); continue; }
+          const totalExpenses =
+            Number(rec.commissionExpense || 0) + Number(rec.rentExpense || 0) + Number(rec.managementFeeExpense || 0) +
+            Number(rec.staffWageExpense || 0) + Number(rec.managerWageExpense || 0) + Number(rec.partTimeWageExpense || 0) +
+            Number(rec.staffDrinkExpense || 0) + Number(rec.salesIncentiveExpense || 0) + newLiquorCost + Number(rec.otherExpense || 0);
+          const netProfit = Number(rec.totalRevenue || 0) - totalExpenses;
+          if (!dryrun) {
+            await conn.query(`UPDATE dailySalesRecords SET liquorCostExpense=?, totalExpenses=?, netProfit=? WHERE id=?`,
+              [String(newLiquorCost), String(totalExpenses), String(netProfit), rec.id]);
+          }
+          settlementChanges.push({ date, liquorCostBefore: Number(rec.liquorCostExpense || 0), liquorCostAfter: newLiquorCost, totalExpenses, netProfit });
+        }
+        return res.json({ mode, dryrun, item: { id: item.id, name: item.name, unitCostBefore: Number(item.unitCost || 0), unitCostAfter: unitCost },
+          movementsUpdated: plannedMovements.length, movements: plannedMovements, settlementChanges });
       }
 
       if (mode === "checkreport") {
@@ -568,11 +649,16 @@ export function registerRestoreRoutes(app: Express) {
       }
 
       if (mode === "runbackup") {
-        await runDailyBackup();
-        return res.json({ mode, ok: true, message: "수동 백업 트리거 완료" });
+        const r = await runDailyBackup();
+        return res.json({ mode, ok: r.ok, error: r.error ?? null, message: r.ok ? "백업 성공 (GitHub 업로드 확인됨)" : "백업 실패" });
       }
 
-      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes|normalizestaffnames|renamestaffname|addwageexempt" });
+      if (mode === "backupstatus") {
+        const st = await getBackupStatus();
+        return res.json({ mode, ...st, stale: st.hoursSinceSuccess === null || st.hoursSinceSuccess > 4 });
+      }
+
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes|normalizestaffnames|renamestaffname|addwageexempt|fixliquorcost|backupstatus" });
     } catch (e: any) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
