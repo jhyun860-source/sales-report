@@ -270,6 +270,39 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, date, field, before, after: newValue, totalExpenses, netProfit });
       }
 
+      if (mode === "recalcliquorcost") {
+        // 지정 지점/날짜들의 정산 주류원가(liquorCostExpense)를 현재 출고 기록 기준으로 재계산
+        // 사용: &branchId=2&dates=2026-07-16,2026-07-24&dryrun=1
+        const branchIdParam = Number(req.query.branchId);
+        const dates = String(req.query.dates || "").split(",").map(x => x.trim()).filter(Boolean);
+        const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        if (!branchIdParam || !dates.length) return res.status(400).json({ error: "branchId, dates(콤마구분) 필요. dryrun=0 으로 실제 실행" });
+        const changes: any[] = [];
+        for (const date of dates) {
+          const [outRows]: any = await conn.query(
+            `SELECT totalCost FROM liquorStockMovements WHERE branchId=? AND date=? AND type='OUT'`, [branchIdParam, date]);
+          const newLiquorCost = (Array.isArray(outRows) ? outRows : []).reduce((a: number, r: any) => a + Number(r.totalCost || 0), 0);
+          const [recRows]: any = await conn.query(
+            `SELECT id, totalRevenue, commissionExpense, rentExpense, managementFeeExpense,
+                    staffWageExpense, managerWageExpense, partTimeWageExpense,
+                    staffDrinkExpense, salesIncentiveExpense, liquorCostExpense, otherExpense
+             FROM dailySalesRecords WHERE branchId=? AND date=? LIMIT 1`, [branchIdParam, date]);
+          const rec = recRows?.[0];
+          if (!rec) { changes.push({ date, result: "no record" }); continue; }
+          const totalExpenses =
+            Number(rec.commissionExpense || 0) + Number(rec.rentExpense || 0) + Number(rec.managementFeeExpense || 0) +
+            Number(rec.staffWageExpense || 0) + Number(rec.managerWageExpense || 0) + Number(rec.partTimeWageExpense || 0) +
+            Number(rec.staffDrinkExpense || 0) + Number(rec.salesIncentiveExpense || 0) + newLiquorCost + Number(rec.otherExpense || 0);
+          const netProfit = Number(rec.totalRevenue || 0) - totalExpenses;
+          if (!dryrun) {
+            await conn.query(`UPDATE dailySalesRecords SET liquorCostExpense=?, totalExpenses=?, netProfit=? WHERE id=?`,
+              [String(newLiquorCost), String(totalExpenses), String(netProfit), rec.id]);
+          }
+          changes.push({ date, liquorCostBefore: Number(rec.liquorCostExpense || 0), liquorCostAfter: newLiquorCost, diff: newLiquorCost - Number(rec.liquorCostExpense || 0), totalExpenses, netProfit });
+        }
+        return res.json({ mode, dryrun, branchId: branchIdParam, changes });
+      }
+
       if (mode === "fixliquorcost") {
         // 원가 0으로 기록된 특정 품목의 입출고 단가/총액을 소급 수정하고, 영향받는 날짜의 정산 주류원가를 재계산
         // 사용: &branchId=2&itemId=690002&unitCost=110000&dryrun=1
@@ -658,7 +691,7 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, ...st, stale: st.hoursSinceSuccess === null || st.hoursSinceSuccess > 4 });
       }
 
-      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes|normalizestaffnames|renamestaffname|addwageexempt|fixliquorcost|backupstatus" });
+      return res.status(400).json({ error: "mode must be schema|data|status|verify|staffcheck|runbackup|julymanagerfix|createstafftable|addstafftypes|normalizestaffnames|renamestaffname|addwageexempt|fixliquorcost|recalcliquorcost|backupstatus" });
     } catch (e: any) {
       return res.status(500).json({ error: (e?.message || String(e)).slice(0, 300) });
     } finally {
