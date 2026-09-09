@@ -17177,7 +17177,7 @@
       "submittedBy": null,
       "submittedAt": "2026-07-17 11:06:59",
       "createdAt": "2026-07-16 11:08:13",
-      "updatedAt": "2026-08-03 04:21:02",
+      "updatedAt": "2026-09-09 20:23:53",
       "totalRevenue": "3069000",
       "commissionExpense": "521730",
       "rentExpense": "333333",
@@ -17185,12 +17185,12 @@
       "staffWageExpense": "136363",
       "managerWageExpense": "318182",
       "partTimeWageExpense": "480000",
-      "liquorCostExpense": "634000",
+      "liquorCostExpense": "744000",
       "staffDrinkExpense": "30000",
       "salesIncentiveExpense": "0",
       "otherExpense": "103478",
-      "totalExpenses": "2557086",
-      "netProfit": "511914",
+      "totalExpenses": "2667086",
+      "netProfit": "401914",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -18753,7 +18753,7 @@
       "submittedBy": null,
       "submittedAt": "2026-08-04 16:10:45",
       "createdAt": "2026-07-23 17:20:14",
-      "updatedAt": "2026-08-04 16:10:45",
+      "updatedAt": "2026-09-09 20:23:54",
       "totalRevenue": "5429000",
       "commissionExpense": "922930",
       "rentExpense": "333333",
@@ -18761,12 +18761,12 @@
       "staffWageExpense": "136363",
       "managerWageExpense": "304348",
       "partTimeWageExpense": "468333",
-      "liquorCostExpense": "1136000",
+      "liquorCostExpense": "1246000",
       "staffDrinkExpense": "135000",
       "salesIncentiveExpense": "0",
       "otherExpense": "137037",
-      "totalExpenses": "3573344",
-      "netProfit": "1855656",
+      "totalExpenses": "3683344",
+      "netProfit": "1745656",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -20626,7 +20626,7 @@
       "submittedBy": null,
       "submittedAt": "2026-09-01 11:26:56",
       "createdAt": "2026-08-03 17:21:07",
-      "updatedAt": "2026-09-01 11:27:00",
+      "updatedAt": "2026-09-09 20:23:54",
       "totalRevenue": "6415000",
       "commissionExpense": "1090550",
       "rentExpense": "346154",
@@ -20634,12 +20634,12 @@
       "staffWageExpense": "136363",
       "managerWageExpense": "333333",
       "partTimeWageExpense": "296667",
-      "liquorCostExpense": "1408300",
+      "liquorCostExpense": "1628300",
       "staffDrinkExpense": "100000",
       "salesIncentiveExpense": "11550",
       "otherExpense": "108462",
-      "totalExpenses": "3831379",
-      "netProfit": "2583621",
+      "totalExpenses": "4051379",
+      "netProfit": "2363621",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -25556,7 +25556,7 @@
       "submittedBy": null,
       "submittedAt": "2026-09-01 18:46:56",
       "createdAt": "2026-08-31 12:16:37",
-      "updatedAt": "2026-09-01 18:46:58",
+      "updatedAt": "2026-09-09 20:23:54",
       "totalRevenue": "3962000",
       "commissionExpense": "673540",
       "rentExpense": "346154",
@@ -25564,12 +25564,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "333333",
       "partTimeWageExpense": "640000",
-      "liquorCostExpense": "718000",
+      "liquorCostExpense": "828000",
       "staffDrinkExpense": "95000",
       "salesIncentiveExpense": "29700",
       "otherExpense": "137619",
-      "totalExpenses": "2943646",
-      "netProfit": "1018354",
+      "totalExpenses": "3083346",
+      "netProfit": "878654",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -26822,7 +26822,7 @@
       "submittedBy": null,
       "submittedAt": "2026-09-07 17:45:01",
       "createdAt": "2026-09-07 13:39:44",
-      "updatedAt": "2026-09-07 17:45:01",
+      "updatedAt": "2026-09-09 20:23:55",
       "totalRevenue": "2320000",
       "commissionExpense": "394400",
       "rentExpense": "346154",
@@ -26830,12 +26830,12 @@
       "staffWageExpense": "136363",
       "managerWageExpense": "318182",
       "partTimeWageExpense": "190000",
-      "liquorCostExpense": "481000",
+      "liquorCostExpense": "591000",
       "staffDrinkExpense": "40000",
       "salesIncentiveExpense": "17500",
       "otherExpense": "118462",
-      "totalExpenses": "2042061",
-      "netProfit": "277939",
+      "totalExpenses": "2152061",
+      "netProfit": "167939",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -116957,13 +116957,13 @@
     },
     {
       "id": 690002,
-      "name": "발베니 12",
+      "name": "발베니 12y (700ml)",
       "category": "위스키",
-      "unitCost": "120000",
+      "unitCost": "110000",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-07-17 11:09:24",
-      "updatedAt": "2026-09-09 19:57:04"
+      "updatedAt": "2026-09-09 20:02:06"
     },
     {
       "id": 690003,
@@ -116979,11 +116979,11 @@
       "id": 690004,
       "name": "까뮤vsop",
       "category": "위스키",
-      "unitCost": "0",
+      "unitCost": "110000",
       "isActive": 1,
       "sortOrder": 9999,
       "createdAt": "2026-09-02 09:48:43",
-      "updatedAt": "2026-09-02 09:48:43"
+      "updatedAt": "2026-09-09 20:25:24"
     }
   ],
   "liquorInventories": [
@@ -150638,12 +150638,12 @@
       "date": "2026-07-17",
       "type": "ADJUST",
       "quantity": "2.00",
-      "unitCost": "120000",
-      "totalCost": "240000",
+      "unitCost": "110000",
+      "totalCost": "220000",
       "memo": "재고수정: 0개 → 2개 (+2)",
       "createdBy": 2,
       "createdAt": "2026-07-17 11:13:00",
-      "updatedAt": "2026-09-09 19:57:04"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12870156,
@@ -150652,12 +150652,12 @@
       "date": "2026-07-16",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "120000",
-      "totalCost": "120000",
+      "unitCost": "110000",
+      "totalCost": "110000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-07-17 11:09:04",
-      "updatedAt": "2026-09-09 19:57:04"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12870157,
@@ -151016,12 +151016,12 @@
       "date": "2026-07-20",
       "type": "IN",
       "quantity": "2.00",
-      "unitCost": "120000",
-      "totalCost": "240000",
+      "unitCost": "110000",
+      "totalCost": "220000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-07-20 10:13:26",
-      "updatedAt": "2026-09-09 19:57:04"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12870183,
@@ -153116,12 +153116,12 @@
       "date": "2026-07-24",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "120000",
-      "totalCost": "120000",
+      "unitCost": "110000",
+      "totalCost": "110000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-07-24 21:00:53",
-      "updatedAt": "2026-09-09 19:57:04"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12870350,
@@ -155930,12 +155930,12 @@
       "date": "2026-08-03",
       "type": "OUT",
       "quantity": "-2.00",
-      "unitCost": "120000",
-      "totalCost": "240000",
+      "unitCost": "110000",
+      "totalCost": "220000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-03 17:46:36",
-      "updatedAt": "2026-09-09 19:57:04"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12870557,
@@ -156000,12 +156000,12 @@
       "date": "2026-08-04",
       "type": "IN",
       "quantity": "2.00",
-      "unitCost": "120000",
-      "totalCost": "240000",
+      "unitCost": "110000",
+      "totalCost": "220000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-04 10:15:12",
-      "updatedAt": "2026-09-09 19:57:04"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12870562,
@@ -163504,12 +163504,12 @@
       "date": "2026-08-31",
       "type": "ADJUST",
       "quantity": "1.00",
-      "unitCost": "120000",
-      "totalCost": "120000",
+      "unitCost": "110000",
+      "totalCost": "110000",
       "memo": "삼성 > 대치 이동",
       "createdBy": 6,
       "createdAt": "2026-08-31 14:20:01",
-      "updatedAt": "2026-09-09 19:57:05"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12871106,
@@ -163658,12 +163658,12 @@
       "date": "2026-08-31",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "120000",
-      "totalCost": "120000",
+      "unitCost": "110000",
+      "totalCost": "110000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-08-31 17:28:14",
-      "updatedAt": "2026-09-09 19:57:05"
+      "updatedAt": "2026-09-09 20:23:52"
     },
     {
       "id": 12871117,
@@ -164246,12 +164246,12 @@
       "date": "2026-09-02",
       "type": "ADJUST",
       "quantity": "2.00",
-      "unitCost": "0",
-      "totalCost": "0",
+      "unitCost": "110000",
+      "totalCost": "220000",
       "memo": "제품 등록 초기 재고",
       "createdBy": 1,
       "createdAt": "2026-09-02 09:48:45",
-      "updatedAt": "2026-09-02 09:48:45"
+      "updatedAt": "2026-09-09 20:25:24"
     },
     {
       "id": 12871161,
@@ -164932,12 +164932,12 @@
       "date": "2026-09-03",
       "type": "ADJUST",
       "quantity": "1.00",
-      "unitCost": "120000",
-      "totalCost": "120000",
+      "unitCost": "110000",
+      "totalCost": "110000",
       "memo": "삼성->대치",
       "createdBy": 2,
       "createdAt": "2026-09-03 12:16:09",
-      "updatedAt": "2026-09-09 19:57:05"
+      "updatedAt": "2026-09-09 20:23:53"
     },
     {
       "id": 12871210,
@@ -165800,12 +165800,12 @@
       "date": "2026-09-08",
       "type": "IN",
       "quantity": "2.00",
-      "unitCost": "120000",
-      "totalCost": "240000",
+      "unitCost": "110000",
+      "totalCost": "220000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-09-08 09:43:38",
-      "updatedAt": "2026-09-09 19:57:05"
+      "updatedAt": "2026-09-09 20:23:53"
     },
     {
       "id": 12871272,
@@ -165856,12 +165856,12 @@
       "date": "2026-09-07",
       "type": "OUT",
       "quantity": "-1.00",
-      "unitCost": "120000",
-      "totalCost": "120000",
+      "unitCost": "110000",
+      "totalCost": "110000",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-09-07 16:38:52",
-      "updatedAt": "2026-09-09 19:57:05"
+      "updatedAt": "2026-09-09 20:23:53"
     },
     {
       "id": 12871276,
@@ -166612,12 +166612,12 @@
       "date": "2026-09-10",
       "type": "ADJUST",
       "quantity": "-1.00",
-      "unitCost": "120000",
-      "totalCost": "120000",
+      "unitCost": "110000",
+      "totalCost": "110000",
       "memo": "대치->선릉",
       "createdBy": 2,
       "createdAt": "2026-09-09 17:02:33",
-      "updatedAt": "2026-09-09 19:57:05"
+      "updatedAt": "2026-09-09 20:23:53"
     },
     {
       "id": 12871330,
