@@ -428,6 +428,26 @@ export default function LiquorStockReport() {
     const branchId = effectiveBranchId;
     if (!isAdmin && !branchId) return toast.error("지점을 선택해주세요");
     if (isAdmin && !branchId && Number(newItem.initialStock || 0) !== 0) return toast.error("수량까지 넣으려면 먼저 지점을 선택해주세요");
+    // [중복 방지] 신규 등록 시 현재 지점에 같은/비슷한 제품이 있으면 알림
+    if (!editingItemId) {
+      const normalize = (v: string) => String(v ?? "")
+        .replace(/\s+/g, "")
+        .replace(/[깔]/g, "칼").replace(/[꼬]/g, "코").replace(/[빠]/g, "바").replace(/[싸]/g, "사")
+        .replace(/[짜]/g, "자").replace(/[따]/g, "타").replace(/[쥬]/g, "주").replace(/[렌]/g, "랜")
+        .toLowerCase();
+      const target = normalize(newItem.name);
+      const exact = items.find((it: any) => normalize(it.name) === target);
+      if (exact) return toast.error(`이미 등록된 제품입니다: ${exact.name}`);
+      const similar = items.filter((it: any) => {
+        const n = normalize(it.name);
+        if (n.length < 2 || target.length < 2) return false;
+        return n.includes(target) || target.includes(n);
+      });
+      if (similar.length > 0) {
+        const names = similar.slice(0, 3).map((it: any) => it.name).join(", ");
+        if (!window.confirm(`비슷한 제품이 이미 있습니다:\n${names}\n\n그래도 새 제품으로 추가할까요?`)) return;
+      }
+    }
     upsertItem.mutate({
       id: editingItemId || undefined,
       name: newItem.name.trim(),
