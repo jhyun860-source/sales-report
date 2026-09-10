@@ -27532,9 +27532,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-09-10 17:31:37",
+      "submittedAt": "2026-09-10 20:11:56",
       "createdAt": "2026-09-10 17:24:59",
-      "updatedAt": "2026-09-10 17:31:39",
+      "updatedAt": "2026-09-10 20:11:58",
       "totalRevenue": "364000",
       "commissionExpense": "61880",
       "rentExpense": "173077",
@@ -35719,12 +35719,12 @@
       "id": 10380300,
       "branchId": 6,
       "date": "2026-09-10",
-      "teamCount": 3,
+      "teamCount": 4,
       "cashAmount": "0",
       "cardAmount": "364000",
       "notes": "테이블1 6만원 - 포스기 와이파이 연결오류로 예치금 처리후 환불하였고 6만원 삼성카드로 ‘금액추가’로 결제내역에 6만원 처리되었습니다.",
       "createdAt": "2026-09-10 17:26:44",
-      "updatedAt": "2026-09-10 17:31:35"
+      "updatedAt": "2026-09-10 20:11:54"
     }
   ],
   "tableItems": [
@@ -83723,6 +83723,19 @@
       "sortOrder": 2,
       "createdAt": "2026-09-10 17:27:27",
       "updatedAt": "2026-09-10 17:28:52"
+    },
+    {
+      "id": 16261621,
+      "tableReportId": 10380300,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 3,
+      "createdAt": "2026-09-10 20:11:55",
+      "updatedAt": "2026-09-10 20:11:55"
     }
   ],
   "staffIncentives": [
