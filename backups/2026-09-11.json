@@ -27532,9 +27532,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-09-10 17:29:41",
+      "submittedAt": "2026-09-10 17:31:37",
       "createdAt": "2026-09-10 17:24:59",
-      "updatedAt": "2026-09-10 17:29:42",
+      "updatedAt": "2026-09-10 17:31:39",
       "totalRevenue": "364000",
       "commissionExpense": "61880",
       "rentExpense": "173077",
@@ -35722,9 +35722,9 @@
       "teamCount": 3,
       "cashAmount": "0",
       "cardAmount": "364000",
-      "notes": "테이블1 6만원 - 포스기 와이파이 연결오류로 예치금 처리후 금액추가로 6만원 결제로 결제내역에 6만원 두건 ",
+      "notes": "테이블1 6만원 - 포스기 와이파이 연결오류로 예치금 처리후 환불하였고 6만원 삼성카드로 ‘금액추가’로 결제내역에 6만원 처리되었습니다.",
       "createdAt": "2026-09-10 17:26:44",
-      "updatedAt": "2026-09-10 17:29:39"
+      "updatedAt": "2026-09-10 17:31:35"
     }
   ],
   "tableItems": [
