@@ -206,6 +206,16 @@ export default function TableReport() {
   //   저장되는 문제를 방지한다.
   const incentivesRef = useRef(incentives);
   useEffect(() => { incentivesRef.current = incentives; }, [incentives]);
+  // [저장 줄세우기] 저장 시점에 항상 최신 화면값을 읽기 위한 ref
+  const itemsRef = useRef(items);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+  const teamCountRef = useRef(teamCount);
+  useEffect(() => { teamCountRef.current = teamCount; }, [teamCount]);
+  const notesRef = useRef(notes);
+  useEffect(() => { notesRef.current = notes; }, [notes]);
+  // 진행 중인 저장 / 대기 중인 저장 (저장 중 재요청은 버리지 않고 앞 저장이 끝난 뒤 최신 상태로 한 번 더 저장)
+  const inflightSaveRef = useRef<Promise<void> | null>(null);
+  const queuedSaveRef = useRef<Promise<void> | null>(null);
   const [reportId, setReportId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -635,11 +645,27 @@ export default function TableReport() {
   // 저장 함수 - batchSave 단일 호출로 모든 항목 한 번에 저장
   const handleSave = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    if (isSaving) {
-      // [버그수정] 기존에는 조용히 아무것도 안 하고 리턴해서, 호출자(날짜 이동 등)가
-      //   "저장 성공"으로 착각하고 넘어가버리는 위험이 있었음. 명확히 에러를 던져 알린다.
-      throw new Error('이미 저장 중입니다. 잠시 후 다시 시도해주세요.');
+    // [저장 줄세우기] 저장 중에 또 저장 요청이 오면 에러로 버리지 않고,
+    //   앞 저장이 끝난 뒤 "그 시점의 최신 화면 상태"로 한 번 더 저장한다.
+    //   여러 번 요청이 와도 대기 저장은 하나만 두므로 항상 최신본이 마지막에 서버로 간다.
+    if (inflightSaveRef.current) {
+      setSaved(false);
+      if (!queuedSaveRef.current) {
+        queuedSaveRef.current = inflightSaveRef.current
+          .catch(() => {})
+          .then(() => { queuedSaveRef.current = null; return runSave(); });
+      }
+      return queuedSaveRef.current;
     }
+    return runSave();
+
+    async function runSave(): Promise<void> {
+    const p = doSave();
+    inflightSaveRef.current = p;
+    try { await p; } finally { if (inflightSaveRef.current === p) inflightSaveRef.current = null; }
+    }
+
+    async function doSave(): Promise<void> {
     setIsSaving(true);
     // 저장 중에는 loadedDateRef를 건드리지 않음 → useEffect가 중간에 상태를 덮어쓰지 않도록 방지
 
@@ -648,7 +674,7 @@ export default function TableReport() {
     //   같은 단어를 평문으로 두면 횟수가 누적되어 EXCLUDE_THRESHOLD 이상이 되면
     //   이후 분석에서 자동 제외된다. 학습 실패는 저장 자체에 영향을 주지 않는다.
     try {
-      for (const it of items) {
+      for (const it of itemsRef.current) {
         if (it.memo) learnHighlightExcludesFromMemo(it.memo);
       }
     } catch (e) {
@@ -662,10 +688,10 @@ export default function TableReport() {
       const { id: rId, cashSum, cardSum, itemIdMap, incentiveIdMap, debugError } = await Promise.race([
         batchSave.mutateAsync({
         date: currentDate,
-        teamCount,
-        notes,
+        teamCount: teamCountRef.current,
+        notes: notesRef.current,
         branchId: effectiveBranchId,
-        items: items.map((it, i) => ({
+        items: itemsRef.current.map((it, i) => ({
           id: it.id,
           localId: it.localId,
           tableNumber: it.tableNumber,
@@ -705,10 +731,14 @@ export default function TableReport() {
       // 저장 완료 후 reportId 및 새 id 반영
       setReportId(rId);
       if (Object.keys(itemIdMap).length > 0) {
-        setItems(prev => prev.map(p => itemIdMap[p.localId] ? { ...p, id: itemIdMap[p.localId] } : p));
+        const applyItemIds = (arr: TableItemLocal[]) => arr.map(p => itemIdMap[p.localId] ? { ...p, id: itemIdMap[p.localId] } : p);
+        itemsRef.current = applyItemIds(itemsRef.current);
+        setItems(prev => applyItemIds(prev));
       }
       if (Object.keys(incentiveIdMap).length > 0) {
-        setIncentives(prev => prev.map(p => incentiveIdMap[p.localId] ? { ...p, id: incentiveIdMap[p.localId] } : p));
+        const applyIncIds = (arr: IncentiveLocal[]) => arr.map(p => incentiveIdMap[p.localId] ? { ...p, id: incentiveIdMap[p.localId] } : p);
+        incentivesRef.current = applyIncIds(incentivesRef.current);
+        setIncentives(prev => applyIncIds(prev));
       }
 
       // 저장 완료 후 loadedDateRef를 현재 날짜로 설정 → useEffect가 서버 데이터로 덮어쓰지 않도록
@@ -720,7 +750,7 @@ export default function TableReport() {
       await utils.storeSales.getRecords.invalidate();
       await utils.settlement.getSettlementsByDateRange.invalidate();
       await utils.tableReport.getByDate.invalidate();
-      setSaved(true);
+      if (!queuedSaveRef.current) setSaved(true);
       const cashFmt = cashSum > 0 ? `₩${cashSum.toLocaleString('ko-KR')}` : '—';
       const cardFmt = cardSum > 0 ? `₩${cardSum.toLocaleString('ko-KR')}` : '—';
       toast.success(`저장 완료 | 현금 ${cashFmt} / 카드 ${cardFmt}`, { duration: 2500 });
@@ -728,6 +758,7 @@ export default function TableReport() {
       toast.error('저장 실패: ' + (e?.message ?? '알 수 없는 오류'));
     } finally {
       setIsSaving(false);
+    }
     }
   }, [currentDate, teamCount, notes, items, incentives, isSaving]);
 
