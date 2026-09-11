@@ -418,14 +418,15 @@ export function registerRestoreRoutes(app: Express) {
         const deleteFromDsr = String(req.query.deleteFromDsr ?? "0") === "1";
         // 껍데기에 남은 중간 저장본 출근자 기록을 버릴 때: ID를 정확히 모두 나열해야만 허용
         const dropShellIncentives = String(req.query.dropShellIncentives || "").split(",").map(x => Number(x.trim())).filter(n => n > 0);
-        if (!reportIdParam || !shellIdParam || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
-          return res.status(400).json({ error: "reportId, shellId, toDate(YYYY-MM-DD) 필요. dryrun=0 으로 실제 실행" });
+        if (!reportIdParam || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+          return res.status(400).json({ error: "reportId, toDate(YYYY-MM-DD) 필요 (shellId는 대상 날짜에 껍데기가 있을 때만). dryrun=0 으로 실제 실행" });
         }
         const [rRows]: any = await conn.query(`SELECT * FROM tableReports WHERE id=?`, [reportIdParam]);
-        const [sRows]: any = await conn.query(`SELECT * FROM tableReports WHERE id=?`, [shellIdParam]);
+        const [sRows]: any = shellIdParam ? await conn.query(`SELECT * FROM tableReports WHERE id=?`, [shellIdParam]) : [[]];
         const report = rRows?.[0];
-        const shell = sRows?.[0];
-        if (!report || !shell) return res.json({ mode, ok: false, error: "리포트 없음", reportFound: !!report, shellFound: !!shell });
+        // shellId 없이 호출하면 껍데기 없음(대상 날짜 비어 있음)으로 처리. 대상 날짜에 리포트가 있으면 아래 otherOnTo 점검에서 차단됨
+        const shell = sRows?.[0] ?? { id: 0, branchId: report?.branchId, date: toDate };
+        if (!report || (shellIdParam && !sRows?.[0])) return res.json({ mode, ok: false, error: "리포트 없음", reportFound: !!report, shellFound: !!sRows?.[0] });
         const fromDate = String(report.date);
         const branchIdParam = Number(report.branchId);
 
@@ -492,9 +493,11 @@ export function registerRestoreRoutes(app: Express) {
 
         await conn.beginTransaction();
         try {
-          await conn.query(`DELETE FROM tableItems WHERE tableReportId=?`, [shell.id]);
-          await conn.query(`DELETE FROM staffIncentives WHERE tableReportId=?`, [shell.id]);
-          await conn.query(`DELETE FROM tableReports WHERE id=?`, [shell.id]);
+          if (shell.id) {
+            await conn.query(`DELETE FROM tableItems WHERE tableReportId=?`, [shell.id]);
+            await conn.query(`DELETE FROM staffIncentives WHERE tableReportId=?`, [shell.id]);
+            await conn.query(`DELETE FROM tableReports WHERE id=?`, [shell.id]);
+          }
           await conn.query(`UPDATE tableReports SET date=? WHERE id=?`, [toDate, report.id]);
           if (deleteFromDsr && fromDsr) await conn.query(`DELETE FROM dailySalesRecords WHERE id=?`, [fromDsr.id]);
           await conn.commit();
