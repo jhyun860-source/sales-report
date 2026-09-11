@@ -416,6 +416,8 @@ export function registerRestoreRoutes(app: Express) {
         const toDate = String(req.query.toDate || "");
         const dryrun = String(req.query.dryrun ?? "1") !== "0";
         const deleteFromDsr = String(req.query.deleteFromDsr ?? "0") === "1";
+        // 껍데기에 남은 중간 저장본 출근자 기록을 버릴 때: ID를 정확히 모두 나열해야만 허용
+        const dropShellIncentives = String(req.query.dropShellIncentives || "").split(",").map(x => Number(x.trim())).filter(n => n > 0);
         if (!reportIdParam || !shellIdParam || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
           return res.status(400).json({ error: "reportId, shellId, toDate(YYYY-MM-DD) 필요. dryrun=0 으로 실제 실행" });
         }
@@ -457,7 +459,12 @@ export function registerRestoreRoutes(app: Express) {
         if (fromDate === toDate) blockers.push("원본 리포트가 이미 toDate임");
         const shellAmount = (shellItems as any[]).reduce((a, it) => a + Number(it.amount || 0), 0);
         if (shellAmount !== 0) blockers.push(`껍데기 리포트에 금액이 있음(${shellAmount}) — 껍데기가 아님`);
-        if ((shellInc as any[]).length > 0) blockers.push(`껍데기 리포트에 출근자 ${shellInc.length}명 기록 있음 — 확인 필요`);
+        const shellIncIds = (shellInc as any[]).map(i => Number(i.id)).sort((a, b) => a - b);
+        const dropIds = Array.from(new Set(dropShellIncentives)).sort((a, b) => a - b);
+        const dropMatches = shellIncIds.length === dropIds.length && shellIncIds.every((v, i) => v === dropIds[i]);
+        if (shellIncIds.length > 0 && !dropMatches) {
+          blockers.push(`껍데기 리포트에 출근자 ${shellIncIds.length}명 기록 있음(${shellIncIds.join(",")}) — 버리려면 dropShellIncentives에 이 ID를 정확히 모두 지정`);
+        }
         if ((otherOnTo as any[]).length > 0) blockers.push(`toDate에 다른 리포트도 있음: ${(otherOnTo as any[]).map(r => r.id).join(",")}`);
         if (deleteFromDsr && fromDsrUserInputs && (fromDsrUserInputs.posEndAmount || fromDsrUserInputs.cashDeposit || fromDsrUserInputs.paymentChangeAmount || fromDsrUserInputs.expensesCount)) {
           blockers.push(`${fromDate} 매출기록에 매출보고 입력값(시제마감/시제입금/지출 등)이 있어 삭제하면 유실됨 — 별도 처리 필요`);
