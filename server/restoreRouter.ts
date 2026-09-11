@@ -403,6 +403,103 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchIdParam: branchIdParam ?? "ALL", results });
       }
 
+      if (mode === "movetablereport") {
+        // 잘못된 날짜로 저장된 테이블 리포트를 올바른 날짜로 이동
+        //   (1) 대상 날짜에 있는 빈 껍데기 리포트(+ tableItems / staffIncentives) 삭제
+        //   (2) 원본 리포트의 date를 대상 날짜로 변경
+        //   (3) [선택, deleteFromDsr=1일 때만] 원본 날짜의 dailySalesRecords 삭제 (매출보고 입력값이 있으면 차단)
+        //   tableItems / staffIncentives는 tableReportId로 연결되어 있어 리포트 날짜만 바꾸면 함께 이동됨
+        // 사용: &reportId=10380307&shellId=10380305&toDate=2026-09-11&dryrun=1 [&deleteFromDsr=1]
+        // 실행 후: 대상 날짜 테이블기록 화면을 열고 [저장]을 눌러 정산/누적금을 재계산할 것
+        const reportIdParam = Number(req.query.reportId);
+        const shellIdParam = Number(req.query.shellId);
+        const toDate = String(req.query.toDate || "");
+        const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        const deleteFromDsr = String(req.query.deleteFromDsr ?? "0") === "1";
+        if (!reportIdParam || !shellIdParam || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+          return res.status(400).json({ error: "reportId, shellId, toDate(YYYY-MM-DD) 필요. dryrun=0 으로 실제 실행" });
+        }
+        const [rRows]: any = await conn.query(`SELECT * FROM tableReports WHERE id=?`, [reportIdParam]);
+        const [sRows]: any = await conn.query(`SELECT * FROM tableReports WHERE id=?`, [shellIdParam]);
+        const report = rRows?.[0];
+        const shell = sRows?.[0];
+        if (!report || !shell) return res.json({ mode, ok: false, error: "리포트 없음", reportFound: !!report, shellFound: !!shell });
+        const fromDate = String(report.date);
+        const branchIdParam = Number(report.branchId);
+
+        const [reportItems]: any = await conn.query(`SELECT id, tableNumber, amount, paymentMethod FROM tableItems WHERE tableReportId=? ORDER BY sortOrder, id`, [report.id]);
+        const [reportInc]: any = await conn.query(`SELECT id, staffName, staffType, glassCount, bottleCount, workStart, workEnd, wageExempt FROM staffIncentives WHERE tableReportId=? ORDER BY sortOrder, id`, [report.id]);
+        const [shellItems]: any = await conn.query(`SELECT id, tableNumber, amount, paymentMethod, memo FROM tableItems WHERE tableReportId=?`, [shell.id]);
+        const [shellInc]: any = await conn.query(`SELECT id, staffName, staffType, glassCount, bottleCount FROM staffIncentives WHERE tableReportId=?`, [shell.id]);
+        const [otherOnTo]: any = await conn.query(`SELECT id FROM tableReports WHERE branchId=? AND date=? AND id NOT IN (?, ?)`, [branchIdParam, toDate, report.id, shell.id]);
+        const [dsrRows]: any = await conn.query(
+          `SELECT id, date, cash, card, cashTotal, cardTotal, posStartAmount, posEndAmount, cashDeposit, expenses,
+                  paymentChangeAmount, totalRevenue, staffWageExpense, managerWageExpense, partTimeWageExpense,
+                  staffDrinkExpense, salesIncentiveExpense, liquorCostExpense, totalExpenses, netProfit, staffCount, partTimeCount
+           FROM dailySalesRecords WHERE branchId=? AND date IN (?, ?) ORDER BY date`, [branchIdParam, toDate, fromDate]);
+        const [mvRows]: any = await conn.query(
+          `SELECT id, date, liquorItemId, type, quantity, totalCost, memo, createdAt FROM liquorStockMovements WHERE branchId=? AND date IN (?, ?) ORDER BY date, id`,
+          [branchIdParam, toDate, fromDate]);
+
+        const fromDsr = (dsrRows as any[]).find(r => String(r.date) === fromDate) ?? null;
+        const parseExp = (v: any) => { try { return Array.isArray(v) ? v : JSON.parse(v || "[]"); } catch { return []; } };
+        const fromDsrUserInputs = fromDsr ? {
+          posEndAmount: Number(fromDsr.posEndAmount || 0),
+          cashDeposit: Number(fromDsr.cashDeposit || 0),
+          paymentChangeAmount: Number(fromDsr.paymentChangeAmount || 0),
+          expensesCount: parseExp(fromDsr.expenses).length,
+        } : null;
+
+        // 안전 점검 — 하나라도 걸리면 실행하지 않음
+        const blockers: string[] = [];
+        if (Number(shell.branchId) !== branchIdParam) blockers.push("두 리포트의 branchId가 다름");
+        if (String(shell.date) !== toDate) blockers.push(`껍데기 리포트 날짜(${shell.date})가 toDate(${toDate})와 다름`);
+        if (fromDate === toDate) blockers.push("원본 리포트가 이미 toDate임");
+        const shellAmount = (shellItems as any[]).reduce((a, it) => a + Number(it.amount || 0), 0);
+        if (shellAmount !== 0) blockers.push(`껍데기 리포트에 금액이 있음(${shellAmount}) — 껍데기가 아님`);
+        if ((shellInc as any[]).length > 0) blockers.push(`껍데기 리포트에 출근자 ${shellInc.length}명 기록 있음 — 확인 필요`);
+        if ((otherOnTo as any[]).length > 0) blockers.push(`toDate에 다른 리포트도 있음: ${(otherOnTo as any[]).map(r => r.id).join(",")}`);
+        if (deleteFromDsr && fromDsrUserInputs && (fromDsrUserInputs.posEndAmount || fromDsrUserInputs.cashDeposit || fromDsrUserInputs.paymentChangeAmount || fromDsrUserInputs.expensesCount)) {
+          blockers.push(`${fromDate} 매출기록에 매출보고 입력값(시제마감/시제입금/지출 등)이 있어 삭제하면 유실됨 — 별도 처리 필요`);
+        }
+
+        const plan = {
+          deleteShell: { tableReportId: shell.id, tableItems: (shellItems as any[]).map(i => i.id), staffIncentives: (shellInc as any[]).map(i => i.id) },
+          moveReport: { id: report.id, from: fromDate, to: toDate },
+          deleteDailySalesRecord: deleteFromDsr && fromDsr ? { id: fromDsr.id, date: fromDate } : null,
+        };
+        const preview = {
+          branchId: branchIdParam,
+          report: { id: report.id, date: report.date, teamCount: report.teamCount, cashAmount: report.cashAmount, cardAmount: report.cardAmount, updatedAt: report.updatedAt,
+            itemsCount: (reportItems as any[]).length, items: reportItems, incentives: reportInc },
+          shell: { id: shell.id, date: shell.date, createdAt: shell.createdAt, updatedAt: shell.updatedAt, items: shellItems, incentives: shellInc },
+          dailySalesRecords: dsrRows,
+          fromDsrUserInputs,
+          liquorStockMovements: mvRows,
+        };
+
+        if (dryrun || blockers.length) {
+          return res.json({ mode, dryrun, deleteFromDsr, ok: blockers.length === 0, blockers, plan, preview,
+            next: blockers.length ? "차단 사유 해결 전에는 실행 불가" : "확인 후 dryrun=0 으로 실행" });
+        }
+
+        await conn.beginTransaction();
+        try {
+          await conn.query(`DELETE FROM tableItems WHERE tableReportId=?`, [shell.id]);
+          await conn.query(`DELETE FROM staffIncentives WHERE tableReportId=?`, [shell.id]);
+          await conn.query(`DELETE FROM tableReports WHERE id=?`, [shell.id]);
+          await conn.query(`UPDATE tableReports SET date=? WHERE id=?`, [toDate, report.id]);
+          if (deleteFromDsr && fromDsr) await conn.query(`DELETE FROM dailySalesRecords WHERE id=?`, [fromDsr.id]);
+          await conn.commit();
+        } catch (e) {
+          await conn.rollback();
+          throw e;
+        }
+        const [after]: any = await conn.query(`SELECT id, branchId, date FROM tableReports WHERE branchId=? AND date IN (?, ?)`, [branchIdParam, toDate, fromDate]);
+        return res.json({ mode, dryrun: false, ok: true, applied: plan, tableReportsAfter: after,
+          next: `${toDate} 테이블기록 화면을 열어 [저장]을 눌러 정산·누적금을 재계산하세요` });
+      }
+
       if (mode === "liquorcostcheck") {
         try {
           const branchId = Number(req.query.branchId) || 6;
