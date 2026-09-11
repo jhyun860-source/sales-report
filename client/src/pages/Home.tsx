@@ -239,14 +239,11 @@ export default function Home() {
           d.setDate(d.getDate() - 1);
           normalized = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
-        if (normalized === todayBiz) return normalized;
-        // 저장값 ≠ 오늘 영업일
-        // 사용자가 오늘 자정 이후 명시적으로 선택했다면 그 의도를 존중
-        if (pickedAt && pickedAt >= todayMidnightTs()) {
-          return normalized;
-        }
-        // 그 외(어제 이전 선택분이 남아있는 케이스)는 오늘 영업일로 자동 갱신
-        return todayBiz;
+        // [수정 2026-09-12] 사용자가 고른 날짜를 그대로 유지한다.
+        //   기존에는 자정이 지나면 자동으로 "오늘"(달력 날짜)로 바꿔서,
+        //   새벽에 전날 영업분을 입력하던 중 날짜가 다음 날로 넘어가 잘못 저장되는 문제가 있었음.
+        //   날짜 변경은 사용자가 화살표/오늘 버튼을 누를 때만 일어난다.
+        return normalized;
       }
     } catch {}
     return todayBusinessDayString();
@@ -266,40 +263,8 @@ export default function Home() {
     });
   };
 
-  // [수정] 앱 포커스 복귀/visibilitychange 시 영업일 자동 갱신
-  //   - 사용자가 오늘 자정 이후 명시적으로 과거 날짜를 선택해 보고 있는 상태라면
-  //     강제 이동하지 않는다(과거 매출 조회 보호).
-  useEffect(() => {
-    const tryRollOverIfStale = () => {
-      try {
-        const todayBiz = todayBusinessDayString();
-        const pickedAtRaw = localStorage.getItem('selectedDate_userPickedAt');
-        const pickedAt = pickedAtRaw ? parseInt(pickedAtRaw, 10) : 0;
-        // 사용자가 오늘 자정 이후 직접 선택한 상태면 그대로 둠
-        if (pickedAt && pickedAt >= todayMidnightTs()) return;
-        // 그 외에는 currentDate가 오늘 영업일과 다르면 오늘로 자동 갱신
-        setCurrentDateState(prev => {
-          if (prev === todayBiz) return prev;
-          try {
-            localStorage.setItem('selectedDate', todayBiz);
-            // 자동 갱신은 "사용자 의도적 선택"이 아니므로 userPickedAt 갱신하지 않음
-          } catch {}
-          return todayBiz;
-        });
-      } catch {}
-    };
-    const onFocus = () => tryRollOverIfStale();
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') tryRollOverIfStale();
-    };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // [수정 2026-09-12] 앱 포커스 복귀 시 날짜를 "오늘"로 자동 전환하던 기능 제거
+  //   (새벽 입력 중 날짜가 다음 날로 바뀌어 테이블기록/매출보고가 잘못된 날짜에 저장되던 원인)
 
   useEffect(() => {
     if (!authLoading && user && isStaffLiquorOnly(user.loginId)) {
