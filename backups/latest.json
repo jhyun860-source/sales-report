@@ -119058,8 +119058,8 @@
       "id": 30086,
       "branchId": 2,
       "liquorItemId": 80,
-      "currentStock": "1.00",
-      "updatedAt": "2026-05-03 04:50:06"
+      "currentStock": "4.00",
+      "updatedAt": "2026-09-12 11:38:17"
     },
     {
       "id": 30087,
@@ -169189,6 +169189,20 @@
       "createdBy": 4,
       "createdAt": "2026-09-11 18:20:34",
       "updatedAt": "2026-09-11 18:20:34"
+    },
+    {
+      "id": 12871400,
+      "branchId": 2,
+      "liquorItemId": 80,
+      "date": "2026-09-12",
+      "type": "ADJUST",
+      "quantity": "3.00",
+      "unitCost": "20000",
+      "totalCost": "60000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-09-12 11:38:17",
+      "updatedAt": "2026-09-12 11:38:17"
     }
   ],
   "liquorHiddenItems": [
