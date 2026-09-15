@@ -28320,22 +28320,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-09-15 10:27:23",
+      "submittedAt": "2026-09-15 13:07:57",
       "createdAt": "2026-09-15 10:27:22",
-      "updatedAt": "2026-09-15 10:27:23",
+      "updatedAt": "2026-09-15 13:07:57",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "204545",
-      "partTimeWageExpense": "640000",
+      "partTimeWageExpense": "800000",
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1017622",
-      "netProfit": "-1017622",
+      "totalExpenses": "1177622",
+      "netProfit": "-1177622",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -118693,6 +118693,22 @@
       "createdAt": "2026-09-15 10:27:22",
       "updatedAt": "2026-09-15 10:27:22",
       "wageExempt": 0
+    },
+    {
+      "id": 11310934,
+      "tableReportId": 10380321,
+      "staffName": "지혜(최지혜)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 5,
+      "createdAt": "2026-09-15 13:07:57",
+      "updatedAt": "2026-09-15 13:07:57",
+      "wageExempt": 0
     }
   ],
   "liquorItems": [
@@ -121899,8 +121915,8 @@
       "id": 30292,
       "branchId": 3,
       "liquorItemId": 40,
-      "currentStock": "3.00",
-      "updatedAt": "2026-07-08 10:31:55"
+      "currentStock": "0.00",
+      "updatedAt": "2026-09-15 13:20:08"
     },
     {
       "id": 30293,
@@ -122018,15 +122034,15 @@
       "id": 30311,
       "branchId": 3,
       "liquorItemId": 38,
-      "currentStock": "2.00",
-      "updatedAt": "2026-08-05 09:53:45"
+      "currentStock": "0.00",
+      "updatedAt": "2026-09-15 13:15:28"
     },
     {
       "id": 30312,
       "branchId": 3,
       "liquorItemId": 39,
-      "currentStock": "3.00",
-      "updatedAt": "2026-06-29 10:16:45"
+      "currentStock": "2.00",
+      "updatedAt": "2026-09-15 13:15:28"
     },
     {
       "id": 30313,
@@ -122431,8 +122447,8 @@
       "id": 30387,
       "branchId": 1,
       "liquorItemId": 40,
-      "currentStock": "1.00",
-      "updatedAt": "2026-08-03 09:46:16"
+      "currentStock": "2.00",
+      "updatedAt": "2026-09-15 13:36:55"
     },
     {
       "id": 30388,
@@ -122550,15 +122566,15 @@
       "id": 30406,
       "branchId": 1,
       "liquorItemId": 38,
-      "currentStock": "2.00",
-      "updatedAt": "2026-09-15 09:46:58"
+      "currentStock": "4.00",
+      "updatedAt": "2026-09-15 13:36:55"
     },
     {
       "id": 30407,
       "branchId": 1,
       "liquorItemId": 39,
-      "currentStock": "2.00",
-      "updatedAt": "2026-09-09 09:58:25"
+      "currentStock": "3.00",
+      "updatedAt": "2026-09-15 13:37:15"
     },
     {
       "id": 30408,
@@ -171638,6 +171654,188 @@
       "createdBy": 3,
       "createdAt": "2026-09-15 10:02:18",
       "updatedAt": "2026-09-15 12:07:22"
+    },
+    {
+      "id": 12871453,
+      "branchId": 3,
+      "liquorItemId": 39,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "92000",
+      "totalCost": "92000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:15:28",
+      "updatedAt": "2026-09-15 13:15:28"
+    },
+    {
+      "id": 12871454,
+      "branchId": 3,
+      "liquorItemId": 38,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "-2.00",
+      "unitCost": "74000",
+      "totalCost": "148000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:15:28",
+      "updatedAt": "2026-09-15 13:15:28"
+    },
+    {
+      "id": 12871455,
+      "branchId": 3,
+      "liquorItemId": 40,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "360000",
+      "totalCost": "360000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:15:28",
+      "updatedAt": "2026-09-15 13:15:28"
+    },
+    {
+      "id": 12871456,
+      "branchId": 3,
+      "liquorItemId": 40,
+      "date": "2026-08-18",
+      "type": "ADJUST",
+      "quantity": "-2.00",
+      "unitCost": "360000",
+      "totalCost": "720000",
+      "memo": "삼성 > 대치 이동",
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:20:08",
+      "updatedAt": "2026-09-15 13:20:08"
+    },
+    {
+      "id": 12871457,
+      "branchId": 1,
+      "liquorItemId": 38,
+      "date": "2026-08-18",
+      "type": "ADJUST",
+      "quantity": "2.00",
+      "unitCost": "74000",
+      "totalCost": "148000",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:28:58",
+      "updatedAt": "2026-09-15 13:28:58"
+    },
+    {
+      "id": 12871458,
+      "branchId": 1,
+      "liquorItemId": 39,
+      "date": "2026-08-18",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "92000",
+      "totalCost": "92000",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:29:29",
+      "updatedAt": "2026-09-15 13:29:29"
+    },
+    {
+      "id": 12871459,
+      "branchId": 1,
+      "liquorItemId": 40,
+      "date": "2026-08-18",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "360000",
+      "totalCost": "360000",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:29:48",
+      "updatedAt": "2026-09-15 13:29:48"
+    },
+    {
+      "id": 12871460,
+      "branchId": 1,
+      "liquorItemId": 39,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "92000",
+      "totalCost": "92000",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:36:36",
+      "updatedAt": "2026-09-15 13:36:36"
+    },
+    {
+      "id": 12871461,
+      "branchId": 1,
+      "liquorItemId": 38,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "-2.00",
+      "unitCost": "74000",
+      "totalCost": "148000",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:36:36",
+      "updatedAt": "2026-09-15 13:36:36"
+    },
+    {
+      "id": 12871462,
+      "branchId": 1,
+      "liquorItemId": 40,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "360000",
+      "totalCost": "360000",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:36:36",
+      "updatedAt": "2026-09-15 13:36:36"
+    },
+    {
+      "id": 12871463,
+      "branchId": 1,
+      "liquorItemId": 40,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "360000",
+      "totalCost": "360000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:36:55",
+      "updatedAt": "2026-09-15 13:36:55"
+    },
+    {
+      "id": 12871464,
+      "branchId": 1,
+      "liquorItemId": 38,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "2.00",
+      "unitCost": "74000",
+      "totalCost": "148000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:36:55",
+      "updatedAt": "2026-09-15 13:36:55"
+    },
+    {
+      "id": 12871465,
+      "branchId": 1,
+      "liquorItemId": 39,
+      "date": "2026-09-15",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "92000",
+      "totalCost": "92000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-09-15 13:36:55",
+      "updatedAt": "2026-09-15 13:37:15"
     }
   ],
   "liquorHiddenItems": [
