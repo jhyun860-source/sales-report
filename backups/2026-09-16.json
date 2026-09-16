@@ -28443,6 +28443,41 @@
       "netProfit": "2894166",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410336,
+      "branchId": 4,
+      "date": "2026-09-16",
+      "posStartAmount": "61000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "60000",
+      "cardTotal": "8510000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-09-16 04:03:11",
+      "createdAt": "2026-09-16 04:03:11",
+      "updatedAt": "2026-09-16 04:03:11",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "173077",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "204545",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "377622",
+      "netProfit": "-377622",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -36871,6 +36906,17 @@
       "notes": null,
       "createdAt": "2026-09-15 18:24:44",
       "updatedAt": "2026-09-15 18:29:07"
+    },
+    {
+      "id": 10380325,
+      "branchId": 4,
+      "date": "2026-09-16",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "0",
+      "notes": null,
+      "createdAt": "2026-09-16 04:03:11",
+      "updatedAt": "2026-09-16 04:03:11"
     }
   ],
   "tableItems": [
@@ -86026,6 +86072,19 @@
       "sortOrder": 6,
       "createdAt": "2026-09-15 18:29:07",
       "updatedAt": "2026-09-15 18:29:07"
+    },
+    {
+      "id": 16261720,
+      "tableReportId": 10380325,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 0,
+      "createdAt": "2026-09-16 04:03:11",
+      "updatedAt": "2026-09-16 04:03:11"
     }
   ],
   "staffIncentives": [
@@ -119259,6 +119318,22 @@
       "sortOrder": 3,
       "createdAt": "2026-09-15 18:31:00",
       "updatedAt": "2026-09-15 18:31:00",
+      "wageExempt": 0
+    },
+    {
+      "id": 11310949,
+      "tableReportId": 10380325,
+      "staffName": "보라(김보라)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-09-16 04:03:11",
+      "updatedAt": "2026-09-16 04:03:11",
       "wageExempt": 0
     }
   ],
