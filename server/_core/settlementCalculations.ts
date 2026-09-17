@@ -269,15 +269,15 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
     : (bsData ? Number(bsData.staffDailyWage || 0) : (hardConfig?.staffDailyWage ?? 0));
   const staffWageExpense = staffCount * staffDailyWage;
 
-  // 6. 점장/매니저 인건비 - 월급을 근무일수로 자동 배분
+  // 6. 점장/매니저 인건비 - 월급 ÷ 고정 22일
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : (hardConfig?.monthlyRent ?? 0);
   const deputyMonthlySalary = bsData ? Number(bsData.deputyMonthlySalary || 0) : managerMonthlySalary;
   
-  // 달력 기준 영업일수 계산 (workType에 따라 월~금 또는 월~토)
-  const managerBusinessDays = getBusinessDaysInMonth(year, month, workType);
-  console.log('[정산계산] managerBusinessDays:', managerBusinessDays, 'managerMonthlySalary:', managerMonthlySalary);
-  const managerDailyWage = managerBusinessDays > 0 ? Math.round(managerMonthlySalary / managerBusinessDays) : 0;
-  const deputyDailyWage = managerBusinessDays > 0 ? Math.round(deputyMonthlySalary / managerBusinessDays) : 0;
+  // 점장/매니저 일급은 고정 22일 기준 (지점 workType·달력 영업일수와 무관)
+  const MANAGER_WAGE_DIVISOR = 22;
+  console.log('[정산계산] MANAGER_WAGE_DIVISOR:', MANAGER_WAGE_DIVISOR, 'managerMonthlySalary:', managerMonthlySalary);
+  const managerDailyWage = Math.round(managerMonthlySalary / MANAGER_WAGE_DIVISOR);
+  const deputyDailyWage = Math.round(deputyMonthlySalary / MANAGER_WAGE_DIVISOR);
   const managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
   // 7. 알바 인건비 (시급 × 근무시간)
