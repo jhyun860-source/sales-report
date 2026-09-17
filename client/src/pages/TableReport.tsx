@@ -968,8 +968,19 @@ export default function TableReport() {
             <ChevronLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="text-center">
-            <div className="text-base font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>
-              {formatDateDisplay(currentDate)}
+            {/* 날짜를 누르면 달력이 열려 원하는 날짜로 바로 이동 */}
+            <div className="relative inline-block">
+              <div className="text-base font-semibold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>
+                {formatDateDisplay(currentDate)}
+              </div>
+              <input
+                type="date"
+                value={currentDate}
+                max={today}
+                onChange={(e) => { if (e.target.value) setCurrentDate(e.target.value); }}
+                aria-label="날짜 선택"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
             </div>
             {!isToday && (
               <button onClick={() => setCurrentDate(today)} className="text-xs underline underline-offset-2" style={{ color: PRIMARY }}>
