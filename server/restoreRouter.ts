@@ -250,7 +250,7 @@ export function registerRestoreRoutes(app: Express) {
               : Number(bs.staffDailyWage || 0))
           : 0;
         const [rows]: any = await conn.query(
-          `SELECT d.id, d.date, d.staffCount, d.staffWageExpense,
+          `SELECT d.id, d.date, d.staffWageExpense,
                   (SELECT COUNT(*) FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
                     WHERE tr.branchId = d.branchId AND tr.date = d.date
                       AND si.staffType = 'staff' AND si.wageExempt = 0) AS realStaffCount
@@ -265,8 +265,7 @@ export function registerRestoreRoutes(app: Express) {
           const expected = realCount * dailyWage;
           return {
             date: r.date,
-            저장된인원수: Number(r.staffCount || 0),
-            실제출근인원: realCount,
+            출근한여직원수: realCount,
             현재금액: current,
             정상금액: expected,
             차이: expected - current,
@@ -304,7 +303,7 @@ export function registerRestoreRoutes(app: Express) {
           return res.status(400).json({ error: "여직원 일급이 0원이라 복구할 수 없음. 지점설정의 여직원 월급/일급을 먼저 확인할 것", branchId: branchIdParam });
         }
         const [rows]: any = await conn.query(
-          `SELECT d.id, d.date, d.staffCount, d.staffWageExpense, d.totalExpenses, d.totalRevenue,
+          `SELECT d.id, d.date, d.staffWageExpense, d.totalExpenses, d.totalRevenue,
                   (SELECT COUNT(*) FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
                     WHERE tr.branchId = d.branchId AND tr.date = d.date
                       AND si.staffType = 'staff' AND si.wageExempt = 0) AS realStaffCount
@@ -318,18 +317,18 @@ export function registerRestoreRoutes(app: Express) {
           const realCount = Number(r.realStaffCount || 0);
           const current = Number(r.staffWageExpense || 0);
           const expected = realCount * dailyWage;
-          if (expected === current && Number(r.staffCount || 0) === realCount) continue;
+          if (expected === current) continue;
           const totalExpenses = Number(r.totalExpenses || 0) - current + expected;
           const netProfit = Number(r.totalRevenue || 0) - totalExpenses;
           if (!dryrun) {
             await conn.query(
-              `UPDATE dailySalesRecords SET staffCount=?, staffWageExpense=?, totalExpenses=?, netProfit=? WHERE id=?`,
-              [realCount, String(expected), String(totalExpenses), String(netProfit), r.id]
+              `UPDATE dailySalesRecords SET staffWageExpense=?, totalExpenses=?, netProfit=? WHERE id=?`,
+              [String(expected), String(totalExpenses), String(netProfit), r.id]
             );
           }
           changed.push({
             date: r.date,
-            인원수: `${Number(r.staffCount || 0)} → ${realCount}`,
+            출근한여직원수: realCount,
             여직원인건비: `${current} → ${expected}`,
             총지출: `${Number(r.totalExpenses || 0)} → ${totalExpenses}`,
           });

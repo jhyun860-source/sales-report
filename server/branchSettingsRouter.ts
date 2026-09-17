@@ -206,8 +206,8 @@ export const branchSettingsRouter = router({
         // (기존엔 "이미 입력된 날짜 수"로 나눠서 월초엔 임대료가 비정상적으로 커지는 버그가 있었음)
         const rentBusinessDays = getBusinessDaysInMonth(year, Number(month), 'MON_SAT');
 
-        // 여직원 인원수는 저장된 staffCount 대신 실제 출근 기록에서 다시 센다.
-        // (staffCount가 0으로 비어 있는 기록이 많아, 그대로 곱하면 멀쩡한 여직원 인건비가 0원으로 덮어써졌다)
+        // 여직원 인건비는 점장과 같은 방식으로, 그날 출근 기록에 있는 여직원을 세서 계산한다.
+        // (예전엔 저장된 staffCount 칸을 곱했는데, 그 칸이 0으로 비어 있어 인건비가 0원으로 덮어써졌다)
         const staffCountSql = `(SELECT COUNT(*) FROM staffIncentives si2
             JOIN tableReports tr2 ON si2.tableReportId = tr2.id
             WHERE tr2.branchId = d.branchId AND tr2.date = d.date
@@ -217,7 +217,6 @@ export const branchSettingsRouter = router({
         const result = await db.execute(`
           UPDATE dailySalesRecords d
           SET
-            d.staffCount = ${staffCountSql},
             d.staffWageExpense = ${staffWageSql},
             d.managerWageExpense = (
               SELECT COALESCE(SUM(CASE
