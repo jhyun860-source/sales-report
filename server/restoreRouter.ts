@@ -231,6 +231,115 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, date, rows });
       }
 
+      if (mode === "staffwagecheck") {
+        // [점검 전용/읽기만] 여직원 인건비가 실제 출근 인원과 맞는지 확인
+        // 사용: &mode=staffwagecheck&branchId=2&month=2026-09&key=...
+        const branchIdParam = Number(req.query.branchId || 0);
+        const month = String(req.query.month || "");
+        if (!branchIdParam || !/^\d{4}-\d{2}$/.test(month)) {
+          return res.status(400).json({ error: "branchId, month(YYYY-MM) 필요" });
+        }
+        const [bsRows]: any = await conn.query(
+          `SELECT staffMonthlySalary, staffDailyWage FROM branchSettings WHERE branchId=? LIMIT 1`,
+          [branchIdParam]
+        );
+        const bs = bsRows[0];
+        const dailyWage = bs
+          ? (Number(bs.staffMonthlySalary || 0) > 0
+              ? Math.round(Number(bs.staffMonthlySalary) / 22)
+              : Number(bs.staffDailyWage || 0))
+          : 0;
+        const [rows]: any = await conn.query(
+          `SELECT d.id, d.date, d.staffCount, d.staffWageExpense,
+                  (SELECT COUNT(*) FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
+                    WHERE tr.branchId = d.branchId AND tr.date = d.date
+                      AND si.staffType = 'staff' AND si.wageExempt = 0) AS realStaffCount
+             FROM dailySalesRecords d
+            WHERE d.branchId = ? AND d.date BETWEEN ? AND ?
+            ORDER BY d.date`,
+          [branchIdParam, `${month}-01`, `${month}-31`]
+        );
+        const list = rows.map((r: any) => {
+          const realCount = Number(r.realStaffCount || 0);
+          const current = Number(r.staffWageExpense || 0);
+          const expected = realCount * dailyWage;
+          return {
+            date: r.date,
+            저장된인원수: Number(r.staffCount || 0),
+            실제출근인원: realCount,
+            현재금액: current,
+            정상금액: expected,
+            차이: expected - current,
+            고쳐야함: expected !== current,
+          };
+        });
+        return res.json({
+          mode, branchId: branchIdParam, month, 여직원일급: dailyWage,
+          전체건수: list.length,
+          고쳐야할건수: list.filter((x: any) => x.고쳐야함).length,
+          rows: list,
+        });
+      }
+
+      if (mode === "fixstaffwage") {
+        // 여직원 인건비를 실제 출근 인원 기준으로 복구
+        // 사용: &mode=fixstaffwage&branchId=2&month=2026-09&dryrun=1&key=...
+        // dryrun=1 이면 실제로 고치지 않고 바뀔 내용만 보여준다.
+        const branchIdParam = Number(req.query.branchId || 0);
+        const month = String(req.query.month || "");
+        const dryrun = String(req.query.dryrun || "") === "1";
+        if (!branchIdParam || !/^\d{4}-\d{2}$/.test(month)) {
+          return res.status(400).json({ error: "branchId, month(YYYY-MM) 필요" });
+        }
+        const [bsRows]: any = await conn.query(
+          `SELECT staffMonthlySalary, staffDailyWage FROM branchSettings WHERE branchId=? LIMIT 1`,
+          [branchIdParam]
+        );
+        const bs = bsRows[0];
+        if (!bs) return res.json({ mode, result: "branchSettings 없음", branchId: branchIdParam });
+        const dailyWage = Number(bs.staffMonthlySalary || 0) > 0
+          ? Math.round(Number(bs.staffMonthlySalary) / 22)
+          : Number(bs.staffDailyWage || 0);
+        if (dailyWage <= 0) {
+          return res.status(400).json({ error: "여직원 일급이 0원이라 복구할 수 없음. 지점설정의 여직원 월급/일급을 먼저 확인할 것", branchId: branchIdParam });
+        }
+        const [rows]: any = await conn.query(
+          `SELECT d.id, d.date, d.staffCount, d.staffWageExpense, d.totalExpenses, d.totalRevenue,
+                  (SELECT COUNT(*) FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
+                    WHERE tr.branchId = d.branchId AND tr.date = d.date
+                      AND si.staffType = 'staff' AND si.wageExempt = 0) AS realStaffCount
+             FROM dailySalesRecords d
+            WHERE d.branchId = ? AND d.date BETWEEN ? AND ?
+            ORDER BY d.date`,
+          [branchIdParam, `${month}-01`, `${month}-31`]
+        );
+        const changed: any[] = [];
+        for (const r of rows) {
+          const realCount = Number(r.realStaffCount || 0);
+          const current = Number(r.staffWageExpense || 0);
+          const expected = realCount * dailyWage;
+          if (expected === current && Number(r.staffCount || 0) === realCount) continue;
+          const totalExpenses = Number(r.totalExpenses || 0) - current + expected;
+          const netProfit = Number(r.totalRevenue || 0) - totalExpenses;
+          if (!dryrun) {
+            await conn.query(
+              `UPDATE dailySalesRecords SET staffCount=?, staffWageExpense=?, totalExpenses=?, netProfit=? WHERE id=?`,
+              [realCount, String(expected), String(totalExpenses), String(netProfit), r.id]
+            );
+          }
+          changed.push({
+            date: r.date,
+            인원수: `${Number(r.staffCount || 0)} → ${realCount}`,
+            여직원인건비: `${current} → ${expected}`,
+            총지출: `${Number(r.totalExpenses || 0)} → ${totalExpenses}`,
+          });
+        }
+        return res.json({
+          mode, dryrun, branchId: branchIdParam, month, 여직원일급: dailyWage,
+          전체건수: rows.length, 고친건수: changed.length, rows: changed,
+        });
+      }
+
       if (mode === "adjustsettlement") {
         const branchIdParam = Number(req.query.branchId);
         const date = String(req.query.date || "");

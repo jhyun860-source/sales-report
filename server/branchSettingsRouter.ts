@@ -205,11 +205,20 @@ export const branchSettingsRouter = router({
         // 임대료는 항상 그 달 실제 캘린더 기준 월~토 영업일수로 나눔
         // (기존엔 "이미 입력된 날짜 수"로 나눠서 월초엔 임대료가 비정상적으로 커지는 버그가 있었음)
         const rentBusinessDays = getBusinessDaysInMonth(year, Number(month), 'MON_SAT');
+
+        // 여직원 인원수는 저장된 staffCount 대신 실제 출근 기록에서 다시 센다.
+        // (staffCount가 0으로 비어 있는 기록이 많아, 그대로 곱하면 멀쩡한 여직원 인건비가 0원으로 덮어써졌다)
+        const staffCountSql = `(SELECT COUNT(*) FROM staffIncentives si2
+            JOIN tableReports tr2 ON si2.tableReportId = tr2.id
+            WHERE tr2.branchId = d.branchId AND tr2.date = d.date
+              AND si2.staffType = 'staff' AND si2.wageExempt = 0)`;
+        const staffWageSql = `(${staffCountSql} * ${input.staffDailyWage})`;
         
         const result = await db.execute(`
           UPDATE dailySalesRecords d
           SET
-            d.staffWageExpense = d.staffCount * ${input.staffDailyWage},
+            d.staffCount = ${staffCountSql},
+            d.staffWageExpense = ${staffWageSql},
             d.managerWageExpense = (
               SELECT COALESCE(SUM(CASE
                 WHEN si.staffType = 'manager' THEN ${computedDailyWage}
@@ -222,7 +231,7 @@ export const branchSettingsRouter = router({
             d.commissionExpense = ROUND(d.totalRevenue * ${input.commissionRate}),
             d.rentExpense = ROUND(${input.monthlyRent} / ${rentBusinessDays}),
             d.totalExpenses = d.commissionExpense + d.rentExpense + d.managementFeeExpense
-              + (d.staffCount * ${input.staffDailyWage})
+              + ${staffWageSql}
               + (SELECT COALESCE(SUM(CASE
                   WHEN si.staffType = 'manager' THEN ${computedDailyWage}
                   WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
@@ -231,7 +240,7 @@ export const branchSettingsRouter = router({
                  WHERE tr.branchId = d.branchId AND tr.date = d.date)
               + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense,
             d.netProfit = d.totalRevenue - (d.commissionExpense + d.rentExpense + d.managementFeeExpense
-              + (d.staffCount * ${input.staffDailyWage})
+              + ${staffWageSql}
               + (SELECT COALESCE(SUM(CASE
                   WHEN si.staffType = 'manager' THEN ${computedDailyWage}
                   WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
