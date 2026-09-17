@@ -123,7 +123,9 @@ export function calculateDailyRent(monthlyRent: number, year: number, month: num
 export async function getStaffCounts(tableReportId: number): Promise<{ staffCount: number; partTimeCount: number; managerCount: number; partTimeTotalHours: number }> {
   const db = await getDb();
   if (!db) return { staffCount: 0, partTimeCount: 0, managerCount: 0, partTimeTotalHours: 0 };
-  const incentives = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
+  const all = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
+  // 시급 미대상(wageExempt) 직원은 인건비/시간 합계에서 제외한다.
+  const incentives = all.filter(i => !i.wageExempt);
   const staffCount = incentives.filter(i => i.staffType === 'staff').length;
   const partTimeCount = incentives.filter(i => i.staffType === 'parttime').length;
   const managerCount = incentives.filter(i => i.staffType === 'manager' || i.staffType === 'deputy').length;

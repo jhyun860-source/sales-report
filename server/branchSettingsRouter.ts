@@ -213,40 +213,32 @@ export const branchSettingsRouter = router({
             WHERE tr2.branchId = d.branchId AND tr2.date = d.date
               AND si2.staffType = 'staff' AND si2.wageExempt = 0)`;
         const staffWageSql = `(${staffCountSql} * ${input.staffDailyWage})`;
-        
-        const result = await db.execute(`
-          UPDATE dailySalesRecords d
-          SET
-            d.staffCount = ${staffCountSql},
-            d.staffWageExpense = ${staffWageSql},
-            d.managerWageExpense = (
-              SELECT COALESCE(SUM(CASE
+
+        // 점장/매니저도 시급 미대상(wageExempt) 직원은 인건비에서 제외한다.
+        const managerWageSql = `(SELECT COALESCE(SUM(CASE
                 WHEN si.staffType = 'manager' THEN ${computedDailyWage}
                 WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
                 ELSE 0 END), 0)
               FROM staffIncentives si
               JOIN tableReports tr ON si.tableReportId = tr.id
               WHERE tr.branchId = d.branchId AND tr.date = d.date
-            ),
+                AND si.wageExempt = 0)`;
+        
+        const result = await db.execute(`
+          UPDATE dailySalesRecords d
+          SET
+            d.staffCount = ${staffCountSql},
+            d.staffWageExpense = ${staffWageSql},
+            d.managerWageExpense = ${managerWageSql},
             d.commissionExpense = ROUND(d.totalRevenue * ${input.commissionRate}),
             d.rentExpense = ROUND(${input.monthlyRent} / ${rentBusinessDays}),
             d.totalExpenses = d.commissionExpense + d.rentExpense + d.managementFeeExpense
               + ${staffWageSql}
-              + (SELECT COALESCE(SUM(CASE
-                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
-                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
-                  ELSE 0 END), 0)
-                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
-                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + ${managerWageSql}
               + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense,
             d.netProfit = d.totalRevenue - (d.commissionExpense + d.rentExpense + d.managementFeeExpense
               + ${staffWageSql}
-              + (SELECT COALESCE(SUM(CASE
-                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
-                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
-                  ELSE 0 END), 0)
-                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
-                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + ${managerWageSql}
               + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense)
           WHERE d.branchId = ${input.branchId}
           AND d.date BETWEEN '${startDate}' AND '${endDate}'
