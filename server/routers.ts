@@ -5240,7 +5240,8 @@ export const appRouter = router({
             totalBottle: sql<number>`SUM(${staffIncentives.bottleCount})`,
             totalBeerBottle: sql<number>`SUM(${staffIncentives.beerBottleCount})`,
             totalSalesIncentive: sql<string>`SUM(CAST(NULLIF(${staffIncentives.salesIncentive}, '') AS DECIMAL(15,0)))`,
-            workDays: sql<number>`COUNT(DISTINCT ${tableReports.date})`,
+            // 시급 미대상(wageExempt)인 출근은 근무일수에서 제외 — 잔추가/병추가/영업인센은 그대로 인정
+            workDays: sql<number>`COUNT(DISTINCT CASE WHEN ${staffIncentives.wageExempt} = 0 THEN ${tableReports.date} END)`,
           })
           .from(staffIncentives)
           .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
@@ -5260,6 +5261,7 @@ export const appRouter = router({
             date: tableReports.date,
             workStart: staffIncentives.workStart,
             workEnd: staffIncentives.workEnd,
+            wageExempt: staffIncentives.wageExempt,
           })
           .from(staffIncentives)
           .innerJoin(tableReports, eq(staffIncentives.tableReportId, tableReports.id))
@@ -5307,6 +5309,8 @@ export const appRouter = router({
         const staffInMonthDays: Record<string, number> = {};
 
         for (const row of detailRows) {
+          // 시급 미대상은 근무시간·출근일수 집계에서 제외 (인센티브 집계에는 영향 없음)
+          if (row.wageExempt) continue;
           const key = `${row.staffName}__${row.staffType}`;
           const mins = calcWorkMinutes(row.workStart, row.workEnd);
           if (!staffWeeklyMap[key]) staffWeeklyMap[key] = {};
