@@ -525,8 +525,16 @@ export default function TableReport() {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
-    const target = items.find(it => it.localId === targetLocalId);
-    const source = items.find(it => it.localId === sourceLocalId);
+    // [버그수정] 진행 중인 저장이 끝난 뒤에 합친다.
+    //   합치기 직전에 출발한 자동저장은 "합치기 이전 화면"을 들고 있어서,
+    //   합치기보다 늦게 서버에 도착하면 합산된 금액을 원래 금액으로 되돌려 쓴다.
+    //   (이미 삭제된 항목은 되살아나지 않으므로, 항목만 사라지고 금액은 그대로인 문제 발생)
+    if (inflightSaveRef.current || queuedSaveRef.current) {
+      try { await (queuedSaveRef.current ?? inflightSaveRef.current); } catch {}
+    }
+    // 저장이 끝나면서 새 id가 붙을 수 있으므로 최신 목록(itemsRef)에서 찾는다.
+    const target = itemsRef.current.find(it => it.localId === targetLocalId);
+    const source = itemsRef.current.find(it => it.localId === sourceLocalId);
     if (!target || !source || targetLocalId === sourceLocalId) {
       toast.error('합칠 항목을 다시 선택해주세요.');
       setMergeTargetLocalId(null);
@@ -567,7 +575,7 @@ export default function TableReport() {
       //   React 상태 업데이트는 비동기라 handleSave()를 뒤늦게 호출하면
       //   병합 "이전"의 오래된 state를 참조하는 위험이 있으므로,
       //   병합 결과 배열을 여기서 직접 계산해 즉시 서버로 전송한다 (state 타이밍에 의존하지 않음).
-      const mergedItemsForSave = items
+      const mergedItemsForSave = itemsRef.current
         .map(it => it.localId === targetLocalId ? { ...it, amount: mergedAmountLocal, memo: mergedMemoLocal } : it)
         .filter(it => it.localId !== sourceLocalId);
       setIsSaving(true);
