@@ -29132,6 +29132,41 @@
       "netProfit": "-426785",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410355,
+      "branchId": 2,
+      "date": "2026-09-19",
+      "posStartAmount": "1100000",
+      "cash": "0",
+      "card": "646000",
+      "cashTotal": "0",
+      "cardTotal": "34208000",
+      "posEndAmount": "1240000",
+      "cashDeposit": "140000",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-09-19 15:28:36",
+      "createdAt": "2026-09-19 15:26:25",
+      "updatedAt": "2026-09-19 15:30:52",
+      "totalRevenue": "646000",
+      "commissionExpense": "109820",
+      "rentExpense": "346154",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "272727",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "110000",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "38462",
+      "totalExpenses": "877163",
+      "netProfit": "-231163",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -37747,6 +37782,17 @@
       "notes": null,
       "createdAt": "2026-09-18 19:54:29",
       "updatedAt": "2026-09-18 19:55:00"
+    },
+    {
+      "id": 10380342,
+      "branchId": 2,
+      "date": "2026-09-19",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "646000",
+      "notes": null,
+      "createdAt": "2026-09-19 15:28:34",
+      "updatedAt": "2026-09-19 15:28:35"
     }
   ],
   "tableItems": [
@@ -87968,6 +88014,19 @@
       "sortOrder": 2,
       "createdAt": "2026-09-18 19:54:29",
       "updatedAt": "2026-09-18 19:54:58"
+    },
+    {
+      "id": 16261825,
+      "tableReportId": 10380342,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "646000",
+      "paymentMethod": "card",
+      "memo": "조니워커 블루 Glass(4), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">맥갤란12y (700ml)(1)</mark>, 아이스크림(2)",
+      "sortOrder": 0,
+      "createdAt": "2026-09-19 15:28:34",
+      "updatedAt": "2026-09-19 15:28:34"
     }
   ],
   "staffIncentives": [
@@ -122082,6 +122141,22 @@
       "createdAt": "2026-09-18 19:54:59",
       "updatedAt": "2026-09-18 20:00:25",
       "wageExempt": 0
+    },
+    {
+      "id": 11311008,
+      "tableReportId": 10380342,
+      "staffName": "아름(하신원)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-09-19 15:28:34",
+      "updatedAt": "2026-09-19 15:28:34",
+      "wageExempt": 0
     }
   ],
   "liquorItems": [
@@ -123867,8 +123942,8 @@
       "id": 30029,
       "branchId": 2,
       "liquorItemId": 23,
-      "currentStock": "1.00",
-      "updatedAt": "2026-09-17 15:11:31"
+      "currentStock": "0.00",
+      "updatedAt": "2026-09-19 15:30:51"
     },
     {
       "id": 30030,
@@ -176861,6 +176936,20 @@
       "createdBy": 2,
       "createdAt": "2026-09-18 19:45:44",
       "updatedAt": "2026-09-18 19:45:44"
+    },
+    {
+      "id": 12871597,
+      "branchId": 2,
+      "liquorItemId": 23,
+      "date": "2026-09-19",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "110000",
+      "totalCost": "110000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-09-19 15:30:51",
+      "updatedAt": "2026-09-19 15:30:51"
     }
   ],
   "liquorHiddenItems": [
