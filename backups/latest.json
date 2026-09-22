@@ -29599,6 +29599,41 @@
       "netProfit": "515509",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410368,
+      "branchId": 2,
+      "date": "2026-09-22",
+      "posStartAmount": "1150000",
+      "cash": "0",
+      "card": "304000",
+      "cashTotal": "0",
+      "cardTotal": "38103000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-09-22 15:07:38",
+      "createdAt": "2026-09-22 15:07:38",
+      "updatedAt": "2026-09-22 15:07:40",
+      "totalRevenue": "304000",
+      "commissionExpense": "51680",
+      "rentExpense": "346154",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "38462",
+      "totalExpenses": "436296",
+      "netProfit": "-132296",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -38335,6 +38370,17 @@
       "notes": null,
       "createdAt": "2026-09-22 10:03:35",
       "updatedAt": "2026-09-22 10:14:07"
+    },
+    {
+      "id": 10380353,
+      "branchId": 2,
+      "date": "2026-09-22",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "304000",
+      "notes": null,
+      "createdAt": "2026-09-22 15:07:33",
+      "updatedAt": "2026-09-22 15:07:34"
     }
   ],
   "tableItems": [
@@ -89050,6 +89096,71 @@
       "sortOrder": 9,
       "createdAt": "2026-09-22 10:13:37",
       "updatedAt": "2026-09-22 10:13:43"
+    },
+    {
+      "id": 16261867,
+      "tableReportId": 10380353,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "304000",
+      "paymentMethod": "card",
+      "memo": "맥주, 칵테일, 위스키 무제한(3), SODA (콜라, 사이다)(3), 육포 &amp; 모듬안주(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">새미(1)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">아름J(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">수정(2)</mark>, 연장 30분(3)",
+      "sortOrder": 0,
+      "createdAt": "2026-09-22 15:07:33",
+      "updatedAt": "2026-09-22 15:07:33"
+    },
+    {
+      "id": 16261868,
+      "tableReportId": 10380353,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 1,
+      "createdAt": "2026-09-22 15:07:33",
+      "updatedAt": "2026-09-22 15:07:33"
+    },
+    {
+      "id": 16261869,
+      "tableReportId": 10380353,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 2,
+      "createdAt": "2026-09-22 15:07:33",
+      "updatedAt": "2026-09-22 15:07:33"
+    },
+    {
+      "id": 16261870,
+      "tableReportId": 10380353,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 3,
+      "createdAt": "2026-09-22 15:07:33",
+      "updatedAt": "2026-09-22 15:07:33"
+    },
+    {
+      "id": 16261871,
+      "tableReportId": 10380353,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 4,
+      "createdAt": "2026-09-22 15:07:34",
+      "updatedAt": "2026-09-22 15:07:34"
     }
   ],
   "staffIncentives": [
