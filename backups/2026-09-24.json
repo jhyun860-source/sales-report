@@ -29903,9 +29903,9 @@
       "date": "2026-09-23",
       "posStartAmount": "0",
       "cash": "0",
-      "card": "435000",
+      "card": "510000",
       "cashTotal": "454000",
-      "cardTotal": "5255000",
+      "cardTotal": "5330000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -29913,11 +29913,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-09-23 17:50:12",
+      "submittedAt": "2026-09-23 18:15:15",
       "createdAt": "2026-09-23 15:49:07",
-      "updatedAt": "2026-09-23 17:57:00",
-      "totalRevenue": "435000",
-      "commissionExpense": "73950",
+      "updatedAt": "2026-09-23 18:15:16",
+      "totalRevenue": "510000",
+      "commissionExpense": "86700",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "119000",
@@ -29927,8 +29927,8 @@
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "413027",
-      "netProfit": "21973",
+      "totalExpenses": "425777",
+      "netProfit": "84223",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -38808,10 +38808,10 @@
       "date": "2026-09-23",
       "teamCount": 3,
       "cashAmount": "0",
-      "cardAmount": "435000",
+      "cardAmount": "510000",
       "notes": null,
       "createdAt": "2026-09-23 15:49:42",
-      "updatedAt": "2026-09-23 17:50:10"
+      "updatedAt": "2026-09-23 18:15:14"
     },
     {
       "id": 10380363,
@@ -90188,6 +90188,19 @@
       "sortOrder": 3,
       "createdAt": "2026-09-23 17:54:10",
       "updatedAt": "2026-09-23 17:54:31"
+    },
+    {
+      "id": 16261921,
+      "tableReportId": 10380362,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "75000",
+      "paymentMethod": "card",
+      "memo": "1시간 무제한(2), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">스텝음료(1)</mark>",
+      "sortOrder": 2,
+      "createdAt": "2026-09-23 18:15:14",
+      "updatedAt": "2026-09-23 18:15:14"
     }
   ],
   "staffIncentives": [
