@@ -29880,7 +29880,7 @@
       "submittedBy": null,
       "submittedAt": "2026-09-23 16:48:11",
       "createdAt": "2026-09-23 15:26:04",
-      "updatedAt": "2026-09-23 19:38:06",
+      "updatedAt": "2026-09-24 13:20:33",
       "totalRevenue": "1320000",
       "commissionExpense": "224400",
       "rentExpense": "346154",
@@ -29888,12 +29888,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "272727",
       "partTimeWageExpense": "190000",
-      "liquorCostExpense": "166800",
+      "liquorCostExpense": "171400",
       "staffDrinkExpense": "43000",
       "salesIncentiveExpense": "0",
       "otherExpense": "118462",
-      "totalExpenses": "1361543",
-      "netProfit": "-41543",
+      "totalExpenses": "1366143",
+      "netProfit": "-46143",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -30069,6 +30069,41 @@
       "otherExpense": "23077",
       "totalExpenses": "1136235",
       "netProfit": "-111235",
+      "staffCount": 0,
+      "partTimeCount": 0
+    },
+    {
+      "id": 10410381,
+      "branchId": 1,
+      "date": "2026-09-24",
+      "posStartAmount": "48100",
+      "cash": "0",
+      "card": "50000",
+      "cashTotal": "7191000",
+      "cardTotal": "40493000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-09-24 13:42:19",
+      "createdAt": "2026-09-24 13:41:34",
+      "updatedAt": "2026-09-24 13:42:20",
+      "totalRevenue": "50000",
+      "commissionExpense": "8500",
+      "rentExpense": "269231",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "272727",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "550458",
+      "netProfit": "-500458",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -38961,6 +38996,17 @@
       "notes": null,
       "createdAt": "2026-09-24 10:33:35",
       "updatedAt": "2026-09-24 10:36:50"
+    },
+    {
+      "id": 10380367,
+      "branchId": 1,
+      "date": "2026-09-24",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "50000",
+      "notes": null,
+      "createdAt": "2026-09-24 13:41:32",
+      "updatedAt": "2026-09-24 13:41:33"
     }
   ],
   "tableItems": [
@@ -90508,6 +90554,19 @@
       "sortOrder": 3,
       "createdAt": "2026-09-24 10:35:46",
       "updatedAt": "2026-09-24 10:36:50"
+    },
+    {
+      "id": 16261935,
+      "tableReportId": 10380367,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "50000",
+      "paymentMethod": "card",
+      "memo": "ㅟ스키보관비용",
+      "sortOrder": 0,
+      "createdAt": "2026-09-24 13:41:32",
+      "updatedAt": "2026-09-24 13:41:32"
     }
   ],
   "staffIncentives": [
@@ -125614,6 +125673,22 @@
       "createdAt": "2026-09-24 10:33:36",
       "updatedAt": "2026-09-24 10:33:51",
       "wageExempt": 0
+    },
+    {
+      "id": 11311076,
+      "tableReportId": 10380367,
+      "staffName": "시현(이주현)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-09-24 13:41:32",
+      "updatedAt": "2026-09-24 13:41:32",
+      "wageExempt": 0
     }
   ],
   "liquorItems": [
@@ -127315,8 +127390,8 @@
       "id": 30016,
       "branchId": 2,
       "liquorItemId": 85,
-      "currentStock": "25.00",
-      "updatedAt": "2026-09-23 19:38:04"
+      "currentStock": "24.00",
+      "updatedAt": "2026-09-24 13:20:32"
     },
     {
       "id": 30017,
@@ -181324,13 +181399,13 @@
       "liquorItemId": 85,
       "date": "2026-09-23",
       "type": "OUT",
-      "quantity": "-8.00",
+      "quantity": "-9.00",
       "unitCost": "4600",
-      "totalCost": "36800",
+      "totalCost": "41400",
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-09-23 19:38:04",
-      "updatedAt": "2026-09-23 19:38:04"
+      "updatedAt": "2026-09-24 13:20:32"
     },
     {
       "id": 12871664,
