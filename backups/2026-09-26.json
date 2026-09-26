@@ -30183,9 +30183,9 @@
       "date": "2026-09-26",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "0",
+      "card": "75000",
       "cashTotal": "150000",
-      "cardTotal": "15771000",
+      "cardTotal": "15846000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -30193,11 +30193,11 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-09-26 09:59:05",
+      "submittedAt": "2026-09-26 11:08:43",
       "createdAt": "2026-09-26 09:59:05",
-      "updatedAt": "2026-09-26 09:59:05",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-09-26 11:08:43",
+      "totalRevenue": "75000",
+      "commissionExpense": "12750",
       "rentExpense": "173077",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
@@ -30207,8 +30207,8 @@
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "377622",
-      "netProfit": "-377622",
+      "totalExpenses": "390372",
+      "netProfit": "-315372",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -39141,10 +39141,10 @@
       "date": "2026-09-26",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "0",
+      "cardAmount": "75000",
       "notes": null,
       "createdAt": "2026-09-26 09:59:05",
-      "updatedAt": "2026-09-26 09:59:05"
+      "updatedAt": "2026-09-26 11:08:26"
     }
   ],
   "tableItems": [
@@ -90775,14 +90775,14 @@
       "id": 16261942,
       "tableReportId": 10380370,
       "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
+      "guestType": "named",
+      "guestName": "원호",
+      "amount": "75000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "바탑 1시간 무제한(1), 스텝음료(3)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button>",
       "sortOrder": 0,
       "createdAt": "2026-09-26 09:59:05",
-      "updatedAt": "2026-09-26 09:59:05"
+      "updatedAt": "2026-09-26 11:08:38"
     }
   ],
   "staffIncentives": [
