@@ -30193,9 +30193,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-09-26 18:00:35",
+      "submittedAt": "2026-09-27 02:20:28",
       "createdAt": "2026-09-26 09:59:05",
-      "updatedAt": "2026-09-26 18:00:35",
+      "updatedAt": "2026-09-27 02:20:28",
       "totalRevenue": "770000",
       "commissionExpense": "130900",
       "rentExpense": "173077",
@@ -90921,10 +90921,10 @@
       "guestName": null,
       "amount": "115000",
       "paymentMethod": "card",
-      "memo": "바탑 1시간 무제한(1), 바탑 연장 30분(2), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">스텝음료(3)</mark>",
+      "memo": "바탑 1시간 무제한(1), 바탑 연장 30분(2), 스텝음료(3)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button>",
       "sortOrder": 1,
       "createdAt": "2026-09-26 17:59:37",
-      "updatedAt": "2026-09-26 17:59:37"
+      "updatedAt": "2026-09-27 02:20:24"
     },
     {
       "id": 16261945,
