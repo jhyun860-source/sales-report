@@ -31325,6 +31325,41 @@
       "netProfit": "-564545",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410416,
+      "branchId": 2,
+      "date": "2026-10-01",
+      "posStartAmount": "840000",
+      "cash": "0",
+      "card": "1474000",
+      "cashTotal": "0",
+      "cardTotal": "1474000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-10-01 17:18:21",
+      "createdAt": "2026-10-01 17:17:46",
+      "updatedAt": "2026-10-01 17:18:21",
+      "totalRevenue": "1474000",
+      "commissionExpense": "250580",
+      "rentExpense": "333333",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "136364",
+      "managerWageExpense": "272727",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "37037",
+      "totalExpenses": "1030041",
+      "netProfit": "443959",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -40501,6 +40536,17 @@
       "notes": null,
       "createdAt": "2026-10-01 16:38:58",
       "updatedAt": "2026-10-01 16:38:58"
+    },
+    {
+      "id": 10380393,
+      "branchId": 2,
+      "date": "2026-10-01",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "1474000",
+      "notes": null,
+      "createdAt": "2026-10-01 17:17:46",
+      "updatedAt": "2026-10-01 17:18:12"
     }
   ],
   "tableItems": [
@@ -93426,6 +93472,58 @@
       "sortOrder": 0,
       "createdAt": "2026-10-01 16:38:58",
       "updatedAt": "2026-10-01 16:38:58"
+    },
+    {
+      "id": 16262047,
+      "tableReportId": 10380393,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "925000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">발렌타인 17y + 과일 SET(1)</mark>, <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">글렌리벳15 + 과일 SET(1)</mark>, 아즐레퀼라(1), 외부(1)",
+      "sortOrder": 0,
+      "createdAt": "2026-10-01 17:17:46",
+      "updatedAt": "2026-10-01 17:17:46"
+    },
+    {
+      "id": 16262048,
+      "tableReportId": 10380393,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "549000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">글렌리벳15 + 과일 SET(1)</mark>, <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">탄산수 (병)(1)</mark>, 육포 &amp; 모듬안주(1), 양념 팝콘(1)",
+      "sortOrder": 1,
+      "createdAt": "2026-10-01 17:17:46",
+      "updatedAt": "2026-10-01 17:18:12"
+    },
+    {
+      "id": 16262049,
+      "tableReportId": 10380393,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 2,
+      "createdAt": "2026-10-01 17:17:46",
+      "updatedAt": "2026-10-01 17:17:46"
+    },
+    {
+      "id": 16262050,
+      "tableReportId": 10380393,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 3,
+      "createdAt": "2026-10-01 17:17:46",
+      "updatedAt": "2026-10-01 17:17:46"
     }
   ],
   "staffIncentives": [
@@ -129491,6 +129589,38 @@
       "sortOrder": 3,
       "createdAt": "2026-10-01 16:38:58",
       "updatedAt": "2026-10-01 16:38:58",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311139,
+      "tableReportId": 10380393,
+      "staffName": "아름(하신원)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-10-01 17:18:20",
+      "updatedAt": "2026-10-01 17:18:20",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311140,
+      "tableReportId": 10380393,
+      "staffName": "유빈(이나경)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 1,
+      "createdAt": "2026-10-01 17:18:20",
+      "updatedAt": "2026-10-01 17:18:20",
       "wageExempt": 0
     }
   ],
