@@ -31335,16 +31335,22 @@
       "card": "3024000",
       "cashTotal": "0",
       "cardTotal": "3024000",
-      "posEndAmount": "0",
+      "posEndAmount": "760000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
       "paymentChangeDate": null,
       "paymentChangeAmount": "0",
-      "expenses": [],
+      "expenses": [
+        {
+          "id": "exp_1790919586908",
+          "amount": "80000",
+          "description": "Pr"
+        }
+      ],
       "submittedBy": null,
-      "submittedAt": "2026-10-01 18:46:12",
+      "submittedAt": "2026-10-02 05:39:55",
       "createdAt": "2026-10-01 17:17:46",
-      "updatedAt": "2026-10-01 18:46:12",
+      "updatedAt": "2026-10-02 05:39:55",
       "totalRevenue": "3024000",
       "commissionExpense": "514080",
       "rentExpense": "333333",
@@ -31355,9 +31361,9 @@
       "liquorCostExpense": "934000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
-      "otherExpense": "37037",
-      "totalExpenses": "2547541",
-      "netProfit": "476459",
+      "otherExpense": "125455",
+      "totalExpenses": "2635959",
+      "netProfit": "388041",
       "staffCount": 0,
       "partTimeCount": 0
     }
