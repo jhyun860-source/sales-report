@@ -31781,7 +31781,7 @@
       "submittedBy": null,
       "submittedAt": "2026-10-03 16:13:58",
       "createdAt": "2026-10-03 16:03:13",
-      "updatedAt": "2026-10-03 16:13:58",
+      "updatedAt": "2026-10-03 17:43:47",
       "totalRevenue": "1119000",
       "commissionExpense": "190230",
       "rentExpense": "333333",
@@ -31789,12 +31789,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "272727",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "27000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "37037",
-      "totalExpenses": "833327",
-      "netProfit": "285673",
+      "totalExpenses": "860327",
+      "netProfit": "258673",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -133412,15 +133412,15 @@
       "id": 30070,
       "branchId": 2,
       "liquorItemId": 30,
-      "currentStock": "3.00",
-      "updatedAt": "2026-09-23 19:38:05"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-03 17:43:47"
     },
     {
       "id": 30071,
       "branchId": 2,
       "liquorItemId": 58,
-      "currentStock": "4.00",
-      "updatedAt": "2026-09-16 12:04:58"
+      "currentStock": "3.00",
+      "updatedAt": "2026-10-03 17:43:47"
     },
     {
       "id": 30072,
@@ -189507,6 +189507,34 @@
       "createdBy": 6,
       "createdAt": "2026-10-02 19:18:31",
       "updatedAt": "2026-10-02 19:18:31"
+    },
+    {
+      "id": 12871835,
+      "branchId": 2,
+      "liquorItemId": 30,
+      "date": "2026-10-03",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "20000",
+      "totalCost": "20000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-10-03 17:43:47",
+      "updatedAt": "2026-10-03 17:43:47"
+    },
+    {
+      "id": 12871836,
+      "branchId": 2,
+      "liquorItemId": 58,
+      "date": "2026-10-03",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "7000",
+      "totalCost": "7000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-10-03 17:43:47",
+      "updatedAt": "2026-10-03 17:43:47"
     }
   ],
   "liquorHiddenItems": [
