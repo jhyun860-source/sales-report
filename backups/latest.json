@@ -31762,6 +31762,41 @@
       "netProfit": "395776",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410428,
+      "branchId": 2,
+      "date": "2026-10-03",
+      "posStartAmount": "650000",
+      "cash": "0",
+      "card": "1119000",
+      "cashTotal": "0",
+      "cardTotal": "6522000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-10-03 16:13:58",
+      "createdAt": "2026-10-03 16:03:13",
+      "updatedAt": "2026-10-03 16:13:58",
+      "totalRevenue": "1119000",
+      "commissionExpense": "190230",
+      "rentExpense": "333333",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "272727",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "37037",
+      "totalExpenses": "833327",
+      "netProfit": "285673",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -41070,6 +41105,17 @@
       "notes": null,
       "createdAt": "2026-10-03 00:33:33",
       "updatedAt": "2026-10-03 00:33:33"
+    },
+    {
+      "id": 10380405,
+      "branchId": 2,
+      "date": "2026-10-03",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "1119000",
+      "notes": null,
+      "createdAt": "2026-10-03 16:03:13",
+      "updatedAt": "2026-10-03 16:04:55"
     }
   ],
   "tableItems": [
@@ -94736,6 +94782,58 @@
       "sortOrder": 0,
       "createdAt": "2026-10-03 00:33:33",
       "updatedAt": "2026-10-03 00:33:33"
+    },
+    {
+      "id": 16262106,
+      "tableReportId": 10380405,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "160000",
+      "paymentMethod": "card",
+      "memo": "맥주, 칵테일, 위스키 무제한(4), 아이스크림(4), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">아름J(1)</mark>",
+      "sortOrder": 0,
+      "createdAt": "2026-10-03 16:03:13",
+      "updatedAt": "2026-10-03 16:03:13"
+    },
+    {
+      "id": 16262108,
+      "tableReportId": 10380405,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "150000",
+      "paymentMethod": "card",
+      "memo": "조니워커 블루 Glass(1), 카발란 Glass(1), 맥켈란 12y Glass(1), 발베니12y Glass(1)",
+      "sortOrder": 1,
+      "createdAt": "2026-10-03 16:03:13",
+      "updatedAt": "2026-10-03 16:04:37"
+    },
+    {
+      "id": 16262109,
+      "tableReportId": 10380405,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "710000",
+      "paymentMethod": "card",
+      "memo": "헤네시 X.O Glass(3), 과일 &amp; 치즈(1), 발렌타인21y Glass(3), 맥켈란18y Glass(3), 조니워커 블루 Glass(3)",
+      "sortOrder": 2,
+      "createdAt": "2026-10-03 16:04:10",
+      "updatedAt": "2026-10-03 16:04:25"
+    },
+    {
+      "id": 16262110,
+      "tableReportId": 10380405,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "99000",
+      "paymentMethod": "card",
+      "memo": "맥켈란 12y Glass(2), 칵테일 단품(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">탄산수 (병)(1)</mark>",
+      "sortOrder": 3,
+      "createdAt": "2026-10-03 16:04:37",
+      "updatedAt": "2026-10-03 16:04:55"
     }
   ],
   "staffIncentives": [
@@ -131281,6 +131379,22 @@
       "sortOrder": 2,
       "createdAt": "2026-10-02 19:12:54",
       "updatedAt": "2026-10-03 13:40:12",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311171,
+      "tableReportId": 10380405,
+      "staffName": "아름(하신원)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-10-03 16:04:55",
+      "updatedAt": "2026-10-03 16:04:55",
       "wageExempt": 0
     }
   ],
