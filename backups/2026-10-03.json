@@ -31726,29 +31726,40 @@
       "card": "2379000",
       "cashTotal": "0",
       "cardTotal": "5403000",
-      "posEndAmount": "0",
+      "posEndAmount": "650000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
       "paymentChangeDate": null,
       "paymentChangeAmount": "0",
-      "expenses": [],
+      "expenses": [
+        {
+          "id": "exp_1791028569848",
+          "amount": "80000",
+          "description": "Pr"
+        },
+        {
+          "id": "exp_1791028586971",
+          "amount": "30000",
+          "description": "거스름돈"
+        }
+      ],
       "submittedBy": null,
-      "submittedAt": "2026-10-03 04:07:04",
+      "submittedAt": "2026-10-03 11:57:03",
       "createdAt": "2026-10-02 19:11:15",
-      "updatedAt": "2026-10-03 04:07:04",
+      "updatedAt": "2026-10-03 11:57:03",
       "totalRevenue": "2379000",
       "commissionExpense": "404430",
       "rentExpense": "333333",
       "managementFeeExpense": "0",
       "staffWageExpense": "136364",
       "managerWageExpense": "272727",
-      "partTimeWageExpense": "160000",
+      "partTimeWageExpense": "98333",
       "liquorCostExpense": "571000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
-      "otherExpense": "37037",
-      "totalExpenses": "1914891",
-      "netProfit": "464109",
+      "otherExpense": "147037",
+      "totalExpenses": "1963224",
+      "netProfit": "415776",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -131265,11 +131276,11 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "parttime",
-      "workStart": null,
-      "workEnd": null,
+      "workStart": "20:00",
+      "workEnd": "00:55",
       "sortOrder": 2,
       "createdAt": "2026-10-02 19:12:54",
-      "updatedAt": "2026-10-02 19:12:54",
+      "updatedAt": "2026-10-03 11:57:03",
       "wageExempt": 0
     }
   ],
