@@ -31744,9 +31744,9 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-10-03 11:57:03",
+      "submittedAt": "2026-10-03 13:42:17",
       "createdAt": "2026-10-02 19:11:15",
-      "updatedAt": "2026-10-03 11:57:03",
+      "updatedAt": "2026-10-03 13:42:17",
       "totalRevenue": "2379000",
       "commissionExpense": "404430",
       "rentExpense": "333333",
@@ -31755,11 +31755,11 @@
       "managerWageExpense": "272727",
       "partTimeWageExpense": "98333",
       "liquorCostExpense": "571000",
-      "staffDrinkExpense": "0",
+      "staffDrinkExpense": "20000",
       "salesIncentiveExpense": "0",
       "otherExpense": "147037",
-      "totalExpenses": "1963224",
-      "netProfit": "415776",
+      "totalExpenses": "1983224",
+      "netProfit": "395776",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -131255,7 +131255,7 @@
       "id": 11311169,
       "tableReportId": 10380403,
       "staffName": "유빈(이나경)",
-      "glassCount": 0,
+      "glassCount": 2,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
@@ -131264,14 +131264,14 @@
       "workEnd": "04:30",
       "sortOrder": 1,
       "createdAt": "2026-10-02 19:12:54",
-      "updatedAt": "2026-10-03 04:07:03",
+      "updatedAt": "2026-10-03 13:40:12",
       "wageExempt": 0
     },
     {
       "id": 11311170,
       "tableReportId": 10380403,
       "staffName": "태리(홍태영)",
-      "glassCount": 0,
+      "glassCount": 2,
       "bottleCount": 0,
       "beerBottleCount": 0,
       "salesIncentive": "0",
@@ -131280,7 +131280,7 @@
       "workEnd": "00:55",
       "sortOrder": 2,
       "createdAt": "2026-10-02 19:12:54",
-      "updatedAt": "2026-10-03 11:57:03",
+      "updatedAt": "2026-10-03 13:40:12",
       "wageExempt": 0
     }
   ],
