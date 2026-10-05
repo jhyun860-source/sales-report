@@ -212,40 +212,39 @@ export const branchSettingsRouter = router({
             JOIN tableReports tr2 ON si2.tableReportId = tr2.id
             WHERE tr2.branchId = d.branchId AND tr2.date = d.date
               AND si2.staffType = 'staff' AND si2.wageExempt = 0)`;
-        const staffWageSql = `(${staffCountSql} * ${input.staffDailyWage})`;
+        // [개인 단가 우선] 직원관리에 단가가 입력된 사람은 그 단가를 쓰고, 없으면 지점 설정값을 쓴다.
+        //   (settlementCalculations 의 계산과 같은 규칙. 지점 설정을 저장해도 개인 단가가 덮어써지지 않게 한다.)
+        const personalWageSub = (nameExpr: string, branchExpr: string) => `(SELECT bs.personalWage FROM branchStaff bs
+            WHERE bs.branchId = ${branchExpr} AND bs.personalWage > 0
+              AND (REPLACE(${nameExpr}, ' ', '') = CONCAT(REPLACE(bs.alias, ' ', ''), '(', REPLACE(bs.realName, ' ', ''), ')')
+                OR SUBSTRING_INDEX(REPLACE(${nameExpr}, ' ', ''), '(', 1) = REPLACE(bs.alias, ' ', ''))
+            ORDER BY bs.id DESC LIMIT 1)`;
+        const staffWageSql = `(SELECT COALESCE(SUM(COALESCE(${personalWageSub('si2.staffName', 'tr2.branchId')}, ${input.staffDailyWage})), 0)
+            FROM staffIncentives si2
+            JOIN tableReports tr2 ON si2.tableReportId = tr2.id
+            WHERE tr2.branchId = d.branchId AND tr2.date = d.date
+              AND si2.staffType = 'staff' AND si2.wageExempt = 0)`;
+        const managerWageSql = `(SELECT COALESCE(SUM(CASE
+              WHEN si.staffType = 'manager' THEN COALESCE(${personalWageSub('si.staffName', 'tr.branchId')}, ${computedDailyWage})
+              WHEN si.staffType = 'deputy' THEN COALESCE(${personalWageSub('si.staffName', 'tr.branchId')}, ${computedDeputyDailyWage})
+              ELSE 0 END), 0)
+            FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
+            WHERE tr.branchId = d.branchId AND tr.date = d.date)`;
         
         const result = await db.execute(`
           UPDATE dailySalesRecords d
           SET
             d.staffWageExpense = ${staffWageSql},
-            d.managerWageExpense = (
-              SELECT COALESCE(SUM(CASE
-                WHEN si.staffType = 'manager' THEN ${computedDailyWage}
-                WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
-                ELSE 0 END), 0)
-              FROM staffIncentives si
-              JOIN tableReports tr ON si.tableReportId = tr.id
-              WHERE tr.branchId = d.branchId AND tr.date = d.date
-            ),
+            d.managerWageExpense = ${managerWageSql},
             d.commissionExpense = ROUND(d.totalRevenue * ${input.commissionRate}),
             d.rentExpense = ROUND(${input.monthlyRent} / ${rentBusinessDays}),
             d.totalExpenses = d.commissionExpense + d.rentExpense + d.managementFeeExpense
               + ${staffWageSql}
-              + (SELECT COALESCE(SUM(CASE
-                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
-                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
-                  ELSE 0 END), 0)
-                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
-                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + ${managerWageSql}
               + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense,
             d.netProfit = d.totalRevenue - (d.commissionExpense + d.rentExpense + d.managementFeeExpense
               + ${staffWageSql}
-              + (SELECT COALESCE(SUM(CASE
-                  WHEN si.staffType = 'manager' THEN ${computedDailyWage}
-                  WHEN si.staffType = 'deputy' THEN ${computedDeputyDailyWage}
-                  ELSE 0 END), 0)
-                 FROM staffIncentives si JOIN tableReports tr ON si.tableReportId = tr.id
-                 WHERE tr.branchId = d.branchId AND tr.date = d.date)
+              + ${managerWageSql}
               + d.partTimeWageExpense + d.liquorCostExpense + d.staffDrinkExpense + d.otherExpense)
           WHERE d.branchId = ${input.branchId}
           AND d.date BETWEEN '${startDate}' AND '${endDate}'
