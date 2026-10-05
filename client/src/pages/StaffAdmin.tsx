@@ -60,12 +60,21 @@ export default function StaffAdmin() {
   const [editRealName, setEditRealName] = useState('');
   const [editAlias, setEditAlias] = useState('');
   const [editType, setEditType] = useState<'staff' | 'parttime' | 'manager' | 'deputy'>('staff');
+  // 개인 단가(인건비)는 관리자 계정에서만 입력·표시한다
+  const isWageAdmin = account?.role === 'admin';
+  const [editWage, setEditWage] = useState('');
+  const wageLabel = (t: string) => (t === 'parttime' ? '시급' : '일급');
+  const formatWage = (v: string) => {
+    const n = v.replace(/[^0-9]/g, '');
+    return n ? Number(n).toLocaleString() : '';
+  };
 
   const startEdit = (s: any) => {
     setEditingId(s.id);
     setEditRealName(s.realName);
     setEditAlias(s.alias);
     setEditType(s.staffType);
+    setEditWage(s.personalWage && Number(s.personalWage) > 0 ? Number(s.personalWage).toLocaleString() : '');
     setError('');
   };
   const saveEdit = (id: number) => {
@@ -80,6 +89,7 @@ export default function StaffAdmin() {
       realName: editRealName.trim(),
       alias: editAlias.trim(),
       staffType: editType,
+      ...(isWageAdmin ? { personalWage: Number(editWage.replace(/[^0-9]/g, '')) || 0 } : {}),
     });
   };
 
@@ -87,6 +97,7 @@ export default function StaffAdmin() {
   const [realName, setRealName] = useState('');
   const [alias, setAlias] = useState('');
   const [staffType, setStaffType] = useState<'staff' | 'parttime' | 'manager' | 'deputy'>('staff');
+  const [newWage, setNewWage] = useState('');
   const [error, setError] = useState('');
 
   const handleAdd = () => {
@@ -96,12 +107,19 @@ export default function StaffAdmin() {
     }
     setError('');
     createMutation.mutate(
-      { branchId: effectiveBranchId, realName: realName.trim(), alias: alias.trim(), staffType },
+      {
+        branchId: effectiveBranchId,
+        realName: realName.trim(),
+        alias: alias.trim(),
+        staffType,
+        ...(isWageAdmin ? { personalWage: Number(newWage.replace(/[^0-9]/g, '')) || 0 } : {}),
+      },
       {
         onSuccess: () => {
           setRealName('');
           setAlias('');
           setStaffType('staff');
+          setNewWage('');
           setShowForm(false);
         },
       }
@@ -193,6 +211,26 @@ export default function StaffAdmin() {
                       </button>
                     ))}
                   </div>
+                  {isWageAdmin && (
+                    <div>
+                      <label className="text-xs font-medium" style={{ color: MUTED }}>
+                        {wageLabel(editType)} (비워두면 지점 기본값 적용)
+                      </label>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <input
+                          inputMode="numeric"
+                          value={editWage}
+                          onChange={(e) => setEditWage(formatWage(e.target.value))}
+                          placeholder="0"
+                          className="flex-1 rounded-lg px-2.5 py-1.5 text-sm outline-none text-right"
+                          style={{ background: BG, border: `1px solid ${BORDER}`, color: TEXT }}
+                        />
+                        <span className="text-xs" style={{ color: MUTED }}>
+                          {editType === 'parttime' ? '원/시간' : '원/일'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex gap-2 pt-0.5">
                     <button
                       onClick={() => { setEditingId(null); setError(''); }}
@@ -237,6 +275,12 @@ export default function StaffAdmin() {
                       >
                         {TYPE_META[s.staffType]?.label}
                       </span>
+                      {isWageAdmin && Number(s.personalWage || 0) > 0 && (
+                        <span className="ml-1.5 text-xs" style={{ color: MUTED }}>
+                          {Number(s.personalWage).toLocaleString()}
+                          {s.staffType === 'parttime' ? '원/시간' : '원/일'}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -314,6 +358,26 @@ export default function StaffAdmin() {
                 ))}
               </div>
             </div>
+            {isWageAdmin && (
+              <div>
+                <label className="text-xs font-medium" style={{ color: MUTED }}>
+                  {wageLabel(staffType)} (비워두면 지점 기본값 적용)
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    inputMode="numeric"
+                    value={newWage}
+                    onChange={(e) => setNewWage(formatWage(e.target.value))}
+                    placeholder="0"
+                    className="flex-1 rounded-lg px-3 py-2 text-sm outline-none text-right"
+                    style={{ background: BG, border: `1px solid ${BORDER}`, color: TEXT }}
+                  />
+                  <span className="text-xs" style={{ color: MUTED }}>
+                    {staffType === 'parttime' ? '원/시간' : '원/일'}
+                  </span>
+                </div>
+              </div>
+            )}
             {error && <p className="text-xs" style={{ color: 'oklch(0.5 0.2 25)' }}>{error}</p>}
             <div className="flex gap-2 pt-1">
               <button

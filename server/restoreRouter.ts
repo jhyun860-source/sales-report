@@ -785,6 +785,24 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, dailyWage, count: results.length, results });
       }
 
+      if (mode === "addpersonalwage") {
+        // 안전: branchStaff 에 개인 단가 컬럼만 추가 (없으면 추가, 있으면 통과). 기존 데이터는 안 건드림.
+        try {
+          const [cols]: any = await conn.query(
+            `SHOW COLUMNS FROM branchStaff LIKE 'personalWage'`
+          );
+          if (cols.length === 0) {
+            await conn.query(
+              `ALTER TABLE branchStaff ADD COLUMN personalWage DECIMAL(15,0) NOT NULL DEFAULT 0`
+            );
+            return res.json({ mode, ok: true, message: "personalWage 컬럼 추가 완료" });
+          }
+          return res.json({ mode, ok: true, message: "personalWage 컬럼 이미 존재함" });
+        } catch (e: any) {
+          return res.status(500).json({ mode, ok: false, error: String(e?.message || e) });
+        }
+      }
+
       if (mode === "addwageexempt") {
         // 안전: 컬럼 추가만 함 (없으면 추가, 있으면 그대로 통과). 기존 데이터는 전혀 안 건드림.
         try {

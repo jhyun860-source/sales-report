@@ -4,7 +4,7 @@
  */
 
 import { getDb } from '../db';
-import { dailySalesRecords, staffIncentives, liquorStockMovements, branches, branchSettings } from '../../drizzle/schema';
+import { dailySalesRecords, staffIncentives, liquorStockMovements, branches, branchSettings, branchStaff } from '../../drizzle/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 
 /**
@@ -267,7 +267,7 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   const staffDailyWage = staffMonthlySalary > 0 
     ? Math.round(staffMonthlySalary / 22) 
     : (bsData ? Number(bsData.staffDailyWage || 0) : (hardConfig?.staffDailyWage ?? 0));
-  const staffWageExpense = staffCount * staffDailyWage;
+  let staffWageExpense = staffCount * staffDailyWage;
 
   // 6. 점장/매니저 인건비 - 월급 ÷ 고정 22일
   const managerMonthlySalary = bsData ? Number(bsData.managerMonthlySalary || 0) : (hardConfig?.monthlyRent ?? 0);
@@ -278,14 +278,76 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
   console.log('[정산계산] MANAGER_WAGE_DIVISOR:', MANAGER_WAGE_DIVISOR, 'managerMonthlySalary:', managerMonthlySalary);
   const managerDailyWage = Math.round(managerMonthlySalary / MANAGER_WAGE_DIVISOR);
   const deputyDailyWage = Math.round(deputyMonthlySalary / MANAGER_WAGE_DIVISOR);
-  const managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
+  let managerWageExpense = (managerCount * managerDailyWage) + (deputyCount * deputyDailyWage);
 
   // 7. 알바 인건비 (시급 × 근무시간)
   const partTimeHourlyWage = bsData ? Number(bsData.partTimeHourlyWage || 0) : (hardConfig?.partTimeDailyWage ?? 9860);
   // 알바: 시급 × 총 근무시간 (출퇴근 시간 기록 있으면 시간 계산, 없으면 인원수 × 시급 × 8시간)
-  const partTimeWageExpense = partTimeTotalHours > 0
+  let partTimeWageExpense = partTimeTotalHours > 0
     ? Math.round(partTimeHourlyWage * partTimeTotalHours)
     : partTimeCount * partTimeHourlyWage * 8;
+
+  // [개인 단가 적용] 직원관리(branchStaff)에 단가가 입력된 사람은 그 단가로 계산한다.
+  //   - 알바: 개인 시급 × 본인 근무시간
+  //   - 직원/점장/매니저: 개인 일급
+  //   - 단가가 없는(0) 사람은 위에서 구한 지점 기본값을 그대로 적용한다.
+  //   - 타지점 지원처럼 사람마다 단가가 다른 경우를 반영하기 위함.
+  if (tableReportId) {
+    try {
+      const incRows = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
+      const staffRows = await db.select().from(branchStaff).where(eq(branchStaff.branchId, branchId));
+      // "가명(실명)" / "가명" 양쪽으로 찾을 수 있도록 맵 구성
+      const wageByName = new Map<string, number>();
+      for (const st of staffRows) {
+        const wage = Number((st as any).personalWage || 0);
+        if (wage <= 0) continue;
+        const alias = String(st.alias ?? '').trim();
+        const real = String(st.realName ?? '').trim();
+        if (alias) wageByName.set(alias, wage);
+        if (alias && real) wageByName.set(`${alias}(${real})`, wage);
+      }
+      if (wageByName.size > 0) {
+        const lookup = (name: string | null) => {
+          const key = String(name ?? '').replace(/\s+/g, '');
+          if (!key) return 0;
+          if (wageByName.has(key)) return wageByName.get(key)!;
+          const aliasOnly = key.split('(')[0];
+          return wageByName.get(aliasOnly) ?? 0;
+        };
+        let staffSum = 0, managerSum = 0, partTimeSum = 0;
+        for (const inc of incRows) {
+          const personal = lookup(inc.staffName as string | null);
+          const type = inc.staffType as string;
+          if (type === 'parttime') {
+            let hours = 0;
+            if (inc.workStart && inc.workEnd) {
+              try {
+                const [sh, sm] = String(inc.workStart).split(':').map(Number);
+                const [eh, em] = String(inc.workEnd).split(':').map(Number);
+                let startMin = sh * 60 + sm;
+                let endMin = eh * 60 + em;
+                if (endMin <= startMin) endMin += 24 * 60;
+                hours = (endMin - startMin) / 60;
+              } catch {}
+            }
+            const rate = personal > 0 ? personal : partTimeHourlyWage;
+            partTimeSum += hours > 0 ? Math.round(rate * hours) : rate * 8;
+          } else if (type === 'staff') {
+            staffSum += personal > 0 ? personal : staffDailyWage;
+          } else if (type === 'manager') {
+            managerSum += personal > 0 ? personal : managerDailyWage;
+          } else if (type === 'deputy') {
+            managerSum += personal > 0 ? personal : deputyDailyWage;
+          }
+        }
+        staffWageExpense = staffSum;
+        managerWageExpense = managerSum;
+        partTimeWageExpense = partTimeSum;
+      }
+    } catch (e) {
+      console.error('[정산계산] 개인 단가 적용 실패, 지점 기본값 사용:', e);
+    }
+  }
 
   // 8. 주류/단가
   const liquorCostExpense = await calculateLiquorCostExpense(branchId, date);

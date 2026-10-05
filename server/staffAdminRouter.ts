@@ -34,6 +34,18 @@ async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: s
   }
 }
 
+// 인건비(개인 단가)는 관리자 계정(v1 등)만 조회·수정 가능.
+// 지점 계정(s1, s2 ...)에는 서버에서 아예 내려보내지 않는다.
+async function isWageAdmin(ctx: any) {
+  const payload = await parseStoreCookie(
+    ctx.req.headers.cookie,
+    ctx.req.headers.authorization as string | undefined
+  );
+  if (!payload) return false;
+  const account = await getStoreAccountById(payload.accountId);
+  return account?.role === 'admin';
+}
+
 async function requireEffectiveBranchId(ctx: any, inputBranchId?: number) {
   const payload = await parseStoreCookie(
     ctx.req.headers.cookie,
@@ -57,7 +69,9 @@ export const staffAdminRouter = router({
       const effectiveBranchId = await requireEffectiveBranchId(ctx, input.branchId);
       const rows = await db.select().from(branchStaff)
         .where(and(eq(branchStaff.branchId, effectiveBranchId), eq(branchStaff.active, 1)));
-      return rows;
+      // 관리자가 아니면 개인 단가는 응답에서 제외
+      if (await isWageAdmin(ctx)) return rows;
+      return rows.map(({ personalWage, ...rest }) => rest);
     }),
 
   // 직원 등록
@@ -67,16 +81,19 @@ export const staffAdminRouter = router({
       realName: z.string().min(1),
       alias: z.string().min(1),
       staffType: z.enum(['staff', 'parttime', 'manager', 'deputy']),
+      personalWage: z.number().min(0).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       const effectiveBranchId = await requireEffectiveBranchId(ctx, input.branchId);
+      const wageAdmin = await isWageAdmin(ctx);
       await db.insert(branchStaff).values({
         branchId: effectiveBranchId,
         realName: input.realName,
         alias: input.alias,
         staffType: input.staffType,
+        personalWage: String(wageAdmin ? (input.personalWage ?? 0) : 0),
         active: 1,
       });
       return { ok: true };
@@ -90,13 +107,19 @@ export const staffAdminRouter = router({
       realName: z.string().min(1),
       alias: z.string().min(1),
       staffType: z.enum(['staff', 'parttime', 'manager', 'deputy']),
+      personalWage: z.number().min(0).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       const effectiveBranchId = await requireEffectiveBranchId(ctx, input.branchId);
+      // 관리자가 아니면 단가는 건드리지 않는다 (기존 값 유지)
+      const wageAdmin = await isWageAdmin(ctx);
+      const wagePatch = wageAdmin && input.personalWage !== undefined
+        ? { personalWage: String(input.personalWage) }
+        : {};
       await db.update(branchStaff)
-        .set({ realName: input.realName, alias: input.alias, staffType: input.staffType })
+        .set({ realName: input.realName, alias: input.alias, staffType: input.staffType, ...wagePatch })
         .where(and(eq(branchStaff.id, input.id), eq(branchStaff.branchId, effectiveBranchId)));
       return { ok: true };
     }),
