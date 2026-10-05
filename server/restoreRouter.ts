@@ -785,6 +785,25 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, dailyWage, count: results.length, results });
       }
 
+      if (mode === "wagecheck") {
+        // 읽기 전용: 전 지점 재직자의 개인 단가 입력 현황. 비어 있는(0) 사람을 따로 모아 보여준다. DB는 바꾸지 않는다.
+        const TYPE_LABEL: Record<string, string> = { staff: "직원", parttime: "알바", manager: "점장", deputy: "매니저" };
+        const [rows]: any = await conn.query(
+          `SELECT s.branchId, b.name AS branchName, s.alias, s.realName, s.staffType, s.personalWage
+           FROM branchStaff s LEFT JOIN branches b ON b.id = s.branchId
+           WHERE s.active = 1 ORDER BY s.branchId, s.staffType, s.id`);
+        const byBranch: Record<string, string[]> = {};
+        const empty: string[] = [];
+        for (const r of rows as any[]) {
+          const k = String(r.branchName ?? r.branchId);
+          const w = Number(r.personalWage || 0);
+          const label = TYPE_LABEL[r.staffType] ?? r.staffType;
+          (byBranch[k] ??= []).push(`${r.alias}(${r.realName}) ${label} ${w > 0 ? w : "비어있음"}`);
+          if (w <= 0) empty.push(`${k}: ${r.alias}(${r.realName}) ${label}`);
+        }
+        return res.json({ mode, total: (rows as any[]).length, emptyCount: empty.length, empty, byBranch });
+      }
+
       if (mode === "bulkpersonalwage") {
         // 직원관리(branchStaff)에서 개인 단가가 비어 있는(0) 재직자에게만 구분별 단가를 일괄 입력한다.
         //   알바=parttime(시급), 직원=staff(일급), 매니저=deputy(일급). 점장(manager)은 건드리지 않는다.
