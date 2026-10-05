@@ -306,7 +306,8 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
         if (alias) wageByName.set(alias, wage);
         if (alias && real) wageByName.set(`${alias}(${real})`, wage);
       }
-      if (wageByName.size > 0) {
+      // 출근 기록을 못 읽었으면(0건) 기존 계산값을 그대로 둔다
+      if (wageByName.size > 0 && incRows.length > 0) {
         const lookup = (name: string | null) => {
           const key = String(name ?? '').replace(/\s+/g, '');
           if (!key) return 0;
@@ -314,8 +315,10 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
           const aliasOnly = key.split('(')[0];
           return wageByName.get(aliasOnly) ?? 0;
         };
-        let staffSum = 0, managerSum = 0, partTimeSum = 0;
+        let staffSum = 0, managerSum = 0, partTimeSumExact = 0, partTimeDefault8h = 0, partTimeAnyHours = false;
         for (const inc of incRows) {
+          // 시급 미대상은 인건비에서 제외 (저장 시 카운트에서도 빠지는 것과 동일)
+          if ((inc as any).wageExempt) continue;
           const personal = lookup(inc.staffName as string | null);
           const type = inc.staffType as string;
           if (type === 'parttime') {
@@ -331,7 +334,9 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
               } catch {}
             }
             const rate = personal > 0 ? personal : partTimeHourlyWage;
-            partTimeSum += hours > 0 ? Math.round(rate * hours) : rate * 8;
+            // 기존 방식과 동일: 출퇴근 시간이 한 명이라도 있으면 시간×시급 합계, 아무도 없으면 인원×시급×8시간
+            if (hours > 0) { partTimeSumExact += rate * hours; partTimeAnyHours = true; }
+            partTimeDefault8h += rate * 8;
           } else if (type === 'staff') {
             staffSum += personal > 0 ? personal : staffDailyWage;
           } else if (type === 'manager') {
@@ -342,7 +347,7 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
         }
         staffWageExpense = staffSum;
         managerWageExpense = managerSum;
-        partTimeWageExpense = partTimeSum;
+        partTimeWageExpense = partTimeAnyHours ? Math.round(partTimeSumExact) : Math.round(partTimeDefault8h);
       }
     } catch (e) {
       console.error('[정산계산] 개인 단가 적용 실패, 지점 기본값 사용:', e);
