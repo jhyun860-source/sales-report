@@ -297,30 +297,36 @@ otherExpense: 0, totalExpenses: 0, netProfit: 0,
       const incRows = await db.select().from(staffIncentives).where(eq(staffIncentives.tableReportId, tableReportId));
       const staffRows = await db.select().from(branchStaff).where(eq(branchStaff.branchId, branchId));
       // "가명(실명)" / "가명" 양쪽으로 찾을 수 있도록 맵 구성
-      const wageByName = new Map<string, number>();
+      const wageByName = new Map<string, { wage: number; type: string }>();
       for (const st of staffRows) {
         const wage = Number((st as any).personalWage || 0);
         if (wage <= 0) continue;
         const alias = String(st.alias ?? '').trim();
         const real = String(st.realName ?? '').trim();
-        if (alias) wageByName.set(alias, wage);
-        if (alias && real) wageByName.set(`${alias}(${real})`, wage);
+        const regType = String(st.staffType ?? '');
+        if (alias) wageByName.set(alias, { wage, type: regType });
+        if (alias && real) wageByName.set(`${alias}(${real})`, { wage, type: regType });
       }
       // 출근 기록을 못 읽었으면(0건) 기존 계산값을 그대로 둔다
       if (wageByName.size > 0 && incRows.length > 0) {
         const lookup = (name: string | null) => {
           const key = String(name ?? '').replace(/\s+/g, '');
-          if (!key) return 0;
+          if (!key) return null;
           if (wageByName.has(key)) return wageByName.get(key)!;
           const aliasOnly = key.split('(')[0];
-          return wageByName.get(aliasOnly) ?? 0;
+          return wageByName.get(aliasOnly) ?? null;
         };
         let staffSum = 0, managerSum = 0, partTimeSumExact = 0, partTimeDefault8h = 0, partTimeAnyHours = false;
         for (const inc of incRows) {
           // 시급 미대상은 인건비에서 제외 (저장 시 카운트에서도 빠지는 것과 동일)
           if ((inc as any).wageExempt) continue;
-          const personal = lookup(inc.staffName as string | null);
+          const found = lookup(inc.staffName as string | null);
           const type = inc.staffType as string;
+          // 단위가 다르면 개인 단가를 쓰지 않고 지점 기본값으로 계산한다.
+          //   (직원관리에는 직원/점장 일급으로 등록돼 있는데 출근 기록은 알바(시간제)로 들어온 경우 등.
+          //    그대로 쓰면 일급 금액에 근무시간을 곱해 인건비가 몇 배로 부풀려진다.)
+          const unitMatches = !!found && ((found.type === 'parttime') === (type === 'parttime'));
+          const personal = found && unitMatches ? found.wage : 0;
           if (type === 'parttime') {
             let hours = 0;
             if (inc.workStart && inc.workEnd) {

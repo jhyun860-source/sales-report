@@ -215,7 +215,7 @@ export const branchSettingsRouter = router({
         // [개인 단가 우선] 직원관리에 단가가 입력된 사람은 그 단가를 쓰고, 없으면 지점 설정값을 쓴다.
         //   (settlementCalculations 의 계산과 같은 규칙. 지점 설정을 저장해도 개인 단가가 덮어써지지 않게 한다.)
         const personalWageSub = (nameExpr: string, branchExpr: string) => `(SELECT bs.personalWage FROM branchStaff bs
-            WHERE bs.branchId = ${branchExpr} AND bs.personalWage > 0
+            WHERE bs.branchId = ${branchExpr} AND bs.personalWage > 0 AND bs.staffType <> 'parttime'
               AND (REPLACE(${nameExpr}, ' ', '') = CONCAT(REPLACE(bs.alias, ' ', ''), '(', REPLACE(bs.realName, ' ', ''), ')')
                 OR SUBSTRING_INDEX(REPLACE(${nameExpr}, ' ', ''), '(', 1) = REPLACE(bs.alias, ' ', ''))
             ORDER BY bs.id DESC LIMIT 1)`;
