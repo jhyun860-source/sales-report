@@ -785,6 +785,53 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, branchId: branchIdParam, dailyWage, count: results.length, results });
       }
 
+      if (mode === "bulkpersonalwage") {
+        // 직원관리(branchStaff)에서 개인 단가가 비어 있는(0) 재직자에게만 구분별 단가를 일괄 입력한다.
+        //   알바=parttime(시급), 직원=staff(일급), 매니저=deputy(일급). 점장(manager)은 건드리지 않는다.
+        //   이미 단가가 들어 있는 사람, 퇴사자(active=0)는 건드리지 않는다.
+        // 사용: &parttime=20000&staff=136363&deputy=159090&exceptBranchId=2&dryrun=1
+        const parttimeWage = Number(req.query.parttime || 0);
+        const staffWage = Number(req.query.staff || 0);
+        const deputyWage = Number(req.query.deputy || 0);
+        const exceptBranchId = Number(req.query.exceptBranchId || 0);
+        const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        if (!(parttimeWage > 0 || staffWage > 0 || deputyWage > 0)) {
+          return res.status(400).json({ error: "parttime, staff, deputy 중 하나 이상 필요. dryrun=0 으로 실제 실행" });
+        }
+        const wageByType: Record<string, number> = { parttime: parttimeWage, staff: staffWage, deputy: deputyWage };
+        const [rows]: any = await conn.query(
+          `SELECT s.id, s.branchId, b.name AS branchName, s.alias, s.realName, s.staffType, s.personalWage
+           FROM branchStaff s LEFT JOIN branches b ON b.id = s.branchId
+           WHERE s.active = 1 AND s.personalWage = 0 AND s.branchId <> ?
+           ORDER BY s.branchId, s.staffType, s.id`, [exceptBranchId]);
+        const targets = (rows as any[])
+          .map(r => ({ ...r, newWage: wageByType[r.staffType] || 0 }))
+          .filter(r => r.newWage > 0);
+        const skippedManagers = (rows as any[]).filter(r => r.staffType === "manager").length;
+        const summary: Record<string, any> = {};
+        for (const t of targets) {
+          const k = String(t.branchName ?? t.branchId);
+          (summary[k] ??= []).push(`${t.alias}(${t.realName}) ${t.staffType} → ${t.newWage}`);
+        }
+        if (dryrun) {
+          return res.json({ mode, dryrun: true, exceptBranchId, targetCount: targets.length,
+            skippedManagersEmpty: skippedManagers, byBranch: summary,
+            next: "확인 후 dryrun=0 으로 실행" });
+        }
+        await conn.beginTransaction();
+        try {
+          for (const t of targets) {
+            // personalWage=0 조건을 한 번 더 걸어 그 사이 입력된 값은 덮어쓰지 않는다
+            await conn.query(`UPDATE branchStaff SET personalWage=? WHERE id=? AND personalWage=0`, [t.newWage, t.id]);
+          }
+          await conn.commit();
+        } catch (e) {
+          await conn.rollback();
+          throw e;
+        }
+        return res.json({ mode, dryrun: false, ok: true, updated: targets.length, byBranch: summary });
+      }
+
       if (mode === "addpersonalwage") {
         // 안전: branchStaff 에 개인 단가 컬럼만 추가 (없으면 추가, 있으면 통과). 기존 데이터는 안 건드림.
         try {
