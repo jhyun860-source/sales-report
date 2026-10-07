@@ -32328,6 +32328,41 @@
       "netProfit": "-691212",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410444,
+      "branchId": 6,
+      "date": "2026-10-07",
+      "posStartAmount": "0",
+      "cash": "0",
+      "card": "463000",
+      "cashTotal": "0",
+      "cardTotal": "1709000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-10-07 13:42:25",
+      "createdAt": "2026-10-07 13:24:51",
+      "updatedAt": "2026-10-07 13:44:29",
+      "totalRevenue": "463000",
+      "commissionExpense": "78710",
+      "rentExpense": "166667",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "119000",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "119000",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "483377",
+      "netProfit": "-20377",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -41790,6 +41825,17 @@
       "notes": null,
       "createdAt": "2026-10-07 07:13:43",
       "updatedAt": "2026-10-07 07:13:43"
+    },
+    {
+      "id": 10380419,
+      "branchId": 6,
+      "date": "2026-10-07",
+      "teamCount": 3,
+      "cashAmount": "0",
+      "cardAmount": "463000",
+      "notes": null,
+      "createdAt": "2026-10-07 13:38:23",
+      "updatedAt": "2026-10-07 13:41:44"
     }
   ],
   "tableItems": [
@@ -95833,6 +95879,45 @@
       "sortOrder": 5,
       "createdAt": "2026-10-07 09:57:26",
       "updatedAt": "2026-10-07 09:57:52"
+    },
+    {
+      "id": 16262138,
+      "tableReportId": 10380419,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "360000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">헤네시 vsop (500ml)(1)</mark>, 팝콘(1)",
+      "sortOrder": 0,
+      "createdAt": "2026-10-07 13:38:24",
+      "updatedAt": "2026-10-07 13:41:29"
+    },
+    {
+      "id": 16262139,
+      "tableReportId": 10380419,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "103000",
+      "paymentMethod": "card",
+      "memo": "글렌모렌지 라산타(1), 맥켈란 12y 잔술(2)",
+      "sortOrder": 1,
+      "createdAt": "2026-10-07 13:38:24",
+      "updatedAt": "2026-10-07 13:41:44"
+    },
+    {
+      "id": 16262140,
+      "tableReportId": 10380419,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 2,
+      "createdAt": "2026-10-07 13:41:44",
+      "updatedAt": "2026-10-07 13:41:44"
     }
   ],
   "staffIncentives": [
@@ -132795,6 +132880,22 @@
       "createdAt": "2026-10-07 07:13:44",
       "updatedAt": "2026-10-07 07:13:44",
       "wageExempt": 0
+    },
+    {
+      "id": 11311199,
+      "tableReportId": 10380419,
+      "staffName": "나형(우나형)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "19:00",
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-10-07 13:38:24",
+      "updatedAt": "2026-10-07 13:38:31",
+      "wageExempt": 0
     }
   ],
   "liquorItems": [
@@ -138010,8 +138111,8 @@
       "id": 840127,
       "branchId": 3,
       "liquorItemId": 630011,
-      "currentStock": "10.00",
-      "updatedAt": "2026-09-17 10:42:26"
+      "currentStock": "8.00",
+      "updatedAt": "2026-10-07 13:41:45"
     },
     {
       "id": 840130,
@@ -138346,8 +138447,8 @@
       "id": 1230028,
       "branchId": 6,
       "liquorItemId": 44,
-      "currentStock": "1.00",
-      "updatedAt": "2026-06-22 14:55:57"
+      "currentStock": "0.00",
+      "updatedAt": "2026-10-07 13:40:16"
     },
     {
       "id": 1260001,
@@ -138437,8 +138538,8 @@
       "id": 1350011,
       "branchId": 6,
       "liquorItemId": 57,
-      "currentStock": "3.00",
-      "updatedAt": "2026-09-24 18:19:53"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-07 13:44:29"
     },
     {
       "id": 1350012,
@@ -138486,8 +138587,8 @@
       "id": 1350018,
       "branchId": 6,
       "liquorItemId": 76,
-      "currentStock": "3.00",
-      "updatedAt": "2026-08-13 18:43:19"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-07 13:24:50"
     },
     {
       "id": 1350019,
@@ -191438,6 +191539,62 @@
       "createdBy": 2,
       "createdAt": "2026-10-07 10:23:42",
       "updatedAt": "2026-10-07 10:23:42"
+    },
+    {
+      "id": 12871873,
+      "branchId": 6,
+      "liquorItemId": 76,
+      "date": "2026-10-07",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "22000",
+      "totalCost": "22000",
+      "memo": null,
+      "createdBy": 90001,
+      "createdAt": "2026-10-07 13:24:50",
+      "updatedAt": "2026-10-07 13:24:50"
+    },
+    {
+      "id": 12871874,
+      "branchId": 6,
+      "liquorItemId": 44,
+      "date": "2026-10-07",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "90000",
+      "totalCost": "90000",
+      "memo": null,
+      "createdBy": 90001,
+      "createdAt": "2026-10-07 13:40:16",
+      "updatedAt": "2026-10-07 13:40:16"
+    },
+    {
+      "id": 12871875,
+      "branchId": 3,
+      "liquorItemId": 630011,
+      "date": "2026-10-07",
+      "type": "ADJUST",
+      "quantity": "-2.00",
+      "unitCost": "140000",
+      "totalCost": "280000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-10-07 13:41:45",
+      "updatedAt": "2026-10-07 13:41:45"
+    },
+    {
+      "id": 12871876,
+      "branchId": 6,
+      "liquorItemId": 57,
+      "date": "2026-10-07",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "7000",
+      "totalCost": "7000",
+      "memo": null,
+      "createdBy": 90001,
+      "createdAt": "2026-10-07 13:44:28",
+      "updatedAt": "2026-10-07 13:44:28"
     }
   ],
   "liquorHiddenItems": [
