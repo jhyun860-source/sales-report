@@ -32094,9 +32094,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-10-06 16:30:19",
+      "submittedAt": "2026-10-07 03:27:53",
       "createdAt": "2026-10-06 14:51:57",
-      "updatedAt": "2026-10-06 16:30:21",
+      "updatedAt": "2026-10-07 03:27:55",
       "totalRevenue": "330000",
       "commissionExpense": "56100",
       "rentExpense": "166667",
@@ -95617,14 +95617,14 @@
       "id": 16262125,
       "tableReportId": 10380414,
       "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
+      "guestType": "named",
+      "guestName": "원술",
       "amount": "120000",
       "paymentMethod": "card",
       "memo": "바탑 1시간 무제한(2), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">* 재희(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">* 윤아(2)</mark>",
       "sortOrder": 0,
       "createdAt": "2026-10-06 14:51:55",
-      "updatedAt": "2026-10-06 15:35:28"
+      "updatedAt": "2026-10-07 03:27:44"
     },
     {
       "id": 16262126,
@@ -95643,14 +95643,14 @@
       "id": 16262127,
       "tableReportId": 10380414,
       "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
+      "guestType": "named",
+      "guestName": "원술",
       "amount": "210000",
       "paymentMethod": "card",
       "memo": "바탑 연장 30분(3), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">* 윤아(5)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">* 재희(5)</mark>",
       "sortOrder": 1,
       "createdAt": "2026-10-06 15:35:28",
-      "updatedAt": "2026-10-06 15:35:49"
+      "updatedAt": "2026-10-07 03:27:44"
     },
     {
       "id": 16262128,
