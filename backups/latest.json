@@ -137373,8 +137373,8 @@
       "id": 30346,
       "branchId": 3,
       "liquorItemId": 22,
-      "currentStock": "1.00",
-      "updatedAt": "2026-10-08 10:17:17"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-08 12:08:40"
     },
     {
       "id": 30347,
@@ -137891,8 +137891,8 @@
       "id": 30432,
       "branchId": 1,
       "liquorItemId": 22,
-      "currentStock": "2.00",
-      "updatedAt": "2026-09-16 10:09:34"
+      "currentStock": "1.00",
+      "updatedAt": "2026-10-08 12:01:03"
     },
     {
       "id": 30434,
@@ -192824,6 +192824,34 @@
       "createdBy": 6,
       "createdAt": "2026-10-08 10:17:17",
       "updatedAt": "2026-10-08 10:17:17"
+    },
+    {
+      "id": 12871896,
+      "branchId": 1,
+      "liquorItemId": 22,
+      "date": "2026-10-08",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "300000",
+      "totalCost": "300000",
+      "memo": null,
+      "createdBy": 1,
+      "createdAt": "2026-10-08 12:01:03",
+      "updatedAt": "2026-10-08 12:01:03"
+    },
+    {
+      "id": 12871897,
+      "branchId": 3,
+      "liquorItemId": 22,
+      "date": "2026-10-08",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "300000",
+      "totalCost": "300000",
+      "memo": "선릉 > 삼성 이동",
+      "createdBy": 6,
+      "createdAt": "2026-10-08 12:08:40",
+      "updatedAt": "2026-10-08 12:08:40"
     }
   ],
   "liquorHiddenItems": [
