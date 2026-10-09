@@ -32802,9 +32802,9 @@
       "date": "2026-10-09",
       "posStartAmount": "61000",
       "cash": "0",
-      "card": "0",
+      "card": "368000",
       "cashTotal": "275000",
-      "cardTotal": "7595000",
+      "cardTotal": "7963000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -32812,22 +32812,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-10-09 11:38:55",
+      "submittedAt": "2026-10-09 16:41:00",
       "createdAt": "2026-10-09 11:38:55",
-      "updatedAt": "2026-10-09 11:38:57",
-      "totalRevenue": "0",
-      "commissionExpense": "0",
+      "updatedAt": "2026-10-09 16:41:02",
+      "totalRevenue": "368000",
+      "commissionExpense": "62560",
       "rentExpense": "166667",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
       "managerWageExpense": "204545",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "120000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "371212",
-      "netProfit": "-371212",
+      "totalExpenses": "553772",
+      "netProfit": "-185772",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -42466,10 +42466,10 @@
       "date": "2026-10-09",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "0",
+      "cardAmount": "368000",
       "notes": null,
       "createdAt": "2026-10-09 11:38:53",
-      "updatedAt": "2026-10-09 11:38:53"
+      "updatedAt": "2026-10-09 16:21:18"
     },
     {
       "id": 10380432,
@@ -97259,12 +97259,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "68000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "바탑 1시간 무제한(2), 준벅 (June Bug)(2)",
       "sortOrder": 0,
       "createdAt": "2026-10-09 11:38:53",
-      "updatedAt": "2026-10-09 11:38:53"
+      "updatedAt": "2026-10-09 16:16:23"
     },
     {
       "id": 16262197,
@@ -97278,6 +97278,19 @@
       "sortOrder": 0,
       "createdAt": "2026-10-09 14:47:32",
       "updatedAt": "2026-10-09 14:47:32"
+    },
+    {
+      "id": 16262198,
+      "tableReportId": 10380431,
+      "tableNumber": "",
+      "guestType": "named",
+      "guestName": "대희",
+      "amount": "300000",
+      "paymentMethod": "card",
+      "memo": "맥주, 칵테일, 위스키 무제한(1), 바탑 연장 30분(3), 스텝음료(14)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button>",
+      "sortOrder": 1,
+      "createdAt": "2026-10-09 16:16:23",
+      "updatedAt": "2026-10-09 16:40:58"
     }
   ],
   "staffIncentives": [
@@ -137419,8 +137432,8 @@
       "id": 30167,
       "branchId": 4,
       "liquorItemId": 30,
-      "currentStock": "5.00",
-      "updatedAt": "2026-10-02 10:21:54"
+      "currentStock": "4.00",
+      "updatedAt": "2026-10-09 16:23:30"
     },
     {
       "id": 30168,
@@ -139043,8 +139056,8 @@
       "id": 270002,
       "branchId": 4,
       "liquorItemId": 120001,
-      "currentStock": "2.00",
-      "updatedAt": "2026-10-01 09:37:25"
+      "currentStock": "1.00",
+      "updatedAt": "2026-10-09 16:23:31"
     },
     {
       "id": 300001,
@@ -194319,6 +194332,34 @@
       "createdBy": 2,
       "createdAt": "2026-10-09 10:35:55",
       "updatedAt": "2026-10-09 10:35:55"
+    },
+    {
+      "id": 12871931,
+      "branchId": 4,
+      "liquorItemId": 30,
+      "date": "2026-10-09",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "20000",
+      "totalCost": "20000",
+      "memo": null,
+      "createdBy": 4,
+      "createdAt": "2026-10-09 16:23:30",
+      "updatedAt": "2026-10-09 16:23:30"
+    },
+    {
+      "id": 12871932,
+      "branchId": 4,
+      "liquorItemId": 120001,
+      "date": "2026-10-09",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "100000",
+      "totalCost": "100000",
+      "memo": null,
+      "createdBy": 4,
+      "createdAt": "2026-10-09 16:23:30",
+      "updatedAt": "2026-10-09 16:23:30"
     }
   ],
   "liquorHiddenItems": [
