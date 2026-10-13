@@ -5594,6 +5594,8 @@ export const appRouter = router({
 
         // LLM Vision으로 포스기 주문내역 분석 → 형광펜 HTML 메모 + 금액 계산
         const response = await invokeLLM({
+          // 화면은 40초에 포기하므로, 한 번에 18초만 기다리고 다음 AI로 넘어가 재시도 기회를 만든다
+          timeoutMs: 18000,
           messages: [
             {
               role: 'system',

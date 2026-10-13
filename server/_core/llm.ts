@@ -66,6 +66,8 @@ export type InvokeParams = {
   output_schema?: OutputSchema;
   responseFormat?: ResponseFormat;
   response_format?: ResponseFormat;
+  // 시도 1회당 대기 시간(ms). 생략하면 45초.
+  timeoutMs?: number;
 };
 
 export type ToolCall = {
@@ -340,7 +342,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     try {
       const response = await fetch(providerUrl(provider), {
         method: "POST",
-        signal: AbortSignal.timeout(45000), // 45초 응답 없으면 중단 (무한 로딩 방지)
+        signal: AbortSignal.timeout(params.timeoutMs ?? 45000), // 기본 45초 응답 없으면 중단 (무한 로딩 방지)
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${providerKey(provider)}`,

@@ -828,10 +828,33 @@ export default function TableReport() {
     setAnalyzingLocalId(localId);
     try {
       const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
+      const originalBase64 = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(file);
+      });
+      // [속도개선] 폰 원본 사진(수 MB)을 긴 변 1600px JPEG로 줄여서 전송한다.
+      //   글자 읽기에는 충분하고 전송·AI 분석 시간이 크게 줄어든다. 실패하면 원본 그대로 보낸다.
+      const base64 = await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const MAX = 1600;
+            const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+            if (scale >= 1 && file.size < 800 * 1024) return resolve(originalBase64);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(originalBase64);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          } catch {
+            resolve(originalBase64);
+          }
+        };
+        img.onerror = () => resolve(originalBase64);
+        img.src = originalBase64;
       });
       // [수정] 사용자 학습형 형광펜 제외 단어를 사전 필터링하여 서버에 전송
       //   - 사용자가 자동 형광펜을 지운 단어(localStorage 학습값)를
