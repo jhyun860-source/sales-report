@@ -33664,9 +33664,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-10-15 13:12:22",
+      "submittedAt": "2026-10-15 14:43:18",
       "createdAt": "2026-10-14 15:55:32",
-      "updatedAt": "2026-10-15 13:12:22",
+      "updatedAt": "2026-10-15 14:43:18",
       "totalRevenue": "3856000",
       "commissionExpense": "655520",
       "rentExpense": "259259",
@@ -99925,32 +99925,6 @@
       "sortOrder": 6,
       "createdAt": "2026-10-15 09:44:42",
       "updatedAt": "2026-10-15 09:45:02"
-    },
-    {
-      "id": 16262316,
-      "tableReportId": 10380451,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 7,
-      "createdAt": "2026-10-15 09:44:42",
-      "updatedAt": "2026-10-15 09:44:42"
-    },
-    {
-      "id": 16262317,
-      "tableReportId": 10380451,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 8,
-      "createdAt": "2026-10-15 09:44:42",
-      "updatedAt": "2026-10-15 09:44:42"
     }
   ],
   "staffIncentives": [
@@ -141947,8 +141921,8 @@
       "id": 30305,
       "branchId": 3,
       "liquorItemId": 25,
-      "currentStock": "1.00",
-      "updatedAt": "2026-05-03 04:51:50"
+      "currentStock": "0.00",
+      "updatedAt": "2026-10-15 14:46:54"
     },
     {
       "id": 30307,
@@ -142479,8 +142453,8 @@
       "id": 30400,
       "branchId": 1,
       "liquorItemId": 25,
-      "currentStock": "1.00",
-      "updatedAt": "2026-05-03 04:52:16"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-15 14:46:11"
     },
     {
       "id": 30402,
@@ -199736,6 +199710,34 @@
       "createdBy": 90001,
       "createdAt": "2026-10-15 14:02:19",
       "updatedAt": "2026-10-15 14:02:19"
+    },
+    {
+      "id": 12872047,
+      "branchId": 1,
+      "liquorItemId": 25,
+      "date": "2026-10-15",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "450000",
+      "totalCost": "450000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-10-15 14:46:11",
+      "updatedAt": "2026-10-15 14:46:11"
+    },
+    {
+      "id": 12872048,
+      "branchId": 3,
+      "liquorItemId": 25,
+      "date": "2026-10-15",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "450000",
+      "totalCost": "450000",
+      "memo": "삼성 > 선릉  이동",
+      "createdBy": 6,
+      "createdAt": "2026-10-15 14:46:54",
+      "updatedAt": "2026-10-15 14:46:54"
     }
   ],
   "liquorHiddenItems": [
