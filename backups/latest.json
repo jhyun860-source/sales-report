@@ -34149,6 +34149,47 @@
       "netProfit": "-1011212",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410495,
+      "branchId": 2,
+      "date": "2026-10-16",
+      "posStartAmount": "720000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "0",
+      "cardTotal": "21788000",
+      "posEndAmount": "650000",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [
+        {
+          "id": "exp_1792160273204",
+          "amount": "70000",
+          "description": "Pr"
+        }
+      ],
+      "submittedBy": null,
+      "submittedAt": "2026-10-16 14:18:09",
+      "createdAt": "2026-10-16 14:18:08",
+      "updatedAt": "2026-10-16 14:18:09",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "333333",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "115455",
+      "totalExpenses": "448788",
+      "netProfit": "-448788",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -141577,8 +141618,8 @@
       "id": 30068,
       "branchId": 2,
       "liquorItemId": 21,
-      "currentStock": "2.00",
-      "updatedAt": "2026-07-02 14:55:16"
+      "currentStock": "3.00",
+      "updatedAt": "2026-10-16 14:17:43"
     },
     {
       "id": 30069,
@@ -143082,8 +143123,8 @@
       "id": 30345,
       "branchId": 3,
       "liquorItemId": 21,
-      "currentStock": "2.00",
-      "updatedAt": "2026-08-12 10:13:30"
+      "currentStock": "1.00",
+      "updatedAt": "2026-10-16 14:19:12"
     },
     {
       "id": 30346,
@@ -200934,6 +200975,34 @@
       "createdBy": 1,
       "createdAt": "2026-10-16 11:02:01",
       "updatedAt": "2026-10-16 11:02:01"
+    },
+    {
+      "id": 12872068,
+      "branchId": 2,
+      "liquorItemId": 21,
+      "date": "2026-10-15",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "210000",
+      "totalCost": "210000",
+      "memo": "삼성에서 1병가져옴",
+      "createdBy": 2,
+      "createdAt": "2026-10-16 14:17:43",
+      "updatedAt": "2026-10-16 14:17:43"
+    },
+    {
+      "id": 12872069,
+      "branchId": 3,
+      "liquorItemId": 21,
+      "date": "2026-10-16",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "210000",
+      "totalCost": "210000",
+      "memo": "대치로1병이동",
+      "createdBy": 3,
+      "createdAt": "2026-10-16 14:19:12",
+      "updatedAt": "2026-10-16 14:19:12"
     }
   ],
   "liquorHiddenItems": [
