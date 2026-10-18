@@ -34314,7 +34314,7 @@
       "submittedBy": null,
       "submittedAt": "2026-10-18 00:03:07",
       "createdAt": "2026-10-18 00:03:01",
-      "updatedAt": "2026-10-18 00:03:07",
+      "updatedAt": "2026-10-18 13:50:39",
       "totalRevenue": "0",
       "commissionExpense": "0",
       "rentExpense": "333333",
@@ -34322,12 +34322,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "0",
       "partTimeWageExpense": "120000",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "117000",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "37037",
-      "totalExpenses": "490370",
-      "netProfit": "-490370",
+      "totalExpenses": "607370",
+      "netProfit": "-607370",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -142154,8 +142154,8 @@
       "id": 30071,
       "branchId": 2,
       "liquorItemId": 58,
-      "currentStock": "4.00",
-      "updatedAt": "2026-10-16 10:07:44"
+      "currentStock": "3.00",
+      "updatedAt": "2026-10-18 13:50:39"
     },
     {
       "id": 30072,
@@ -146025,8 +146025,8 @@
       "id": 1650003,
       "branchId": 2,
       "liquorItemId": 690002,
-      "currentStock": "3.00",
-      "updatedAt": "2026-10-01 10:33:36"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-18 13:50:39"
     },
     {
       "id": 1650004,
@@ -201784,6 +201784,34 @@
       "createdBy": 6,
       "createdAt": "2026-10-17 13:35:47",
       "updatedAt": "2026-10-17 13:35:47"
+    },
+    {
+      "id": 12872089,
+      "branchId": 2,
+      "liquorItemId": 690002,
+      "date": "2026-10-17",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "110000",
+      "totalCost": "110000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-10-18 13:50:39",
+      "updatedAt": "2026-10-18 13:50:39"
+    },
+    {
+      "id": 12872090,
+      "branchId": 2,
+      "liquorItemId": 58,
+      "date": "2026-10-17",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "7000",
+      "totalCost": "7000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-10-18 13:50:39",
+      "updatedAt": "2026-10-18 13:50:39"
     }
   ],
   "liquorHiddenItems": [
