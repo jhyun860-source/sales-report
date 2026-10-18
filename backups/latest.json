@@ -34295,6 +34295,41 @@
       "netProfit": "-40000",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410499,
+      "branchId": 2,
+      "date": "2026-10-17",
+      "posStartAmount": "650000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "30000",
+      "cardTotal": "23303000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-10-18 00:03:07",
+      "createdAt": "2026-10-18 00:03:01",
+      "updatedAt": "2026-10-18 00:03:07",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "333333",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "120000",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "37037",
+      "totalExpenses": "490370",
+      "netProfit": "-490370",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -44296,6 +44331,17 @@
       "notes": null,
       "createdAt": "2026-10-17 04:17:54",
       "updatedAt": "2026-10-17 05:04:41"
+    },
+    {
+      "id": 10380468,
+      "branchId": 2,
+      "date": "2026-10-17",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "0",
+      "notes": null,
+      "createdAt": "2026-10-18 00:03:01",
+      "updatedAt": "2026-10-18 00:03:01"
     }
   ],
   "tableItems": [
@@ -101030,6 +101076,19 @@
       "sortOrder": 6,
       "createdAt": "2026-10-17 05:04:41",
       "updatedAt": "2026-10-17 05:04:41"
+    },
+    {
+      "id": 16262372,
+      "tableReportId": 10380468,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "0",
+      "paymentMethod": "card",
+      "memo": null,
+      "sortOrder": 0,
+      "createdAt": "2026-10-18 00:03:01",
+      "updatedAt": "2026-10-18 00:03:01"
     }
   ],
   "staffIncentives": [
@@ -140055,6 +140114,22 @@
       "sortOrder": 1,
       "createdAt": "2026-10-17 04:17:54",
       "updatedAt": "2026-10-17 04:17:54",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311345,
+      "tableReportId": 10380468,
+      "staffName": "유주(정예지)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "19:30",
+      "workEnd": "01:30",
+      "sortOrder": 0,
+      "createdAt": "2026-10-18 00:03:01",
+      "updatedAt": "2026-10-18 00:03:01",
       "wageExempt": 0
     }
   ],
