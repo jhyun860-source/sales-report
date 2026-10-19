@@ -32456,9 +32456,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-10-19 12:11:33",
+      "submittedAt": "2026-10-19 12:12:39",
       "createdAt": "2026-10-07 17:47:02",
-      "updatedAt": "2026-10-19 12:11:33",
+      "updatedAt": "2026-10-19 12:12:39",
       "totalRevenue": "3205000",
       "commissionExpense": "544850",
       "rentExpense": "240741",
@@ -32467,11 +32467,11 @@
       "managerWageExpense": "0",
       "partTimeWageExpense": "70000",
       "liquorCostExpense": "959800",
-      "staffDrinkExpense": "18000",
+      "staffDrinkExpense": "0",
       "salesIncentiveExpense": "244000",
       "otherExpense": "22222",
-      "totalExpenses": "2258703",
-      "netProfit": "946297",
+      "totalExpenses": "2240703",
+      "netProfit": "964297",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -33956,9 +33956,9 @@
         }
       ],
       "submittedBy": null,
-      "submittedAt": "2026-10-19 12:03:54",
+      "submittedAt": "2026-10-19 12:14:30",
       "createdAt": "2026-10-15 16:46:07",
-      "updatedAt": "2026-10-19 12:03:54",
+      "updatedAt": "2026-10-19 12:14:30",
       "totalRevenue": "1785000",
       "commissionExpense": "303450",
       "rentExpense": "240741",
@@ -139010,14 +139010,14 @@
       "staffName": "세정(이세희)",
       "glassCount": 0,
       "bottleCount": 0,
-      "beerBottleCount": 6,
+      "beerBottleCount": 0,
       "salesIncentive": "244000",
       "staffType": "staff",
       "workStart": "19:00",
       "workEnd": "02:00",
       "sortOrder": 0,
       "createdAt": "2026-10-08 16:49:33",
-      "updatedAt": "2026-10-19 12:11:24",
+      "updatedAt": "2026-10-19 12:12:30",
       "wageExempt": 0
     },
     {
@@ -143112,8 +143112,8 @@
       "id": 30109,
       "branchId": 4,
       "liquorItemId": 5,
-      "currentStock": "0.00",
-      "updatedAt": "2026-07-28 11:22:02"
+      "currentStock": "1.00",
+      "updatedAt": "2026-10-19 13:19:11"
     },
     {
       "id": 30110,
@@ -143630,8 +143630,8 @@
       "id": 30199,
       "branchId": 5,
       "liquorItemId": 5,
-      "currentStock": "3.00",
-      "updatedAt": "2026-08-02 08:25:12"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-19 13:18:29"
     },
     {
       "id": 30200,
@@ -203120,6 +203120,34 @@
       "createdBy": 4,
       "createdAt": "2026-10-19 11:52:40",
       "updatedAt": "2026-10-19 11:52:40"
+    },
+    {
+      "id": 12872129,
+      "branchId": 5,
+      "liquorItemId": 5,
+      "date": "2026-10-19",
+      "type": "ADJUST",
+      "quantity": "-1.00",
+      "unitCost": "92400",
+      "totalCost": "92400",
+      "memo": "1호점으로 1병 이동",
+      "createdBy": 5,
+      "createdAt": "2026-10-19 13:18:29",
+      "updatedAt": "2026-10-19 13:18:29"
+    },
+    {
+      "id": 12872130,
+      "branchId": 4,
+      "liquorItemId": 5,
+      "date": "2026-10-19",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "92400",
+      "totalCost": "92400",
+      "memo": "2호점에서 1병 이동",
+      "createdBy": 4,
+      "createdAt": "2026-10-19 13:19:11",
+      "updatedAt": "2026-10-19 13:19:11"
     }
   ],
   "liquorHiddenItems": [
