@@ -35054,6 +35054,41 @@
       "netProfit": "992398",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410520,
+      "branchId": 6,
+      "date": "2026-10-22",
+      "posStartAmount": "123000",
+      "cash": "0",
+      "card": "220000",
+      "cashTotal": "0",
+      "cardTotal": "5108000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-10-22 14:45:20",
+      "createdAt": "2026-10-22 14:44:59",
+      "updatedAt": "2026-10-22 14:45:37",
+      "totalRevenue": "220000",
+      "commissionExpense": "37400",
+      "rentExpense": "166667",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "119000",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "20000",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "0",
+      "totalExpenses": "343067",
+      "netProfit": "-123067",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -45297,6 +45332,17 @@
       "notes": null,
       "createdAt": "2026-10-22 09:57:30",
       "updatedAt": "2026-10-22 10:02:28"
+    },
+    {
+      "id": 10380490,
+      "branchId": 6,
+      "date": "2026-10-22",
+      "teamCount": 2,
+      "cashAmount": "0",
+      "cardAmount": "220000",
+      "notes": null,
+      "createdAt": "2026-10-22 14:44:59",
+      "updatedAt": "2026-10-22 14:45:17"
     }
   ],
   "tableItems": [
@@ -103292,6 +103338,32 @@
       "sortOrder": 9,
       "createdAt": "2026-10-22 09:57:30",
       "updatedAt": "2026-10-22 09:57:30"
+    },
+    {
+      "id": 16262479,
+      "tableReportId": 10380490,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "120000",
+      "paymentMethod": "card",
+      "memo": "1시간 무제한(2), 칵테일 단품(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">스텝음료(3)</mark>",
+      "sortOrder": 0,
+      "createdAt": "2026-10-22 14:44:59",
+      "updatedAt": "2026-10-22 14:45:17"
+    },
+    {
+      "id": 16262480,
+      "tableReportId": 10380490,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "100000",
+      "paymentMethod": "card",
+      "memo": "1시간 무제한(3), 팝콘(1)",
+      "sortOrder": 1,
+      "createdAt": "2026-10-22 14:44:59",
+      "updatedAt": "2026-10-22 14:45:17"
     }
   ],
   "staffIncentives": [
@@ -143374,6 +143446,22 @@
       "createdAt": "2026-10-22 09:57:30",
       "updatedAt": "2026-10-22 10:00:13",
       "wageExempt": 0
+    },
+    {
+      "id": 11311412,
+      "tableReportId": 10380490,
+      "staffName": "나형(우나형)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "19:00",
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-10-22 14:45:17",
+      "updatedAt": "2026-10-22 14:45:17",
+      "wageExempt": 0
     }
   ],
   "liquorItems": [
@@ -148967,8 +149055,8 @@
       "id": 1350004,
       "branchId": 6,
       "liquorItemId": 79,
-      "currentStock": "3.00",
-      "updatedAt": "2026-10-01 15:08:11"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-22 14:45:37"
     },
     {
       "id": 1350005,
@@ -206553,6 +206641,20 @@
       "createdBy": 1,
       "createdAt": "2026-10-22 10:03:21",
       "updatedAt": "2026-10-22 10:03:21"
+    },
+    {
+      "id": 12872200,
+      "branchId": 6,
+      "liquorItemId": 79,
+      "date": "2026-10-22",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "20000",
+      "totalCost": "20000",
+      "memo": null,
+      "createdBy": 90001,
+      "createdAt": "2026-10-22 14:45:37",
+      "updatedAt": "2026-10-22 14:45:37"
     }
   ],
   "liquorHiddenItems": [
