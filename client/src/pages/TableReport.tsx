@@ -83,6 +83,7 @@ type TableItemLocal = {
   tableNumber: string;
   guestType: 'walking' | 'regular' | 'named';
   guestName: string;
+  designatedStaff?: string[]; // 지명 시 선택한 직원들 (여러 명 가능)
   amount: string;
   paymentMethod: 'card' | 'cash';
   memo: string;
@@ -292,6 +293,7 @@ export default function TableReport() {
           tableNumber: it.tableNumber,
           guestType: it.guestType,
           guestName: it.guestName ?? '',
+          designatedStaff: Array.isArray(it.designatedStaff) ? it.designatedStaff : [],
           amount: it.amount ?? '',
           paymentMethod: it.paymentMethod,
           memo: it.memo ?? '',
@@ -550,12 +552,14 @@ export default function TableReport() {
     };
     const mergedAmountLocal = String((Number(target.amount || 0) || 0) + (Number(source.amount || 0) || 0));
     const mergedMemoLocal = mergeMemo(target.memo, source.memo);
+    // 합치면 두 테이블의 지명 직원도 함께 합친다
+    const mergedDesignatedLocal = Array.from(new Set([...(target.designatedStaff ?? []), ...(source.designatedStaff ?? [])]));
 
     const applyLocalMerge = (amount: string, memo: string) => {
       setItems(prev => {
         const next = prev
           .map(it => it.localId === targetLocalId
-            ? { ...it, amount, memo }
+            ? { ...it, amount, memo, designatedStaff: mergedDesignatedLocal }
             : it
           )
           .filter(it => it.localId !== sourceLocalId);
@@ -576,7 +580,7 @@ export default function TableReport() {
       //   병합 "이전"의 오래된 state를 참조하는 위험이 있으므로,
       //   병합 결과 배열을 여기서 직접 계산해 즉시 서버로 전송한다 (state 타이밍에 의존하지 않음).
       const mergedItemsForSave = itemsRef.current
-        .map(it => it.localId === targetLocalId ? { ...it, amount: mergedAmountLocal, memo: mergedMemoLocal } : it)
+        .map(it => it.localId === targetLocalId ? { ...it, amount: mergedAmountLocal, memo: mergedMemoLocal, designatedStaff: mergedDesignatedLocal } : it)
         .filter(it => it.localId !== sourceLocalId);
       setIsSaving(true);
       try {
@@ -591,6 +595,7 @@ export default function TableReport() {
             tableNumber: it.tableNumber,
             guestType: it.guestType,
             guestName: it.guestName || null,
+            designatedStaff: it.designatedStaff ?? [],
             amount: it.amount || '0',
             paymentMethod: it.paymentMethod,
             memo: it.memo,
@@ -705,6 +710,7 @@ export default function TableReport() {
           tableNumber: it.tableNumber,
           guestType: it.guestType,
           guestName: it.guestName || null,
+          designatedStaff: it.designatedStaff ?? [],
           amount: it.amount || '0',
           paymentMethod: it.paymentMethod,
           memo: it.memo,
@@ -781,6 +787,17 @@ export default function TableReport() {
   // 테이블 항목 업데이트 - 모든 필드 변경 시 자동저장 트리거 (메모 포함)
   const updateItemField = (localId: string, field: keyof TableItemLocal, value: string) => {
     setItems(prev => prev.map(it => it.localId === localId ? { ...it, [field]: value } : it));
+    scheduleAutoSave();
+  };
+
+  // 지명 직원 선택/해제 (여러 명 가능)
+  const toggleDesignatedStaff = (localId: string, staffName: string) => {
+    setItems(prev => prev.map(it => {
+      if (it.localId !== localId) return it;
+      const cur = it.designatedStaff ?? [];
+      const next = cur.includes(staffName) ? cur.filter(n => n !== staffName) : [...cur, staffName];
+      return { ...it, designatedStaff: next };
+    }));
     scheduleAutoSave();
   };
 
@@ -1176,6 +1193,42 @@ export default function TableReport() {
                     />
                   </div>
                 )}
+
+                {/* 1.6행: 지명 시 지명받은 직원 선택 (오늘 출근자 중 여러 명 선택 가능) */}
+                {item.guestType === 'named' && (() => {
+                  const todayStaff = incentives.map(inc => inc.staffName).filter(Boolean);
+                  const selected = item.designatedStaff ?? [];
+                  const options = [...todayStaff, ...selected.filter(n => !todayStaff.includes(n))];
+                  return (
+                    <div className="flex items-start gap-2 px-3 py-1.5" style={{ borderBottom: `1px solid ${BORDER}`, background: `${PRIMARY}10` }}>
+                      <span className="text-xs flex-shrink-0 font-medium pt-1" style={{ color: PRIMARY }}>지명</span>
+                      <div className="flex flex-wrap gap-1.5 flex-1">
+                        {options.length === 0 && (
+                          <span className="text-xs pt-1" style={{ color: MUTED }}>출근자를 먼저 입력해주세요</span>
+                        )}
+                        {options.map(name => {
+                          const on = selected.includes(name);
+                          return (
+                            <button
+                              key={name}
+                              type="button"
+                              title={name}
+                              onClick={() => toggleDesignatedStaff(item.localId, name)}
+                              className="px-2 py-0.5 rounded-full text-xs font-medium transition-colors"
+                              style={{
+                                background: on ? PRIMARY : 'transparent',
+                                color: on ? 'white' : MUTED,
+                                border: `1px solid ${on ? PRIMARY : BORDER}`,
+                              }}
+                            >
+                              {name.split('(')[0]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* 2행: 금액 + 결제수단 */}
                 <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>

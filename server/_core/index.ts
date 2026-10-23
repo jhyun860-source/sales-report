@@ -54,6 +54,15 @@ async function startServer() {
   // [일회성] DB 이전 복원 라우트 (이전 완료 후 제거)
   const { registerRestoreRoutes } = await import("../restoreRouter");
   registerRestoreRoutes(app);
+  // 지명 직원 저장용 DB 칸 자동 추가 (실패해도 서버는 정상 시작)
+  try {
+    const { getDb } = await import("../db");
+    const { ensureDesignatedStaffColumn } = await import("../tableItemDesignated");
+    const ensureDb = await getDb();
+    if (ensureDb) await ensureDesignatedStaffColumn(ensureDb);
+  } catch (e) {
+    console.error("[designatedStaff] 시작 시 칸 추가 단계 오류 (무시)", e);
+  }
   // [진단용] 배포 버전 + DB 연결 상태 확인 (캐시 우회)
   app.get("/version", async (_req, res) => {
     res.setHeader("Cache-Control", "no-store");

@@ -33,6 +33,7 @@ import {
 } from "./db";
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives, liquorItems, liquorInventories, liquorStockMovements, liquorHiddenItems, branchSettings } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
+import { saveDesignatedStaff, loadDesignatedStaff } from "./tableItemDesignated";
 import { storagePut } from "./storage";
 import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -4444,7 +4445,10 @@ export const appRouter = router({
         const incentives = await db.select().from(staffIncentives)
           .where(eq(staffIncentives.tableReportId, report.id))
           .orderBy(staffIncentives.sortOrder, staffIncentives.createdAt);
-        return { ...report, items, incentives };
+        // 지명 직원 선택값(별도 칸) 붙이기
+        const designatedMap = await loadDesignatedStaff(db, report.id);
+        const itemsWithDesignated = items.map((it: any) => ({ ...it, designatedStaff: designatedMap.get(it.id) ?? [] }));
+        return { ...report, items: itemsWithDesignated, incentives };
       }),
      // 기록 생성 또는 업데이트
     upsert: publicProcedure
@@ -4865,6 +4869,7 @@ export const appRouter = router({
           tableNumber: z.string(),
           guestType: z.enum(['walking', 'regular', 'named']).default('walking'),
           guestName: z.string().optional().nullable(),
+          designatedStaff: z.array(z.string()).optional(),
           amount: z.string().default('0'),
           paymentMethod: z.enum(['card', 'cash', '카드', '현금']).default('card'),
           memo: z.string().optional(),
@@ -4948,6 +4953,8 @@ export const appRouter = router({
             sortOrder: it.sortOrder,
           }).where(eq(tableItems.id, it.id!));
           itemIdMap[it.localId] = it.id!;
+          // 지명 직원 선택값 저장 (별도 칸, 실패해도 다른 저장에 영향 없음)
+          if (it.designatedStaff !== undefined) await saveDesignatedStaff(db, it.id!, it.designatedStaff);
         }));
 
         // INSERT: 순차 처리 (insertId 혼용 방지)
@@ -4963,6 +4970,7 @@ export const appRouter = router({
             sortOrder: it.sortOrder,
           });
           itemIdMap[it.localId] = (result as any).insertId;
+          if (it.designatedStaff && it.designatedStaff.length > 0) await saveDesignatedStaff(db, (result as any).insertId, it.designatedStaff);
         }
 
         // 3. 인센티브 배치 처리
