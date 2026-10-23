@@ -35346,6 +35346,41 @@
       "netProfit": "825379",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410528,
+      "branchId": 2,
+      "date": "2026-10-23",
+      "posStartAmount": "270000",
+      "cash": "0",
+      "card": "885000",
+      "cashTotal": "30000",
+      "cardTotal": "34976000",
+      "posEndAmount": "0",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [],
+      "submittedBy": null,
+      "submittedAt": "2026-10-23 12:47:17",
+      "createdAt": "2026-10-23 12:47:07",
+      "updatedAt": "2026-10-23 12:47:17",
+      "totalRevenue": "885000",
+      "commissionExpense": "150450",
+      "rentExpense": "333333",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "136363",
+      "managerWageExpense": "272727",
+      "partTimeWageExpense": "160000",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "37037",
+      "totalExpenses": "1089910",
+      "netProfit": "-204910",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -45644,6 +45679,17 @@
       "notes": null,
       "createdAt": "2026-10-23 10:03:04",
       "updatedAt": "2026-10-23 10:08:16"
+    },
+    {
+      "id": 10380495,
+      "branchId": 2,
+      "date": "2026-10-23",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "885000",
+      "notes": null,
+      "createdAt": "2026-10-23 12:47:07",
+      "updatedAt": "2026-10-23 12:47:07"
     }
   ],
   "tableItems": [
@@ -108548,6 +108594,20 @@
       "createdAt": "2026-10-23 10:07:09",
       "updatedAt": "2026-10-23 10:08:16",
       "designatedStaff": null
+    },
+    {
+      "id": 16262515,
+      "tableReportId": 10380495,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "885000",
+      "paymentMethod": "card",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">로얄살루트 21y (700ml)(1)</mark>, 룸(1), 계절과일(1)",
+      "sortOrder": 0,
+      "createdAt": "2026-10-23 12:47:07",
+      "updatedAt": "2026-10-23 12:47:07",
+      "designatedStaff": null
     }
   ],
   "staffIncentives": [
@@ -148949,6 +149009,54 @@
       "sortOrder": 3,
       "createdAt": "2026-10-23 10:03:04",
       "updatedAt": "2026-10-23 10:03:04",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311433,
+      "tableReportId": 10380495,
+      "staffName": "아름(하신원)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-10-23 12:47:07",
+      "updatedAt": "2026-10-23 12:47:07",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311434,
+      "tableReportId": 10380495,
+      "staffName": "유주(정예지)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "18:40",
+      "workEnd": null,
+      "sortOrder": 1,
+      "createdAt": "2026-10-23 12:47:07",
+      "updatedAt": "2026-10-23 12:47:17",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311435,
+      "tableReportId": 10380495,
+      "staffName": "유빈(이나경)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "20:00",
+      "workEnd": null,
+      "sortOrder": 2,
+      "createdAt": "2026-10-23 12:47:17",
+      "updatedAt": "2026-10-23 12:47:17",
       "wageExempt": 0
     }
   ],
