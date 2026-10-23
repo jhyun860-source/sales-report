@@ -306,7 +306,7 @@ export default function StaffIncentiveStats() {
                         { label: '잔 추가', value: glass > 0 ? `${glass}잔 × ₩5,000` : '—', sub: glass > 0 ? `₩${(glass * 5000).toLocaleString('ko-KR')}` : null, highlight: glass > 0 },
                         { label: '병 추가', value: bottle > 0 ? `${bottle}병 × ₩10,000` : '—', sub: bottle > 0 ? `₩${(bottle * 10000).toLocaleString('ko-KR')}` : null, highlight: bottle > 0 },
                         { label: '맥주 병추가', value: beer > 0 ? `${beer}병 × ₩3,000` : '—', sub: beer > 0 ? `₩${(beer * 3000).toLocaleString('ko-KR')}` : null, highlight: beer > 0 },
-                        { label: '영업 인센', value: salesInc > 0 ? `₩${salesInc.toLocaleString('ko-KR')}` : '—', sub: null, highlight: salesInc > 0 },
+                        { label: '영업 인센', value: `${salesInc > 0 ? `₩${salesInc.toLocaleString('ko-KR')}` : '—'}${Number(row.teamCount) > 0 ? ` (${Number(row.teamCount)}팀)` : ''}`, sub: null, highlight: salesInc > 0 },
                       ].map((item, i) => (
                         <div
                           key={i}

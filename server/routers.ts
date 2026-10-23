@@ -33,7 +33,7 @@ import {
 } from "./db";
 import { branches, branchManagers, users, dailySalesRecords, storeAccounts, tableReports, tableItems, staffIncentives, liquorItems, liquorInventories, liquorStockMovements, liquorHiddenItems, branchSettings } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
-import { saveDesignatedStaff, loadDesignatedStaff } from "./tableItemDesignated";
+import { saveDesignatedStaff, loadDesignatedStaff, loadMonthlyDesignatedCounts } from "./tableItemDesignated";
 import { storagePut } from "./storage";
 import { eq, and, desc, asc, like, sql, inArray, gte, lte, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -5349,6 +5349,9 @@ export const appRouter = router({
           return dateA.localeCompare(dateB);
         });
 
+        // 지명 팀수: 테이블 기록에서 지명 시 선택한 직원별 횟수 (해당 월)
+        const designatedTeamCounts = await loadMonthlyDesignatedCounts(db, prefix, targetBranchId);
+
         // 최종 결과 조합
         const result = rows.map(row => {
           const name = row.staffName;
@@ -5379,6 +5382,7 @@ export const appRouter = router({
             weeklyWorkMinutes: weeklyHours, // { '4/6~4/12': 분수 }
             weeklyWorkDays: staffWeeklyDaysMap[key] || {}, // { '4/6~4/12': 출근일수 }
             avgWeeklyIncentive,
+            teamCount: designatedTeamCounts[name] || 0,
           };
         });
 

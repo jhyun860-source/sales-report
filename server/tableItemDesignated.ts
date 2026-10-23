@@ -64,3 +64,33 @@ export async function loadDesignatedStaff(db: any, reportId: number): Promise<Ma
   }
   return map;
 }
+
+/** 월별 지명 팀수: 지명(named) 테이블에서 직원 이름이 선택된 횟수 (직원 이름 -> 팀수) */
+export async function loadMonthlyDesignatedCounts(
+  db: any,
+  monthPrefix: string, // 예: '2026-10-%'
+  branchId: number | null
+): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  try {
+    const res: any = branchId !== null
+      ? await db.execute(sql`SELECT ti.designatedStaff AS ds FROM tableItems ti INNER JOIN tableReports tr ON ti.tableReportId = tr.id WHERE tr.date LIKE ${monthPrefix} AND tr.branchId = ${branchId} AND ti.guestType = 'named' AND ti.designatedStaff IS NOT NULL`)
+      : await db.execute(sql`SELECT ti.designatedStaff AS ds FROM tableItems ti INNER JOIN tableReports tr ON ti.tableReportId = tr.id WHERE tr.date LIKE ${monthPrefix} AND ti.guestType = 'named' AND ti.designatedStaff IS NOT NULL`);
+    for (const r of rowsOf(res)) {
+      const raw = r?.ds ?? r?.[0];
+      if (!raw) continue;
+      try {
+        const arr = JSON.parse(String(raw));
+        if (!Array.isArray(arr)) continue;
+        for (const name of Array.from(new Set(arr.map((s: any) => String(s))))) {
+          counts[name] = (counts[name] || 0) + 1;
+        }
+      } catch {
+        // 깨진 값은 무시
+      }
+    }
+  } catch (e) {
+    console.error("[designatedStaff] 월별 팀수 조회 실패", e);
+  }
+  return counts;
+}
