@@ -36198,9 +36198,9 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-10-29 04:20:31",
+      "submittedAt": "2026-10-29 06:36:07",
       "createdAt": "2026-10-28 05:40:41",
-      "updatedAt": "2026-10-29 04:20:31",
+      "updatedAt": "2026-10-29 06:37:29",
       "totalRevenue": "2134000",
       "commissionExpense": "362780",
       "rentExpense": "166667",
@@ -36208,12 +36208,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "204545",
       "partTimeWageExpense": "346667",
-      "liquorCostExpense": "511000",
+      "liquorCostExpense": "571600",
       "staffDrinkExpense": "33000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1624659",
-      "netProfit": "509341",
+      "totalExpenses": "1685259",
+      "netProfit": "448741",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -111467,13 +111467,13 @@
       "tableReportId": 10380515,
       "tableNumber": "",
       "guestType": "named",
-      "guestName": null,
+      "guestName": "병필",
       "amount": "440000",
       "paymentMethod": "card",
       "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">발렌타인 17y (500ml) + 과일 SET(1)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>, <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">기네스 드래프트 (330ml)(2)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>, <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">하이네켄 (330ml)(2)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border: medium; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>",
       "sortOrder": 4,
       "createdAt": "2026-10-28 18:30:36",
-      "updatedAt": "2026-10-29 04:20:31",
+      "updatedAt": "2026-10-29 06:36:06",
       "designatedStaff": null
     },
     {
@@ -155342,15 +155342,15 @@
       "id": 30107,
       "branchId": 4,
       "liquorItemId": 7,
-      "currentStock": "2.00",
-      "updatedAt": "2026-10-26 09:54:20"
+      "currentStock": "0.00",
+      "updatedAt": "2026-10-29 06:37:16"
     },
     {
       "id": 30108,
       "branchId": 4,
       "liquorItemId": 8,
-      "currentStock": "1.00",
-      "updatedAt": "2026-10-28 18:34:56"
+      "currentStock": "2.00",
+      "updatedAt": "2026-10-29 06:37:02"
     },
     {
       "id": 30109,
@@ -155762,8 +155762,8 @@
       "id": 30180,
       "branchId": 4,
       "liquorItemId": 83,
-      "currentStock": "29.00",
-      "updatedAt": "2026-10-01 09:37:25"
+      "currentStock": "27.00",
+      "updatedAt": "2026-10-29 06:37:29"
     },
     {
       "id": 30182,
@@ -218656,18 +218656,32 @@
       "updatedAt": "2026-10-28 18:34:56"
     },
     {
-      "id": 12872367,
+      "id": 12872368,
       "branchId": 4,
-      "liquorItemId": 8,
+      "liquorItemId": 7,
       "date": "2026-10-28",
       "type": "OUT",
-      "quantity": "-1.00",
-      "unitCost": "140000",
-      "totalCost": "140000",
+      "quantity": "-2.00",
+      "unitCost": "97000",
+      "totalCost": "194000",
       "memo": null,
       "createdBy": 4,
       "createdAt": "2026-10-28 18:34:56",
-      "updatedAt": "2026-10-28 18:34:56"
+      "updatedAt": "2026-10-29 06:37:16"
+    },
+    {
+      "id": 12872369,
+      "branchId": 4,
+      "liquorItemId": 83,
+      "date": "2026-10-28",
+      "type": "OUT",
+      "quantity": "-2.00",
+      "unitCost": "3300",
+      "totalCost": "6600",
+      "memo": null,
+      "createdBy": 4,
+      "createdAt": "2026-10-28 18:34:56",
+      "updatedAt": "2026-10-29 06:37:29"
     }
   ],
   "liquorHiddenItems": [
