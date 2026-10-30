@@ -5,7 +5,7 @@
  * - 급여유무 체크는 표시용이며 정산(인건비 계산)에는 영향이 없다
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { ArrowLeft, CalendarCheck, ChevronLeft, ChevronRight, Check, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -90,12 +90,12 @@ export default function AttendanceSheet() {
   // 급여 체크 / 형광펜은 화면에서 먼저 바꾸고, 위쪽 [저장] 버튼을 눌러야 저장됩니다
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [marks, setMarks] = useState<Set<string>>(new Set());
-  const dirtyRef = useRef(false);
+  const [edited, setEdited] = useState(false); // 사용자가 직접 바꾼 적이 있는지
   useEffect(() => {
-    if (dirtyRef.current) return; // 저장 안 한 변경이 있으면 서버값으로 덮어쓰지 않음
+    if (edited) return; // 직접 바꾼 내용이 있으면 서버값으로 덮어쓰지 않음
     setChecked(new Set(data?.checked ?? []));
     setMarks(new Set(data?.marks ?? []));
-  }, [data]);
+  }, [data, edited]);
 
   const diffSets = (now: Set<string>, base: string[]) => {
     const b = new Set(base);
@@ -107,8 +107,7 @@ export default function AttendanceSheet() {
   const paidDiff = diffSets(checked, data?.checked ?? []);
   const markDiff = diffSets(marks, data?.marks ?? []);
   const dirtyCount = paidDiff.add.length + paidDiff.remove.length + markDiff.add.length + markDiff.remove.length;
-  const dirty = dirtyCount > 0;
-  dirtyRef.current = dirty;
+  const dirty = edited && dirtyCount > 0;
 
   useEffect(() => {
     if (!dirty) return;
@@ -129,8 +128,8 @@ export default function AttendanceSheet() {
         markAdd: markDiff.add.map(toKey),
         markRemove: markDiff.remove.map(toKey),
       });
-      dirtyRef.current = false;
       await utils.attendance.monthly.invalidate();
+      setEdited(false);
       toast.success('저장되었습니다');
     } catch {
       toast.error('저장에 실패했습니다. 다시 눌러주세요.');
@@ -139,6 +138,7 @@ export default function AttendanceSheet() {
 
   const toggle = (name: string, date: string) => {
     const key = `${name}__${date}`;
+    setEdited(true);
     setChecked(prev => { const s = new Set(prev); if (s.has(key)) s.delete(key); else s.add(key); return s; });
   };
   const toggleMark = (name: string, date: string) => {
@@ -148,7 +148,7 @@ export default function AttendanceSheet() {
 
   const changeMonth = (fn: (v: string) => string) => {
     if (dirty && !window.confirm('저장하지 않은 변경이 있습니다. 저장하지 않고 이동할까요?')) return;
-    dirtyRef.current = false;
+    setEdited(false);
     setChecked(new Set());
     setMarks(new Set());
     setYearMonth(fn);
@@ -190,7 +190,7 @@ export default function AttendanceSheet() {
               value={branchIdFromUrl ?? ''}
               onChange={e => {
                 if (dirty && !window.confirm('저장하지 않은 변경이 있습니다. 저장하지 않고 이동할까요?')) return;
-                dirtyRef.current = false;
+                setEdited(false);
                 setChecked(new Set());
                 setMarks(new Set());
                 navigate(`/attendance?branchId=${e.target.value}`);
