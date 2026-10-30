@@ -254,7 +254,7 @@ export default function AttendanceSheet() {
                   {staff.map((s, si) => (
                     <th key={s.name} colSpan={3} style={{ ...th, minWidth: 150, position: 'sticky', top: 0, zIndex: 5, height: 28, boxSizing: 'border-box' }}>
                       <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: MARK_COLORS[si % MARK_COLORS.length], marginRight: 4, verticalAlign: 'middle' }} />
-                      {s.alias} <span style={{ fontWeight: 500, color: MUTED }}>({TYPE_LABEL[s.staffType] ?? s.staffType})</span>
+                      {s.alias}{(() => { const m = s.name.match(/\(([^)]+)\)$/); return m ? `(${m[1]})` : ''; })()} <span style={{ fontWeight: 500, color: MUTED }}>· {TYPE_LABEL[s.staffType] ?? s.staffType}</span>
                     </th>
                   ))}
                 </tr>
