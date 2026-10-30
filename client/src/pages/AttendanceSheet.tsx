@@ -52,6 +52,15 @@ function signedHm(mins: number): string {
   return `${mins > 0 ? '+' : '-'}${hm(mins)}`;
 }
 
+// 분 → "+150분 (2시간 30분)" (60분 미만이면 괄호 없이 "+35분")
+function signedMin(mins: number): string {
+  const sign = mins > 0 ? '+' : '-';
+  const a = Math.abs(mins);
+  if (a < 60) return `${sign}${a}분`;
+  const h = Math.floor(a / 60), r = a % 60;
+  return `${sign}${a}분 (${h}시간${r > 0 ? ` ${r}분` : ''})`;
+}
+
 const TYPE_LABEL: Record<string, string> = { manager: '점장', deputy: '매니저', staff: '직원', parttime: '알바' };
 
 export default function AttendanceSheet() {
@@ -286,7 +295,7 @@ export default function AttendanceSheet() {
                               {c && !c.exempt && c.minutes !== null
                                 ? (c.type === 'parttime'
                                     ? (c.minutes % 60 > 0 ? `+${c.minutes % 60}분` : '')
-                                    : (c.diff !== null && c.diff !== 0 ? `${c.diff > 0 ? '+' : '-'}${Math.abs(c.diff)}분` : ''))
+                                    : (c.diff !== null && c.diff !== 0 ? signedMin(c.diff) : ''))
                                 : ''}
                             </td>
                             <td style={td}>
@@ -333,7 +342,7 @@ export default function AttendanceSheet() {
                           {t ? (s.staffType === 'parttime' ? `${pH}시간` : `${t.days}일`) : ''}
                         </td>
                         <td style={{ ...td, background: HEADER_BG, fontWeight: 700, color: s.staffType === 'parttime' ? PLUS : (t ? (t.diff > 0 ? PLUS : t.diff < 0 ? MINUS : MUTED) : MUTED) }}>
-                          {t && s.staffType === 'parttime' ? (pR > 0 ? `+${pR}분` : '') : (t && s.staffType === 'staff' && t.diff !== 0 ? `${t.diff > 0 ? '+' : '-'}${Math.abs(t.diff)}분` : '')}
+                          {t && s.staffType === 'parttime' ? (pR > 0 ? signedMin(pR) : '') : (t && s.staffType === 'staff' && t.diff !== 0 ? signedMin(t.diff) : '')}
                         </td>
                         <td style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>{paidCount > 0 ? `${paidCount}일` : ''}</td>
                       </FragmentCells>
