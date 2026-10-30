@@ -5,9 +5,9 @@
  * - 급여유무 체크는 표시용이며 정산(인건비 계산)에는 영향이 없다
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
-import { ArrowLeft, CalendarCheck, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, ChevronLeft, ChevronRight, Check, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
@@ -21,6 +21,8 @@ const PRIMARY = 'oklch(0.45 0.18 25)';
 const PLUS = 'oklch(0.45 0.15 150)';
 const MINUS = 'oklch(0.5 0.2 25)';
 const SUNDAY_BG = 'oklch(0.96 0.07 110)';
+// 직원별 형광펜 색 (직원마다 다르게)
+const MARK_COLORS = ['#fff176', '#ffab91', '#a5d6a7', '#81d4fa', '#ce93d8', '#f48fb1', '#ffcc80', '#b0bec5', '#c5e1a5', '#80cbc4', '#bcaaa4', '#9fa8da'];
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function getCurrentMonth(): string {
@@ -64,35 +66,74 @@ export default function AttendanceSheet() {
     { yearMonth, branchId: branchIdFromUrl },
     { enabled: !authLoading && !!account, retry: false }
   );
-  const setPaid = trpc.attendance.setPaid.useMutation();
+  const utils = trpc.useUtils();
+  const saveChanges = trpc.attendance.saveChanges.useMutation();
 
-  // 급여유무 체크 (화면 즉시 반영 후 서버 저장, 실패하면 되돌림)
+  // 급여 체크 / 형광펜은 화면에서 먼저 바꾸고, 위쪽 [저장] 버튼을 눌러야 저장됩니다
   const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [marks, setMarks] = useState<Set<string>>(new Set());
+  const dirtyRef = useRef(false);
   useEffect(() => {
+    if (dirtyRef.current) return; // 저장 안 한 변경이 있으면 서버값으로 덮어쓰지 않음
     setChecked(new Set(data?.checked ?? []));
+    setMarks(new Set(data?.marks ?? []));
   }, [data]);
+
+  const diffSets = (now: Set<string>, base: string[]) => {
+    const b = new Set(base);
+    return {
+      add: Array.from(now).filter(k => !b.has(k)),
+      remove: base.filter(k => !now.has(k)),
+    };
+  };
+  const paidDiff = diffSets(checked, data?.checked ?? []);
+  const markDiff = diffSets(marks, data?.marks ?? []);
+  const dirtyCount = paidDiff.add.length + paidDiff.remove.length + markDiff.add.length + markDiff.remove.length;
+  const dirty = dirtyCount > 0;
+  dirtyRef.current = dirty;
+
+  useEffect(() => {
+    if (!dirty) return;
+    const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', h);
+    return () => window.removeEventListener('beforeunload', h);
+  }, [dirty]);
+
+  const toKey = (k: string) => { const i = k.lastIndexOf('__'); return { staffName: k.slice(0, i), date: k.slice(i + 2) }; };
+
+  const handleSave = async () => {
+    if (!dirty || saveChanges.isPending) return;
+    try {
+      await saveChanges.mutateAsync({
+        branchId: branchIdFromUrl,
+        paidAdd: paidDiff.add.map(toKey),
+        paidRemove: paidDiff.remove.map(toKey),
+        markAdd: markDiff.add.map(toKey),
+        markRemove: markDiff.remove.map(toKey),
+      });
+      dirtyRef.current = false;
+      await utils.attendance.monthly.invalidate();
+      toast.success('저장되었습니다');
+    } catch {
+      toast.error('저장에 실패했습니다. 다시 눌러주세요.');
+    }
+  };
 
   const toggle = (name: string, date: string) => {
     const key = `${name}__${date}`;
-    const next = !checked.has(key);
-    setChecked(prev => {
-      const s = new Set(prev);
-      if (next) s.add(key); else s.delete(key);
-      return s;
-    });
-    setPaid.mutate(
-      { branchId: branchIdFromUrl, date, staffName: name, checked: next },
-      {
-        onError: () => {
-          toast.error('체크 저장에 실패했습니다. 다시 눌러주세요.');
-          setChecked(prev => {
-            const s = new Set(prev);
-            if (next) s.delete(key); else s.add(key);
-            return s;
-          });
-        },
-      }
-    );
+    setChecked(prev => { const s = new Set(prev); if (s.has(key)) s.delete(key); else s.add(key); return s; });
+  };
+  const toggleMark = (name: string, date: string) => {
+    const key = `${name}__${date}`;
+    setMarks(prev => { const s = new Set(prev); if (s.has(key)) s.delete(key); else s.add(key); return s; });
+  };
+
+  const changeMonth = (fn: (v: string) => string) => {
+    if (dirty && !window.confirm('저장하지 않은 변경이 있습니다. 저장하지 않고 이동할까요?')) return;
+    dirtyRef.current = false;
+    setChecked(new Set());
+    setMarks(new Set());
+    setYearMonth(fn);
   };
 
   const [y, m] = yearMonth.split('-').map(Number);
@@ -126,18 +167,31 @@ export default function AttendanceSheet() {
           <button onClick={() => navigate('/')} className="p-1.5 rounded-full" style={{ color: TEXT }} aria-label="뒤로"><ArrowLeft size={18} /></button>
           <CalendarCheck size={16} style={{ color: PRIMARY }} />
           <span className="text-base font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>출근부</span>
+          <div className="ml-auto flex items-center gap-2">
+            {dirty && <span className="text-xs font-medium" style={{ color: MINUS }}>저장 안 됨</span>}
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!dirty || saveChanges.isPending}
+              className="flex items-center gap-1 px-3 h-8 rounded-lg text-xs font-semibold text-white disabled:opacity-40"
+              style={{ background: PRIMARY }}
+            >
+              <Save size={14} />
+              {saveChanges.isPending ? '저장 중' : '저장'}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="px-2 py-4 pb-10">
         <div className="flex items-center justify-center gap-4 mb-3">
-          <button onClick={() => setYearMonth(v => moveMonth(v, -1))} className="p-2 rounded-full" style={{ color: TEXT }} aria-label="이전 달"><ChevronLeft size={22} strokeWidth={2.5} /></button>
+          <button onClick={() => changeMonth(v => moveMonth(v, -1))} className="p-2 rounded-full" style={{ color: TEXT }} aria-label="이전 달"><ChevronLeft size={22} strokeWidth={2.5} /></button>
           <div className="text-lg font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>{y}년 {m}월</div>
-          <button onClick={() => setYearMonth(v => moveMonth(v, 1))} disabled={yearMonth >= currentYearMonth} className="p-2 rounded-full disabled:opacity-30" style={{ color: TEXT }} aria-label="다음 달"><ChevronRight size={22} strokeWidth={2.5} /></button>
+          <button onClick={() => changeMonth(v => moveMonth(v, 1))} disabled={yearMonth >= currentYearMonth} className="p-2 rounded-full disabled:opacity-30" style={{ color: TEXT }} aria-label="다음 달"><ChevronRight size={22} strokeWidth={2.5} /></button>
         </div>
 
         <div className="text-xs text-center mb-3" style={{ color: MUTED }}>
-          근무시간 · 연장(+)/부족(-)시간은 테이블 기록 출근자에서 자동 계산됩니다 (직원 기준 7시간). 급여 칸 체크는 표시용입니다.
+          근무시간 · 연장(+)/부족(-)시간은 테이블 기록 출근자에서 자동 계산됩니다 (직원 기준 7시간). 근무·연장 칸을 누르면 직원 색으로 형광펜이 칠해집니다. 체크와 형광펜은 위쪽 [저장]을 눌러야 저장됩니다.
         </div>
 
         {isLoading && <div className="text-center py-10 text-sm" style={{ color: MUTED }}>불러오는 중...</div>}
@@ -161,8 +215,9 @@ export default function AttendanceSheet() {
               <thead>
                 <tr>
                   <th rowSpan={2} style={{ ...th, position: 'sticky', left: 0, zIndex: 3, minWidth: 44 }}>일</th>
-                  {staff.map(s => (
+                  {staff.map((s, si) => (
                     <th key={s.name} colSpan={3} style={{ ...th, minWidth: 150 }}>
+                      <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: MARK_COLORS[si % MARK_COLORS.length], marginRight: 4, verticalAlign: 'middle' }} />
                       {s.alias} <span style={{ fontWeight: 500, color: MUTED }}>({TYPE_LABEL[s.staffType] ?? s.staffType})</span>
                     </th>
                   ))}
@@ -183,13 +238,15 @@ export default function AttendanceSheet() {
                       <td style={{ ...td, position: 'sticky', left: 0, zIndex: 2, background: rowBg ?? BG, fontWeight: 700, color: dow === 0 ? MINUS : TEXT }}>
                         {d}<span style={{ fontSize: 10, fontWeight: 500, marginLeft: 2 }}>{WEEKDAYS[dow]}</span>
                       </td>
-                      {staff.map(s => {
+                      {staff.map((s, si) => {
                         const c = cells[`${s.name}__${ds}`];
                         const key = `${s.name}__${ds}`;
                         const on = checked.has(key);
+                        const hl = c && marks.has(key) ? MARK_COLORS[si % MARK_COLORS.length] : undefined;
+                        const hlStyle: React.CSSProperties = c ? { cursor: 'pointer', ...(hl ? { background: hl } : {}) } : {};
                         return (
                           <FragmentCells key={s.name} td={td}>
-                            <td style={td}>
+                            <td style={{ ...td, ...hlStyle }} onClick={() => c && toggleMark(s.name, ds)}>
                               {c ? (c.type !== 'parttime' ? (
                                 <span style={{ color: c.exempt ? MUTED : TEXT }}>◯</span>
                               ) : c.minutes === null ? <span style={{ color: MUTED }}>-</span> : (
@@ -198,7 +255,7 @@ export default function AttendanceSheet() {
                                 </span>
                               )) : ''}
                             </td>
-                            <td style={{ ...td, color: c && c.type === 'parttime' ? PLUS : (c && c.diff !== null ? (c.diff > 0 ? PLUS : c.diff < 0 ? MINUS : MUTED) : MUTED) }}>
+                            <td onClick={() => c && toggleMark(s.name, ds)} style={{ ...td, ...hlStyle, color: c && c.type === 'parttime' ? PLUS : (c && c.diff !== null ? (c.diff > 0 ? PLUS : c.diff < 0 ? MINUS : MUTED) : MUTED) }}>
                               {c && !c.exempt && c.minutes !== null
                                 ? (c.type === 'parttime'
                                     ? (c.minutes % 60 > 0 ? `+${c.minutes % 60}분` : '')

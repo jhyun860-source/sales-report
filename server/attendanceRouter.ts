@@ -72,6 +72,15 @@ async function ensureChecksTable(db: any) {
     createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_attendance (branchId, date, staffName)
   )`);
+  // 형광펜 표시(근무·연장 칸 색칠)용 표시 테이블 — 정산에는 영향 없음
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS attendanceMarks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    branchId INT NOT NULL,
+    date VARCHAR(10) NOT NULL,
+    staffName VARCHAR(50) NOT NULL,
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_attendance_mark (branchId, date, staffName)
+  )`);
   tableReady = true;
 }
 
@@ -125,6 +134,11 @@ export const attendanceRouter = router({
         sql`SELECT date, staffName FROM attendanceChecks WHERE branchId = ${branchId} AND date LIKE ${prefix}`
       );
       const checked = new Set<string>(rowsOf(checkRes).map((r: any) => `${r.staffName ?? r[1]}__${String(r.date ?? r[0]).slice(0, 10)}`));
+
+      const markRes: any = await db.execute(
+        sql`SELECT date, staffName FROM attendanceMarks WHERE branchId = ${branchId} AND date LIKE ${prefix}`
+      );
+      const marks = rowsOf(markRes).map((r: any) => `${r.staffName ?? r[1]}__${String(r.date ?? r[0]).slice(0, 10)}`);
 
       // 직원 목록: 직원관리 등록자 + 이번 달 출근 기록에 나온 이름
       type StaffInfo = { name: string; alias: string; staffType: string };
@@ -181,7 +195,37 @@ export const attendanceRouter = router({
         cells,
         totals,
         checked: Array.from(checked),
+        marks,
       };
+    }),
+
+  // [저장] 버튼: 급여 체크 / 형광펜 변경분을 한 번에 저장 (표시용 — 정산에는 영향 없음)
+  saveChanges: publicProcedure
+    .input(z.object({
+      branchId: z.number().optional(),
+      paidAdd: z.array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), staffName: z.string().min(1).max(50) })).max(500),
+      paidRemove: z.array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), staffName: z.string().min(1).max(50) })).max(500),
+      markAdd: z.array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), staffName: z.string().min(1).max(50) })).max(500),
+      markRemove: z.array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), staffName: z.string().min(1).max(50) })).max(500),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const branchId = await requireBranchId(ctx, input.branchId);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      await ensureChecksTable(db);
+      for (const r of input.paidAdd) {
+        await db.execute(sql`INSERT IGNORE INTO attendanceChecks (branchId, date, staffName) VALUES (${branchId}, ${r.date}, ${r.staffName})`);
+      }
+      for (const r of input.paidRemove) {
+        await db.execute(sql`DELETE FROM attendanceChecks WHERE branchId = ${branchId} AND date = ${r.date} AND staffName = ${r.staffName}`);
+      }
+      for (const r of input.markAdd) {
+        await db.execute(sql`INSERT IGNORE INTO attendanceMarks (branchId, date, staffName) VALUES (${branchId}, ${r.date}, ${r.staffName})`);
+      }
+      for (const r of input.markRemove) {
+        await db.execute(sql`DELETE FROM attendanceMarks WHERE branchId = ${branchId} AND date = ${r.date} AND staffName = ${r.staffName}`);
+      }
+      return { success: true };
     }),
 
   // 급여유무 체크 표시 저장 (표시용 — 정산에는 영향 없음)
