@@ -778,20 +778,6 @@ export default function Home() {
             </button>
           )}
 
-          {/* 기록 버튼 */}
-          {!isStaffOnly && <button
-            onClick={() => navigate('/history')}
-            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
-            style={{
-              background: 'oklch(0.92 0.015 85)',
-              color: 'oklch(0.25 0.01 50)',
-              borderColor: 'oklch(0.78 0.012 85)',
-            }}
-          >
-            <List size={14} />
-            기록
-          </button>}
-
         </div>
       </header>
 
