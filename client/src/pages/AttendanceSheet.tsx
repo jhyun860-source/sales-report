@@ -191,11 +191,17 @@ export default function AttendanceSheet() {
                           <FragmentCells key={s.name} td={td}>
                             <td style={td}>
                               {c ? (c.minutes === null ? <span style={{ color: MUTED }}>-</span> : (
-                                <span style={{ color: c.exempt ? MUTED : TEXT }}>{hm(c.minutes)}{c.exempt ? '*' : ''}</span>
+                                <span style={{ color: c.exempt ? MUTED : TEXT }}>
+                                  {c.type === 'parttime' ? `${Math.floor(c.minutes / 60)}시간` : hm(c.minutes)}{c.exempt ? '*' : ''}
+                                </span>
                               )) : ''}
                             </td>
-                            <td style={{ ...td, color: c && c.diff !== null ? (c.diff > 0 ? PLUS : c.diff < 0 ? MINUS : MUTED) : MUTED }}>
-                              {c && c.diff !== null && !c.exempt ? signedHm(c.diff) : ''}
+                            <td style={{ ...td, color: c && c.type === 'parttime' ? PLUS : (c && c.diff !== null ? (c.diff > 0 ? PLUS : c.diff < 0 ? MINUS : MUTED) : MUTED) }}>
+                              {c && !c.exempt && c.minutes !== null
+                                ? (c.type === 'parttime'
+                                    ? (c.minutes % 60 > 0 ? `+${c.minutes % 60}분` : '')
+                                    : (c.diff !== null ? signedHm(c.diff) : ''))
+                                : ''}
                             </td>
                             <td style={td}>
                               {c ? (
@@ -225,11 +231,23 @@ export default function AttendanceSheet() {
                   {staff.map(s => {
                     const t = totals[s.name];
                     const paidCount = dayList.filter(d => checked.has(`${s.name}__${dateStr(d)}`)).length;
+                    // 알바: 시간(정각) 합계 + 남는 분 합계 (시급 미대상 제외)
+                    let pH = 0, pR = 0;
+                    if (s.staffType === 'parttime') {
+                      for (const d of dayList) {
+                        const cc = cells[`${s.name}__${dateStr(d)}`];
+                        if (!cc || cc.exempt || cc.minutes === null) continue;
+                        pH += Math.floor(cc.minutes / 60);
+                        pR += cc.minutes % 60;
+                      }
+                    }
                     return (
                       <FragmentCells key={s.name} td={td}>
-                        <td style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>{t ? hm(t.minutes) : ''}</td>
-                        <td style={{ ...td, background: HEADER_BG, fontWeight: 700, color: t ? (t.diff > 0 ? PLUS : t.diff < 0 ? MINUS : MUTED) : MUTED }}>
-                          {t && s.staffType === 'staff' ? signedHm(t.diff) : ''}
+                        <td style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>
+                          {t ? (s.staffType === 'parttime' ? `${pH}시간` : hm(t.minutes)) : ''}
+                        </td>
+                        <td style={{ ...td, background: HEADER_BG, fontWeight: 700, color: s.staffType === 'parttime' ? PLUS : (t ? (t.diff > 0 ? PLUS : t.diff < 0 ? MINUS : MUTED) : MUTED) }}>
+                          {t && s.staffType === 'parttime' ? (pR > 0 ? `+${pR}분` : '') : (t && s.staffType === 'staff' ? signedHm(t.diff) : '')}
                         </td>
                         <td style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>{paidCount > 0 ? `${paidCount}일` : ''}</td>
                       </FragmentCells>
@@ -242,7 +260,7 @@ export default function AttendanceSheet() {
         )}
 
         <div className="text-xs mt-3" style={{ color: MUTED }}>
-          * 표시는 시급 미대상 근무입니다(합계에서 제외). 합계의 연장/부족시간은 직원만 계산하며 알바는 근무시간만 표시합니다.
+          * 표시는 시급 미대상 근무입니다(합계에서 제외). 알바는 근무 칸에 시간(정각)만, 남는 분은 연장 칸에 +분으로 표시됩니다 (예: 4시간 35분 → 4시간 / +35분). 직원은 7시간 기준 연장/부족시간입니다.
         </div>
       </main>
     </div>
