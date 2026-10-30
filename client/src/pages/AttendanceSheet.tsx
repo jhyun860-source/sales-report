@@ -246,13 +246,13 @@ export default function AttendanceSheet() {
         )}
 
         {!isLoading && !error && staff.length > 0 && (
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ overflow: 'auto', WebkitOverflowScrolling: 'touch', maxHeight: 'calc(100vh - 130px)' }}>
             <table style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%' }}>
               <thead>
                 <tr>
-                  <th rowSpan={2} style={{ ...th, position: 'sticky', left: 0, zIndex: 3, minWidth: 44 }}>일</th>
+                  <th rowSpan={2} style={{ ...th, position: 'sticky', left: 0, top: 0, zIndex: 6, minWidth: 44 }}>일</th>
                   {staff.map((s, si) => (
-                    <th key={s.name} colSpan={3} style={{ ...th, minWidth: 150 }}>
+                    <th key={s.name} colSpan={3} style={{ ...th, minWidth: 150, position: 'sticky', top: 0, zIndex: 5, height: 28, boxSizing: 'border-box' }}>
                       <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: MARK_COLORS[si % MARK_COLORS.length], marginRight: 4, verticalAlign: 'middle' }} />
                       {s.alias} <span style={{ fontWeight: 500, color: MUTED }}>({TYPE_LABEL[s.staffType] ?? s.staffType})</span>
                     </th>
@@ -260,7 +260,7 @@ export default function AttendanceSheet() {
                 </tr>
                 <tr>
                   {staff.map(s => (
-                    <FragmentHeads key={s.name} th={th} />
+                    <FragmentHeads key={s.name} th={{ ...th, position: 'sticky', top: 28, zIndex: 5 }} />
                   ))}
                 </tr>
               </thead>
