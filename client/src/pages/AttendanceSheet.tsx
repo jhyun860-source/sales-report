@@ -325,15 +325,19 @@ export default function AttendanceSheet() {
                       <tr style={{ background: HEADER_BG }}>
                         <td style={{ ...td, position: 'sticky', left: 0, zIndex: 2, background: HEADER_BG, fontWeight: 700, fontSize: 10 }}>주합계</td>
                         {staff.map(s => {
-                          let wm = 0;
+                          let wm = 0, wd = 0;
                           for (let k = weekStart; k <= d; k++) {
                             const cc = cells[`${s.name}__${dateStr(k)}`];
-                            if (!cc || cc.exempt || cc.minutes === null) continue;
-                            wm += cc.minutes;
+                            if (!cc || cc.exempt) continue;
+                            wd += 1;
+                            if (cc.minutes !== null) wm += cc.minutes;
                           }
+                          const wTime = wm > 0 ? `${Math.floor(wm / 60)}시간${wm % 60 > 0 ? ` ${wm % 60}분` : ''}` : '';
+                          // 알바 외(점장·매니저·직원)는 시간 옆에 괄호로 출근일수
+                          const wText = s.staffType === 'parttime' ? wTime : (wd > 0 ? (wTime ? `${wTime} (${wd}일)` : `${wd}일`) : wTime);
                           return (
                             <td key={s.name} colSpan={3} style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>
-                              {wm > 0 ? `${Math.floor(wm / 60)}시간${wm % 60 > 0 ? ` ${wm % 60}분` : ''}` : ''}
+                              {wText}
                             </td>
                           );
                         })}
@@ -379,7 +383,11 @@ export default function AttendanceSheet() {
                     const tm = t?.minutes ?? 0;
                     return (
                       <td key={s.name} colSpan={3} style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>
-                        {s.staffType === 'parttime' && t ? `${Math.floor(tm / 60)}시간${tm % 60 > 0 ? ` ${tm % 60}분` : ''}` : ''}
+                        {t ? (() => {
+                          const tt = tm > 0 ? `${Math.floor(tm / 60)}시간${tm % 60 > 0 ? ` ${tm % 60}분` : ''}` : '';
+                          if (s.staffType === 'parttime') return tt;
+                          return t.days > 0 ? (tt ? `${tt} (${t.days}일)` : `${t.days}일`) : tt;
+                        })() : ''}
                       </td>
                     );
                   })}
