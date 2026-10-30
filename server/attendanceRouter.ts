@@ -176,11 +176,11 @@ export const attendanceRouter = router({
       // 직원별 월 합계 (시급 미대상 칸은 통계와 같이 제외)
       const totals: Record<string, { days: number; minutes: number; diff: number }> = {};
       for (const [key, c] of Object.entries(cells)) {
-        if (c.exempt || c.minutes === null) continue;
+        if (c.exempt) continue;
         const name = key.slice(0, key.lastIndexOf('__'));
         const t = (totals[name] ||= { days: 0, minutes: 0, diff: 0 });
-        t.days += 1;
-        t.minutes += c.minutes;
+        t.days += 1; // 출근일수는 시간이 비어 있어도 센다 (직원 인센 통계와 같은 방식)
+        if (c.minutes !== null) t.minutes += c.minutes;
         if (c.diff !== null) t.diff += c.diff;
       }
 
