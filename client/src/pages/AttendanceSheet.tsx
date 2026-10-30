@@ -313,6 +313,18 @@ export default function AttendanceSheet() {
                     );
                   })}
                 </tr>
+                <tr>
+                  <td style={{ ...td, position: 'sticky', left: 0, zIndex: 2, background: HEADER_BG, fontWeight: 700 }}>총계</td>
+                  {staff.map(s => {
+                    const t = totals[s.name];
+                    const tm = t?.minutes ?? 0;
+                    return (
+                      <td key={s.name} colSpan={3} style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>
+                        {s.staffType === 'parttime' && t ? `${Math.floor(tm / 60)}시간${tm % 60 > 0 ? ` ${tm % 60}분` : ''}` : ''}
+                      </td>
+                    );
+                  })}
+                </tr>
               </tfoot>
             </table>
           </div>
