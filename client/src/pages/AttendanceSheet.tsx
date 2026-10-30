@@ -5,7 +5,7 @@
  * - 급여유무 체크는 표시용이며 정산(인건비 계산)에는 영향이 없다
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { ArrowLeft, CalendarCheck, ChevronLeft, ChevronRight, Check, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -269,8 +269,12 @@ export default function AttendanceSheet() {
                   const ds = dateStr(d);
                   const dow = new Date(y, m - 1, d).getDay();
                   const rowBg = dow === 0 ? SUNDAY_BG : undefined;
+                  // 일요일(또는 말일)이면 그 주(월~일, 이번 달 안의 날짜만) 총 근무시간 줄을 아래에 추가
+                  const showWeek = dow === 0 || d === daysInMonth;
+                  const weekStart = Math.max(1, d - ((dow + 6) % 7));
                   return (
-                    <tr key={d} style={{ background: rowBg }}>
+                    <Fragment key={d}>
+                    <tr style={{ background: rowBg }}>
                       <td style={{ ...td, position: 'sticky', left: 0, zIndex: 2, background: rowBg ?? BG, fontWeight: 700, color: dow === 0 ? MINUS : TEXT }}>
                         {d}<span style={{ fontSize: 10, fontWeight: 500, marginLeft: 2 }}>{WEEKDAYS[dow]}</span>
                       </td>
@@ -317,6 +321,25 @@ export default function AttendanceSheet() {
                         );
                       })}
                     </tr>
+                    {showWeek && (
+                      <tr style={{ background: HEADER_BG }}>
+                        <td style={{ ...td, position: 'sticky', left: 0, zIndex: 2, background: HEADER_BG, fontWeight: 700, fontSize: 10 }}>주합계</td>
+                        {staff.map(s => {
+                          let wm = 0;
+                          for (let k = weekStart; k <= d; k++) {
+                            const cc = cells[`${s.name}__${dateStr(k)}`];
+                            if (!cc || cc.exempt || cc.minutes === null) continue;
+                            wm += cc.minutes;
+                          }
+                          return (
+                            <td key={s.name} colSpan={3} style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>
+                              {wm > 0 ? `${Math.floor(wm / 60)}시간${wm % 60 > 0 ? ` ${wm % 60}분` : ''}` : ''}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -367,7 +390,7 @@ export default function AttendanceSheet() {
         )}
 
         <div className="text-xs mt-3" style={{ color: MUTED }}>
-          점장·매니저·직원은 출근하면 근무 칸에 ◯로 표시됩니다. 직원은 하루 7시간 기준으로 초과하면 +분, 모자라면 -분이 연장 칸에 표시됩니다. 알바는 근무 칸에 시간(정각)만, 남는 분은 연장 칸에 +분으로 표시됩니다 (예: 4시간 35분 → 4시간 / +35분). 시급 미대상(연한 표시)은 합계에서 제외됩니다.
+          점장·매니저·직원은 출근하면 근무 칸에 ◯로 표시됩니다. 직원은 하루 7시간 기준으로 초과하면 +분, 모자라면 -분이 연장 칸에 표시됩니다. 알바는 근무 칸에 시간(정각)만, 남는 분은 연장 칸에 +분으로 표시됩니다 (예: 4시간 35분 → 4시간 / +35분). 시급 미대상(연한 표시)은 합계에서 제외됩니다. 일요일 아래 "주합계" 줄은 그 주(월~일)에 일한 총 시간입니다.
         </div>
       </main>
     </div>
