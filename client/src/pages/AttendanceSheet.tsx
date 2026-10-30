@@ -190,9 +190,11 @@ export default function AttendanceSheet() {
                         return (
                           <FragmentCells key={s.name} td={td}>
                             <td style={td}>
-                              {c ? (c.minutes === null ? <span style={{ color: MUTED }}>-</span> : (
+                              {c ? (c.type !== 'parttime' ? (
+                                <span style={{ color: c.exempt ? MUTED : TEXT }}>◯</span>
+                              ) : c.minutes === null ? <span style={{ color: MUTED }}>-</span> : (
                                 <span style={{ color: c.exempt ? MUTED : TEXT }}>
-                                  {c.type === 'parttime' ? `${Math.floor(c.minutes / 60)}시간` : hm(c.minutes)}{c.exempt ? '*' : ''}
+                                  {`${Math.floor(c.minutes / 60)}시간`}{c.exempt ? '*' : ''}
                                 </span>
                               )) : ''}
                             </td>
@@ -200,7 +202,7 @@ export default function AttendanceSheet() {
                               {c && !c.exempt && c.minutes !== null
                                 ? (c.type === 'parttime'
                                     ? (c.minutes % 60 > 0 ? `+${c.minutes % 60}분` : '')
-                                    : (c.diff !== null ? signedHm(c.diff) : ''))
+                                    : (c.diff !== null && c.diff !== 0 ? `${c.diff > 0 ? '+' : '-'}${Math.abs(c.diff)}분` : ''))
                                 : ''}
                             </td>
                             <td style={td}>
@@ -244,10 +246,10 @@ export default function AttendanceSheet() {
                     return (
                       <FragmentCells key={s.name} td={td}>
                         <td style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>
-                          {t ? (s.staffType === 'parttime' ? `${pH}시간` : hm(t.minutes)) : ''}
+                          {t ? (s.staffType === 'parttime' ? `${pH}시간` : `${t.days}일`) : ''}
                         </td>
                         <td style={{ ...td, background: HEADER_BG, fontWeight: 700, color: s.staffType === 'parttime' ? PLUS : (t ? (t.diff > 0 ? PLUS : t.diff < 0 ? MINUS : MUTED) : MUTED) }}>
-                          {t && s.staffType === 'parttime' ? (pR > 0 ? `+${pR}분` : '') : (t && s.staffType === 'staff' ? signedHm(t.diff) : '')}
+                          {t && s.staffType === 'parttime' ? (pR > 0 ? `+${pR}분` : '') : (t && s.staffType === 'staff' && t.diff !== 0 ? `${t.diff > 0 ? '+' : '-'}${Math.abs(t.diff)}분` : '')}
                         </td>
                         <td style={{ ...td, background: HEADER_BG, fontWeight: 700 }}>{paidCount > 0 ? `${paidCount}일` : ''}</td>
                       </FragmentCells>
@@ -260,7 +262,7 @@ export default function AttendanceSheet() {
         )}
 
         <div className="text-xs mt-3" style={{ color: MUTED }}>
-          * 표시는 시급 미대상 근무입니다(합계에서 제외). 알바는 근무 칸에 시간(정각)만, 남는 분은 연장 칸에 +분으로 표시됩니다 (예: 4시간 35분 → 4시간 / +35분). 직원은 7시간 기준 연장/부족시간입니다.
+          점장·매니저·직원은 출근하면 근무 칸에 ◯로 표시됩니다. 직원은 하루 7시간 기준으로 초과하면 +분, 모자라면 -분이 연장 칸에 표시됩니다. 알바는 근무 칸에 시간(정각)만, 남는 분은 연장 칸에 +분으로 표시됩니다 (예: 4시간 35분 → 4시간 / +35분). 시급 미대상(연한 표시)은 합계에서 제외됩니다.
         </div>
       </main>
     </div>
