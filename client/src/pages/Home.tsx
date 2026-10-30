@@ -11,7 +11,7 @@ import { useLocation, useSearch } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw, Package, Users } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, List, CheckCircle2, Bell, BellOff, LogIn, LayoutDashboard, LogOut, ClipboardList, BarChart2, RotateCcw, Package, Users, CalendarCheck } from 'lucide-react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 import { isStaffLiquorOnly } from '@/lib/accountAccess';
 
@@ -740,6 +740,20 @@ export default function Home() {
           >
             <BarChart2 size={14} />
             인센
+          </button>}
+
+          {/* 출근부 버튼 */}
+          {!isStaffOnly && <button
+            onClick={() => navigate(`/attendance${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`)}
+            className="flex items-center gap-1 px-2.5 h-8 sm:px-3 sm:h-9 rounded-lg text-xs sm:text-sm font-medium border transition-colors flex-shrink-0"
+            style={{
+              background: 'oklch(0.92 0.015 85)',
+              color: 'oklch(0.25 0.01 50)',
+              borderColor: 'oklch(0.78 0.012 85)',
+            }}
+          >
+            <CalendarCheck size={14} />
+            출근부
           </button>}
 
           {/* 누적금액 리셋 버튼 (관리자만) */}

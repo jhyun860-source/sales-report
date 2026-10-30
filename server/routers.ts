@@ -41,6 +41,7 @@ import { calculateDailySettlement, saveDailySettlementRecord, calculateLiquorCos
 import { settlementRouter } from "./settlementRouter";
 import { branchSettingsRouter } from "./branchSettingsRouter";
 import { staffAdminRouter } from "./staffAdminRouter";
+import { attendanceRouter } from "./attendanceRouter";
 
 
 function formatKstDateString(date: Date): string {
@@ -5782,6 +5783,7 @@ ${pinkGuide}${userExcludeNote}${examplesGuide}`,
   settlement: settlementRouter,
   branchSettings: branchSettingsRouter,
   staffAdmin: staffAdminRouter,
+  attendance: attendanceRouter,
 });
 
 export type AppRouter = typeof appRouter;

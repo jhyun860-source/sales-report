@@ -11,6 +11,7 @@ import AdminManage from "./pages/AdminManage";
 import Login from "./pages/Login";
 import TableReport from "./pages/TableReport";
 import StaffIncentiveStats from "./pages/StaffIncentiveStats";
+import AttendanceSheet from "./pages/AttendanceSheet";
 import LiquorStockReport from "./pages/LiquorStockReport";
 import SettlementDashboard from "./pages/SettlementDashboard";
 import BranchSettings from "./pages/BranchSettings";
@@ -43,6 +44,9 @@ function Router() {
       </Route>
       <Route path={"/staff-incentive"}>
         <StaffLiquorGuard><StaffIncentiveStats /></StaffLiquorGuard>
+      </Route>
+      <Route path={"/attendance"}>
+        <StaffLiquorGuard><AttendanceSheet /></StaffLiquorGuard>
       </Route>
       <Route path={"/settlement"}>
         <StaffLiquorGuard><SettlementDashboard /></StaffLiquorGuard>
