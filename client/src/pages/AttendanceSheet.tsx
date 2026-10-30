@@ -23,6 +23,10 @@ const MINUS = 'oklch(0.5 0.2 25)';
 const SUNDAY_BG = 'oklch(0.96 0.07 110)';
 // 직원별 형광펜 색 (직원마다 다르게)
 const MARK_COLORS = ['#fff176', '#ffab91', '#a5d6a7', '#81d4fa', '#ce93d8', '#f48fb1', '#ffcc80', '#b0bec5', '#c5e1a5', '#80cbc4', '#bcaaa4', '#9fa8da'];
+const BRANCH_OPTIONS = [
+  { id: 1, name: '선릉점' }, { id: 2, name: '대치점' }, { id: 3, name: '삼성점' },
+  { id: 4, name: '문정1호점' }, { id: 5, name: '문정2호점' }, { id: 6, name: '방이점' },
+];
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function getCurrentMonth(): string {
@@ -59,7 +63,12 @@ export default function AttendanceSheet() {
 
   const branchIdFromUrl = useMemo(() => {
     const val = new URLSearchParams(search).get('branchId');
-    return val ? Number(val) : undefined;
+    if (val) return Number(val);
+    // 주소에 지점이 없으면 홈에서 마지막으로 선택한 지점 사용 (관리자용)
+    try {
+      const saved = localStorage.getItem('selectedBranchId');
+      return saved ? Number(saved) : undefined;
+    } catch { return undefined; }
   }, [search]);
 
   const { data, isLoading, error } = trpc.attendance.monthly.useQuery(
@@ -167,6 +176,24 @@ export default function AttendanceSheet() {
           <button onClick={() => navigate('/')} className="p-1.5 rounded-full" style={{ color: TEXT }} aria-label="뒤로"><ArrowLeft size={18} /></button>
           <CalendarCheck size={16} style={{ color: PRIMARY }} />
           <span className="text-base font-bold" style={{ fontFamily: "'Noto Serif KR', serif", color: TEXT }}>출근부</span>
+          {account.role === 'admin' && (
+            <select
+              value={branchIdFromUrl ?? ''}
+              onChange={e => {
+                if (dirty && !window.confirm('저장하지 않은 변경이 있습니다. 저장하지 않고 이동할까요?')) return;
+                dirtyRef.current = false;
+                setChecked(new Set());
+                setMarks(new Set());
+                navigate(`/attendance?branchId=${e.target.value}`);
+              }}
+              className="ml-1 h-8 rounded-lg px-2 text-xs font-medium"
+              style={{ border: `1px solid ${BORDER}`, background: BG, color: TEXT }}
+              aria-label="지점 선택"
+            >
+              {branchIdFromUrl === undefined && <option value="">지점 선택</option>}
+              {BRANCH_OPTIONS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          )}
           <div className="ml-auto flex items-center gap-2">
             {dirty && <span className="text-xs font-medium" style={{ color: MINUS }}>저장 안 됨</span>}
             <button
