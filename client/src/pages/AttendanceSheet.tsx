@@ -191,7 +191,7 @@ export default function AttendanceSheet() {
         </div>
 
         <div className="text-xs text-center mb-3" style={{ color: MUTED }}>
-          근무시간 · 연장(+)/부족(-)시간은 테이블 기록 출근자에서 자동 계산됩니다 (직원 기준 7시간). 근무·연장 칸을 누르면 직원 색으로 형광펜이 칠해집니다. 체크와 형광펜은 위쪽 [저장]을 눌러야 저장됩니다.
+          근무시간 · 연장(+)/부족(-)시간은 테이블 기록 출근자에서 자동 계산됩니다 (직원 기준 7시간). 테이블 기록에 출근이 입력되면 근무·연장 칸에 직원 색으로 형광펜이 자동으로 칠해집니다. 급여 체크는 위쪽 [저장]을 눌러야 저장됩니다.
         </div>
 
         {isLoading && <div className="text-center py-10 text-sm" style={{ color: MUTED }}>불러오는 중...</div>}
@@ -242,11 +242,11 @@ export default function AttendanceSheet() {
                         const c = cells[`${s.name}__${ds}`];
                         const key = `${s.name}__${ds}`;
                         const on = checked.has(key);
-                        const hl = c && marks.has(key) ? MARK_COLORS[si % MARK_COLORS.length] : undefined;
-                        const hlStyle: React.CSSProperties = c ? { cursor: 'pointer', ...(hl ? { background: hl } : {}) } : {};
+                        const hl = c ? MARK_COLORS[si % MARK_COLORS.length] : undefined; // 테이블 기록에 출근이 있으면 자동 형광펜
+                        const hlStyle: React.CSSProperties = c ? { ...(hl ? { background: hl } : {}) } : {};
                         return (
                           <FragmentCells key={s.name} td={td}>
-                            <td style={{ ...td, ...hlStyle }} onClick={() => c && toggleMark(s.name, ds)}>
+                            <td style={{ ...td, ...hlStyle }}>
                               {c ? (c.type !== 'parttime' ? (
                                 <span style={{ color: c.exempt ? MUTED : TEXT }}>◯</span>
                               ) : c.minutes === null ? <span style={{ color: MUTED }}>-</span> : (
@@ -255,7 +255,7 @@ export default function AttendanceSheet() {
                                 </span>
                               )) : ''}
                             </td>
-                            <td onClick={() => c && toggleMark(s.name, ds)} style={{ ...td, ...hlStyle, color: c && c.type === 'parttime' ? PLUS : (c && c.diff !== null ? (c.diff > 0 ? PLUS : c.diff < 0 ? MINUS : MUTED) : MUTED) }}>
+                            <td style={{ ...td, ...hlStyle, color: c && c.type === 'parttime' ? PLUS : (c && c.diff !== null ? (c.diff > 0 ? PLUS : c.diff < 0 ? MINUS : MUTED) : MUTED) }}>
                               {c && !c.exempt && c.minutes !== null
                                 ? (c.type === 'parttime'
                                     ? (c.minutes % 60 > 0 ? `+${c.minutes % 60}분` : '')
