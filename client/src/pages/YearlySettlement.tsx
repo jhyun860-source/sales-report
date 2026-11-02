@@ -3,7 +3,7 @@
  * - 월별 총매출 / 순수익 / 순수익률을 한 줄씩 보여주고, 아래에 연간 합계를 보여준다.
  * - 순수익에는 점장 월말 추가인센이 반영된다. 관리자 전용.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
@@ -25,6 +25,13 @@ export default function YearlySettlement() {
     { year, branchId },
     { enabled: isAdmin }
   );
+
+  // 그 해에 실적이 있었던 지점만 지점 칩으로 보여준다 (없던 지점은 숨김)
+  const activeIds = (((data as any)?.branchIds ?? []) as number[]);
+  // 선택해 둔 지점이 이 해에 없으면 전 지점으로 되돌림
+  useEffect(() => {
+    if (data && branchId !== undefined && !activeIds.includes(branchId)) setBranchId(undefined);
+  }, [data]);
 
   const months = (data?.months ?? []) as { month: number; revenue: number; netProfit: number; hasData: boolean }[];
   // 기록이 처음 나온 달부터 12월까지만 보여준다
@@ -72,7 +79,7 @@ export default function YearlySettlement() {
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {[{ id: undefined as number | undefined, name: '전 지점' }, ...(branches as any[]).map((b: any) => ({ id: b.id as number | undefined, name: b.name as string })), { id: 101 as number | undefined, name: '신사점' }].map(b => (
+            {[{ id: undefined as number | undefined, name: '전 지점' }, ...[...(branches as any[]).map((b: any) => ({ id: b.id as number | undefined, name: b.name as string })), { id: 101 as number | undefined, name: '신사점' }].filter(b => activeIds.includes(b.id as number))].map(b => (
               <button
                 key={String(b.id)}
                 type="button"

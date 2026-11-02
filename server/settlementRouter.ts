@@ -382,9 +382,11 @@ export const settlementRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '데이터베이스 연결 실패' });
       await ensureManagerBonusTable(db);
 
-      const conds = [gte(dailySalesRecords.date, `${input.year}-01-01`), lte(dailySalesRecords.date, `${input.year}-12-31`)];
-      if (input.branchId !== undefined) conds.push(eq(dailySalesRecords.branchId, input.branchId));
-      const records = await db.select().from(dailySalesRecords).where(and(...conds));
+      // 지점 선택과 상관없이 그 해 전 지점 기록을 먼저 모은다 (그 해에 영업한 지점 목록을 만들기 위함)
+      const records = await db
+        .select()
+        .from(dailySalesRecords)
+        .where(and(gte(dailySalesRecords.date, `${input.year}-01-01`), lte(dailySalesRecords.date, `${input.year}-12-31`)));
 
       // 지점·월별로 먼저 모은 뒤(앱 일별 기록), 확정 실적(스프레드시트)이 있는 달·지점은 그 값으로 교체한다
       const cell = new Map<string, { revenue: number; netProfit: number; fixed: boolean }>();
@@ -399,7 +401,6 @@ export const settlementRouter = router({
       }
       for (const h of HISTORICAL_MONTHLY) {
         if (h.year !== input.year) continue;
-        if (input.branchId !== undefined && h.branchId !== input.branchId) continue;
         cell.set(keyOf(h.month, h.branchId), { revenue: h.revenue, netProfit: h.netProfit, fixed: true });
       }
 
@@ -409,7 +410,6 @@ export const settlementRouter = router({
       const bonusRaw = Array.isArray(bonusRes) ? (Array.isArray(bonusRes[0]) ? bonusRes[0] : bonusRes) : (bonusRes?.rows ?? []);
       for (const r of (Array.isArray(bonusRaw) ? bonusRaw : []) as any[]) {
         const bId = Number(r.branchId ?? r[0]);
-        if (input.branchId !== undefined && bId !== input.branchId) continue;
         const m = Number(String(r.yearMonth ?? r[1]).slice(5, 7));
         if (!(m >= 1 && m <= 12)) continue;
         const c = cell.get(keyOf(m, bId));
@@ -420,13 +420,18 @@ export const settlementRouter = router({
       }
 
       const months = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, revenue: 0, netProfit: 0, hasData: false }));
+      const activeBranches = new Set<number>(); // 그 해에 실제 실적(매출 또는 순수익)이 있었던 지점
       for (const [k, c] of Array.from(cell.entries())) {
-        const m = Number(k.split('-')[0]);
+        const [mStr, bStr] = k.split('-');
+        const m = Number(mStr);
+        const bId = Number(bStr);
+        if (c.revenue !== 0 || c.netProfit !== 0) activeBranches.add(bId);
+        if (input.branchId !== undefined && bId !== input.branchId) continue;
         months[m - 1].revenue += c.revenue;
         months[m - 1].netProfit += c.netProfit;
         months[m - 1].hasData = true;
       }
-      return { year: input.year, months };
+      return { year: input.year, months, branchIds: Array.from(activeBranches).sort((a, b) => a - b) };
     }),
 
   /**
