@@ -87,6 +87,14 @@ export default function SettlementDashboard() {
     { startDate: monthToDateStart, endDate: today, yearMonth: `${todayYear}-${String(todayMonth).padStart(2, '0')}` },
     { enabled: !!user && user.role === 'admin' }
   );
+  // 지난 달 전체 (말일까지) — 월별로 나눠서 보여주기 위함
+  const prevYM = moveMonth(todayYear, todayMonth, -1);
+  const prevYearMonth = `${prevYM.year}-${String(prevYM.month).padStart(2, '0')}`;
+  const prevLastDay = new Date(prevYM.year, prevYM.month, 0).getDate();
+  const { data: allBranchesPrev = [] } = trpc.settlement.getAllBranchesMonthToDate.useQuery(
+    { startDate: `${prevYearMonth}-01`, endDate: `${prevYearMonth}-${String(prevLastDay).padStart(2, '0')}`, yearMonth: prevYearMonth },
+    { enabled: !!user && user.role === 'admin' }
+  );
 
   const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
   const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${new Date(selectedYear, selectedMonth, 0).getDate()}`;
@@ -219,28 +227,37 @@ export default function SettlementDashboard() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-3">{todayMonth}월 1일 ~ {Number(today.split('-')[2])}일 전 지점 누적 순수익</p>
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {(allBranchesToday as any[]).map((b: any) => (
-              <div key={b.branchId} className="text-center">
-                <p className="text-xs text-gray-500">{b.branchName}</p>
-                <p className={`text-sm font-bold ${Number(b.netProfit) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                  {formatWon(Number(b.netProfit))}
-                </p>
+        {[
+          { title: `${todayMonth}월 1일 ~ ${Number(today.split('-')[2])}일 전 지점 누적 순수익`, rows: allBranchesToday as any[] },
+          { title: `${prevYM.month}월 1일 ~ ${prevLastDay}일 전 지점 누적 순수익`, rows: allBranchesPrev as any[] },
+        ].map(block => {
+          const total = block.rows.reduce((sum: number, b: any) => sum + Number(b.netProfit || 0), 0);
+          const revenue = block.rows.reduce((sum: number, b: any) => sum + Number(b.totalRevenue || 0), 0);
+          return (
+            <div key={block.title} className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 mb-3">{block.title}</p>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {block.rows.map((b: any) => (
+                  <div key={b.branchId} className="text-center">
+                    <p className="text-xs text-gray-500">{b.branchName}</p>
+                    <p className={`text-sm font-bold ${Number(b.netProfit) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                      {formatWon(Number(b.netProfit))}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
-            <span className="text-xs text-gray-500">합계</span>
-            <span className={`text-base font-bold ${todayAllTotal >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-              {formatWonFull(todayAllTotal)}
-              {todayAllRevenue > 0 && (
-                <span className="text-xs font-normal text-gray-500 ml-1">({(todayAllTotal / todayAllRevenue * 100).toFixed(1)}%)</span>
-              )}
-            </span>
-          </div>
-        </div>
+              <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
+                <span className="text-xs text-gray-500">합계</span>
+                <span className={`text-base font-bold ${total >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                  {formatWonFull(total)}
+                  {revenue > 0 && (
+                    <span className="text-xs font-normal text-gray-500 ml-1">({(total / revenue * 100).toFixed(1)}%)</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          );
+        })}
 
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-2">지점 선택</p>
