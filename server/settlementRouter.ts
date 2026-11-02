@@ -10,6 +10,7 @@ import { getDb } from './db';
 import { branches, dailySalesRecords, tableReports, staffIncentives } from '../drizzle/schema';
 import { eq, and, gte, lte, desc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
+import { HISTORICAL_MONTHLY } from './historicalMonthly';
 import {
   calculateDailySettlement,
   calculateMonthlySummary,
@@ -385,13 +386,21 @@ export const settlementRouter = router({
       if (input.branchId !== undefined) conds.push(eq(dailySalesRecords.branchId, input.branchId));
       const records = await db.select().from(dailySalesRecords).where(and(...conds));
 
-      const months = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, revenue: 0, netProfit: 0, hasData: false }));
+      // 지점·월별로 먼저 모은 뒤(앱 일별 기록), 확정 실적(스프레드시트)이 있는 달·지점은 그 값으로 교체한다
+      const cell = new Map<string, { revenue: number; netProfit: number; fixed: boolean }>();
+      const keyOf = (m: number, b: number) => `${m}-${b}`;
       for (const r of records) {
         const m = Number(String(r.date).slice(5, 7));
         if (!(m >= 1 && m <= 12)) continue;
-        months[m - 1].revenue += Number(r.totalRevenue || 0);
-        months[m - 1].netProfit += Number(r.netProfit || 0);
-        months[m - 1].hasData = true;
+        const c = cell.get(keyOf(m, r.branchId)) ?? { revenue: 0, netProfit: 0, fixed: false };
+        c.revenue += Number(r.totalRevenue || 0);
+        c.netProfit += Number(r.netProfit || 0);
+        cell.set(keyOf(m, r.branchId), c);
+      }
+      for (const h of HISTORICAL_MONTHLY) {
+        if (h.year !== input.year) continue;
+        if (input.branchId !== undefined && h.branchId !== input.branchId) continue;
+        cell.set(keyOf(h.month, h.branchId), { revenue: h.revenue, netProfit: h.netProfit, fixed: true });
       }
 
       const bonusRes: any = await db.execute(
@@ -403,7 +412,19 @@ export const settlementRouter = router({
         if (input.branchId !== undefined && bId !== input.branchId) continue;
         const m = Number(String(r.yearMonth ?? r[1]).slice(5, 7));
         if (!(m >= 1 && m <= 12)) continue;
-        months[m - 1].netProfit -= Number(r.amount ?? r[2] ?? 0) || 0;
+        const c = cell.get(keyOf(m, bId));
+        if (c?.fixed) continue; // 확정 실적에는 이미 반영된 값이므로 다시 빼지 않음
+        const amt = Number(r.amount ?? r[2] ?? 0) || 0;
+        if (c) c.netProfit -= amt;
+        else cell.set(keyOf(m, bId), { revenue: 0, netProfit: -amt, fixed: false });
+      }
+
+      const months = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, revenue: 0, netProfit: 0, hasData: false }));
+      for (const [k, c] of Array.from(cell.entries())) {
+        const m = Number(k.split('-')[0]);
+        months[m - 1].revenue += c.revenue;
+        months[m - 1].netProfit += c.netProfit;
+        months[m - 1].hasData = true;
       }
       return { year: input.year, months };
     }),
