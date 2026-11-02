@@ -359,6 +359,49 @@ export const settlementRouter = router({
     }),
 
   /**
+   * 전 지점 월 누적 순수익 (1일 ~ 오늘, 점장 월말 추가인센 반영) — 관리자 전용
+   */
+  getAllBranchesMonthToDate: publicProcedure
+    .input(z.object({
+      startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      yearMonth: z.string().regex(/^\d{4}-\d{2}$/),
+    }))
+    .query(async ({ ctx, input }) => {
+      await requireAdminAccount(ctx);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '데이터베이스 연결 실패' });
+      await ensureManagerBonusTable(db);
+
+      const allBranches = await db.select().from(branches).orderBy(branches.name);
+      const records = await db
+        .select()
+        .from(dailySalesRecords)
+        .where(and(gte(dailySalesRecords.date, input.startDate), lte(dailySalesRecords.date, input.endDate)));
+
+      const bonusRes: any = await db.execute(
+        sql`SELECT branchId, amount FROM managerMonthlyBonus WHERE yearMonth = ${input.yearMonth}`
+      );
+      const bonusRaw = Array.isArray(bonusRes) ? (Array.isArray(bonusRes[0]) ? bonusRes[0] : bonusRes) : (bonusRes?.rows ?? []);
+      const bonusMap = new Map<number, number>();
+      for (const r of (Array.isArray(bonusRaw) ? bonusRaw : []) as any[]) {
+        bonusMap.set(Number(r.branchId ?? r[0]), Number(r.amount ?? r[1] ?? 0) || 0);
+      }
+
+      return allBranches.map(branch => {
+        const mine = records.filter(r => r.branchId === branch.id);
+        const revenue = mine.reduce((sum, r) => sum + Number(r.totalRevenue || 0), 0);
+        const net = mine.reduce((sum, r) => sum + Number(r.netProfit || 0), 0);
+        return {
+          branchId: branch.id,
+          branchName: branch.name,
+          totalRevenue: revenue,
+          netProfit: net - (bonusMap.get(branch.id) ?? 0),
+        };
+      });
+    }),
+
+  /**
    * 오늘 순수익 조회
    */
   getTodayNetProfit: publicProcedure

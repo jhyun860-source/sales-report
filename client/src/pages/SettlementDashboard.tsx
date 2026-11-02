@@ -81,9 +81,12 @@ export default function SettlementDashboard() {
     }, { replace: true });
   };
 
-  const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesTodayNetProfit.useQuery(undefined, {
-    enabled: !!user && user.role === 'admin',
-  });
+  // 전 지점 이번 달 누적 순수익 (1일 ~ 오늘)
+  const monthToDateStart = `${todayYear}-${String(todayMonth).padStart(2, '0')}-01`;
+  const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesMonthToDate.useQuery(
+    { startDate: monthToDateStart, endDate: today, yearMonth: `${todayYear}-${String(todayMonth).padStart(2, '0')}` },
+    { enabled: !!user && user.role === 'admin' }
+  );
 
   const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
   const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${new Date(selectedYear, selectedMonth, 0).getDate()}`;
@@ -185,6 +188,9 @@ export default function SettlementDashboard() {
   const todayAllTotal = useMemo(() => {
     return (allBranchesToday as any[]).reduce((sum: number, b: any) => sum + Number(b.netProfit || 0), 0);
   }, [allBranchesToday]);
+  const todayAllRevenue = useMemo(() => {
+    return (allBranchesToday as any[]).reduce((sum: number, b: any) => sum + Number(b.totalRevenue || 0), 0);
+  }, [allBranchesToday]);
 
   if (authLoading) return <div className="flex items-center justify-center min-h-screen text-gray-500">로딩 중...</div>;
   if (!user || user.role !== 'admin') {
@@ -214,7 +220,7 @@ export default function SettlementDashboard() {
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 mb-3">오늘 전 지점 순수익</p>
+          <p className="text-xs text-gray-500 mb-3">{todayMonth}월 1일 ~ {Number(today.split('-')[2])}일 전 지점 누적 순수익</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {(allBranchesToday as any[]).map((b: any) => (
               <div key={b.branchId} className="text-center">
@@ -229,6 +235,9 @@ export default function SettlementDashboard() {
             <span className="text-xs text-gray-500">합계</span>
             <span className={`text-base font-bold ${todayAllTotal >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
               {formatWonFull(todayAllTotal)}
+              {todayAllRevenue > 0 && (
+                <span className="text-xs font-normal text-gray-500 ml-1">({(todayAllTotal / todayAllRevenue * 100).toFixed(1)}%)</span>
+              )}
             </span>
           </div>
         </div>
