@@ -53,8 +53,8 @@ export default function YearlySettlement() {
           <div className="flex items-center justify-between mb-3">
             <button
               type="button"
-              onClick={() => year > 2025 && setYear(year - 1)}
-              disabled={year <= 2025}
+              onClick={() => year > 2022 && setYear(year - 1)}
+              disabled={year <= 2022}
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
               aria-label="이전 해"
             >
@@ -72,7 +72,7 @@ export default function YearlySettlement() {
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {[{ id: undefined as number | undefined, name: '전 지점' }, ...(branches as any[]).map((b: any) => ({ id: b.id as number | undefined, name: b.name as string }))].map(b => (
+            {[{ id: undefined as number | undefined, name: '전 지점' }, ...(branches as any[]).map((b: any) => ({ id: b.id as number | undefined, name: b.name as string })), { id: 101 as number | undefined, name: '신사점' }].map(b => (
               <button
                 key={String(b.id)}
                 type="button"
