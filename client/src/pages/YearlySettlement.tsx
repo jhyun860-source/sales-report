@@ -85,8 +85,8 @@ export default function YearlySettlement() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <table className="w-full text-sm" style={{ minWidth: 420 }}>
             <thead>
               <tr className="bg-gray-50 text-xs text-gray-500">
                 <th className="px-3 py-2 text-left font-medium">월</th>
@@ -105,8 +105,8 @@ export default function YearlySettlement() {
               {shown.map(m => (
                 <tr key={m.month} className="border-t border-gray-100">
                   <td className="px-3 py-2 font-medium text-gray-700 whitespace-nowrap">{m.month}월</td>
-                  <td className="px-3 py-2 text-right text-gray-700">{m.hasData ? won(m.revenue) : '-'}</td>
-                  <td className={`px-3 py-2 text-right font-semibold ${!m.hasData ? 'text-gray-300' : m.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                  <td className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">{m.hasData ? won(m.revenue) : '-'}</td>
+                  <td className={`px-3 py-2 text-right whitespace-nowrap font-semibold ${!m.hasData ? 'text-gray-300' : m.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                     {m.hasData ? won(m.netProfit) : '-'}
                   </td>
                   <td className="px-3 py-2 text-right text-xs text-gray-500">{m.hasData ? pct(m.netProfit, m.revenue) : '-'}</td>
@@ -117,8 +117,8 @@ export default function YearlySettlement() {
               <tfoot>
                 <tr className="border-t-2 border-gray-200 bg-gray-50 font-bold">
                   <td className="px-3 py-3 text-gray-800 whitespace-nowrap">{year}년 합계</td>
-                  <td className="px-3 py-3 text-right text-gray-800">{won(totalRevenue)}</td>
-                  <td className={`px-3 py-3 text-right ${totalNet >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{won(totalNet)}</td>
+                  <td className="px-3 py-3 text-right text-gray-800 whitespace-nowrap">{won(totalRevenue)}</td>
+                  <td className={`px-3 py-3 text-right whitespace-nowrap ${totalNet >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{won(totalNet)}</td>
                   <td className="px-3 py-3 text-right text-xs text-gray-600">{pct(totalNet, totalRevenue)}</td>
                 </tr>
               </tfoot>
