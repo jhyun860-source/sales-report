@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams as useWouterSearchParams } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { useStoreAuth } from '@/hooks/useStoreAuth';
@@ -81,18 +81,16 @@ export default function SettlementDashboard() {
     }, { replace: true });
   };
 
-  // 전 지점 이번 달 누적 순수익 (1일 ~ 오늘)
-  const monthToDateStart = `${todayYear}-${String(todayMonth).padStart(2, '0')}-01`;
+  // 전 지점 월별 누적 순수익 카드: ‹ › 화살표로 달 이동 (2026년 4월 ~ 이번 달)
+  const [cardYM, setCardYM] = useState({ year: todayYear, month: todayMonth });
+  const cardYearMonth = `${cardYM.year}-${String(cardYM.month).padStart(2, '0')}`;
+  const cardIsCurrent = cardYM.year === todayYear && cardYM.month === todayMonth;
+  const cardLastDay = new Date(cardYM.year, cardYM.month, 0).getDate();
+  const cardEndDate = cardIsCurrent ? today : `${cardYearMonth}-${String(cardLastDay).padStart(2, '0')}`;
+  const canCardPrev = cardYM.year * 12 + cardYM.month > 2026 * 12 + 4;
+  const canCardNext = !cardIsCurrent;
   const { data: allBranchesToday = [] } = trpc.settlement.getAllBranchesMonthToDate.useQuery(
-    { startDate: monthToDateStart, endDate: today, yearMonth: `${todayYear}-${String(todayMonth).padStart(2, '0')}` },
-    { enabled: !!user && user.role === 'admin' }
-  );
-  // 지난 달 전체 (말일까지) — 월별로 나눠서 보여주기 위함
-  const prevYM = moveMonth(todayYear, todayMonth, -1);
-  const prevYearMonth = `${prevYM.year}-${String(prevYM.month).padStart(2, '0')}`;
-  const prevLastDay = new Date(prevYM.year, prevYM.month, 0).getDate();
-  const { data: allBranchesPrev = [] } = trpc.settlement.getAllBranchesMonthToDate.useQuery(
-    { startDate: `${prevYearMonth}-01`, endDate: `${prevYearMonth}-${String(prevLastDay).padStart(2, '0')}`, yearMonth: prevYearMonth },
+    { startDate: `${cardYearMonth}-01`, endDate: cardEndDate, yearMonth: cardYearMonth },
     { enabled: !!user && user.role === 'admin' }
   );
 
@@ -227,17 +225,37 @@ export default function SettlementDashboard() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        {[
-          { title: `${todayMonth}월 1일 ~ ${Number(today.split('-')[2])}일 전 지점 누적 순수익`, rows: allBranchesToday as any[] },
-          { title: `${prevYM.month}월 1일 ~ ${prevLastDay}일 전 지점 누적 순수익`, rows: allBranchesPrev as any[] },
-        ].map(block => {
-          const total = block.rows.reduce((sum: number, b: any) => sum + Number(b.netProfit || 0), 0);
-          const revenue = block.rows.reduce((sum: number, b: any) => sum + Number(b.totalRevenue || 0), 0);
+        {(() => {
+          const rows = allBranchesToday as any[];
+          const total = rows.reduce((sum: number, b: any) => sum + Number(b.netProfit || 0), 0);
+          const revenue = rows.reduce((sum: number, b: any) => sum + Number(b.totalRevenue || 0), 0);
           return (
-            <div key={block.title} className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 mb-3">{block.title}</p>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={() => canCardPrev && setCardYM(v => moveMonth(v.year, v.month, -1))}
+                  disabled={!canCardPrev}
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
+                  aria-label="이전 달"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <p className="text-xs text-gray-600 font-medium text-center">
+                  {cardYM.month}월 1일 ~ {Number(cardEndDate.split('-')[2])}일 전 지점 누적 순수익
+                </p>
+                <button
+                  type="button"
+                  onClick={() => canCardNext && setCardYM(v => moveMonth(v.year, v.month, 1))}
+                  disabled={!canCardNext}
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
+                  aria-label="다음 달"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
               <div className="grid grid-cols-3 gap-2 mb-3">
-                {block.rows.map((b: any) => (
+                {rows.map((b: any) => (
                   <div key={b.branchId} className="text-center">
                     <p className="text-xs text-gray-500">{b.branchName}</p>
                     <p className={`text-sm font-bold ${Number(b.netProfit) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
@@ -257,7 +275,7 @@ export default function SettlementDashboard() {
               </div>
             </div>
           );
-        })}
+        })()}
 
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-2">지점 선택</p>
