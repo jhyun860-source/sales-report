@@ -53,8 +53,8 @@ export default function YearlySettlement() {
           <div className="flex items-center justify-between mb-3">
             <button
               type="button"
-              onClick={() => year > 2026 && setYear(year - 1)}
-              disabled={year <= 2026}
+              onClick={() => year > 2025 && setYear(year - 1)}
+              disabled={year <= 2025}
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
               aria-label="이전 해"
             >
