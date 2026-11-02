@@ -68,6 +68,17 @@ async function requireAdminAccount(ctx: any) {
   if (account.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
 }
 
+// 총 정산(연간)은 V1 아이디(관리자) 전용
+async function requireV1Account(ctx: any) {
+  const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
+  if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+  const account = await getStoreAccountById(payload.accountId);
+  if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
+  if (account.role !== 'admin' || String(account.loginId).toLowerCase() !== 'v1') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: '접근 권한이 없습니다' });
+  }
+}
+
 export const settlementRouter = router({
   /**
    * 점장 월말 추가인센 조회 / 저장 (관리자 전용)
@@ -365,7 +376,7 @@ export const settlementRouter = router({
   getYearlySummary: publicProcedure
     .input(z.object({ year: z.number().int().min(2000).max(2100), branchId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      await requireAdminAccount(ctx);
+      await requireV1Account(ctx);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '데이터베이스 연결 실패' });
       await ensureManagerBonusTable(db);

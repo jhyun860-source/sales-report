@@ -19,7 +19,7 @@ export default function YearlySettlement() {
   const [year, setYear] = useState(thisYear);
   const [branchId, setBranchId] = useState<number | undefined>(undefined);
 
-  const isAdmin = !!user && user.role === 'admin';
+  const isAdmin = !!user && user.role === 'admin' && String(user.loginId).toLowerCase() === 'v1';
   const { data: branches = [] } = trpc.storeSales.getBranches.useQuery(undefined, { enabled: isAdmin });
   const { data, isLoading } = trpc.settlement.getYearlySummary.useQuery(
     { year, branchId },
@@ -36,7 +36,7 @@ export default function YearlySettlement() {
 
   if (authLoading) return <div className="flex items-center justify-center min-h-screen text-gray-500">로딩 중...</div>;
   if (!isAdmin) {
-    return <div className="flex items-center justify-center min-h-screen text-gray-500">관리자만 볼 수 있습니다.</div>;
+    return <div className="flex items-center justify-center min-h-screen text-gray-500">접근 권한이 없습니다.</div>;
   }
 
   return (
