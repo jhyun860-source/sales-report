@@ -359,6 +359,45 @@ export const settlementRouter = router({
     }),
 
   /**
+   * 연간 총 정산: 월별 총매출 / 순수익 (점장 월말 추가인센 반영) — 관리자 전용
+   * branchId 없으면 전 지점 합계
+   */
+  getYearlySummary: publicProcedure
+    .input(z.object({ year: z.number().int().min(2000).max(2100), branchId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      await requireAdminAccount(ctx);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '데이터베이스 연결 실패' });
+      await ensureManagerBonusTable(db);
+
+      const conds = [gte(dailySalesRecords.date, `${input.year}-01-01`), lte(dailySalesRecords.date, `${input.year}-12-31`)];
+      if (input.branchId !== undefined) conds.push(eq(dailySalesRecords.branchId, input.branchId));
+      const records = await db.select().from(dailySalesRecords).where(and(...conds));
+
+      const months = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, revenue: 0, netProfit: 0, hasData: false }));
+      for (const r of records) {
+        const m = Number(String(r.date).slice(5, 7));
+        if (!(m >= 1 && m <= 12)) continue;
+        months[m - 1].revenue += Number(r.totalRevenue || 0);
+        months[m - 1].netProfit += Number(r.netProfit || 0);
+        months[m - 1].hasData = true;
+      }
+
+      const bonusRes: any = await db.execute(
+        sql`SELECT branchId, yearMonth, amount FROM managerMonthlyBonus WHERE yearMonth LIKE ${`${input.year}-%`}`
+      );
+      const bonusRaw = Array.isArray(bonusRes) ? (Array.isArray(bonusRes[0]) ? bonusRes[0] : bonusRes) : (bonusRes?.rows ?? []);
+      for (const r of (Array.isArray(bonusRaw) ? bonusRaw : []) as any[]) {
+        const bId = Number(r.branchId ?? r[0]);
+        if (input.branchId !== undefined && bId !== input.branchId) continue;
+        const m = Number(String(r.yearMonth ?? r[1]).slice(5, 7));
+        if (!(m >= 1 && m <= 12)) continue;
+        months[m - 1].netProfit -= Number(r.amount ?? r[2] ?? 0) || 0;
+      }
+      return { year: input.year, months };
+    }),
+
+  /**
    * 전 지점 월 누적 순수익 (1일 ~ 오늘, 점장 월말 추가인센 반영) — 관리자 전용
    */
   getAllBranchesMonthToDate: publicProcedure
