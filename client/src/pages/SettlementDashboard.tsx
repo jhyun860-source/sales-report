@@ -93,6 +93,26 @@ export default function SettlementDashboard() {
     { enabled: !!user && user.role === 'admin' && selectedBranchId !== null }
   );
 
+  // 점장 월말 추가인센 (월 요약의 관리자 인건비에 합산)
+  const yearMonthStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+  const { data: bonusData, refetch: refetchBonus } = trpc.settlement.getManagerBonus.useQuery(
+    { branchId: selectedBranchId!, yearMonth: yearMonthStr },
+    { enabled: !!user && user.role === 'admin' && selectedBranchId !== null }
+  );
+  const managerBonus = Number(bonusData?.amount ?? 0);
+  const setBonusMutation = trpc.settlement.setManagerBonus.useMutation({
+    onSuccess: () => { refetchBonus(); },
+    onError: () => { window.alert('저장에 실패했습니다. 다시 시도해주세요.'); },
+  });
+  const handleEditBonus = () => {
+    if (selectedBranchId === null) return;
+    const input = window.prompt(`${selectedMonth}월 점장 추가인센 금액(원)을 입력하세요. 0을 입력하면 삭제됩니다.`, String(managerBonus));
+    if (input === null) return;
+    const amount = Number(input.replace(/[^0-9]/g, ''));
+    if (Number.isNaN(amount)) { window.alert('숫자만 입력해주세요.'); return; }
+    setBonusMutation.mutate({ branchId: selectedBranchId, yearMonth: yearMonthStr, amount });
+  };
+
   // 해당 월 전체 날짜 생성 (매출 0인 날도 포함)
   const allDaysSettlements = useMemo(() => {
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
@@ -153,6 +173,14 @@ export default function SettlementDashboard() {
       liquorCostExpense: 0, staffDrinkExpense: 0, salesIncentiveExpense: 0, otherExpense: 0, totalExpenses: 0, netProfit: 0,
     });
   }, [settlements]);
+
+  // 월 요약 카드용: 점장 추가인센을 관리자 인건비·총지출·순수익에 반영 (일별 표는 그대로)
+  const monthlyAdj = useMemo(() => ({
+    ...monthlyTotal,
+    managerWageExpense: monthlyTotal.managerWageExpense + managerBonus,
+    totalExpenses: monthlyTotal.totalExpenses + managerBonus,
+    netProfit: monthlyTotal.netProfit - managerBonus,
+  }), [monthlyTotal, managerBonus]);
 
   const todayAllTotal = useMemo(() => {
     return (allBranchesToday as any[]).reduce((sum: number, b: any) => sum + Number(b.netProfit || 0), 0);
@@ -244,41 +272,52 @@ export default function SettlementDashboard() {
           <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs text-gray-500">월 총매출</p>
-              <p className="text-sm font-bold text-gray-800">{formatWonFull(monthlyTotal.totalRevenue)}</p>
+              <p className="text-sm font-bold text-gray-800">{formatWonFull(monthlyAdj.totalRevenue)}</p>
             </div>
             <div className="bg-orange-50 rounded-lg p-3">
               <p className="text-xs text-gray-500">월 총지출</p>
-              <p className="text-sm font-bold text-gray-700">{formatWonFull(monthlyTotal.totalExpenses)}</p>
-              {monthlyTotal.totalRevenue > 0 && <p className="text-xs text-gray-400">{(monthlyTotal.totalExpenses / monthlyTotal.totalRevenue * 100).toFixed(1)}%</p>}
+              <p className="text-sm font-bold text-gray-700">{formatWonFull(monthlyAdj.totalExpenses)}</p>
+              {monthlyAdj.totalRevenue > 0 && <p className="text-xs text-gray-400">{(monthlyAdj.totalExpenses / monthlyAdj.totalRevenue * 100).toFixed(1)}%</p>}
             </div>
-            <div className={`rounded-lg p-3 ${monthlyTotal.netProfit >= 0 ? 'bg-blue-50' : 'bg-red-50'}`}>
+            <div className={`rounded-lg p-3 ${monthlyAdj.netProfit >= 0 ? 'bg-blue-50' : 'bg-red-50'}`}>
               <p className="text-xs text-gray-500">월 순수익</p>
-              <p className={`text-sm font-bold ${monthlyTotal.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                {formatWonFull(monthlyTotal.netProfit)}
+              <p className={`text-sm font-bold ${monthlyAdj.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                {formatWonFull(monthlyAdj.netProfit)}
               </p>
-              {monthlyTotal.totalRevenue > 0 && <p className={`text-xs ${monthlyTotal.netProfit >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{(monthlyTotal.netProfit / monthlyTotal.totalRevenue * 100).toFixed(1)}%</p>}
+              {monthlyAdj.totalRevenue > 0 && <p className={`text-xs ${monthlyAdj.netProfit >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{(monthlyAdj.netProfit / monthlyAdj.totalRevenue * 100).toFixed(1)}%</p>}
             </div>
           </div>
 
           <div className="space-y-1 text-sm border-t border-gray-100 pt-3">
             {[
-              { label: '수수료/주방', value: monthlyTotal.commissionExpense },
-              { label: '임대료', value: monthlyTotal.rentExpense + monthlyTotal.managementFeeExpense },
-              { label: '관리자 인건비', value: monthlyTotal.managerWageExpense },
-              { label: '여직원 인건비', value: monthlyTotal.staffWageExpense },
-              { label: '알바 인건비', value: monthlyTotal.partTimeWageExpense },
-              { label: '주류단가', value: monthlyTotal.liquorCostExpense },
-              { label: '추가인센', value: monthlyTotal.staffDrinkExpense },
-              { label: '영업인센', value: monthlyTotal.salesIncentiveExpense },
-              { label: '총지출(기타)', value: monthlyTotal.otherExpense },
+              { label: '수수료/주방', value: monthlyAdj.commissionExpense },
+              { label: '임대료', value: monthlyAdj.rentExpense + monthlyAdj.managementFeeExpense },
+              { label: '관리자 인건비', value: monthlyAdj.managerWageExpense, bonus: true },
+              { label: '여직원 인건비', value: monthlyAdj.staffWageExpense },
+              { label: '알바 인건비', value: monthlyAdj.partTimeWageExpense },
+              { label: '주류단가', value: monthlyAdj.liquorCostExpense },
+              { label: '추가인센', value: monthlyAdj.staffDrinkExpense },
+              { label: '영업인센', value: monthlyAdj.salesIncentiveExpense },
+              { label: '총지출(기타)', value: monthlyAdj.otherExpense },
             ].map(item => (
               <div key={item.label} className="flex justify-between text-gray-600">
-                <span>{item.label}</span>
+                <span>
+                  {item.label}
+                  {(item as any).bonus && (
+                    <button
+                      type="button"
+                      onClick={handleEditBonus}
+                      className="ml-2 px-1.5 py-0.5 rounded border border-gray-300 text-xs text-gray-500 hover:bg-gray-100"
+                    >
+                      {managerBonus > 0 ? `점장인센 ${managerBonus.toLocaleString()}원 포함 · 수정` : '점장인센 입력'}
+                    </button>
+                  )}
+                </span>
                 <span>
                   {formatWonFull(item.value)}
-                  {monthlyTotal.totalRevenue > 0 && (
+                  {monthlyAdj.totalRevenue > 0 && (
                     <span className="text-xs text-gray-400 ml-1">
-                      ({(item.value / monthlyTotal.totalRevenue * 100).toFixed(1)}%)
+                      ({(item.value / monthlyAdj.totalRevenue * 100).toFixed(1)}%)
                     </span>
                   )}
                 </span>
@@ -288,10 +327,10 @@ export default function SettlementDashboard() {
               <div className="flex justify-between text-gray-800 font-bold border-t border-gray-200 pt-2 mt-1">
                 <span>총 지출</span>
                 <span>
-                  {formatWonFull(monthlyTotal.totalExpenses)}
-                  {monthlyTotal.totalRevenue > 0 && (
+                  {formatWonFull(monthlyAdj.totalExpenses)}
+                  {monthlyAdj.totalRevenue > 0 && (
                     <span className="text-xs text-gray-500 ml-1">
-                      ({(monthlyTotal.totalExpenses / monthlyTotal.totalRevenue * 100).toFixed(1)}%)
+                      ({(monthlyAdj.totalExpenses / monthlyAdj.totalRevenue * 100).toFixed(1)}%)
                     </span>
                   )}
                 </span>

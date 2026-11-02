@@ -9,6 +9,7 @@ import { TRPCError } from '@trpc/server';
 import { getDb } from './db';
 import { branches, dailySalesRecords, tableReports, staffIncentives } from '../drizzle/schema';
 import { eq, and, gte, lte, desc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import {
   calculateDailySettlement,
   calculateMonthlySummary,
@@ -45,7 +46,65 @@ async function parseStoreCookie(cookieHeader: string | undefined, authHeader?: s
   }
 }
 
+// 점장 월말 추가인센 (월별·지점별 1건). 일별 기록은 건드리지 않고 월 요약의 "관리자 인건비"에만 합산한다.
+let managerBonusTableReady = false;
+async function ensureManagerBonusTable(db: any) {
+  if (managerBonusTableReady) return;
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS managerMonthlyBonus (
+    branchId INT NOT NULL,
+    yearMonth VARCHAR(7) NOT NULL,
+    amount DECIMAL(15,0) NOT NULL DEFAULT 0,
+    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (branchId, yearMonth)
+  )`);
+  managerBonusTableReady = true;
+}
+
+async function requireAdminAccount(ctx: any) {
+  const payload = await parseStoreCookie(ctx.req.headers.cookie, ctx.req.headers.authorization as string | undefined);
+  if (!payload) throw new TRPCError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다' });
+  const account = await getStoreAccountById(payload.accountId);
+  if (!account) throw new TRPCError({ code: 'UNAUTHORIZED', message: '계정을 찾을 수 없습니다' });
+  if (account.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: '관리자만 접근 가능합니다' });
+}
+
 export const settlementRouter = router({
+  /**
+   * 점장 월말 추가인센 조회 / 저장 (관리자 전용)
+   */
+  getManagerBonus: publicProcedure
+    .input(z.object({ branchId: z.number(), yearMonth: z.string().regex(/^\d{4}-\d{2}$/) }))
+    .query(async ({ ctx, input }) => {
+      await requireAdminAccount(ctx);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '데이터베이스 연결 실패' });
+      await ensureManagerBonusTable(db);
+      const res: any = await db.execute(
+        sql`SELECT amount FROM managerMonthlyBonus WHERE branchId = ${input.branchId} AND yearMonth = ${input.yearMonth} LIMIT 1`
+      );
+      const raw = Array.isArray(res) ? (Array.isArray(res[0]) ? res[0] : res) : (res?.rows ?? []);
+      const row: any = Array.isArray(raw) ? raw[0] : undefined;
+      return { amount: Number(row?.amount ?? row?.[0] ?? 0) || 0 };
+    }),
+
+  setManagerBonus: publicProcedure
+    .input(z.object({
+      branchId: z.number(),
+      yearMonth: z.string().regex(/^\d{4}-\d{2}$/),
+      amount: z.number().int().min(0).max(1000000000),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireAdminAccount(ctx);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '데이터베이스 연결 실패' });
+      await ensureManagerBonusTable(db);
+      await db.execute(
+        sql`INSERT INTO managerMonthlyBonus (branchId, yearMonth, amount) VALUES (${input.branchId}, ${input.yearMonth}, ${input.amount})
+            ON DUPLICATE KEY UPDATE amount = VALUES(amount)`
+      );
+      return { success: true, amount: input.amount };
+    }),
+
   /**
    * 지점 설정 조회
    */
