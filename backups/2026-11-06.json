@@ -37519,7 +37519,7 @@
       "submittedBy": null,
       "submittedAt": "2026-11-05 16:21:32",
       "createdAt": "2026-11-05 04:32:47",
-      "updatedAt": "2026-11-05 16:21:34",
+      "updatedAt": "2026-11-05 16:33:33",
       "totalRevenue": "781000",
       "commissionExpense": "132770",
       "rentExpense": "180000",
@@ -37527,12 +37527,12 @@
       "staffWageExpense": "0",
       "managerWageExpense": "204545",
       "partTimeWageExpense": "350000",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "42800",
       "staffDrinkExpense": "170000",
       "salesIncentiveExpense": "0",
       "otherExpense": "0",
-      "totalExpenses": "1037315",
-      "netProfit": "-256315",
+      "totalExpenses": "1080115",
+      "netProfit": "-299115",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -37589,7 +37589,7 @@
       "submittedBy": null,
       "submittedAt": "2026-11-05 16:13:44",
       "createdAt": "2026-11-05 14:52:48",
-      "updatedAt": "2026-11-05 16:19:58",
+      "updatedAt": "2026-11-05 17:27:01",
       "totalRevenue": "2052000",
       "commissionExpense": "348840",
       "rentExpense": "360000",
@@ -37597,12 +37597,12 @@
       "staffWageExpense": "136363",
       "managerWageExpense": "272727",
       "partTimeWageExpense": "300000",
-      "liquorCostExpense": "132900",
+      "liquorCostExpense": "229900",
       "staffDrinkExpense": "13000",
       "salesIncentiveExpense": "0",
       "otherExpense": "40000",
-      "totalExpenses": "1603830",
-      "netProfit": "448170",
+      "totalExpenses": "1700830",
+      "netProfit": "351170",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -161240,8 +161240,8 @@
       "id": 30116,
       "branchId": 4,
       "liquorItemId": 71,
-      "currentStock": "1.00",
-      "updatedAt": "2026-05-03 04:50:21"
+      "currentStock": "0.00",
+      "updatedAt": "2026-11-05 16:33:32"
     },
     {
       "id": 30117,
@@ -163466,8 +163466,8 @@
       "id": 840002,
       "branchId": 2,
       "liquorItemId": 450001,
-      "currentStock": "3.00",
-      "updatedAt": "2026-11-04 16:57:57"
+      "currentStock": "2.00",
+      "updatedAt": "2026-11-05 17:27:00"
     },
     {
       "id": 840003,
@@ -227092,7 +227092,7 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-11-05 16:19:56",
-      "updatedAt": "2026-11-05 16:19:56"
+      "updatedAt": "2026-11-05 17:27:03"
     },
     {
       "id": 12872560,
@@ -227106,7 +227106,7 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-11-05 16:19:56",
-      "updatedAt": "2026-11-05 16:19:56"
+      "updatedAt": "2026-11-05 17:27:03"
     },
     {
       "id": 12872561,
@@ -227120,7 +227120,7 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-11-05 16:19:57",
-      "updatedAt": "2026-11-05 16:19:57"
+      "updatedAt": "2026-11-05 17:27:03"
     },
     {
       "id": 12872562,
@@ -227134,7 +227134,7 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-11-05 16:19:57",
-      "updatedAt": "2026-11-05 16:19:57"
+      "updatedAt": "2026-11-05 17:27:03"
     },
     {
       "id": 12872563,
@@ -227148,7 +227148,35 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-11-05 16:19:58",
-      "updatedAt": "2026-11-05 16:19:58"
+      "updatedAt": "2026-11-05 17:27:03"
+    },
+    {
+      "id": 12872564,
+      "branchId": 4,
+      "liquorItemId": 71,
+      "date": "2026-11-05",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "42800",
+      "totalCost": "42800",
+      "memo": null,
+      "createdBy": 4,
+      "createdAt": "2026-11-05 16:33:32",
+      "updatedAt": "2026-11-05 16:33:32"
+    },
+    {
+      "id": 12872565,
+      "branchId": 2,
+      "liquorItemId": 450001,
+      "date": "2026-11-05",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "97000",
+      "totalCost": "97000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-11-05 16:19:56",
+      "updatedAt": "2026-11-05 17:27:00"
     }
   ],
   "liquorHiddenItems": [
