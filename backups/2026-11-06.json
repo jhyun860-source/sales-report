@@ -37825,16 +37825,22 @@
       "card": "154000",
       "cashTotal": "0",
       "cardTotal": "6795000",
-      "posEndAmount": "0",
+      "posEndAmount": "61000",
       "cashDeposit": "0",
       "paymentChangeNote": null,
       "paymentChangeDate": null,
       "paymentChangeAmount": "0",
-      "expenses": [],
+      "expenses": [
+        {
+          "id": "exp_1793971767062",
+          "amount": "20000",
+          "description": "거스름돈"
+        }
+      ],
       "submittedBy": null,
-      "submittedAt": "2026-11-06 13:04:51",
+      "submittedAt": "2026-11-06 13:29:39",
       "createdAt": "2026-11-06 10:47:10",
-      "updatedAt": "2026-11-06 13:04:53",
+      "updatedAt": "2026-11-06 13:29:41",
       "totalRevenue": "154000",
       "commissionExpense": "26180",
       "rentExpense": "180000",
@@ -37845,9 +37851,9 @@
       "liquorCostExpense": "0",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
-      "otherExpense": "0",
-      "totalExpenses": "1050725",
-      "netProfit": "-896725",
+      "otherExpense": "20000",
+      "totalExpenses": "1070725",
+      "netProfit": "-916725",
       "staffCount": 0,
       "partTimeCount": 0
     }
