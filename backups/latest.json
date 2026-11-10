@@ -164176,8 +164176,8 @@
       "id": 30111,
       "branchId": 4,
       "liquorItemId": 85,
-      "currentStock": "27.00",
-      "updatedAt": "2026-11-09 16:39:40"
+      "currentStock": "21.00",
+      "updatedAt": "2026-11-10 15:20:38"
     },
     {
       "id": 30112,
@@ -164694,8 +164694,8 @@
       "id": 30201,
       "branchId": 5,
       "liquorItemId": 85,
-      "currentStock": "0.00",
-      "updatedAt": "2026-07-06 16:51:16"
+      "currentStock": "6.00",
+      "updatedAt": "2026-11-10 15:21:38"
     },
     {
       "id": 30203,
@@ -231338,6 +231338,34 @@
       "createdBy": 3,
       "createdAt": "2026-11-10 10:12:26",
       "updatedAt": "2026-11-10 10:12:26"
+    },
+    {
+      "id": 12872651,
+      "branchId": 4,
+      "liquorItemId": 85,
+      "date": "2026-11-10",
+      "type": "ADJUST",
+      "quantity": "-6.00",
+      "unitCost": "4600",
+      "totalCost": "27600",
+      "memo": "2호점으로 6병 이동",
+      "createdBy": 4,
+      "createdAt": "2026-11-10 15:20:37",
+      "updatedAt": "2026-11-10 15:20:37"
+    },
+    {
+      "id": 12872652,
+      "branchId": 5,
+      "liquorItemId": 85,
+      "date": "2026-11-10",
+      "type": "ADJUST",
+      "quantity": "6.00",
+      "unitCost": "4600",
+      "totalCost": "27600",
+      "memo": "1호점에서 6병 이동",
+      "createdBy": 5,
+      "createdAt": "2026-11-10 15:21:38",
+      "updatedAt": "2026-11-10 15:21:38"
     }
   ],
   "liquorHiddenItems": [
