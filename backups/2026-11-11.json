@@ -38457,22 +38457,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-11-10 14:36:54",
+      "submittedAt": "2026-11-10 17:00:38",
       "createdAt": "2026-11-10 14:36:17",
-      "updatedAt": "2026-11-10 14:36:56",
+      "updatedAt": "2026-11-10 17:04:26",
       "totalRevenue": "1550000",
       "commissionExpense": "263500",
       "rentExpense": "360000",
       "managementFeeExpense": "0",
       "staffWageExpense": "136363",
       "managerWageExpense": "272727",
-      "partTimeWageExpense": "0",
-      "liquorCostExpense": "0",
+      "partTimeWageExpense": "160000",
+      "liquorCostExpense": "348600",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "40000",
-      "totalExpenses": "1072590",
-      "netProfit": "477410",
+      "totalExpenses": "1581190",
+      "netProfit": "-31190",
       "staffCount": 0,
       "partTimeCount": 0
     }
@@ -117698,15 +117698,15 @@
       "id": 16262930,
       "tableReportId": 10380570,
       "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
+      "guestType": "named",
+      "guestName": "유식",
       "amount": "156000",
       "paymentMethod": "card",
       "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">카프리 (330ml)(2)</mark>, 호가든 (330ml)(1), 기네스 드래프트 (330ml)(4)",
       "sortOrder": 0,
       "createdAt": "2026-11-10 14:36:15",
-      "updatedAt": "2026-11-10 14:36:15",
-      "designatedStaff": null
+      "updatedAt": "2026-11-10 17:00:37",
+      "designatedStaff": "[\"아름(하신원)\"]"
     },
     {
       "id": 16262931,
@@ -117726,15 +117726,15 @@
       "id": 16262932,
       "tableReportId": 10380570,
       "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
+      "guestType": "named",
+      "guestName": "아사모",
       "amount": "1120000",
       "paymentMethod": "card",
       "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">글렌리벳15 + 과일 SET(1)</mark>, 룸(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">글랜리벳 15y (700ml)(1)</mark>, 기네스 드래프트 (330ml)(2)",
       "sortOrder": 2,
       "createdAt": "2026-11-10 14:36:15",
-      "updatedAt": "2026-11-10 14:36:43",
-      "designatedStaff": null
+      "updatedAt": "2026-11-10 17:00:25",
+      "designatedStaff": "[\"아름(하신원)\"]"
     },
     {
       "id": 16262933,
@@ -117746,20 +117746,6 @@
       "paymentMethod": "card",
       "memo": "롱아일랜드 아이스티 (Long Island Iced Tea)(1), 에스프레소 마티니 (Espresso Martini)(3)",
       "sortOrder": 3,
-      "createdAt": "2026-11-10 14:36:15",
-      "updatedAt": "2026-11-10 14:36:52",
-      "designatedStaff": null
-    },
-    {
-      "id": 16262936,
-      "tableReportId": 10380570,
-      "tableNumber": "",
-      "guestType": "walking",
-      "guestName": null,
-      "amount": "0",
-      "paymentMethod": "card",
-      "memo": null,
-      "sortOrder": 4,
       "createdAt": "2026-11-10 14:36:15",
       "updatedAt": "2026-11-10 14:36:52",
       "designatedStaff": null
@@ -161951,11 +161937,43 @@
       "beerBottleCount": 0,
       "salesIncentive": "0",
       "staffType": "staff",
-      "workStart": null,
-      "workEnd": null,
+      "workStart": "20:00",
+      "workEnd": "02:10",
       "sortOrder": 1,
       "createdAt": "2026-11-10 14:36:53",
-      "updatedAt": "2026-11-10 14:36:53",
+      "updatedAt": "2026-11-10 16:58:42",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311693,
+      "tableReportId": 10380570,
+      "staffName": "수정(도정민)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:00",
+      "workEnd": "00:00",
+      "sortOrder": 2,
+      "createdAt": "2026-11-10 16:58:14",
+      "updatedAt": "2026-11-10 16:58:56",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311694,
+      "tableReportId": 10380570,
+      "staffName": "서린(손서림)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:00",
+      "workEnd": "00:00",
+      "sortOrder": 3,
+      "createdAt": "2026-11-10 16:58:15",
+      "updatedAt": "2026-11-10 16:58:56",
       "wageExempt": 0
     }
   ],
@@ -163574,8 +163592,8 @@
       "id": 30002,
       "branchId": 2,
       "liquorItemId": 47,
-      "currentStock": "2.00",
-      "updatedAt": "2026-10-07 10:23:40"
+      "currentStock": "0.00",
+      "updatedAt": "2026-11-10 17:55:26"
     },
     {
       "id": 30003,
@@ -163588,8 +163606,8 @@
       "id": 30006,
       "branchId": 2,
       "liquorItemId": 8,
-      "currentStock": "6.00",
-      "updatedAt": "2026-11-06 16:59:21"
+      "currentStock": "4.00",
+      "updatedAt": "2026-11-10 17:04:22"
     },
     {
       "id": 30007,
@@ -163658,8 +163676,8 @@
       "id": 30016,
       "branchId": 2,
       "liquorItemId": 85,
-      "currentStock": "16.00",
-      "updatedAt": "2026-11-09 16:42:03"
+      "currentStock": "11.00",
+      "updatedAt": "2026-11-10 17:04:25"
     },
     {
       "id": 30017,
@@ -163805,8 +163823,8 @@
       "id": 30038,
       "branchId": 2,
       "liquorItemId": 65,
-      "currentStock": "3.00",
-      "updatedAt": "2026-09-16 17:41:27"
+      "currentStock": "2.00",
+      "updatedAt": "2026-11-10 17:04:23"
     },
     {
       "id": 30039,
@@ -164001,8 +164019,8 @@
       "id": 30075,
       "branchId": 2,
       "liquorItemId": 81,
-      "currentStock": "19.00",
-      "updatedAt": "2026-11-05 16:19:58"
+      "currentStock": "17.00",
+      "updatedAt": "2026-11-10 17:04:24"
     },
     {
       "id": 30077,
@@ -164057,8 +164075,8 @@
       "id": 30092,
       "branchId": 2,
       "liquorItemId": 82,
-      "currentStock": "18.00",
-      "updatedAt": "2026-11-09 16:42:04"
+      "currentStock": "17.00",
+      "updatedAt": "2026-11-10 17:04:25"
     },
     {
       "id": 30093,
@@ -165065,8 +165083,8 @@
       "id": 30274,
       "branchId": 3,
       "liquorItemId": 47,
-      "currentStock": "2.00",
-      "updatedAt": "2026-09-09 10:07:23"
+      "currentStock": "0.00",
+      "updatedAt": "2026-11-10 17:56:00"
     },
     {
       "id": 30275,
@@ -165597,8 +165615,8 @@
       "id": 30371,
       "branchId": 1,
       "liquorItemId": 47,
-      "currentStock": "3.00",
-      "updatedAt": "2026-09-21 09:50:50"
+      "currentStock": "7.00",
+      "updatedAt": "2026-11-10 17:56:39"
     },
     {
       "id": 30372,
@@ -166262,8 +166280,8 @@
       "id": 450001,
       "branchId": 2,
       "liquorItemId": 90001,
-      "currentStock": "3.00",
-      "updatedAt": "2026-09-29 16:45:30"
+      "currentStock": "2.00",
+      "updatedAt": "2026-11-10 17:04:23"
     },
     {
       "id": 450002,
@@ -231366,6 +231384,132 @@
       "createdBy": 5,
       "createdAt": "2026-11-10 15:21:38",
       "updatedAt": "2026-11-10 15:21:38"
+    },
+    {
+      "id": 12872653,
+      "branchId": 2,
+      "liquorItemId": 8,
+      "date": "2026-11-10",
+      "type": "OUT",
+      "quantity": "-2.00",
+      "unitCost": "140000",
+      "totalCost": "280000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-11-10 17:04:22",
+      "updatedAt": "2026-11-10 17:04:22"
+    },
+    {
+      "id": 12872654,
+      "branchId": 2,
+      "liquorItemId": 90001,
+      "date": "2026-11-10",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "20000",
+      "totalCost": "20000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-11-10 17:04:23",
+      "updatedAt": "2026-11-10 17:04:23"
+    },
+    {
+      "id": 12872655,
+      "branchId": 2,
+      "liquorItemId": 65,
+      "date": "2026-11-10",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "20000",
+      "totalCost": "20000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-11-10 17:04:23",
+      "updatedAt": "2026-11-10 17:04:23"
+    },
+    {
+      "id": 12872656,
+      "branchId": 2,
+      "liquorItemId": 81,
+      "date": "2026-11-10",
+      "type": "OUT",
+      "quantity": "-2.00",
+      "unitCost": "1700",
+      "totalCost": "3400",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-11-10 17:04:24",
+      "updatedAt": "2026-11-10 17:04:24"
+    },
+    {
+      "id": 12872657,
+      "branchId": 2,
+      "liquorItemId": 82,
+      "date": "2026-11-10",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "2200",
+      "totalCost": "2200",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-11-10 17:04:24",
+      "updatedAt": "2026-11-10 17:04:24"
+    },
+    {
+      "id": 12872658,
+      "branchId": 2,
+      "liquorItemId": 85,
+      "date": "2026-11-10",
+      "type": "OUT",
+      "quantity": "-5.00",
+      "unitCost": "4600",
+      "totalCost": "23000",
+      "memo": null,
+      "createdBy": 2,
+      "createdAt": "2026-11-10 17:04:25",
+      "updatedAt": "2026-11-10 17:04:25"
+    },
+    {
+      "id": 12872659,
+      "branchId": 2,
+      "liquorItemId": 47,
+      "date": "2026-11-11",
+      "type": "ADJUST",
+      "quantity": "-2.00",
+      "unitCost": "30000",
+      "totalCost": "60000",
+      "memo": "대치 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-11-10 17:55:26",
+      "updatedAt": "2026-11-10 17:55:26"
+    },
+    {
+      "id": 12872660,
+      "branchId": 3,
+      "liquorItemId": 47,
+      "date": "2026-11-11",
+      "type": "ADJUST",
+      "quantity": "-2.00",
+      "unitCost": "30000",
+      "totalCost": "60000",
+      "memo": "삼성 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-11-10 17:56:00",
+      "updatedAt": "2026-11-10 17:56:00"
+    },
+    {
+      "id": 12872661,
+      "branchId": 1,
+      "liquorItemId": 47,
+      "date": "2026-11-11",
+      "type": "ADJUST",
+      "quantity": "4.00",
+      "unitCost": "30000",
+      "totalCost": "120000",
+      "memo": "삼성, 대치 > 선릉 이동",
+      "createdBy": 6,
+      "createdAt": "2026-11-10 17:56:39",
+      "updatedAt": "2026-11-10 17:56:39"
     }
   ],
   "liquorHiddenItems": [
