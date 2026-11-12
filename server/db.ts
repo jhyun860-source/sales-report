@@ -459,9 +459,9 @@ export async function deleteStoreAccount(id: number): Promise<void> {
 
 // 특정 날짜 이후의 동일 지점 기록들의 posStartAmount/posEndAmount를 연쇄 재계산
 // 저장된 날짜의 posEndAmount가 바뀌면 이후 날짜들의 posStart/posEnd도 연쇄 업데이트
-export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string): Promise<void> {
+export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string, dryRun: boolean = false): Promise<Array<{ date: string; oldStart: string; newStart: string; oldEnd: string; newEnd: string }>> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) return [];
 
   // fromDate 이후의 모든 기록을 날짜 오름차순으로 조회
   const futureRecords = await db
@@ -470,7 +470,7 @@ export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string
     .where(and(eq(dailySalesRecords.branchId, branchId), gt(dailySalesRecords.date, fromDate)))
     .orderBy(dailySalesRecords.date);
 
-  if (futureRecords.length === 0) return;
+  if (futureRecords.length === 0) return [];
 
   // fromDate 기록의 posEndAmount를 기준으로 연쇄 계산
   // fromDate 자체가 POS 0으로 저장된 레코드면 이전 유효 마감금을 기준으로 보정
@@ -479,24 +479,30 @@ export async function cascadeUpdatePosAmounts(branchId: number, fromDate: string
     const fallbackPrev = await getPrevDailySalesRecordWithPosEnd(branchId, fromDate);
     if (fallbackPrev) prevRecord = fallbackPrev;
   }
-  if (!prevRecord) return;
+  if (!prevRecord) return [];
 
-  // [수정] posStartAmount만 연쇄 업데이트. posEndAmount는 매출보고에서 직접 입력하는 값이므로 건드리지 않음.
+  // [수정 2026-11] 시작금뿐 아니라 마감금(시작금 − 지출 + 시제입금)도 함께 다시 계산한다.
+  //  마감금을 그대로 두면 앞 날짜 수정 후 낡은 마감금이 다음 날 시작금으로 넘어가 시제가 틀어진다.
+  const changes: Array<{ date: string; oldStart: string; newStart: string; oldEnd: string; newEnd: string }> = [];
   for (const rec of futureRecords) {
-    const prevPosEnd: number = parseInt(prevRecord.posEndAmount || '0') || 0;
-    const newPosStart: number = prevPosEnd;
+    const newPosStart: number = parseInt(prevRecord.posEndAmount || '0') || 0;
+    const expenseTotal: number = (Array.isArray(rec.expenses) ? rec.expenses : [])
+      .reduce((s, e) => s + (parseInt(e?.amount || '0') || 0), 0);
+    const cashDepositVal: number = parseInt(rec.cashDeposit || '0') || 0;
+    const newPosEnd: number = newPosStart - expenseTotal + cashDepositVal;
 
-    // posStartAmount만 업데이트 (posEndAmount는 직접 입력값 보호)
-    if (String(newPosStart) !== rec.posStartAmount) {
-      await db
-        .update(dailySalesRecords)
-        .set({ posStartAmount: String(newPosStart), updatedAt: new Date() })
-        .where(eq(dailySalesRecords.id, rec.id));
-      prevRecord = { ...rec, posStartAmount: String(newPosStart) };
-    } else {
-      prevRecord = rec;
+    if (String(newPosStart) !== rec.posStartAmount || String(newPosEnd) !== rec.posEndAmount) {
+      changes.push({ date: rec.date, oldStart: rec.posStartAmount, newStart: String(newPosStart), oldEnd: rec.posEndAmount, newEnd: String(newPosEnd) });
+      if (!dryRun) {
+        await db
+          .update(dailySalesRecords)
+          .set({ posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd), updatedAt: new Date() })
+          .where(eq(dailySalesRecords.id, rec.id));
+      }
     }
+    prevRecord = { ...rec, posStartAmount: String(newPosStart), posEndAmount: String(newPosEnd) };
   }
+  return changes;
 }
 
 /**

@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import mysql from "mysql2/promise";
 import { runDailyBackup, getBackupStatus } from "./backup-scheduler";
+import { cascadeUpdatePosAmounts } from "./db";
 
 const RESTORE_KEY = "mwt-restore-20260711-xK4";
 const BACKUP_FILE = "backups/backup-2026-06-05-before-manager-wage.json";
@@ -337,6 +338,19 @@ export function registerRestoreRoutes(app: Express) {
           mode, dryrun, branchId: branchIdParam, month, 여직원일급: dailyWage,
           전체건수: rows.length, 고친건수: changed.length, rows: changed,
         });
+      }
+
+      if (mode === "fixposchain") {
+        // 시제(시작금/마감금) 이어붙이기 보정. from 날짜 "다음 날"부터 연쇄 재계산.
+        // apply=1 이 없으면 미리보기만 하고 DB는 바꾸지 않는다.
+        const branchIdParam = Number(req.query.branchId);
+        const from = String(req.query.from || "");
+        const apply = String(req.query.apply || "") === "1";
+        if (!branchIdParam || !/^\d{4}-\d{2}-\d{2}$/.test(from)) {
+          return res.status(400).json({ error: "branchId, from(YYYY-MM-DD) 필요. 예: mode=fixposchain&branchId=2&from=2026-09-30&key=..." });
+        }
+        const changes = await cascadeUpdatePosAmounts(branchIdParam, from, !apply);
+        return res.json({ mode, branchId: branchIdParam, from, applied: apply, changedDays: changes.length, changes });
       }
 
       if (mode === "adjustsettlement") {
