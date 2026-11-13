@@ -340,6 +340,51 @@ export function registerRestoreRoutes(app: Express) {
         });
       }
 
+      if (mode === "movestaffrow") {
+        // 테이블기록의 직원 한 줄(근무시간 포함)을 다른 테이블기록으로 이동. 기본은 미리보기(dryrun=1).
+        // 사용: &staffRowId=11311576&toReportId=10380541&newName=윤서(이세윤)&dryrun=1  (실제 이동은 dryrun=0)
+        // 실행 후: 양쪽 날짜의 테이블기록 화면을 열고 [저장]을 눌러 인건비를 재계산할 것
+        const staffRowId = Number(req.query.staffRowId);
+        const toReportId = Number(req.query.toReportId);
+        const newName = String(req.query.newName || "");
+        const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        if (!staffRowId || !toReportId) {
+          return res.status(400).json({ error: "staffRowId, toReportId 필요" });
+        }
+        const [srcRows]: any = await conn.query(
+          `SELECT s.*, r.branchId AS fromBranchId, r.date AS fromDate FROM staffIncentives s JOIN tableReports r ON r.id = s.tableReportId WHERE s.id = ? LIMIT 1`,
+          [staffRowId]
+        );
+        const src = srcRows[0];
+        if (!src) return res.json({ mode, result: "staffRowId 기록 없음" });
+        const [dstRep]: any = await conn.query(`SELECT id, branchId, date FROM tableReports WHERE id = ? LIMIT 1`, [toReportId]);
+        const dst = dstRep[0];
+        if (!dst) return res.json({ mode, result: "toReportId 테이블기록 없음" });
+        const finalName = newName || src.staffName;
+        const [dstStaff]: any = await conn.query(
+          `SELECT id, staffName, staffType, workStart, workEnd, sortOrder FROM staffIncentives WHERE tableReportId = ? ORDER BY sortOrder, id`,
+          [toReportId]
+        );
+        if (dstStaff.some((x: any) => x.staffName === finalName)) {
+          return res.json({ mode, result: "대상 기록에 같은 이름이 이미 있어 중단", dstStaff });
+        }
+        const nextSort = dstStaff.reduce((m: number, x: any) => Math.max(m, Number(x.sortOrder || 0)), 0) + 1;
+        const plan = {
+          move: { staffRowId, name: src.staffName, type: src.staffType, workStart: src.workStart, workEnd: src.workEnd,
+                  glassCount: src.glassCount, bottleCount: src.bottleCount, salesIncentive: src.salesIncentive },
+          from: { reportId: src.tableReportId, branchId: src.fromBranchId, date: src.fromDate },
+          to: { reportId: dst.id, branchId: dst.branchId, date: dst.date, newName: finalName, newSortOrder: nextSort },
+          targetStaffBefore: dstStaff,
+        };
+        if (!dryrun) {
+          await conn.query(
+            `UPDATE staffIncentives SET tableReportId = ?, staffName = ?, sortOrder = ? WHERE id = ?`,
+            [toReportId, finalName, nextSort, staffRowId]
+          );
+        }
+        return res.json({ mode, applied: !dryrun, plan });
+      }
+
       if (mode === "fixposchain") {
         // 시제(시작금/마감금) 이어붙이기 보정. from 날짜 "다음 날"부터 연쇄 재계산.
         // apply=1 이 없으면 미리보기만 하고 DB는 바꾸지 않는다.
