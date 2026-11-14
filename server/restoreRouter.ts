@@ -750,6 +750,28 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, duplicates: rows });
       }
 
+      if (mode === "zerohiddenstock") {
+        // 지정 지점에서 숨김(삭제) 처리된 품목의 재고 중 0이 아닌 것을 0으로 정리. 기본은 미리보기(dryrun=1).
+        // 사용: &branchId=2&dryrun=1  (실제 실행은 dryrun=0). 입출고 기록/품목/숨김 상태는 건드리지 않음.
+        const b = Number(req.query.branchId);
+        const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        if (!b) return res.status(400).json({ error: "branchId 필요" });
+        const [rows]: any = await conn.query(
+          `SELECT inv.id, inv.liquorItemId, li.name, inv.currentStock
+           FROM liquorInventories inv
+           JOIN liquorHiddenItems h ON h.branchId = inv.branchId AND h.liquorItemId = inv.liquorItemId
+           LEFT JOIN liquorItems li ON li.id = inv.liquorItemId
+           WHERE inv.branchId = ? AND inv.currentStock <> 0`, [b]);
+        const targets = Array.isArray(rows) ? rows : [];
+        if (!dryrun) {
+          for (const r of targets) {
+            await conn.query(`UPDATE liquorInventories SET currentStock = 0 WHERE id = ?`, [r.id]);
+            try { await conn.query(`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source) VALUES (?,?,?,?,?)`, [b, r.liquorItemId, Number(r.currentStock), 0, "zerohiddenstock"]); } catch {}
+          }
+        }
+        return res.json({ mode, branchId: b, applied: !dryrun, 대상수: targets.length, 대상: targets.map((r: any) => ({ 품목번호: r.liquorItemId, 이름: r.name, 현재재고: r.currentStock, 변경후: 0 })) });
+      }
+
       if (mode === "movemovement") {
         // 잘못된 품목으로 저장된 입출고 기록 한 건을 올바른 품목으로 옮기고, 두 품목의 재고를 지정값으로 맞춘다. 기본은 미리보기(dryrun=1).
         // 사용: &movementId=12872758&toItemId=450001&qty=2&fromStock=0&toStock=0&dryrun=1  (실제 실행은 dryrun=0)
