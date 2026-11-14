@@ -350,15 +350,21 @@ export default function LiquorStockReport() {
       ...localCachedItems,
     ];
     const seen = new Set<number>();
+    // [2026-11] 지점이 정해진 화면에서는 서버가 숨김(삭제) 제품을 뺀 지점 목록만 허용한다.
+    //  (출고 내역/브라우저 저장 목록에 남은 숨김 제품이 선택지에 섞이는 것 방지)
+    const branchAllowedIds = effectiveBranchId && (branchItemsQuery.data?.items?.length ?? 0) > 0
+      ? new Set<number>((branchItemsQuery.data?.items ?? []).map((i: any) => Number(i.id)))
+      : null;
     return sources
       .filter((item: any) => {
         const id = Number(item.id);
         if (!id || seen.has(id)) return false;
+        if (branchAllowedIds && !branchAllowedIds.has(id)) return false;
         seen.add(id);
         return Number(item.isActive ?? 1) !== 0;
       })
       .sort((a: any, b: any) => String(a.name).localeCompare(String(b.name), "ko"));
-  }, [branchItemsQuery.data?.items, items, visibleMovements]);
+  }, [branchItemsQuery.data?.items, items, visibleMovements, effectiveBranchId]);
 
   const actionItems = useMemo(() => {
     const q = actionSearch.trim().toLowerCase();
