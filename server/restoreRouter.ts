@@ -750,6 +750,59 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, duplicates: rows });
       }
 
+      if (mode === "movemovement") {
+        // 잘못된 품목으로 저장된 입출고 기록 한 건을 올바른 품목으로 옮기고, 두 품목의 재고를 지정값으로 맞춘다. 기본은 미리보기(dryrun=1).
+        // 사용: &movementId=12872758&toItemId=450001&qty=2&fromStock=0&toStock=0&dryrun=1  (실제 실행은 dryrun=0)
+        //   qty: 옮긴 뒤 수량(양수, 방향은 기존 기록 유지). 생략하면 기존 수량 유지
+        //   fromStock/toStock: 옛 품목/새 품목의 최종 재고. 둘 다 필수(실수 방지)
+        // 실행 후: 해당 날짜 정산 주류원가는 mode=recalcliquorcost 로 재계산할 것
+        const movementId = Number(req.query.movementId);
+        const toItemId = Number(req.query.toItemId);
+        const hasQty = req.query.qty !== undefined && req.query.qty !== "";
+        const qtyParam = Number(req.query.qty);
+        const fromStock = Number(req.query.fromStock);
+        const toStock = Number(req.query.toStock);
+        const dryrun = String(req.query.dryrun ?? "1") !== "0";
+        if (!movementId || !toItemId || req.query.fromStock === undefined || req.query.toStock === undefined
+            || Number.isNaN(fromStock) || Number.isNaN(toStock) || (hasQty && !(qtyParam > 0))) {
+          return res.status(400).json({ error: "movementId, toItemId, fromStock, toStock 필요(qty는 선택, 양수)" });
+        }
+        const [mvRows]: any = await conn.query(`SELECT * FROM liquorStockMovements WHERE id=? LIMIT 1`, [movementId]);
+        const mv = mvRows[0];
+        if (!mv) return res.json({ mode, result: "movementId 기록 없음" });
+        if (Number(mv.liquorItemId) === toItemId) return res.json({ mode, result: "이미 해당 품목입니다" });
+        const [toItemRows]: any = await conn.query(`SELECT id, name, unitCost FROM liquorItems WHERE id=? LIMIT 1`, [toItemId]);
+        const [fromItemRows]: any = await conn.query(`SELECT id, name FROM liquorItems WHERE id=? LIMIT 1`, [mv.liquorItemId]);
+        const toItem = toItemRows[0];
+        if (!toItem) return res.json({ mode, result: "toItemId 품목 없음" });
+        const [fromInv]: any = await conn.query(`SELECT id, currentStock FROM liquorInventories WHERE branchId=? AND liquorItemId=?`, [mv.branchId, mv.liquorItemId]);
+        const [toInv]: any = await conn.query(`SELECT id, currentStock FROM liquorInventories WHERE branchId=? AND liquorItemId=?`, [mv.branchId, toItemId]);
+        const sign = Number(mv.quantity) < 0 ? -1 : 1;
+        const newQty = hasQty ? sign * qtyParam : Number(mv.quantity);
+        const newTotalCost = Math.abs(newQty) * Number(toItem.unitCost || 0);
+        const plan = {
+          movement: { id: mv.id, branchId: mv.branchId, date: mv.date, type: mv.type,
+            before: { itemId: mv.liquorItemId, itemName: fromItemRows[0]?.name, quantity: mv.quantity, totalCost: mv.totalCost },
+            after: { itemId: toItemId, itemName: toItem.name, quantity: newQty, unitCost: toItem.unitCost, totalCost: newTotalCost } },
+          옛품목재고: { 행: fromInv, 변경후: fromStock },
+          새품목재고: { 행: toInv, 변경후: toStock },
+        };
+        if (!dryrun) {
+          await conn.query(`UPDATE liquorStockMovements SET liquorItemId=?, quantity=?, unitCost=?, totalCost=? WHERE id=?`,
+            [toItemId, String(newQty), String(toItem.unitCost || 0), String(newTotalCost), movementId]);
+          for (const [rows, itemId, stock] of [[fromInv, mv.liquorItemId, fromStock], [toInv, toItemId, toStock]] as any[]) {
+            const prev = Number(rows?.[0]?.currentStock || 0);
+            if (rows?.[0]) {
+              await conn.query(`UPDATE liquorInventories SET currentStock=? WHERE id=?`, [String(stock), rows[0].id]);
+            } else {
+              await conn.query(`INSERT INTO liquorInventories (branchId, liquorItemId, currentStock) VALUES (?,?,?)`, [mv.branchId, itemId, String(stock)]);
+            }
+            try { await conn.query(`INSERT INTO liquorStockAudit (branchId, liquorItemId, prevStock, nextStock, source) VALUES (?,?,?,?,?)`, [mv.branchId, itemId, prev, stock, "movemovement"]); } catch {}
+          }
+        }
+        return res.json({ mode, applied: !dryrun, plan });
+      }
+
       if (mode === "stockaudit") {
         // [읽기 전용] 특정 지점/품목의 재고 행, 재고 변경 이력(audit), 입출고 기록을 최근순으로 조회
         // 사용: &branchId=2&itemId=450001&days=14

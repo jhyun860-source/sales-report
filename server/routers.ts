@@ -4027,6 +4027,11 @@ export const appRouter = router({
         const itemIds = input.items.map(i => i.liquorItemId);
         const itemRows = itemIds.length ? await db.select().from(liquorItems).where(inArray(liquorItems.id, itemIds)) : [];
         const itemById = new Map(itemRows.map(i => [i.id, i]));
+        // [2026-11] 이 지점에서 삭제(숨김)된 제품이 섞여 있으면 저장 전에 전체 중단
+        const hiddenR: any = await db.execute(sql`SELECT liquorItemId FROM liquorHiddenItems WHERE branchId = ${input.branchId}`);
+        const hiddenRRows = Array.isArray(hiddenR) ? (Array.isArray(hiddenR[0]) ? hiddenR[0] : hiddenR) : ((hiddenR as any)?.rows ?? []);
+        const hiddenRIds = new Set((Array.isArray(hiddenRRows) ? hiddenRRows : []).map((r: any) => Number(r.liquorItemId)));
+        if (itemIds.some(id => hiddenRIds.has(Number(id)))) throw new TRPCError({ code: 'BAD_REQUEST', message: '이 지점에서 삭제(숨김)된 제품이 포함되어 있습니다. 같은 이름의 다른 제품을 선택해주세요' });
         for (const row of input.items) {
           const item = itemById.get(row.liquorItemId);
           if (!item) continue;
@@ -4282,6 +4287,11 @@ export const appRouter = router({
         }
         const [item] = await db.select().from(liquorItems).where(eq(liquorItems.id, input.liquorItemId)).limit(1);
         if (!item) throw new TRPCError({ code: 'NOT_FOUND', message: '품목을 찾을 수 없습니다' });
+
+        // [2026-11] 이 지점에서 삭제(숨김)된 제품에는 입출고를 저장하지 않는다 (같은 이름 중복 품목 오입력 방지)
+        const hiddenG: any = await db.execute(sql`SELECT id FROM liquorHiddenItems WHERE branchId = ${base.branchId} AND liquorItemId = ${input.liquorItemId} LIMIT 1`);
+        const hiddenGRows = Array.isArray(hiddenG) ? (Array.isArray(hiddenG[0]) ? hiddenG[0] : hiddenG) : ((hiddenG as any)?.rows ?? []);
+        if (Array.isArray(hiddenGRows) && hiddenGRows.length > 0) throw new TRPCError({ code: 'BAD_REQUEST', message: '이 지점에서 삭제(숨김)된 제품입니다. 같은 이름의 다른 제품을 선택해주세요' });
 
         const rawQty = Number(input.quantity || 0);
         if (!rawQty && input.type !== 'ADJUST') throw new TRPCError({ code: 'BAD_REQUEST', message: '수량을 입력해주세요' });
