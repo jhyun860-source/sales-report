@@ -169453,8 +169453,8 @@
       "id": 840002,
       "branchId": 2,
       "liquorItemId": 450001,
-      "currentStock": "1.00",
-      "updatedAt": "2026-11-12 15:04:12"
+      "currentStock": "0.00",
+      "updatedAt": "2026-11-14 08:15:22"
     },
     {
       "id": 840003,
@@ -170881,8 +170881,8 @@
       "id": 1650005,
       "branchId": 2,
       "liquorItemId": 7,
-      "currentStock": "-2.00",
-      "updatedAt": "2026-11-14 07:37:46"
+      "currentStock": "0.00",
+      "updatedAt": "2026-11-14 08:15:22"
     },
     {
       "id": 1650006,
@@ -235842,7 +235842,7 @@
     {
       "id": 12872758,
       "branchId": 2,
-      "liquorItemId": 7,
+      "liquorItemId": 450001,
       "date": "2026-11-13",
       "type": "OUT",
       "quantity": "-2.00",
@@ -235851,7 +235851,7 @@
       "memo": null,
       "createdBy": 2,
       "createdAt": "2026-11-13 17:30:48",
-      "updatedAt": "2026-11-14 07:37:46"
+      "updatedAt": "2026-11-14 08:15:22"
     }
   ],
   "liquorHiddenItems": [
