@@ -750,6 +750,25 @@ export function registerRestoreRoutes(app: Express) {
         return res.json({ mode, duplicates: rows });
       }
 
+      if (mode === "stockaudit") {
+        // [읽기 전용] 특정 지점/품목의 재고 행, 재고 변경 이력(audit), 입출고 기록을 최근순으로 조회
+        // 사용: &branchId=2&itemId=450001&days=14
+        const b = Number(req.query.branchId);
+        const itemId = Number(req.query.itemId);
+        const days = Math.min(Number(req.query.days) || 14, 120);
+        if (!b || !itemId) return res.status(400).json({ error: "branchId, itemId 필요" });
+        const [inv]: any = await conn.query(
+          `SELECT id, currentStock, updatedAt FROM liquorInventories WHERE branchId=? AND liquorItemId=?`, [b, itemId]);
+        const [audit]: any = await conn.query(
+          `SELECT id, prevStock, nextStock, source, accountId, createdAt FROM liquorStockAudit
+           WHERE branchId=? AND liquorItemId=? AND createdAt >= DATE_SUB(NOW(), INTERVAL ? DAY) ORDER BY id DESC LIMIT 60`, [b, itemId, days]);
+        const [mv]: any = await conn.query(
+          `SELECT id, date, type, quantity, createdAt FROM liquorStockMovements
+           WHERE branchId=? AND liquorItemId=? AND createdAt >= DATE_SUB(NOW(), INTERVAL ? DAY) ORDER BY id DESC LIMIT 60`, [b, itemId, days]);
+        const [nm]: any = await conn.query(`SELECT id, name FROM liquorItems WHERE name = (SELECT name FROM liquorItems WHERE id=?)`, [itemId]);
+        return res.json({ mode, branchId: b, itemId, 같은이름품목들: nm, 재고행: inv, 재고변경이력: audit, 입출고기록: mv });
+      }
+
       if (mode === "recentmoves") {
         const [rows] = await conn.query(
           `SELECT m.id, m.branchId, b.name AS branchName, m.liquorItemId, li.name AS itemName,
