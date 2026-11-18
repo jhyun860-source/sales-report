@@ -40021,6 +40021,47 @@
       "netProfit": "2064360",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410659,
+      "branchId": 4,
+      "date": "2026-11-18",
+      "posStartAmount": "61000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "2445000",
+      "cardTotal": "17521000",
+      "posEndAmount": "60000",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [
+        {
+          "id": "exp_1795001344156",
+          "amount": "1000",
+          "description": "거스름돈"
+        }
+      ],
+      "submittedBy": null,
+      "submittedAt": "2026-11-18 11:29:27",
+      "createdAt": "2026-11-18 11:29:23",
+      "updatedAt": "2026-11-18 11:29:28",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "180000",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "1000",
+      "totalExpenses": "181000",
+      "netProfit": "-181000",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
