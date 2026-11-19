@@ -40278,6 +40278,47 @@
       "netProfit": "515482",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410666,
+      "branchId": 2,
+      "date": "2026-11-19",
+      "posStartAmount": "535000",
+      "cash": "0",
+      "card": "505000",
+      "cashTotal": "1312000",
+      "cardTotal": "34946000",
+      "posEndAmount": "535000",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [
+        {
+          "id": "exp_1795095355984",
+          "amount": "0",
+          "description": "Pr"
+        }
+      ],
+      "submittedBy": null,
+      "submittedAt": "2026-11-19 13:37:00",
+      "createdAt": "2026-11-19 13:36:02",
+      "updatedAt": "2026-11-19 13:37:00",
+      "totalRevenue": "505000",
+      "commissionExpense": "85850",
+      "rentExpense": "360000",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "136363",
+      "managerWageExpense": "272727",
+      "partTimeWageExpense": "480000",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "80000",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "40000",
+      "totalExpenses": "1454940",
+      "netProfit": "-949940",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
@@ -51841,6 +51882,17 @@
       "notes": null,
       "createdAt": "2026-11-19 10:34:03",
       "updatedAt": "2026-11-19 10:39:08"
+    },
+    {
+      "id": 10380610,
+      "branchId": 2,
+      "date": "2026-11-19",
+      "teamCount": 0,
+      "cashAmount": "0",
+      "cardAmount": "505000",
+      "notes": null,
+      "createdAt": "2026-11-19 13:36:45",
+      "updatedAt": "2026-11-19 13:37:00"
     }
   ],
   "tableItems": [
@@ -122193,6 +122245,20 @@
       "createdAt": "2026-11-19 10:38:50",
       "updatedAt": "2026-11-19 10:39:52",
       "designatedStaff": null
+    },
+    {
+      "id": 16263114,
+      "tableReportId": 10380610,
+      "tableNumber": "",
+      "guestType": "walking",
+      "guestName": null,
+      "amount": "505000",
+      "paymentMethod": "card",
+      "memo": "맥주, 칵테일, 위스키 무제한(2), 치즈 플레이트(1), 연장 30분(4), 외부(1), <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">유빈(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">수정(2)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">유주(6)</mark>, <mark style=\"background: rgb(216, 180, 254); border-radius: 2px; padding: 0px 1px;\">세연(6)</mark>",
+      "sortOrder": 0,
+      "createdAt": "2026-11-19 13:36:45",
+      "updatedAt": "2026-11-19 13:36:59",
+      "designatedStaff": null
     }
   ],
   "staffIncentives": [
@@ -168610,6 +168676,86 @@
       "sortOrder": 5,
       "createdAt": "2026-11-19 12:01:04",
       "updatedAt": "2026-11-19 12:01:04",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311835,
+      "tableReportId": 10380610,
+      "staffName": "아름(하신원)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-11-19 13:36:45",
+      "updatedAt": "2026-11-19 13:36:45",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311836,
+      "tableReportId": 10380610,
+      "staffName": "유빈(이나경)",
+      "glassCount": 2,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "staff",
+      "workStart": "20:10",
+      "workEnd": null,
+      "sortOrder": 1,
+      "createdAt": "2026-11-19 13:36:45",
+      "updatedAt": "2026-11-19 13:36:45",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311837,
+      "tableReportId": 10380610,
+      "staffName": "유주(정예지)",
+      "glassCount": 6,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:00",
+      "workEnd": null,
+      "sortOrder": 2,
+      "createdAt": "2026-11-19 13:36:45",
+      "updatedAt": "2026-11-19 13:36:45",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311838,
+      "tableReportId": 10380610,
+      "staffName": "수정(도정민)",
+      "glassCount": 2,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:07",
+      "workEnd": null,
+      "sortOrder": 3,
+      "createdAt": "2026-11-19 13:36:45",
+      "updatedAt": "2026-11-19 13:36:45",
+      "wageExempt": 0
+    },
+    {
+      "id": 11311839,
+      "tableReportId": 10380610,
+      "staffName": "세연(고도연)",
+      "glassCount": 6,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "parttime",
+      "workStart": "20:00",
+      "workEnd": null,
+      "sortOrder": 4,
+      "createdAt": "2026-11-19 13:36:45",
+      "updatedAt": "2026-11-19 13:36:45",
       "wageExempt": 0
     }
   ],
