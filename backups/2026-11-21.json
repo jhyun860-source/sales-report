@@ -40459,6 +40459,47 @@
       "netProfit": "-250200",
       "staffCount": 0,
       "partTimeCount": 0
+    },
+    {
+      "id": 10410671,
+      "branchId": 2,
+      "date": "2026-11-20",
+      "posStartAmount": "535000",
+      "cash": "0",
+      "card": "0",
+      "cashTotal": "1312000",
+      "cardTotal": "36101000",
+      "posEndAmount": "535000",
+      "cashDeposit": "0",
+      "paymentChangeNote": null,
+      "paymentChangeDate": null,
+      "paymentChangeAmount": "0",
+      "expenses": [
+        {
+          "id": "exp_1795227935249",
+          "amount": "0",
+          "description": "Pr"
+        }
+      ],
+      "submittedBy": null,
+      "submittedAt": "2026-11-21 02:25:57",
+      "createdAt": "2026-11-21 02:25:57",
+      "updatedAt": "2026-11-21 02:25:57",
+      "totalRevenue": "0",
+      "commissionExpense": "0",
+      "rentExpense": "360000",
+      "managementFeeExpense": "0",
+      "staffWageExpense": "0",
+      "managerWageExpense": "0",
+      "partTimeWageExpense": "0",
+      "liquorCostExpense": "0",
+      "staffDrinkExpense": "0",
+      "salesIncentiveExpense": "0",
+      "otherExpense": "47619",
+      "totalExpenses": "407619",
+      "netProfit": "-407619",
+      "staffCount": 0,
+      "partTimeCount": 0
     }
   ],
   "tableReports": [
