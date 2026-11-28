@@ -176779,15 +176779,15 @@
       "id": 30036,
       "branchId": 2,
       "liquorItemId": 38,
-      "currentStock": "2.00",
-      "updatedAt": "2026-11-24 11:23:38"
+      "currentStock": "3.00",
+      "updatedAt": "2026-11-28 07:49:50"
     },
     {
       "id": 30037,
       "branchId": 2,
       "liquorItemId": 39,
-      "currentStock": "2.00",
-      "updatedAt": "2026-11-24 11:23:38"
+      "currentStock": "3.00",
+      "updatedAt": "2026-11-28 07:49:50"
     },
     {
       "id": 30038,
@@ -250052,6 +250052,34 @@
       "createdBy": 4,
       "createdAt": "2026-11-27 17:27:19",
       "updatedAt": "2026-11-27 17:27:19"
+    },
+    {
+      "id": 12873074,
+      "branchId": 2,
+      "liquorItemId": 38,
+      "date": "2026-11-27",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "74000",
+      "totalCost": "74000",
+      "memo": "대치->선릉",
+      "createdBy": 2,
+      "createdAt": "2026-11-28 07:49:50",
+      "updatedAt": "2026-11-28 07:49:50"
+    },
+    {
+      "id": 12873075,
+      "branchId": 2,
+      "liquorItemId": 39,
+      "date": "2026-11-27",
+      "type": "ADJUST",
+      "quantity": "1.00",
+      "unitCost": "92000",
+      "totalCost": "92000",
+      "memo": "대치->선릉",
+      "createdBy": 2,
+      "createdAt": "2026-11-28 07:49:50",
+      "updatedAt": "2026-11-28 07:49:50"
     }
   ],
   "liquorHiddenItems": [
