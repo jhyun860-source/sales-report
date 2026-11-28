@@ -41896,9 +41896,9 @@
       "date": "2026-11-28",
       "posStartAmount": "75000",
       "cash": "0",
-      "card": "590000",
+      "card": "1730000",
       "cashTotal": "1312000",
-      "cardTotal": "53663000",
+      "cardTotal": "54803000",
       "posEndAmount": "0",
       "cashDeposit": "0",
       "paymentChangeNote": null,
@@ -41906,22 +41906,22 @@
       "paymentChangeAmount": "0",
       "expenses": [],
       "submittedBy": null,
-      "submittedAt": "2026-11-28 15:47:20",
+      "submittedAt": "2026-11-28 17:56:50",
       "createdAt": "2026-11-28 14:58:52",
-      "updatedAt": "2026-11-28 15:47:20",
-      "totalRevenue": "590000",
-      "commissionExpense": "100300",
+      "updatedAt": "2026-11-28 17:58:16",
+      "totalRevenue": "1730000",
+      "commissionExpense": "294100",
       "rentExpense": "360000",
       "managementFeeExpense": "0",
       "staffWageExpense": "0",
-      "managerWageExpense": "0",
+      "managerWageExpense": "272727",
       "partTimeWageExpense": "0",
-      "liquorCostExpense": "0",
+      "liquorCostExpense": "150300",
       "staffDrinkExpense": "0",
       "salesIncentiveExpense": "0",
       "otherExpense": "40000",
-      "totalExpenses": "500300",
-      "netProfit": "89700",
+      "totalExpenses": "1117127",
+      "netProfit": "612873",
       "staffCount": 0,
       "partTimeCount": 0
     },
@@ -53936,10 +53936,10 @@
       "date": "2026-11-28",
       "teamCount": 0,
       "cashAmount": "0",
-      "cardAmount": "590000",
+      "cardAmount": "1730000",
       "notes": null,
       "createdAt": "2026-11-28 14:58:52",
-      "updatedAt": "2026-11-28 15:47:20"
+      "updatedAt": "2026-11-28 17:56:18"
     }
   ],
   "tableItems": [
@@ -126681,10 +126681,10 @@
       "guestName": null,
       "amount": "470000",
       "paymentMethod": "card",
-      "memo": "발렌타인 17y + 과일 SET(1), 양념 팝콘(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">하이네캔 (330ml)(5)</mark>",
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">발렌타인 17y + 과일 SET(1),<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark> 양념 팝콘(1), <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">하이네캔 (330ml)(5)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>",
       "sortOrder": 0,
       "createdAt": "2026-11-28 14:58:52",
-      "updatedAt": "2026-11-28 14:58:52",
+      "updatedAt": "2026-11-28 17:56:36",
       "designatedStaff": null
     },
     {
@@ -126721,12 +126721,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "140000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "계절과일(1), 맥주, 칵테일, 위스키 무제한(1), 기네스 드래프트 (330ml)(3)",
       "sortOrder": 3,
       "createdAt": "2026-11-28 14:58:52",
-      "updatedAt": "2026-11-28 14:58:52",
+      "updatedAt": "2026-11-28 17:55:57",
       "designatedStaff": null
     },
     {
@@ -126735,12 +126735,12 @@
       "tableNumber": "",
       "guestType": "walking",
       "guestName": null,
-      "amount": "0",
+      "amount": "1000000",
       "paymentMethod": "card",
-      "memo": null,
+      "memo": "<mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">글렌리벳15 + 과일 SET(1)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>, <mark style=\"background: rgb(255, 224, 102); border-radius: 2px; padding: 0px 1px;\">달모어 12y (700ml)(1)<button class=\"hl-remove-btn\" type=\"button\" contenteditable=\"false\" data-no-input=\"true\" style=\"display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 1px; font-size: 10px; line-height: 1; background: rgba(0, 0, 0, 0.18); color: rgb(51, 51, 51); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 50%; cursor: pointer; padding: 0px; vertical-align: middle; flex-shrink: 0;\">×</button></mark>, 외부(1)",
       "sortOrder": 4,
       "createdAt": "2026-11-28 14:58:52",
-      "updatedAt": "2026-11-28 14:58:52",
+      "updatedAt": "2026-11-28 17:56:28",
       "designatedStaff": null
     }
   ],
@@ -175096,6 +175096,22 @@
       "createdAt": "2026-11-27 15:41:12",
       "updatedAt": "2026-11-27 15:41:12",
       "wageExempt": 0
+    },
+    {
+      "id": 11311957,
+      "tableReportId": 10380647,
+      "staffName": "아름(하신원)",
+      "glassCount": 0,
+      "bottleCount": 0,
+      "beerBottleCount": 0,
+      "salesIncentive": "0",
+      "staffType": "manager",
+      "workStart": null,
+      "workEnd": null,
+      "sortOrder": 0,
+      "createdAt": "2026-11-28 17:56:18",
+      "updatedAt": "2026-11-28 17:56:18",
+      "wageExempt": 0
     }
   ],
   "liquorItems": [
@@ -176797,15 +176813,15 @@
       "id": 30016,
       "branchId": 2,
       "liquorItemId": 85,
-      "currentStock": "30.00",
-      "updatedAt": "2026-11-27 16:57:57"
+      "currentStock": "27.00",
+      "updatedAt": "2026-11-28 17:58:16"
     },
     {
       "id": 30017,
       "branchId": 2,
       "liquorItemId": 51,
-      "currentStock": "1.00",
-      "updatedAt": "2026-11-24 18:00:25"
+      "currentStock": "0.00",
+      "updatedAt": "2026-11-28 17:58:16"
     },
     {
       "id": 30018,
@@ -177182,8 +177198,8 @@
       "id": 30088,
       "branchId": 2,
       "liquorItemId": 83,
-      "currentStock": "16.00",
-      "updatedAt": "2026-11-25 20:06:30"
+      "currentStock": "11.00",
+      "updatedAt": "2026-11-28 17:58:16"
     },
     {
       "id": 30090,
@@ -250231,6 +250247,48 @@
       "createdBy": 2,
       "createdAt": "2026-11-28 07:49:50",
       "updatedAt": "2026-11-28 07:49:50"
+    },
+    {
+      "id": 12873076,
+      "branchId": 2,
+      "liquorItemId": 51,
+      "date": "2026-11-28",
+      "type": "OUT",
+      "quantity": "-1.00",
+      "unitCost": "120000",
+      "totalCost": "120000",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-11-28 17:58:16",
+      "updatedAt": "2026-11-28 17:58:16"
+    },
+    {
+      "id": 12873077,
+      "branchId": 2,
+      "liquorItemId": 85,
+      "date": "2026-11-28",
+      "type": "OUT",
+      "quantity": "-3.00",
+      "unitCost": "4600",
+      "totalCost": "13800",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-11-28 17:58:16",
+      "updatedAt": "2026-11-28 17:58:16"
+    },
+    {
+      "id": 12873078,
+      "branchId": 2,
+      "liquorItemId": 83,
+      "date": "2026-11-28",
+      "type": "OUT",
+      "quantity": "-5.00",
+      "unitCost": "3300",
+      "totalCost": "16500",
+      "memo": null,
+      "createdBy": 6,
+      "createdAt": "2026-11-28 17:58:16",
+      "updatedAt": "2026-11-28 17:58:16"
     }
   ],
   "liquorHiddenItems": [
